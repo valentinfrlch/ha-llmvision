@@ -1,0 +1,7 @@
+{
+    "domain": "gpt4vision",
+    "name": "HA GPT4 Vision Service",
+    "documentation": "https://github.com/filipecanedo/ha-gpt4vision",
+    "iot_class": "cloud_polling",
+    "version": "0.1.0"
+}
