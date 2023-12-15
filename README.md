@@ -31,8 +31,8 @@ service: gpt4vision.image_analyzer
 data:
   message: '[Prompt message for AI]'
   max_tokens: [maximum number of tokens]
-  entity_id: media_player.[device]
-  image_file: '[local path for image file]'
+  entity_id: [media device]
+  image_file: '[path for image file]'
 ```
 The parameters ```message:```, ```max_tokens:```, ```entity_id:``` and ```image_file:``` are mandatory for the execution of the service.
 Optionally, the AI model and the TTS cache [true/false] can be set.
