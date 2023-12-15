@@ -1,1 +1,41 @@
-
+image_analyzer:
+  fields:
+    message:
+      required: true
+      example: "Describe the person present in the photo"
+      selector:
+        text:
+          multiline: true
+    max_tokens:
+      required: true
+      example: 100
+      default: 100
+      selector:
+        number:
+          min: 10
+          max: 1000
+    image_file:
+      required: true
+      example: "/config/www/images/img.jpg"
+      selector:
+        text:
+          multiline: false
+    model:
+      required: false
+      example: "gpt-4-vision-preview"
+      selector:
+        text:
+          multiline: false
+    entity_id:
+      required: true
+      example: media_player.speaker
+      selector:
+        entity:
+          filter:
+            domain: media_player
+    cache:
+      required: false
+      example: false
+      selector:
+        boolean:
+          multiline: false
