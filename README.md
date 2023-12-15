@@ -11,7 +11,7 @@ Based on the **HA-chatgtp** code ( https://github.com/MiguelQueiroz/HA-chatgtp )
 Currently, the gpt-4-vision-preview model that is available with image analysis capabilities has costs that can be high. Please check your usage limits and take this into consideration when testing this service.
 
 ## Install and setup
-1. Download and copy folder gpt4vision to your custom_components folder.
+1. Download and copy folder **gpt4vision** and it's files to your **custom_components** folder.
 2. Add the following code to your configuration.yaml 
 ```ruby
 # gpt4vision service setup
