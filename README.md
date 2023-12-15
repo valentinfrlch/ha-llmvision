@@ -1,19 +1,19 @@
-# HA GPT4 Vision Service for Home Assistant
-Image to TTS using GPT4-Vision and Home Assistant
+# GPT-4 Turbo with vision Service for Home Assistant
+Image to Speech using GPT-4 Turbo with vision and Home Assistant
 
-ha-gpt4vision creates the gpt4vision.image_analyzer service in Home Assistant.
+**ha-gpt4vision** creates the gpt4vision.image_analyzer service in Home Assistant.
 This service uploads an image to OpenAI using its API and return analysis from AI directly to selected TTS service and speaker devices inside Home Assistant.
 
-Based on the **HA-chatgtp** code ( https://github.com/MiguelQueiroz/HA-chatgtp ) with the necessary adaptations to work with GPT-4-Vision API and with the inclusion of the image file reading and conversion to base64.
+Based on the **HA-chatgtp** code ( https://github.com/MiguelQueiroz/HA-chatgtp ) with the necessary adaptations to work with GPT-4 Turbo with vision API and with the inclusion of the image file reading and conversion to base64.
 
 ## Note about API key
-This service needs a valid API key. You must obtain a valid OpenAI key capable of using the GPT4-Vision model.
+**This service needs a valid API key**. You must obtain a valid OpenAI key capable of using the GPT-4 Turbo model.
 Currently, the gpt-4-vision-preview model that is available with image analysis capabilities has costs that can be high. Please check your usage limits and take this into consideration when testing this service.
 
 ## Install and setup
 1. Download and copy folder gpt4vision to your custom_components folder.
 2. Add the following code to your configuration.yaml 
-```
+```ruby
 # gpt4vision service setup
 gpt4vision:
   api: "[Your OpenAI API key]"
@@ -26,7 +26,7 @@ gpt4vision:
 After restart, the gpt4vision.image_analyzer service will be available.
 To get AI analysis of a local image, use the following service call.
 
-```
+```ruby
 service: gpt4vision.image_analyzer
 data:
   message: '[Prompt message for AI]'
@@ -43,7 +43,7 @@ data:
 ```
 
 ### Example 1
-Image analysis of a paint, with jpeg file saved in the HA folder /config/www/images/, using OpenAI GPT4-Vision model with 50 tokens, Home Assistant tts.cloud_say without cache. Answer will be sent to a group of speakers.
+Image analysis of a paint, with jpeg file saved in the HA folder /config/www/images/, using OpenAI GPT-4 Turbo with vision model with 50 tokens, Home Assistant tts.cloud_say without cache. Answer will be sent to a group of speakers.
 ```
 service: gpt4vision.image_analyzer
 data:
