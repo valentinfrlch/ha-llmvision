@@ -64,7 +64,8 @@ def setup(hass, config):
         with open(response_file, "w") as file:
            file.write(response_text) # Write the response to a text file for logging and optional use with other services
             
-        hass.bus.async_fire("gpt4vision", {"result": response_text})
+        # hass.bus.async_fire("gpt4vision", {"result": response_text})
+        # async_fire is not working since CORE 2024.5 - checking the impact on the functioning of the service
         
         # Call TTS service from Home Assistant with the content of the AI response message
         service_data = {"entity_id": media_id, "cache": cache_opt, "message": response_text}
