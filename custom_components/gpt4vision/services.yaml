@@ -35,9 +35,3 @@ image_analyzer:
         number:
           min: 640
           max: 3840
-    cache:
-      required: false
-      example: false
-      selector:
-        boolean:
-          multiline: false

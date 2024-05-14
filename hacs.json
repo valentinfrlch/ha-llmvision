@@ -3,5 +3,6 @@
   "codeowners": ["@valentinfrlch"],
   "iot_class": "cloud_polling",
   "integration_type": "service",
-  "render_readme": true
+  "render_readme": true,
+  "version": "0.1.3"
 }
