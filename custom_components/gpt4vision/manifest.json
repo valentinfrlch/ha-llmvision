@@ -1,6 +1,6 @@
 {
     "domain": "gpt4vision",
-    "name": "GPT4 Vision",
+    "name": "GPT-4 Vision",
     "codeowners": ["@valentinfrlch"],
     "issue_tracker": "https://github.com/valentinfrlch/ha-gpt4vision/issues",
     "documentation": "https://github.com/valentinfrlch/ha-gpt4vision",
