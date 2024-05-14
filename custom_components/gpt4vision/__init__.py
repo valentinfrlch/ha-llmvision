@@ -31,7 +31,7 @@ def setup(hass, config):
 
         # Get data from Service Call
         # Resolution (width only) of the image. Example: 1280 for 720p etc.
-        target_width = data_call.data.get(CONF_TARGET_WIDTH)
+        target_width = int(data_call.data.get(CONF_TARGET_WIDTH, 1280))
         # Local path to your image. Example: "/config/www/images/doorbell_snapshot.jpg"
         image_path = data_call.data.get(CONF_IMAGE_FILE)
         # Maximum number of tokens used by model. Test around 300
