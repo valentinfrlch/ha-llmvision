@@ -54,6 +54,27 @@ data:
 The parameters `message`, `max_tokens` and `image_file` are mandatory for the execution of the service.
 Optionally, the `model` and the `target_width` can be set. For available models check this page: https://platform.openai.com/docs/models.
 
+## Automation Example
+In automations the response can be accessed as `{{response.response_text}}` (if your response variable name is `response`:
+```yaml
+sequence:
+  - service: gpt4vision.image_analyzer
+    metadata: {}
+    data:
+      message: Describe the person in the image
+      image_file: /config/www/tmp/test.jpg
+      max_tokens: 100
+    response_variable: response
+  - service: tts.speak
+    metadata: {}
+    data:
+      cache: true
+      media_player_entity_id: media_player.entity_id
+      message: "{{response.response_text}}"
+    target:
+      entity_id: tts.tts_entity
+```
+
 ## Usage Examples
 ### Example 1: Announcement for package delivery
 If your camera doesn't support built in announcements for delivery, this is probably the easiest way to get them without running an object detection model.
