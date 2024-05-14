@@ -1,4 +1,4 @@
-# GPT-4 Turbo with vision Service for Home Assistant
+# GPT-4 Vision for Home Assistant
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
 
 Image Analyzer using GPT-4 Turbo with vision and Home Assistant
