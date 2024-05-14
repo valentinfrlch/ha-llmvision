@@ -74,8 +74,10 @@ data:
     or "no".
     # Answer: yes
 ```
+</td>
 <img alt="man delivering package" src="https://github.com/valentinfrlch/ha-gpt4vision/assets/85313672/ab615fd5-25b5-4e07-9c44-b10ec7a678c0">
-
+</tr>
+</table>
 
 ### Example 2: Suspicious behaviour
 An automation could be triggered when a person is detected around the house when no one is home. GPT-4 vision can determine if a person is doing something suspicious. The automation could then trigger an alarm.
