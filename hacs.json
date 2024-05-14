@@ -3,6 +3,8 @@
   "codeowners": ["@valentinfrlch"],
   "iot_class": "cloud_polling",
   "integration_type": "service",
+  "issue_tracker": "https://github.com/valentinfrlch/ha-gpt4vision/issues",
+  "documentation": "https://github.com/valentinfrlch/ha-gpt4vision",
   "render_readme": true,
   "version": "0.1.3"
 }
