@@ -1,5 +1,5 @@
 {
   "name": "HA GPT-4 Vision",
   "integration_type": "service",
-  "render_readme": true,
+  "render_readme": true
 }
