@@ -57,10 +57,12 @@ data:
 
 ### Example 1: Announcement for package delivery
 If your camera doesn't support built in announcements for delivery, this is probably the easiest way to get them without running an object detection model.
-![man delivering package](https://github.com/valentinfrlch/ha-gpt4vision/assets/85313672/ab615fd5-25b5-4e07-9c44-b10ec7a678c0)
 
+<table>
+<tr>
+<td>
 
-```
+```yaml
 service: gpt4vision.image_analyzer
 data:
   max_tokens: 100
@@ -70,7 +72,11 @@ data:
   message: >-
     Does it look like the person is delivering a package? Answer with only "yes"
     or "no".
+    # Answer: yes
 ```
+<img alt="man delivering package" src="https://github.com/valentinfrlch/ha-gpt4vision/assets/85313672/ab615fd5-25b5-4e07-9c44-b10ec7a678c0">
+
+
 ### Example 2: Suspicious behaviour
 An automation could be triggered when a person is detected around the house when no one is home. GPT-4 vision can determine if a person is doing something suspicious. The automation could then trigger an alarm.
 ![suspicious behaviour](https://github.com/valentinfrlch/ha-gpt4vision/assets/85313672/411678c4-f344-4eeb-9eb2-b78484a4d872)
