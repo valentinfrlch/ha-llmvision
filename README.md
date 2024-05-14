@@ -7,7 +7,7 @@ Image Analyzer using GPT-4 Turbo with vision and Home Assistant
 This service uploads an image to OpenAI using its API and returns GPT 4's response as service response so it can easily be used for automations.
 
 Based on [ha-gpt4vision by filipecanedo](https://github.com/filipecanedo/ha-gpt4vision) with some modifications:
-- Instead of directly calling tts, this service returns the response in plain text. This should make the service more accessible for automations, where tts is not needed. See examples below for usage.
+- Instead of directly calling tts, this service returns the response as response variable. This should make the service more accessible for automations, where tts is not needed. See examples below for usage.
 - An option to downscale images for lower cost has also been added.
 - The default model is the new GPT-4o, which is cheaper and faster than GPT-4-turbo.
 - Lastly this repository can be added to HACS as custom repository for easier installation and updating.
