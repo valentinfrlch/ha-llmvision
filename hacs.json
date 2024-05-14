@@ -1,3 +1,7 @@
 {
   "name": "HA GPT-4 Vision",
+  "codeowners": ["@valentinfrlch"],
+  "iot_class": "cloud_polling",
+  "integration_type": "service",
+  "render_readme": true
 }
