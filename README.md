@@ -4,23 +4,25 @@ Image Analyzer using GPT-4 Turbo with vision and Home Assistant
 **ha-gpt4vision** creates the gpt4vision.image_analyzer service in Home Assistant.
 This service uploads an image to OpenAI using its API and return analysis from AI directly to selected TTS service and speaker devices inside Home Assistant.
 
-Based on the **HA-chatgtp** code ( https://github.com/MiguelQueiroz/HA-chatgtp ) with the necessary adaptations to work with GPT-4 Turbo with vision API and with the inclusion of the image file reading and conversion to base64.
+Based on [https://github.com/MiguelQueiroz/HA-chatgtp](https://github.com/filipecanedo/ha-gpt4vision) with some small modifications. Instead of directly calling tts, this service returns the response in plain text. This should make the service more accessible for automations, where tts is not needed. See examples below for usage.
+An option to downscale images for lower cost has also been added. Lastly the default model is the new GPT-4o, which is cheaper and faster than GPT-4-turbo.
 
 ## Note about API key
-**This service needs a valid API key**. You must obtain a valid OpenAI key capable of using the GPT-4 Turbo model.
-Currently, the gpt-4-vision-preview model that is available with image analysis capabilities has costs that can be high. Please check your usage limits and take this into consideration when testing this service.
+**This service needs a valid API key**. You must obtain a valid OpenAI key from [here](https://platform.openai.com/api-keys).
+A pricing calculator is available here: [https://openai.com/api/pricing/](https://openai.com/api/pricing/).
 
-## Install and setup
+# Installation
+## Manual Installation
 1. Download and copy folder **gpt4vision** to your **custom_components** folder.
 2. Add the following code to your configuration.yaml 
 ```ruby
 # gpt4vision service setup
 gpt4vision:
   api: "[Your OpenAI API key]"
-  tts: "[The HA TTS service you want to use for text-to-speech]"
-# Example tts: "cloud_say"
 ```
 3. Restart Home Assistant to load the gpt4vision custom_component.
+
+## Installation with HACS (recommeded)
 
 ## Service call and usage
 After restart, the gpt4vision.image_analyzer service will be available.
