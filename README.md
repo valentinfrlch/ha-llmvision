@@ -4,7 +4,7 @@
 Image Analyzer using GPT-4 Turbo with vision and Home Assistant
 
 **ha-gpt4vision** creates the `gpt4vision.image_analyzer` service in Home Assistant.
-This service uploads an image to OpenAI using its API and returns GPT 4's response as service response so it can easily be used for automations.
+This service uploads an image to OpenAI using its API and returns GPT-4's response as service response so it can easily be used for automations.
 
 Based on [ha-gpt4vision by filipecanedo](https://github.com/filipecanedo/ha-gpt4vision) with some modifications:
 - Instead of directly calling tts, this service returns the response as response variable. This should make the service more accessible for automations, where tts is not needed. See examples below for usage.
