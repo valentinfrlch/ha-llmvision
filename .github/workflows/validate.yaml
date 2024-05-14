@@ -15,4 +15,4 @@ jobs:
       - name: HACS validation
         uses: "hacs/action@main"
         with:
-          category: "python_script"
+          category: "integration"
