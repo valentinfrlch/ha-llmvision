@@ -22,17 +22,19 @@ image_analyzer:
           multiline: false
     model:
       required: false
-      example: "gpt-4-vision-preview"
+      example: "gpt-4o"
+      default: "gpt-4o"
       selector:
         text:
           multiline: false
-    entity_id:
-      required: true
+    target_width:
+      required: false
       example: media_player.speaker
+      default: 1280
       selector:
-        entity:
-          filter:
-            domain: media_player
+        number:
+          min: 640
+          max: 3840
     cache:
       required: false
       example: false
