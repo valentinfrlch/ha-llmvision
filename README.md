@@ -3,13 +3,14 @@
 
 Image Analyzer using GPT-4 Turbo with vision and Home Assistant
 
-**ha-gpt4vision** creates the gpt4vision.image_analyzer service in Home Assistant.
-This service uploads an image to OpenAI using its API and returns GPT 4's response as service response so it can easily be used for automations.
+**ha-gpt4vision** creates the `gpt4vision.image_analyzer` service in Home Assistant.
+This service uploads an image to OpenAI using its API and returns GPT-4's response as service response so it can easily be used for automations.
 
-Based on [ha-gpt4vision by filipecanedo](https://github.com/filipecanedo/ha-gpt4vision) with some small modifications:
-- Instead of directly calling tts, this service returns the response in plain text. This should make the service more accessible for automations, where tts is not needed. See examples below for usage.
+Based on [ha-gpt4vision by filipecanedo](https://github.com/filipecanedo/ha-gpt4vision) with some modifications:
+- Instead of directly calling tts, this service returns the response as response variable. This should make the service more accessible for automations, where tts is not needed. See examples below for usage.
 - An option to downscale images for lower cost has also been added.
-- Lastly the default model is the new GPT-4o, which is cheaper and faster than GPT-4-turbo.
+- The default model is the new GPT-4o, which is cheaper and faster than GPT-4-turbo.
+- Lastly this repository can be added to HACS as custom repository for easier installation and updating.
 
 ## API key
 **This service needs a valid API key**. You must obtain a valid OpenAI key from [here](https://platform.openai.com/api-keys).
@@ -50,8 +51,8 @@ data:
   target_width: [Target width for image downscaling]
   max_tokens: [maximum number of tokens]'
 ```
-The parameters ```message:```, ```max_tokens:``` and ```image_file:``` are mandatory for the execution of the service.
-Optionally, the model and the target image width can be set.
+The parameters `message`, `max_tokens` and `image_file` are mandatory for the execution of the service.
+Optionally, the `model` and the `target_width` can be set. For available models check this page: https://platform.openai.com/docs/models.
 
 ## Usage Examples
 ### Example 1: Announcement for package delivery
