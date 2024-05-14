@@ -88,18 +88,5 @@ data:
     What is the person doing? Does anything look suspicious? Answer only with
     "yes" or "no".
 ```
-With the snapshot ready and file saved, it's time to call image_analyzer service.
-```
-service: gpt4vision.image_analyzer
-data:
-  message: >-
-    This photo was obtained from a home surveillance camera.
-    Write a succinct description of the person in the photo.
-  max_tokens: 300
-  entity_id: media_player.google_nest_mini_kitchen
-  image_file: '/config/www/images/doorbell_snapshot.jpg'
-```
 
-## Other uses
-After successful processing, the content of the AI ​​analysis response is saved as text in response.txt file. This file is stored inside the /custom_components/gpt4vision/ folder.
-This functionality can be useful for debugging and testing, or for passing content to other services.
+If you have any questions or suggestions, feel free to open an issue or a pull request.
