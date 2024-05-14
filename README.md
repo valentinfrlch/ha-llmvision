@@ -55,29 +55,36 @@ data:
   cache: true
 ```
 
-### Example 1
-Image analysis of a paint, with jpeg file saved in the HA folder /config/www/images/, using OpenAI GPT-4 Turbo with vision model with 50 tokens, Home Assistant tts.cloud_say without cache. Answer will be sent to a group of speakers.
+### Example 1: Announcement for package delivery
+If your camera doesn't support built in announcements for delivery, this is probably the easiest way to get them without running an object detection model.
+![man delivering package](https://github.com/valentinfrlch/ha-gpt4vision/assets/85313672/ab615fd5-25b5-4e07-9c44-b10ec7a678c0)
+
+
 ```
 service: gpt4vision.image_analyzer
 data:
-  message: 'describe the painting'
-  image_file: '/config/www/images/art.jpg'
-  entity_id: media_player.speakers_cast_group
-  model: gpt-4-vision-preview
-  max_tokens: 50
-  cache: false  
+  max_tokens: 100
+  model: gpt-4o
+  target_width: 1280
+  image_file: /config/www/tmp/front_porch.jpg
+  message: >-
+    Does it look like the person is delivering a package? Answer with only "yes"
+    or "no".
 ```
-### Example 2
-Image analysis of a surveillance video frame when someone ring the doorbell.
-The automation is triggered by the doorbell binary sensor. Then, a snapshot is taken from a surveillance camera and the file is saved locally as /config/www/images/doorbell_snapshot.jpg
-The response text will be converted to speech (TTS) and listen in the kitchen's google nest mini speaker.
+### Example 2: Suspicious behaviour
+An automation could be triggered when a person is detected around the house when no one is home. GPT-4 vision can determine if a person is doing something suspicious. The automation could then trigger an alarm.
+![suspicious behaviour](https://github.com/valentinfrlch/ha-gpt4vision/assets/85313672/411678c4-f344-4eeb-9eb2-b78484a4d872)
+
 ```
-service: camera.snapshot
+service: gpt4vision.image_analyzer
 data:
-  filename: /config/www/images/doorbell_snapshot.jpg
-target:
-  entity_id:
-    - camera.outdoor_front
+  max_tokens: 100
+  model: gpt-4o
+  target_width: 1280
+  image_file: /config/www/tmp/garage.jpg
+  message: >-
+    What is the person doing? Does anything look suspicious? Answer only with
+    "yes" or "no".
 ```
 With the snapshot ready and file saved, it's time to call image_analyzer service.
 ```
