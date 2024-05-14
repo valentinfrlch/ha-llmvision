@@ -29,7 +29,7 @@ image_analyzer:
           multiline: false
     target_width:
       required: false
-      example: media_player.speaker
+      example: 1280
       default: 1280
       selector:
         number:
