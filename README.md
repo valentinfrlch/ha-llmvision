@@ -61,7 +61,6 @@ If your camera doesn't support built in announcements for delivery, this is prob
 <table>
 <tr>
 <td>
-
 ```yaml
 service: gpt4vision.image_analyzer
 data:
@@ -75,7 +74,9 @@ data:
     # Answer: yes
 ```
 </td>
+<td>
 <img alt="man delivering package" src="https://github.com/valentinfrlch/ha-gpt4vision/assets/85313672/ab615fd5-25b5-4e07-9c44-b10ec7a678c0">
+</td>
 </tr>
 </table>
 
