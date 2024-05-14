@@ -51,8 +51,8 @@ data:
   target_width: [Target width for image downscaling]
   max_tokens: [maximum number of tokens]'
 ```
-The parameters ```message:```, ```max_tokens:``` and ```image_file:``` are mandatory for the execution of the service.
-Optionally, the model and the target image width can be set. For available models check this page: https://platform.openai.com/docs/models.
+The parameters `message`, `max_tokens` and `image_file` are mandatory for the execution of the service.
+Optionally, the `model` and the `target_width` can be set. For available models check this page: https://platform.openai.com/docs/models.
 
 ## Usage Examples
 ### Example 1: Announcement for package delivery
