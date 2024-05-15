@@ -3,6 +3,7 @@ import base64
 import requests
 import io
 from homeassistant.core import SupportsResponse
+from homeassistant.exceptions import ServiceValidationError
 from PIL import Image
 
 DOMAIN = 'gpt4vision'
@@ -18,33 +19,37 @@ CON_RESPONSE_FILE_PATH = '/config/custom_components/gpt4vision/'
 
 
 def setup(hass, config):
-    """Set up is called when Home Assistant is loading our component."""
     def image_analyzer(data_call):
-        """_summary_
+        """send GET request to OpenAI API '/v1/chat/completions' endpoint
 
         Returns:
             json: response_text
         """
 
-        # Get config from configuration.yaml
-        api = str(config[DOMAIN][CONF_API])  # Your OpenAI API key
+        # Read api key from configuration.yaml
+        try:
+            api_key = str(config[DOMAIN][CONF_API])
+        except KeyError:
+            raise ServiceValidationError("API key is missing. Please check your configuration.yaml file.")
+    
+        # Check if api key is present
+        if not api_key:
+            raise ServiceValidationError("API key is missing. Please check your configuration.yaml file.")
 
-        # Get data from Service Call
+        # Read data from service call
         # Resolution (width only) of the image. Example: 1280 for 720p etc.
         target_width = data_call.data.get(CONF_TARGET_WIDTH, 1280)
-        # Local path to your image. Example: "/config/www/images/doorbell_snapshot.jpg"
+        # Local path to your image. Example: "/config/www/images/garage.jpg"
         image_path = data_call.data.get(CONF_IMAGE_FILE)
-        # Maximum number of tokens used by model. Test around 300
+        # Maximum number of tokens used by model. Default is 100.
         max_tokens = int(data_call.data.get(CONF_MAXTOKENS))
-        # OpenAI model. The default model is gpt-4o
+        # GPT model: Default model is gpt-4o
         model = str(data_call.data.get(CONF_MODEL, "gpt-4o"))
-
-        # The input for OpenAI GPT4-Vision API will condition the analysis of the image and the respective text response. This input varies with the prompt and the maximum number of tokens.
-        # This is the prompt message. It must be a request to the AI, indicating the analysis and the characteristics that you want to obtain a description of.
+        # Message to be sent to AI model
         message = str(data_call.data.get(CONF_MESSAGE)[0:2000])
 
         def encode_image(image_path):
-            """_summary_
+            """Encode image as base64
 
             Args:
                 image_path (string): path where image is stored e.g.: "/config/www/tmp/image.jpg"
@@ -78,18 +83,20 @@ def setup(hass, config):
         # HTTP Request for AI API
         # Header Parameters
         headers = {'Content-type': 'application/json',
-                   'Authorization': 'Bearer '+api}
+                   'Authorization': 'Bearer ' + api_key}
 
         # Body Parameters
         data = {"model": model, "messages": [{"role": "user", "content": [{"type": "text", "text": message},
                                                                           {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}], "max_tokens": max_tokens}
 
         # Get response from OpenAI and read content inside message
-        response = requests.post(
-            "https://api.openai.com/v1/chat/completions", headers=headers, json=data)
-        response_text = response.json().get(
-            "choices")[0].get("message").get("content")
-
+        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
+        
+        # Check if response is successful
+        if response.status_code != 200:
+            raise ServiceValidationError(response.json().get('error').get('message'))
+        
+        response_text = response.json().get("choices")[0].get("message").get("content")
         return {"response_text": response_text}
 
     hass.services.register(
