@@ -1,0 +1,13 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Add API key",
+                "description": "Provide your API key. See docs for more information.",
+                "data": {
+                    "api_key": "Your API key"
+                }
+            }
+        }
+    }
+}

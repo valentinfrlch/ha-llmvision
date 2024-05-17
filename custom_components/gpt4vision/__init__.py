@@ -1,21 +1,25 @@
 # Declare variables
+from .const import DOMAIN, CONF_API_KEY, CONF_MAXTOKENS, CONF_TARGET_WIDTH, CONF_MODEL, CONF_MESSAGE, CONF_IMAGE_FILE
 import base64
 import requests
 import io
+import os
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
 from PIL import Image
 
-DOMAIN = 'gpt4vision'
 
-# config
-CONF_API = 'api'
-CONF_MAXTOKENS = 'max_tokens'
-CONF_TARGET_WIDTH = 'target_width'
-CONF_MODEL = 'model'
-CONF_MESSAGE = 'message'
-CONF_IMAGE_FILE = 'image_file'
-CON_RESPONSE_FILE_PATH = '/config/custom_components/gpt4vision/'
+async def async_setup_entry(hass, entry):
+    """Set up gpt4vision from a config entry."""
+    # Get the API key from the configuration entry
+    api_key = entry.data[CONF_API_KEY]
+
+    # Store the API key in hass.data
+    hass.data[DOMAIN] = {
+        "api_key": api_key
+    }
+
+    return True
 
 
 def setup(hass, config):
@@ -26,15 +30,13 @@ def setup(hass, config):
             json: response_text
         """
 
-        # Read api key from configuration.yaml
-        try:
-            api_key = str(config[DOMAIN][CONF_API])
-        except KeyError:
-            raise ServiceValidationError("API key is missing. Please check your configuration.yaml file.")
-    
+        # Try to get the API key from hass.data
+        api_key = hass.data.get(DOMAIN, {}).get("api_key")
+
         # Check if api key is present
         if not api_key:
-            raise ServiceValidationError("API key is missing. Please check your configuration.yaml file.")
+            raise ServiceValidationError(
+                "API key is required. Please set up the integration again.")
 
         # Read data from service call
         # Resolution (width only) of the image. Example: 1280 for 720p etc.
@@ -48,6 +50,11 @@ def setup(hass, config):
         # Message to be sent to AI model
         message = str(data_call.data.get(CONF_MESSAGE)[0:2000])
 
+        # Check if image file exists
+        if not os.path.exists(image_path):
+            raise ServiceValidationError(
+                f"Image does not exist: {image_path}")
+
         def encode_image(image_path):
             """Encode image as base64
 
@@ -57,6 +64,7 @@ def setup(hass, config):
             Returns:
                 string: image encoded as base64
             """
+            
             # Open the image file
             with Image.open(image_path) as img:
                 width, height = img.size
@@ -90,13 +98,16 @@ def setup(hass, config):
                                                                           {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}], "max_tokens": max_tokens}
 
         # Get response from OpenAI and read content inside message
-        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
-        
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions", headers=headers, json=data)
+
         # Check if response is successful
         if response.status_code != 200:
-            raise ServiceValidationError(response.json().get('error').get('message'))
-        
-        response_text = response.json().get("choices")[0].get("message").get("content")
+            raise ServiceValidationError(
+                response.json().get('error').get('message'))
+
+        response_text = response.json().get(
+            "choices")[0].get("message").get("content")
         return {"response_text": response_text}
 
     hass.services.register(
