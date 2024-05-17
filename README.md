@@ -20,23 +20,14 @@ A pricing calculator is available here: [https://openai.com/api/pricing/](https:
 ### Installation via HACS (recommended)
 1. Add this repository's url (https://github.com/valentinfrlch/ha-gpt4vision) to HACS under custom repositories.
 2. Install through HACS
-3. Add the following code to your configuration.yaml:
-```yaml
-# gpt4vision service setup
-gpt4vision:
-  api: "[Your OpenAI API key]"
-```
-4. Restart Home Assistant
+3. Restart Home Assistant
+4. Add integration in Home Assistant Settings/Devices & services
+5. Provide your API key
 
 ### Manual Installation
 1. Download and copy folder **gpt4vision** to your **custom_components** folder.
-2. Add the following code to your configuration.yaml 
-```yaml
-# gpt4vision service setup
-gpt4vision:
-  api: "[Your OpenAI API key]"
-```
-3. Restart Home Assistant to load the gpt4vision custom_component.
+2. Add integration in Home Assistant Settings/Devices & services
+3. Provide your API key
 
 ## Service call and usage
 After restarting, the gpt4vision.image_analyzer service will be available. You can test it in the developer tools section in home assistant.
