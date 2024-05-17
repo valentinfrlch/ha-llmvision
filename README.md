@@ -4,19 +4,19 @@
 Image Analyzer for Home Assistant using GPT-4o.
 
 **ha-gpt4vision** creates the `gpt4vision.image_analyzer` service in Home Assistant.
-This service uploads an image to OpenAI using its API and returns GPT-4's response as service response so it can easily be used for automations.
+This service sends an image to OpenAI using its API and returns the model's output as a response variable, making it easy to use in automations.
 
-Based on [ha-gpt4vision by filipecanedo](https://github.com/filipecanedo/ha-gpt4vision) with some modifications:
-- Instead of directly calling tts, this service returns the response as response variable. This should make the service more accessible for automations, where tts is not needed. See examples below for usage.
-- An option to downscale images for lower cost has also been added.
-- The default model is the new GPT-4o, which is cheaper and faster than GPT-4-turbo.
-- Lastly this repository can be added to HACS as custom repository for easier installation and updating.
-
+## Features
+- Service returns the model's output as response variable. This makes the service more accessible for automations. See examples below for usage.
+- To reduce the cost of the API call, images can be downscaled to a target width.
+- The default model, GPT-4o, is cheaper and faster than GPT-4-turbo..
+  - Any model capable of vision can be used. For available models check this page: [https://platform.openai.com/docs/models](https://platform.openai.com/docs/models).
+- This custom component can be installed through HACS and can be set up in the Home Assistant UI.
 ## API key
 **This service needs a valid API key**. You must obtain a valid OpenAI key from [here](https://platform.openai.com/api-keys).
 A pricing calculator is available here: [https://openai.com/api/pricing/](https://openai.com/api/pricing/).
 
-## Installation
+# Installation
 ### Installation via HACS (recommended)
 1. Add this repository's url (https://github.com/valentinfrlch/ha-gpt4vision) to HACS under custom repositories.
 2. Install through HACS
@@ -46,7 +46,7 @@ The parameters `message`, `max_tokens` and `image_file` are mandatory for the ex
 Optionally, the `model` and the `target_width` can be set. For available models check this page: https://platform.openai.com/docs/models.
 
 ## Automation Example
-In automations the response can be accessed as `{{response.response_text}}` (if your response variable name is `response`:
+In automations, if your response variable name is `response`, you can access the response as `{{response.response_text}}`.:
 ```yaml
 sequence:
   - service: gpt4vision.image_analyzer
@@ -68,7 +68,7 @@ sequence:
 
 ## Usage Examples
 ### Example 1: Announcement for package delivery
-If your camera doesn't support built in announcements for delivery, this is probably the easiest way to get them without running an object detection model.
+If your camera doesn't support built-in delivery announcements, this is likely the easiest way to get them without running an object detection model.
 
 ```yaml
 service: gpt4vision.image_analyzer
@@ -85,7 +85,7 @@ data:
 <img alt="man delivering package" src="https://github.com/valentinfrlch/ha-gpt4vision/assets/85313672/ab615fd5-25b5-4e07-9c44-b10ec7a678c0">
 
 ### Example 2: Suspicious behaviour
-An automation could be triggered when a person is detected around the house when no one is home. GPT-4 vision can determine if a person is doing something suspicious. The automation could then trigger an alarm.
+An automation could be triggered if a person is detected around the house when no one is home.
 ![suspicious behaviour](https://github.com/valentinfrlch/ha-gpt4vision/assets/85313672/411678c4-f344-4eeb-9eb2-b78484a4d872)
 
 ```
