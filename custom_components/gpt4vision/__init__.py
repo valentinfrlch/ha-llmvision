@@ -1,9 +1,9 @@
 # Declare variables
 from .const import DOMAIN, CONF_API_KEY, CONF_MAXTOKENS, CONF_TARGET_WIDTH, CONF_MODEL, CONF_MESSAGE, CONF_IMAGE_FILE
 import base64
-import requests
 import io
 import os
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
 from PIL import Image
@@ -23,7 +23,7 @@ async def async_setup_entry(hass, entry):
 
 
 def setup(hass, config):
-    def image_analyzer(data_call):
+    async def image_analyzer(data_call):
         """send GET request to OpenAI API '/v1/chat/completions' endpoint
 
         Returns:
@@ -64,7 +64,7 @@ def setup(hass, config):
             Returns:
                 string: image encoded as base64
             """
-            
+
             # Open the image file
             with Image.open(image_path) as img:
                 width, height = img.size
@@ -97,16 +97,19 @@ def setup(hass, config):
         data = {"model": model, "messages": [{"role": "user", "content": [{"type": "text", "text": message},
                                                                           {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}], "max_tokens": max_tokens}
 
+        # Get the Home Assistant http client
+        session = async_get_clientsession(hass)
+
         # Get response from OpenAI and read content inside message
-        response = requests.post(
+        response = await session.post(
             "https://api.openai.com/v1/chat/completions", headers=headers, json=data)
 
         # Check if response is successful
-        if response.status_code != 200:
+        if response.status != 200:
             raise ServiceValidationError(
-                response.json().get('error').get('message'))
+                (await response.json()).get('error').get('message'))
 
-        response_text = response.json().get(
+        response_text = (await response.json()).get(
             "choices")[0].get("message").get("content")
         return {"response_text": response_text}
 
