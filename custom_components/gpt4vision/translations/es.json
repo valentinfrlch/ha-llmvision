@@ -1,0 +1,13 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Agregar clave API",
+                "description": "Copie su clave API. Para más información, consulte los docs.",
+                "data": {
+                    "api_key": "Su clave API"
+                }
+            }
+        }
+    }
+}
