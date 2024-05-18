@@ -9,7 +9,7 @@ This service sends an image to OpenAI using its API and returns the model's outp
 ## Features
 - Service returns the model's output as response variable. This makes the service more accessible for automations. See examples below for usage.
 - To reduce the cost of the API call, images can be downscaled to a target width.
-- The default model, GPT-4o, is cheaper and faster than GPT-4-turbo..
+- The default model, GPT-4o, is cheaper and faster than GPT-4-turbo.
   - Any model capable of vision can be used. For available models check this page: [https://platform.openai.com/docs/models](https://platform.openai.com/docs/models).
 - This custom component can be installed through HACS and can be set up in the Home Assistant UI.
 ## API key
@@ -46,7 +46,7 @@ The parameters `message`, `max_tokens` and `image_file` are mandatory for the ex
 Optionally, the `model` and the `target_width` can be set. For available models check this page: https://platform.openai.com/docs/models.
 
 ## Automation Example
-In automations, if your response variable name is `response`, you can access the response as `{{response.response_text}}`.:
+In automations, if your response variable name is `response`, you can access the response as `{{response.response_text}}`:
 ```yaml
 sequence:
   - service: gpt4vision.image_analyzer
