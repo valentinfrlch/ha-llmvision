@@ -2,12 +2,33 @@
     "config": {
         "step": {
             "user": {
-                "title": "API key hinzufügen",
-                "description": "Kopieren Sie Ihren API key. Weitere Informationen finden Sie in den docs.",
+                "title": "Wählen Sie Ihren Anbieter",
+                "description": "Wählen Sie den Anbieter, den Sie für Ihre KI verwenden möchten.",
                 "data": {
-                    "api_key": "Ihr API key"
+                    "api_key": "Ihr API-Schlüssel"
+                }
+            },
+            "localai": {
+                "title": "Verbinden Sie sich mit Ihrem LocalAI-Server",
+                "description": "Geben Sie die IP-Adresse und den Port Ihres LocalAI-Servers an.",
+                "data": {
+                    "localai_ip": "IP-Adresse",
+                    "localai_port": "Port"
+                }
+            },
+            "openai": {
+                "title": "Fügen Sie den OpenAI-API-Schlüssel hinzu",
+                "description": "Geben Sie einen gültigen OpenAI-API-Schlüssel an.",
+                "data": {
+                    "api_key": "Ihr API-Schlüssel"
                 }
             }
+        },
+        "error": {
+            "empty_mode": "Bitte wählen Sie einen Anbieter.",
+            "empty_ip_address": "IP-Adresse darf nicht leer sein",
+            "empty_port": "Port darf nicht leer sein",
+            "empty_api_key": "API-Schlüssel ist erforderlich."
         }
     }
 }

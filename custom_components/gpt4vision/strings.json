@@ -2,12 +2,33 @@
     "config": {
         "step": {
             "user": {
-                "title": "Add API key",
-                "description": "Provide your API key. See docs for more information.",
+                "title": "Choose your provider",
+                "description": "Select the provider you want to use for your AI.",
+                "data": {
+                    "api_key": "Your API key"
+                }
+            },
+            "localai": {
+                "title": "Connect to your LocalAI server",
+                "description": "Provide the IP address and port of your LocalAI server.",
+                "data": {
+                    "localai_ip": "IP address",
+                    "localai_port": "Port"
+                }
+            },
+            "openai": {
+                "title": "Add OpenAI API key",
+                "description": "Provide a valid OpenAI API key.",
                 "data": {
                     "api_key": "Your API key"
                 }
             }
+        },
+        "error": {
+            "empty_mode": "Please select a provider.",
+            "empty_ip_address": "IP address cannot be empty",
+            "empty_port": "Port cannot be empty",
+            "empty_api_key": "API key is required."
         }
     }
 }

@@ -2,12 +2,33 @@
     "config": {
         "step": {
             "user": {
-                "title": "Aggiungi chiave API",
-                "description": "Copia la tua chiave API. Per ulteriori informazioni, consulta i docs.",
+                "title": "Scegli il tuo fornitore",
+                "description": "Seleziona il fornitore che desideri utilizzare per il tuo IA.",
+                "data": {
+                    "api_key": "La tua chiave API"
+                }
+            },
+            "localai": {
+                "title": "Connettiti al tuo server LocalAI",
+                "description": "Fornisci l'indirizzo IP e la porta del tuo server LocalAI.",
+                "data": {
+                    "localai_ip": "Indirizzo IP",
+                    "localai_port": "Porta"
+                }
+            },
+            "openai": {
+                "title": "Aggiungi la chiave API di OpenAI",
+                "description": "Fornisci una chiave API di OpenAI valida.",
                 "data": {
                     "api_key": "La tua chiave API"
                 }
             }
+        },
+        "error": {
+            "empty_mode": "Per favore, seleziona un fornitore.",
+            "empty_ip_address": "L'indirizzo IP non può essere vuoto",
+            "empty_port": "La porta non può essere vuota",
+            "empty_api_key": "È richiesta la chiave API."
         }
     }
 }
