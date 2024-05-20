@@ -99,5 +99,7 @@ data:
     What is the person doing? Does anything look suspicious? Answer only with
     "yes" or "no".
 ```
-
-If you have any questions or suggestions, feel free to open an issue or a pull request.
+## Issues
+> [!NOTE]
+> **Bugs:** If you encounter any bugs and have read the docs carefully, feel free to file a bug report.  
+> **Feature Requests:** If you have an idea for a feature, file a feature request.
