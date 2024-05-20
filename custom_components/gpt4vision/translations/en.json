@@ -28,7 +28,8 @@
             "empty_mode": "Please select a provider.",
             "empty_ip_address": "IP address cannot be empty",
             "empty_port": "Port cannot be empty",
-            "empty_api_key": "API key is required."
+            "empty_api_key": "API key is required.",
+            "handshake_failed": "Failed to connect to LocalAI server. Please check the IP address and port and try again."
         }
     }
 }

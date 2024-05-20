@@ -19,14 +19,14 @@ async def async_setup_entry(hass, entry):
     data = {"mode": mode}
 
     if mode == "OpenAI":
-        api_key = entry.data[CONF_API_KEY]
-        data["api_key"] = api_key
+        api_key = entry.data.get(CONF_API_KEY)
+        data[CONF_API_KEY] = api_key
     else:
-        ip_address = entry.data[CONF_IP_ADDRESS]
-        port = entry.data[CONF_PORT]
+        ip_address = entry.data.get(CONF_IP_ADDRESS)
+        port = entry.data.get(CONF_PORT)
         # Add the IP address and port to the data dictionary
-        data["ip_address"] = ip_address
-        data["port"] = port
+        data[CONF_IP_ADDRESS] = ip_address
+        data[CONF_PORT] = port
 
     # Store the data dictionary in hass.data
     hass.data[DOMAIN] = data
@@ -34,7 +34,7 @@ async def async_setup_entry(hass, entry):
     return True
 
 
-async def validate_data(data):
+def validate_data(data):
     if data[CONF_MODE] == "OpenAI":
         if not data[CONF_API_KEY]:
             raise ServiceValidationError("empty_api_key")
@@ -69,7 +69,7 @@ def setup(hass, config):
             CONF_PORT: port
         }
         try:
-            await validate_data(validate)
+            validate_data(validate)
         except ServiceValidationError as e:
             _LOGGER.error(f"Validation failed: {e}")
 
@@ -132,18 +132,23 @@ def setup(hass, config):
         session = async_get_clientsession(hass)
 
         if mode == "LocalAI":
-            response_text = await handle_localai_request(data_call, session, model, message, base64_image, ip_address, port)
+            response_text = await handle_localai_request(session, model, message, base64_image, ip_address, port)
 
         elif mode == "OpenAI":
-            response_text = await handle_openai_request(data_call, session, model, message, base64_image, api_key, max_tokens)
+            response_text = await handle_openai_request(session, model, message, base64_image, api_key, max_tokens)
 
         return {"response_text": response_text}
 
-    async def handle_localai_request(data_call, session, model, message, base64_image, ip_address, port):
+    async def handle_localai_request(session, model, message, base64_image, ip_address, port):
         data = {"model": model, "messages": [{"role": "user", "content": [{"type": "text", "text": message},
                                                                           {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}]}
-        response = await session.post(
-            f"http://{data_call.data.get(ip_address)}:{data_call.data.get(port)}/v1/chat/completions", json=data)
+        try:
+            response = await session.post(
+                f"http://{ip_address}:{port}/v1/chat/completions", json=data)
+        except Exception as e:
+            _LOGGER.error(f"Request failed: {e}")
+            raise ServiceValidationError(f"Request failed: {e}")
+
         if response.status != 200:
             raise ServiceValidationError(
                 f"Request failed with status code {response.status}")
@@ -151,13 +156,18 @@ def setup(hass, config):
             "message").get("content")
         return response_text
 
-    async def handle_openai_request(data_call, session, model, message, base64_image, api_key, max_tokens):
+    async def handle_openai_request(session, model, message, base64_image, api_key, max_tokens):
         headers = {'Content-type': 'application/json',
                    'Authorization': 'Bearer ' + api_key}
         data = {"model": model, "messages": [{"role": "user", "content": [{"type": "text", "text": message},
                                                                           {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}], "max_tokens": max_tokens}
-        response = await session.post(
-            "https://api.openai.com/v1/chat/completions", headers=headers, json=data)
+        try:
+            response = await session.post(
+                "https://api.openai.com/v1/chat/completions", headers=headers, json=data)
+        except Exception as e:
+            _LOGGER.error(f"Request failed: {e}")
+            raise ServiceValidationError(f"Request failed: {e}")
+
         if response.status != 200:
             raise ServiceValidationError(
                 (await response.json()).get('error').get('message'))

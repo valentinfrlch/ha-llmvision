@@ -12,9 +12,11 @@ This service sends an image to OpenAI using its API and returns the model's outp
 - The default model, GPT-4o, is cheaper and faster than GPT-4-turbo.
   - Any model capable of vision can be used. For available models check this page: [https://platform.openai.com/docs/models](https://platform.openai.com/docs/models).
 - This custom component can be installed through HACS and can be set up in the Home Assistant UI.
+
 ## API key
-**This service needs a valid API key**. You must obtain a valid OpenAI key from [here](https://platform.openai.com/api-keys).
-A pricing calculator is available here: [https://openai.com/api/pricing/](https://openai.com/api/pricing/).
+> [!IMPORTANT]  
+> **This service needs a valid API key**. You must obtain a valid OpenAI key from [here](https://platform.openai.com/api-keys).
+> A pricing calculator is available here: [https://openai.com/api/pricing/](https://openai.com/api/pricing/).
 
 # Installation
 ### Installation via HACS (recommended)
@@ -99,5 +101,7 @@ data:
     What is the person doing? Does anything look suspicious? Answer only with
     "yes" or "no".
 ```
-
-If you have any questions or suggestions, feel free to open an issue or a pull request.
+## Issues
+> [!NOTE]
+> **Bugs:** If you encounter any bugs and have read the docs carefully, feel free to file a bug report.  
+> **Feature Requests:** If you have an idea for a feature, file a feature request.
