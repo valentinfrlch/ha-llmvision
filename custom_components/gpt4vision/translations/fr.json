@@ -28,7 +28,8 @@
             "empty_mode": "Veuillez sélectionner un fournisseur.",
             "empty_ip_address": "L'adresse IP ne peut pas être vide",
             "empty_port": "Le port ne peut pas être vide",
-            "empty_api_key": "La clé API est requise."
+            "empty_api_key": "La clé API est requise.",
+            "handshake_failed": "Impossible de se connecter à serveur LocalAI. Veuillez vérifier l'adresse IP et le port.",
         }
     }
 }

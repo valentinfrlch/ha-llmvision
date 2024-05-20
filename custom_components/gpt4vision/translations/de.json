@@ -28,7 +28,8 @@
             "empty_mode": "Bitte wählen Sie einen Anbieter.",
             "empty_ip_address": "IP-Adresse darf nicht leer sein",
             "empty_port": "Port darf nicht leer sein",
-            "empty_api_key": "API-Schlüssel ist erforderlich."
+            "empty_api_key": "API-Schlüssel ist erforderlich.",
+            "handshake_failed": "Verbindung zum Server fehlgeschlagen. Bitte überprüfen Sie die IP-Adresse und den Port.",
         }
     }
 }
