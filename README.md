@@ -7,29 +7,31 @@ Image Analyzer for Home Assistant using GPT-4o.
 This service sends an image to OpenAI using its API and returns the model's output as a response variable, making it easy to use in automations.
 
 ## Features
-- Service returns the model's output as response variable. This makes the service more accessible for automations. See examples below for usage.
-- To reduce the cost of the API call, images can be downscaled to a target width.
-- The default model, GPT-4o, is cheaper and faster than GPT-4-turbo.
-  - Any model capable of vision can be used. For available models check this page: [https://platform.openai.com/docs/models](https://platform.openai.com/docs/models).
-- This custom component can be installed through HACS and can be set up in the Home Assistant UI.
+- Compatible with both OpenAI's API or [LocalAI](https://github.com/mudler/LocalAI).
+- Images can be downscaled for faster processing.
+- Can be installed through HACS and can be set up in the Home Assistant UI.
+
 
 ## API key
 > [!IMPORTANT]  
-> **This service needs a valid API key**. You must obtain a valid OpenAI key from [here](https://platform.openai.com/api-keys).
+> If you're planning on using **OpenAI's API** you'll **need an API key**. You must obtain a valid OpenAI key from [here](https://platform.openai.com/api-keys).
 > A pricing calculator is available here: [https://openai.com/api/pricing/](https://openai.com/api/pricing/).
+
 
 # Installation
 ### Installation via HACS (recommended)
 1. Add this repository's url (https://github.com/valentinfrlch/ha-gpt4vision) to HACS under custom repositories.
 2. Install through HACS
 3. Restart Home Assistant
-4. Add integration in Home Assistant Settings/Devices & services
-5. Provide your API key
+4. Search for `GPT-4 Vision` in Home Assistant Settings/Devices & services
+5. Select wheter you want to use OpenAI or your own LocalAI server for processesing
+   - For OpenAI's API provide your API key
+   - For LocalAI enter your IP address and port of your LocalAI server
 
 ### Manual Installation
 1. Download and copy folder **gpt4vision** to your **custom_components** folder.
 2. Add integration in Home Assistant Settings/Devices & services
-3. Provide your API key
+3. Provide your API key or IP address and port of your LocalAI server
 
 ## Service call and usage
 After restarting, the gpt4vision.image_analyzer service will be available. You can test it in the developer tools section in home assistant.
