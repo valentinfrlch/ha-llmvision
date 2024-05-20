@@ -1,5 +1,5 @@
 # Declare variables
-from .const import DOMAIN, CONF_API_KEY, CONF_MAXTOKENS, CONF_TARGET_WIDTH, CONF_MODEL, CONF_MESSAGE, CONF_IMAGE_FILE, CONF_MODE, CONF_IP_ADDRESS, CONF_PORT
+from .const import DOMAIN, CONF_PROVIDER, CONF_OPENAI_API_KEY, CONF_MAXTOKENS, CONF_TARGET_WIDTH, CONF_MODEL, CONF_MESSAGE, CONF_IMAGE_FILE, CONF_IP_ADDRESS, CONF_PORT
 import base64
 import io
 import os
@@ -14,38 +14,47 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, entry):
     """Set up gpt4vision from a config entry."""
-    # Get the API key from the configuration entry
-    mode = entry.data.get(CONF_MODE)
-    data = {"mode": mode}
+    # Get all entries from config flow
+    openai_api_key = entry.data.get(CONF_OPENAI_API_KEY)
+    ip_address = entry.data.get(CONF_IP_ADDRESS)
+    port = entry.data.get(CONF_PORT)
+
+    # Ensure DOMAIN exists in hass.data
+    if DOMAIN not in hass.data:
+        hass.data[DOMAIN] = {}
+
+    # Merge the new data with the existing data
+    hass.data[DOMAIN].update({
+        key: value
+        for key, value in {
+            CONF_OPENAI_API_KEY: openai_api_key,
+            CONF_IP_ADDRESS: ip_address,
+            CONF_PORT: port,
+        }.items()
+        if value is not None
+    })
+
+    return True
+
+def validate(mode, api_key, ip_address, port):
+    """Validate the configuration for the component
+
+    Args:
+        mode (string): "OpenAI" or "LocalAI"
+        api_key (string): OpenAI API key
+        ip_address (string): LocalAI server IP address
+        port (string): LocalAI server port
+
+    Raises:
+        ServiceValidationError: if configuration is invalid
+    """
 
     if mode == "OpenAI":
-        api_key = entry.data.get(CONF_API_KEY)
-        data[CONF_API_KEY] = api_key
-    else:
-        ip_address = entry.data.get(CONF_IP_ADDRESS)
-        port = entry.data.get(CONF_PORT)
-        # Add the IP address and port to the data dictionary
-        data[CONF_IP_ADDRESS] = ip_address
-        data[CONF_PORT] = port
-
-    # Store the data dictionary in hass.data
-    hass.data[DOMAIN] = data
-
-    return True
-
-
-def validate_data(data):
-    if data[CONF_MODE] == "OpenAI":
-        if not data[CONF_API_KEY]:
-            raise ServiceValidationError("empty_api_key")
-    elif data[CONF_MODE] == "LocalAI":
-        if not data[CONF_IP_ADDRESS]:
-            raise ServiceValidationError("empty_ip_address")
-        if not data[CONF_PORT]:
-            raise ServiceValidationError("empty_port")
-    else:
-        raise ServiceValidationError("empty_mode")
-    return True
+        if not api_key:
+            raise ServiceValidationError("openai_not_configured")
+    elif mode == "LocalAI":
+        if not ip_address or not port:
+            raise ServiceValidationError("localai_not_configured")
 
 
 def setup(hass, config):
@@ -57,29 +66,21 @@ def setup(hass, config):
         """
 
         # Read from configuration (hass.data)
-        api_key = hass.data.get(DOMAIN, {}).get(CONF_API_KEY)
+        api_key = hass.data.get(DOMAIN, {}).get(CONF_OPENAI_API_KEY)
         ip_address = hass.data.get(DOMAIN, {}).get(CONF_IP_ADDRESS)
         port = hass.data.get(DOMAIN, {}).get(CONF_PORT)
-        mode = hass.data.get(DOMAIN, {}).get(CONF_MODE)
-
-        validate = {
-            CONF_MODE: mode,
-            CONF_API_KEY: api_key,
-            CONF_IP_ADDRESS: ip_address,
-            CONF_PORT: port
-        }
-        try:
-            validate_data(validate)
-        except ServiceValidationError as e:
-            _LOGGER.error(f"Validation failed: {e}")
 
         # Read data from service call
-        # Resolution (width only) of the image. Example: 1280 for 720p etc.
-        target_width = data_call.data.get(CONF_TARGET_WIDTH, 1280)
-        # Local path to your image. Example: "/config/www/images/garage.jpg"
-        image_path = data_call.data.get(CONF_IMAGE_FILE)
+        mode = str(data_call.data.get(CONF_PROVIDER))
         # Message to be sent to AI model
         message = str(data_call.data.get(CONF_MESSAGE)[0:2000])
+        # Local path to your image. Example: "/config/www/images/garage.jpg"
+        image_path = data_call.data.get(CONF_IMAGE_FILE)
+        # Resolution (width only) of the image. Example: 1280 for 720p etc.
+        target_width = data_call.data.get(CONF_TARGET_WIDTH, 1280)
+        
+        # Validate configuration
+        validate(mode, api_key, ip_address, port)
 
         if mode == "OpenAI":
             # Maximum number of tokens used by model. Default is 100.

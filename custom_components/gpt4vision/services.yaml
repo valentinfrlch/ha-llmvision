@@ -1,5 +1,14 @@
 image_analyzer:
   fields:
+    provider:
+      description: 'Select Provider'
+      required: true
+      default: 'OpenAI'
+      selector:
+        select:
+          options:
+            - 'OpenAI'
+            - 'LocalAI'
     message:
       required: true
       example: "Describe the person present in the photo"
