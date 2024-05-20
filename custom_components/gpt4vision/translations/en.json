@@ -27,7 +27,7 @@
         "error": {
             "openai_not_configured": "OpenAI provider is not configured",
             "localai_not_configured": "LocalAI provider is not configured",
-            "handshake_failed": "Failed to connect to LocalAI server. Please check the IP address and port and try again."
+            "invalid_image_path": "Image not found. Check the path and try again."
         }
     }
 }

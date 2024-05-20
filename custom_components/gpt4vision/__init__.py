@@ -36,7 +36,8 @@ async def async_setup_entry(hass, entry):
 
     return True
 
-def validate(mode, api_key, ip_address, port):
+
+def validate(mode, api_key, ip_address, port, image_path):
     """Validate the configuration for the component
 
     Args:
@@ -55,6 +56,9 @@ def validate(mode, api_key, ip_address, port):
     elif mode == "LocalAI":
         if not ip_address or not port:
             raise ServiceValidationError("localai_not_configured")
+    # Check if image file exists
+    if not os.path.exists(image_path):
+        raise ServiceValidationError("invalid_image_path")
 
 
 def setup(hass, config):
@@ -78,9 +82,9 @@ def setup(hass, config):
         image_path = data_call.data.get(CONF_IMAGE_FILE)
         # Resolution (width only) of the image. Example: 1280 for 720p etc.
         target_width = data_call.data.get(CONF_TARGET_WIDTH, 1280)
-        
+
         # Validate configuration
-        validate(mode, api_key, ip_address, port)
+        validate(mode, api_key, ip_address, port, image_path)
 
         if mode == "OpenAI":
             # Maximum number of tokens used by model. Default is 100.
@@ -90,11 +94,6 @@ def setup(hass, config):
         if mode == "LocalAI":
             # GPT model: Default model is gpt-4-vision-preview for LocalAI
             model = str(data_call.data.get(CONF_MODEL, "gpt-4-vision-preview"))
-
-        # Check if image file exists
-        if not os.path.exists(image_path):
-            raise ServiceValidationError(
-                f"Image does not exist: {image_path}")
 
         def encode_image(image_path):
             """Encode image as base64
@@ -133,16 +132,16 @@ def setup(hass, config):
         session = async_get_clientsession(hass)
 
         if mode == "LocalAI":
-            response_text = await handle_localai_request(session, model, message, base64_image, ip_address, port)
+            response_text = await handle_localai_request(session, model, message, base64_image, ip_address, port, max_tokens)
 
         elif mode == "OpenAI":
             response_text = await handle_openai_request(session, model, message, base64_image, api_key, max_tokens)
 
         return {"response_text": response_text}
 
-    async def handle_localai_request(session, model, message, base64_image, ip_address, port):
+    async def handle_localai_request(session, model, message, base64_image, ip_address, port, max_tokens):
         data = {"model": model, "messages": [{"role": "user", "content": [{"type": "text", "text": message},
-                                                                          {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}]}
+                                                                          {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}], "max_tokens": max_tokens}
         try:
             response = await session.post(
                 f"http://{ip_address}:{port}/v1/chat/completions", json=data)
