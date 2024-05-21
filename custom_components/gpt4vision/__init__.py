@@ -4,14 +4,10 @@ from .request_handlers import handle_localai_request, handle_openai_request
 import base64
 import io
 import os
-import logging
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
 from PIL import Image
-
-_LOGGER = logging.getLogger(__name__)
-
 
 async def async_setup_entry(hass, entry):
     """Set up gpt4vision from a config entry."""
