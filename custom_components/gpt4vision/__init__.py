@@ -1,5 +1,6 @@
 # Declare variables
 from .const import DOMAIN, CONF_PROVIDER, CONF_OPENAI_API_KEY, CONF_MAXTOKENS, CONF_TARGET_WIDTH, CONF_MODEL, CONF_MESSAGE, CONF_IMAGE_FILE, CONF_IP_ADDRESS, CONF_PORT
+from .request_handlers import handle_localai_request, handle_openai_request
 import base64
 import io
 import os
@@ -87,13 +88,15 @@ def setup(hass, config):
         validate(mode, api_key, ip_address, port, image_path)
 
         if mode == "OpenAI":
-            # Maximum number of tokens used by model. Default is 100.
-            max_tokens = int(data_call.data.get(CONF_MAXTOKENS))
             # GPT model: Default model is gpt-4o for OpenAI
             model = str(data_call.data.get(CONF_MODEL, "gpt-4o"))
+            # Maximum number of tokens used by model. Default is 100.
+            max_tokens = int(data_call.data.get(CONF_MAXTOKENS))
         if mode == "LocalAI":
             # GPT model: Default model is gpt-4-vision-preview for LocalAI
             model = str(data_call.data.get(CONF_MODEL, "gpt-4-vision-preview"))
+            # Maximum number of tokens used by model. Default is 100.
+            max_tokens = int(data_call.data.get(CONF_MAXTOKENS))
 
         def encode_image(image_path):
             """Encode image as base64
@@ -138,42 +141,6 @@ def setup(hass, config):
             response_text = await handle_openai_request(session, model, message, base64_image, api_key, max_tokens)
 
         return {"response_text": response_text}
-
-    async def handle_localai_request(session, model, message, base64_image, ip_address, port, max_tokens):
-        data = {"model": model, "messages": [{"role": "user", "content": [{"type": "text", "text": message},
-                                                                          {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}], "max_tokens": max_tokens}
-        try:
-            response = await session.post(
-                f"http://{ip_address}:{port}/v1/chat/completions", json=data)
-        except Exception as e:
-            _LOGGER.error(f"Request failed: {e}")
-            raise ServiceValidationError(f"Request failed: {e}")
-
-        if response.status != 200:
-            raise ServiceValidationError(
-                f"Request failed with status code {response.status}")
-        response_text = (await response.json()).get("choices")[0].get(
-            "message").get("content")
-        return response_text
-
-    async def handle_openai_request(session, model, message, base64_image, api_key, max_tokens):
-        headers = {'Content-type': 'application/json',
-                   'Authorization': 'Bearer ' + api_key}
-        data = {"model": model, "messages": [{"role": "user", "content": [{"type": "text", "text": message},
-                                                                          {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}], "max_tokens": max_tokens}
-        try:
-            response = await session.post(
-                "https://api.openai.com/v1/chat/completions", headers=headers, json=data)
-        except Exception as e:
-            _LOGGER.error(f"Request failed: {e}")
-            raise ServiceValidationError(f"Request failed: {e}")
-
-        if response.status != 200:
-            raise ServiceValidationError(
-                (await response.json()).get('error').get('message'))
-        response_text = (await response.json()).get(
-            "choices")[0].get("message").get("content")
-        return response_text
 
     hass.services.register(
         DOMAIN, "image_analyzer", image_analyzer,
