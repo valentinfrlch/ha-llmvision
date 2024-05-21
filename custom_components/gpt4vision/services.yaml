@@ -28,7 +28,7 @@ image_analyzer:
       example: "/config/www/images/img.jpg"
       selector:
         text:
-          multiline: false
+          multiline: true
     model:
       required: false
       example: "gpt-4o"

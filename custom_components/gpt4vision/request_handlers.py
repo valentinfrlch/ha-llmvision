@@ -4,9 +4,12 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 
-async def handle_localai_request(session, model, message, base64_image, ip_address, port, max_tokens):
-    data = {"model": model, "messages": [{"role": "user", "content": [{"type": "text", "text": message},
-                                                                      {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}], "max_tokens": max_tokens}
+async def handle_localai_request(session, model, message, base64_images, ip_address, port, max_tokens):
+    data = {"model": model, "messages": [{"role": "user", "content": [{"type": "text", "text": message}]}], "max_tokens": max_tokens}
+    for image in base64_images:
+        data["messages"][0]["content"].append(
+            {"type": "image", "image": {"url": f"data:image/jpeg;base64,{image}"}})
+        
     try:
         response = await session.post(
             f"http://{ip_address}:{port}/v1/chat/completions", json=data)
@@ -22,11 +25,16 @@ async def handle_localai_request(session, model, message, base64_image, ip_addre
     return response_text
 
 
-async def handle_openai_request(session, model, message, base64_image, api_key, max_tokens):
+async def handle_openai_request(session, model, message, base64_images, api_key, max_tokens):
     headers = {'Content-type': 'application/json',
                'Authorization': 'Bearer ' + api_key}
-    data = {"model": model, "messages": [{"role": "user", "content": [{"type": "text", "text": message},
-                                                                      {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}], "max_tokens": max_tokens}
+    data = {"model": model, "messages": [{"role": "user", "content": [{"type": "text", "text": message}]}], "max_tokens": max_tokens}
+    
+    # Add the images to the request
+    for image in base64_images:
+        data["messages"][0]["content"].append(
+            {"type": "image", "image": {"url": f"data:image/jpeg;base64,{image}"}})
+        
     try:
         response = await session.post(
             "https://api.openai.com/v1/chat/completions", headers=headers, json=data)

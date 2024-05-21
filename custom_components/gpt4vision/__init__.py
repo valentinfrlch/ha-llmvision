@@ -38,7 +38,7 @@ async def async_setup_entry(hass, entry):
     return True
 
 
-def validate(mode, api_key, ip_address, port, image_path):
+def validate(mode, api_key, ip_address, port, image_paths):
     """Validate the configuration for the component
 
     Args:
@@ -58,8 +58,9 @@ def validate(mode, api_key, ip_address, port, image_path):
         if not ip_address or not port:
             raise ServiceValidationError("localai_not_configured")
     # Check if image file exists
-    if not os.path.exists(image_path):
-        raise ServiceValidationError("invalid_image_path")
+    for image_path in image_paths:
+        if not os.path.exists(image_path):
+            raise ServiceValidationError("invalid_image_path")
 
 
 def setup(hass, config):
@@ -81,11 +82,13 @@ def setup(hass, config):
         message = str(data_call.data.get(CONF_MESSAGE)[0:2000])
         # Local path to your image. Example: "/config/www/images/garage.jpg"
         image_path = data_call.data.get(CONF_IMAGE_FILE)
+        # create a list of image paths (separator: newline character)
+        image_paths = image_path.split("\n")
         # Resolution (width only) of the image. Example: 1280 for 720p etc.
         target_width = data_call.data.get(CONF_TARGET_WIDTH, 1280)
 
         # Validate configuration
-        validate(mode, api_key, ip_address, port, image_path)
+        validate(mode, api_key, ip_address, port, image_paths)
 
         if mode == "OpenAI":
             # GPT model: Default model is gpt-4o for OpenAI
@@ -110,13 +113,12 @@ def setup(hass, config):
 
             # Open the image file
             with Image.open(image_path) as img:
+                # calculate new height based on aspect ratio
                 width, height = img.size
                 aspect_ratio = width / height
                 target_height = int(target_width / aspect_ratio)
 
                 # Resize the image only if it's larger than the target size
-                # API call price is based on resolution. The smaller the image, the cheaper the call
-                # Check https://openai.com/api/pricing/ for information on pricing
                 if width > target_width or height > target_height:
                     img = img.resize((target_width, target_height))
 
@@ -128,17 +130,20 @@ def setup(hass, config):
 
             return base64_image
 
-        # Get the base64 string from the image
-        base64_image = encode_image(image_path)
+        # Get the base64 string from the images
+        base64_images = []
+        for image_path in image_paths:
+            base64_image = encode_image(image_path)
+            base64_images.append(base64_image)
 
         # Get the Home Assistant http client
         session = async_get_clientsession(hass)
 
         if mode == "LocalAI":
-            response_text = await handle_localai_request(session, model, message, base64_image, ip_address, port, max_tokens)
+            response_text = await handle_localai_request(session, model, message, base64_images, ip_address, port, max_tokens)
 
         elif mode == "OpenAI":
-            response_text = await handle_openai_request(session, model, message, base64_image, api_key, max_tokens)
+            response_text = await handle_openai_request(session, model, message, base64_images, api_key, max_tokens)
 
         return {"response_text": response_text}
 
