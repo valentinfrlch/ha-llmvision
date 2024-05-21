@@ -27,6 +27,8 @@
         "error": {
             "openai_not_configured": "OpenAI provider is not configured",
             "localai_not_configured": "LocalAI provider is not configured",
+            "invalid_image_path": "Image not found. Check the path and try again.",
+            "already_configured": "Provider is already configured. Delete the existing configuration to add a new one.",
             "handshake_failed": "Failed to connect to LocalAI server. Please check the IP address and port and try again."
         }
     }
