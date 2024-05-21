@@ -24,7 +24,7 @@ def validate_localai(user_input: dict):
     if not user_input[CONF_PORT]:
         raise ServiceValidationError("empty_port")
     # perform handshake with LocalAI server
-    if not handshake(user_input[CONF_IP_ADDRESS], user_input[CONF_PORT]):
+    if not validate_connection(user_input[CONF_IP_ADDRESS], user_input[CONF_PORT]):
         raise ServiceValidationError("handshake_failed")
 
 
@@ -34,7 +34,7 @@ def validate_openai(user_input: dict):
         raise ServiceValidationError("empty_api_key")
 
 
-def handshake(ip_address, port):
+def validate_connection(ip_address, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(1)  # One second timeout
     try:
@@ -64,8 +64,12 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self.init_info = user_input
             if user_input["provider"] == "LocalAI":
+                if DOMAIN in self.hass.data and CONF_IP_ADDRESS in self.hass.data[DOMAIN] and CONF_PORT in self.hass.data[DOMAIN]:
+                    return self.async_abort(reason="already_configured")
                 return await self.async_step_localai()
             else:
+                if DOMAIN in self.hass.data and CONF_OPENAI_API_KEY in self.hass.data[DOMAIN]:
+                    return self.async_abort(reason="already_configured")
                 return await self.async_step_openai()
 
         return self.async_show_form(
