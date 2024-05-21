@@ -45,12 +45,15 @@ service: gpt4vision.image_analyzer
 data:
   max_tokens: 100
   message: Describe what you see in this image
-  image_file: /config/www/tmp/example.jpg
+  image_file: |
+    /config/www/tmp/example.jpg
+    /config/www/tmp/example2.jpt
   provider: LocalAI
   model: gpt-4o
   target_width: 1280
 ```
-The parameters `message`, `max_tokens`m `image_file` and `provider` are required.
+The parameters `message`, `max_tokens`m `image_file` and `provider` are required. You can send multiple images per service call.
+Each path must be on a separate line.
 Optionally, the `model` and `target_width` properties can be set. For available models check these pages: [OpenAI](https://platform.openai.com/docs/models) and [LocalAI](https://localai.io/models/).
 
 ## Issues
