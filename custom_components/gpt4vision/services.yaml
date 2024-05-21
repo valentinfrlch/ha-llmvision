@@ -11,6 +11,7 @@ image_analyzer:
             - 'LocalAI'
     message:
       required: true
+      description: 'Prompt'
       example: "Describe the person present in the photo"
       selector:
         text:
@@ -25,12 +26,14 @@ image_analyzer:
           max: 1000
     image_file:
       required: true
+      description: 'The path to you image'
       example: "/config/www/images/img.jpg"
       selector:
         text:
           multiline: true
     model:
       required: false
+      description: 'Which model to use'
       example: "gpt-4o"
       default: "gpt-4o"
       selector:
@@ -38,6 +41,7 @@ image_analyzer:
           multiline: false
     target_width:
       required: false
+      description: 'Width (in px) to downscale to'
       example: 1280
       default: 1280
       selector:

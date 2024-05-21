@@ -25,11 +25,11 @@
             }
         },
         "error": {
-            "empty_mode": "Veuillez sélectionner un fournisseur.",
-            "empty_ip_address": "L'adresse IP ne peut pas être vide",
-            "empty_port": "Le port ne peut pas être vide",
-            "empty_api_key": "La clé API est requise.",
-            "handshake_failed": "Impossible de se connecter à serveur LocalAI. Veuillez vérifier l'adresse IP et le port.",
+            "openai_not_configured": "Le fournisseur OpenAI n'est pas configuré",
+            "localai_not_configured": "Le fournisseur LocalAI n'est pas configuré",
+            "invalid_image_path": "Image non trouvée. Vérifiez le chemin et essayez à nouveau.",
+            "already_configured": "Le fournisseur est déjà configuré. Supprimez la configuration existante pour en ajouter une nouvelle.",
+            "handshake_failed": "Échec de la connexion au serveur LocalAI. Veuillez vérifier l'adresse IP et le port et réessayer."
         }
     }
 }

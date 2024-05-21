@@ -2,8 +2,8 @@
     "config": {
         "step": {
             "user": {
-                "title": "Wählen Sie Ihren Anbieter",
-                "description": "Wählen Sie den Anbieter, den Sie für Ihre KI verwenden möchten.",
+                "title": "Wählen Sie Ihren Provider",
+                "description": "Wählen Sie den Anbieter den verwenden möchten.",
                 "data": {
                     "api_key": "Ihr API-Schlüssel"
                 }
@@ -25,11 +25,11 @@
             }
         },
         "error": {
-            "empty_mode": "Bitte wählen Sie einen Anbieter.",
-            "empty_ip_address": "IP-Adresse darf nicht leer sein",
-            "empty_port": "Port darf nicht leer sein",
-            "empty_api_key": "API-Schlüssel ist erforderlich.",
-            "handshake_failed": "Verbindung zum Server fehlgeschlagen. Bitte überprüfen Sie die IP-Adresse und den Port.",
+            "openai_not_configured": "OpenAI-Anbieter ist nicht konfiguriert",
+            "localai_not_configured": "LocalAI-Anbieter ist nicht konfiguriert",
+            "invalid_image_path": "Bild nicht gefunden. Überprüfen Sie den Pfad und versuchen Sie es erneut.",
+            "already_configured": "Anbieter ist bereits konfiguriert. Löschen Sie die vorhandene Konfiguration, um eine neue hinzuzufügen.",
+            "handshake_failed": "Verbindung zum LocalAI-Server fehlgeschlagen. Bitte überprüfen Sie die IP-Adresse und den Port und versuchen Sie es erneut."
         }
     }
 }

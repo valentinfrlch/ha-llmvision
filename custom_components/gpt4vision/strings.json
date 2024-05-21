@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Choose your provider",
-                "description": "Select the provider you want to use for your AI.",
+                "description": "Select the provider you want to use.",
                 "data": {
                     "api_key": "Your API key"
                 }
