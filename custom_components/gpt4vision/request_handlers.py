@@ -8,7 +8,7 @@ async def handle_localai_request(session, model, message, base64_images, ip_addr
     data = {"model": model, "messages": [{"role": "user", "content": [{"type": "text", "text": message}]}], "max_tokens": max_tokens}
     for image in base64_images:
         data["messages"][0]["content"].append(
-            {"type": "image", "image": {"url": f"data:image/jpeg;base64,{image}"}})
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image}"}})
         
     try:
         response = await session.post(
@@ -33,7 +33,7 @@ async def handle_openai_request(session, model, message, base64_images, api_key,
     # Add the images to the request
     for image in base64_images:
         data["messages"][0]["content"].append(
-            {"type": "image", "image": {"url": f"data:image/jpeg;base64,{image}"}})
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image}"}})
         
     try:
         response = await session.post(
