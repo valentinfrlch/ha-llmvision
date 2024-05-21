@@ -12,8 +12,8 @@ Supported providers are OpenAI and [LocalAI](https://github.com/mudler/LocalAI).
 - Images can be downscaled for faster processing.
 - Can be installed through HACS and can be set up in the Home Assistant UI.
 
-### Examples
-Check the [wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki/Usage-Examples) for examples on how you could use gpt4vision.
+## Resources
+Check the [wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki/Usage-Examples) for examples on how you could use gpt4vision or the [discussion](https://community.home-assistant.io/t/gpt-4o-vision-capabilities-in-home-assistant/729241) on the Home Assistant Community.
 
 ## API key
 > [!IMPORTANT]  
