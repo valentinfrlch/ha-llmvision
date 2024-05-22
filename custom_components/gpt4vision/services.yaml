@@ -50,7 +50,7 @@ image_analyzer:
           max: 3840
     temperature:
       required: true
-      description: 'Randomness. Lower is more accurate, higher more creative'
+      description: 'Randomness. Lower is more accurate, higher is more creative'
       example: 0.5
       default: 0.5
       selector:
