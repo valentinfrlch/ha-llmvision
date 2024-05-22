@@ -96,8 +96,8 @@ def setup(hass, config):
         # Resolution (width only) of the image. Example: 1280 for 720p etc.
         target_width = data_call.data.get(CONF_TARGET_WIDTH, 1280)
         # Temperature parameter. Default is 0.5
-        temperature = float(data_call.data.get(CONF_TEMPERATURE), 0.5)
-        
+        temperature = float(data_call.data.get(CONF_TEMPERATURE, 0.5))
+
         # Validate configuration
         validate(mode, api_key, ip_address, port, image_paths)
 
@@ -151,10 +151,10 @@ def setup(hass, config):
         session= async_get_clientsession(hass)
 
         if mode == "LocalAI":
-            response_text= await handle_localai_request(session, model, message, base64_images, ip_address, port, max_tokens, temperature, top_p)
+            response_text = await handle_localai_request(session, model, message, base64_images, ip_address, port, max_tokens, temperature)
 
         elif mode == "OpenAI":
-            response_text= await handle_openai_request(session, model, message, base64_images, api_key, max_tokens, temperature, top_p)
+            response_text = await handle_openai_request(session, model, message, base64_images, api_key, max_tokens, temperature)
 
         return {"response_text": response_text}
 
