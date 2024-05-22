@@ -75,7 +75,7 @@ data:
   target_width: 1280
   temperature: 0.5
 ```
-The parameters `message`, `max_tokens`, `image_file`, `provider` and `temperature` are required. You can send multiple images per service call. Note that each path must be on a new line and that sending multiple images may require higher `max_tokens` values for accurate results.
+The parameters `message`, `max_tokens`, `image_file`, `provider` and `temperature` are required. You can send multiple images per service call. Note that each path must be on a new line.
 
 Optionally, the `model` and `target_width` properties can be set. For available models check these pages: [OpenAI](https://platform.openai.com/docs/models) and [LocalAI](https://localai.io/models/).
 
