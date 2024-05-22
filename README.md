@@ -83,3 +83,11 @@ Optionally, the `model` and `target_width` properties can be set. For available 
 > [!NOTE]
 > **Bugs:** If you encounter any bugs and have followed the instructions carefully, feel free to file a bug report.  
 > **Feature Requests:** If you have an idea for a feature, create a feature request.
+><div align = left>
+>
+>[<kbd> <br> Go to Issues <br> </kbd>][KBD]
+>
+></div>
+>
+>[KBD]: https://github.com/valentinfrlch/ha-gpt4vision/issues
+
