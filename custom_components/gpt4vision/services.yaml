@@ -1,12 +1,23 @@
 image_analyzer:
   fields:
+    provider:
+      description: 'Select Provider'
+      required: true
+      default: 'OpenAI'
+      selector:
+        select:
+          options:
+            - 'OpenAI'
+            - 'LocalAI'
     message:
       required: true
+      description: 'Prompt'
       example: "Describe the person present in the photo"
       selector:
         text:
           multiline: true
     max_tokens:
+      description: 'Maximum number of tokens to generate'
       required: true
       example: 100
       default: 100
@@ -16,12 +27,14 @@ image_analyzer:
           max: 1000
     image_file:
       required: true
+      description: 'The path to you image'
       example: "/config/www/images/img.jpg"
       selector:
         text:
-          multiline: false
+          multiline: true
     model:
       required: false
+      description: 'Which model to use'
       example: "gpt-4o"
       default: "gpt-4o"
       selector:
@@ -29,9 +42,20 @@ image_analyzer:
           multiline: false
     target_width:
       required: false
+      description: 'Width in pixels to downscale to'
       example: 1280
       default: 1280
       selector:
         number:
           min: 640
           max: 3840
+    temperature:
+      required: true
+      description: 'Randomness. Lower is more accurate, higher is more creative'
+      example: 0.5
+      default: 0.5
+      selector:
+        number:
+          min: 0.0
+          max: 1.0
+          step: 0.1

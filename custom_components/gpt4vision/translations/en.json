@@ -2,12 +2,34 @@
     "config": {
         "step": {
             "user": {
-                "title": "Add API key",
-                "description": "Provide your API key. See docs for more information.",
+                "title": "Choose your provider",
+                "description": "Select the provider you want to use for your AI.",
+                "data": {
+                    "api_key": "Your API key"
+                }
+            },
+            "localai": {
+                "title": "Connect to your LocalAI server",
+                "description": "Provide the IP address and port of your LocalAI server.",
+                "data": {
+                    "localai_ip": "IP address",
+                    "localai_port": "Port"
+                }
+            },
+            "openai": {
+                "title": "Add OpenAI API key",
+                "description": "Provide a valid OpenAI API key.",
                 "data": {
                     "api_key": "Your API key"
                 }
             }
+        },
+        "error": {
+            "openai_not_configured": "OpenAI provider is not configured",
+            "localai_not_configured": "LocalAI provider is not configured",
+            "invalid_image_path": "Image not found. Check the path and try again.",
+            "already_configured": "Provider is already configured. Delete the existing configuration to add a new one.",
+            "handshake_failed": "Failed to connect to LocalAI server. Please check the IP address and port and try again."
         }
     }
 }

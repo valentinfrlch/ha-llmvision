@@ -2,12 +2,34 @@
     "config": {
         "step": {
             "user": {
-                "title": "API key hinzufügen",
-                "description": "Kopieren Sie Ihren API key. Weitere Informationen finden Sie in den docs.",
+                "title": "Wählen Sie Ihren Provider",
+                "description": "Wählen Sie den Anbieter den verwenden möchten.",
                 "data": {
-                    "api_key": "Ihr API key"
+                    "api_key": "Ihr API-Schlüssel"
+                }
+            },
+            "localai": {
+                "title": "Verbinden Sie sich mit Ihrem LocalAI-Server",
+                "description": "Geben Sie die IP-Adresse und den Port Ihres LocalAI-Servers an.",
+                "data": {
+                    "localai_ip": "IP-Adresse",
+                    "localai_port": "Port"
+                }
+            },
+            "openai": {
+                "title": "Fügen Sie den OpenAI-API-Schlüssel hinzu",
+                "description": "Geben Sie einen gültigen OpenAI-API-Schlüssel an.",
+                "data": {
+                    "api_key": "Ihr API-Schlüssel"
                 }
             }
+        },
+        "error": {
+            "openai_not_configured": "OpenAI-Anbieter ist nicht konfiguriert",
+            "localai_not_configured": "LocalAI-Anbieter ist nicht konfiguriert",
+            "invalid_image_path": "Bild nicht gefunden. Überprüfen Sie den Pfad und versuchen Sie es erneut.",
+            "already_configured": "Anbieter ist bereits konfiguriert. Löschen Sie die vorhandene Konfiguration, um eine neue hinzuzufügen.",
+            "handshake_failed": "Verbindung zum LocalAI-Server fehlgeschlagen. Bitte überprüfen Sie die IP-Adresse und den Port und versuchen Sie es erneut."
         }
     }
 }

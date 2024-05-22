@@ -1,35 +1,62 @@
 # GPT-4 Vision for Home Assistant
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
+<p align=center>
+<img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
+<img src=https://img.shields.io/badge/version-0.3.0-blue>
+<a href="https://github.com/valentinfrlch/ha-gpt4vision/issues">
+      <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-gpt4vision?color=0088ff" />
+    </a>
+    <p align=center style="font-weight:bold">
+      Image Analyzer for Home Assistant using GPT-4o.
+    </p>
+</p>
 
-Image Analyzer for Home Assistant using GPT-4o.
+  <p align="center">
+    <a href="#features">🌟 Features </a>
+    ·
+    <a href="#resources">📖 Resources</a>
+    ·
+    <a href="#installation">⬇️ Installation</a>
+    ·
+    <a href="#service-call-and-usage">▶️ Usage</a>
+    ·
+    <a href="#how-to-report-a-bug-or-request-a-feature">🪲 How to report Bugs</a>
+    
+  </p>
 
 **ha-gpt4vision** creates the `gpt4vision.image_analyzer` service in Home Assistant.
-This service sends an image to OpenAI using its API and returns the model's output as a response variable, making it easy to use in automations.
+This service sends an image to an AI provider and returns the output as a response variable for easy use in automations.
+Supported providers are OpenAI and [LocalAI](https://github.com/mudler/LocalAI).
 
 ## Features
-- Service returns the model's output as response variable. This makes the service more accessible for automations. See examples below for usage.
-- To reduce the cost of the API call, images can be downscaled to a target width.
-- The default model, GPT-4o, is cheaper and faster than GPT-4-turbo.
-  - Any model capable of vision can be used. For available models check this page: [https://platform.openai.com/docs/models](https://platform.openai.com/docs/models).
-- This custom component can be installed through HACS and can be set up in the Home Assistant UI.
+- Multimodal conversation with AI models
+- Compatible with both OpenAI's API and [LocalAI](https://github.com/mudler/LocalAI)
+- Images can be downscaled for faster processing
+- Can be installed and updated through HACS and can be set up in the Home Assistant UI
+
+## Resources
+Check the [wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki/Usage-Examples) for examples on how you can integrate gpt4vision into your Home Assistant or join the [discussion](https://community.home-assistant.io/t/gpt-4o-vision-capabilities-in-home-assistant/729241) in the Home Assistant Community.
 
 ## API key
 > [!IMPORTANT]  
-> **This service needs a valid API key**. You must obtain a valid OpenAI key from [here](https://platform.openai.com/api-keys).
-> A pricing calculator is available here: [https://openai.com/api/pricing/](https://openai.com/api/pricing/).
+> If you're planning on using **OpenAI's API** you'll **need an API key**. You must obtain a valid OpenAI key from [here](https://platform.openai.com/api-keys).
+
+A pricing calculator is available here: [https://openai.com/api/pricing/](https://openai.com/api/pricing/).
+
 
 # Installation
 ### Installation via HACS (recommended)
 1. Add this repository's url (https://github.com/valentinfrlch/ha-gpt4vision) to HACS under custom repositories.
 2. Install through HACS
 3. Restart Home Assistant
-4. Add integration in Home Assistant Settings/Devices & services
-5. Provide your API key
+4. Search for `GPT-4 Vision` in Home Assistant Settings/Devices & services
+5. Select wheter you want to use OpenAI or your own LocalAI server for processesing
+   - For OpenAI's API provide your API key
+   - For LocalAI enter your IP address and port of your LocalAI server
 
 ### Manual Installation
-1. Download and copy folder **gpt4vision** to your **custom_components** folder.
+1. Download and copy the **gpt4vision** folder into your **custom_components** folder.
 2. Add integration in Home Assistant Settings/Devices & services
-3. Provide your API key
+3. Provide your API key or IP address and port of your LocalAI server
 
 ## Service call and usage
 After restarting, the gpt4vision.image_analyzer service will be available. You can test it in the developer tools section in home assistant.
@@ -38,70 +65,20 @@ To get GPT's analysis of a local image, use the following service call.
 ```yaml
 service: gpt4vision.image_analyzer
 data:
-  message: '[Prompt message for AI]'
-  model: '[model]'
-  image_file: '[path for image file]'
-  target_width: [Target width for image downscaling]
-  max_tokens: [maximum number of tokens]'
-```
-The parameters `message`, `max_tokens` and `image_file` are mandatory for the execution of the service.
-Optionally, the `model` and the `target_width` can be set. For available models check this page: https://platform.openai.com/docs/models.
-
-## Automation Example
-In automations, if your response variable name is `response`, you can access the response as `{{response.response_text}}`:
-```yaml
-sequence:
-  - service: gpt4vision.image_analyzer
-    metadata: {}
-    data:
-      message: Describe the person in the image
-      image_file: /config/www/tmp/test.jpg
-      max_tokens: 100
-    response_variable: response
-  - service: tts.speak
-    metadata: {}
-    data:
-      cache: true
-      media_player_entity_id: media_player.entity_id
-      message: "{{response.response_text}}"
-    target:
-      entity_id: tts.tts_entity
-```
-
-## Usage Examples
-### Example 1: Announcement for package delivery
-If your camera doesn't support built-in delivery announcements, this is likely the easiest way to get them without running an object detection model.
-
-```yaml
-service: gpt4vision.image_analyzer
-data:
   max_tokens: 100
+  message: Describe what you see
+  image_file: |-
+    /config/www/tmp/example.jpg
+    /config/www/tmp/example2.jpg
+  provider: LocalAI
   model: gpt-4o
   target_width: 1280
-  image_file: '/config/www/tmp/front_porch.jpg'
-  message: >-
-    Does it look like the person is delivering a package? Answer with only "yes"
-    or "no".
-    # Answer: yes
 ```
-<img alt="man delivering package" src="https://github.com/valentinfrlch/ha-gpt4vision/assets/85313672/ab615fd5-25b5-4e07-9c44-b10ec7a678c0">
+The parameters `message`, `max_tokens`, `image_file` and `provider` are required. You can send multiple images per service call. Note that each path must be on a new line and that sending multiple images may require higher `max_tokens` values for accurate results.
 
-### Example 2: Suspicious behaviour
-An automation could be triggered if a person is detected around the house when no one is home.
-![suspicious behaviour](https://github.com/valentinfrlch/ha-gpt4vision/assets/85313672/411678c4-f344-4eeb-9eb2-b78484a4d872)
+Optionally, the `model` and `target_width` properties can be set. For available models check these pages: [OpenAI](https://platform.openai.com/docs/models) and [LocalAI](https://localai.io/models/).
 
-```
-service: gpt4vision.image_analyzer
-data:
-  max_tokens: 100
-  model: gpt-4o
-  target_width: 1280
-  image_file: '/config/www/tmp/garage.jpg'
-  message: >-
-    What is the person doing? Does anything look suspicious? Answer only with
-    "yes" or "no".
-```
-## Issues
+## How to report a bug or request a feature
 > [!NOTE]
-> **Bugs:** If you encounter any bugs and have read the docs carefully, feel free to file a bug report.  
-> **Feature Requests:** If you have an idea for a feature, file a feature request.
+> **Bugs:** If you encounter any bugs and have followed the instructions carefully, feel free to file a bug report.  
+> **Feature Requests:** If you have an idea for a feature, create a feature request.
