@@ -71,7 +71,7 @@ data:
     /config/www/tmp/example.jpg
     /config/www/tmp/example2.jpg
   provider: LocalAI
-  model: gpt-4o
+  model: gpt-4-vision-preview
   target_width: 1280
 ```
 The parameters `message`, `max_tokens`, `image_file` and `provider` are required. You can send multiple images per service call. Note that each path must be on a new line and that sending multiple images may require higher `max_tokens` values for accurate results.
