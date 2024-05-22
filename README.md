@@ -6,7 +6,7 @@
       <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-gpt4vision?color=0088ff" />
     </a>
     <p align=center style="font-weight:bold">
-      Image Analyzer for Home Assistant using GPT-4o.
+      Image Analyzer for Home Assistant using GPT Vision
     </p>
 </p>
 
