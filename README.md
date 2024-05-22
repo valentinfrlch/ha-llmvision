@@ -85,9 +85,9 @@ Optionally, the `model` and `target_width` properties can be set. For available 
 > **Feature Requests:** If you have an idea for a feature, create a feature request.
 ><div align = left>
 >
->[<kbd> <br> Go to Issues <br> </kbd>][KBD]
+>[<kbd> <br> Create new Issue <br> </kbd>][KBD]
 >
 ></div>
 >
->[KBD]: https://github.com/valentinfrlch/ha-gpt4vision/issues
+>[KBD]: https://github.com/valentinfrlch/ha-gpt4vision/issues/new/choose
 
