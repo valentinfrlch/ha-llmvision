@@ -1,10 +1,10 @@
 from homeassistant import config_entries
 from homeassistant.helpers.selector import selector
 from homeassistant.exceptions import ServiceValidationError
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .const import DOMAIN, CONF_OPENAI_API_KEY, CONF_IP_ADDRESS, CONF_PORT
 import voluptuous as vol
 import logging
-import requests
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ async def validate_mode(user_input: dict):
         raise ServiceValidationError("empty_mode")
 
 
-def validate_localai(user_input: dict):
+async def validate_localai(hass, user_input: dict):
     # check CONF_IP_ADDRESS is not empty
     if not user_input[CONF_IP_ADDRESS]:
         raise ServiceValidationError("empty_ip_address")
@@ -24,7 +24,7 @@ def validate_localai(user_input: dict):
     if not user_input[CONF_PORT]:
         raise ServiceValidationError("empty_port")
     # perform handshake with LocalAI server
-    if not validate_connection(user_input[CONF_IP_ADDRESS], user_input[CONF_PORT]):
+    if not await validate_connection(hass, user_input[CONF_IP_ADDRESS], user_input[CONF_PORT]):
         raise ServiceValidationError("handshake_failed")
 
 
@@ -34,15 +34,16 @@ def validate_openai(user_input: dict):
         raise ServiceValidationError("empty_api_key")
 
 
-def validate_connection(ip_address, port):
+async def validate_connection(hass, ip_address, port):
+    session = async_get_clientsession(hass)
     url = f'http://{ip_address}:{port}/readyz'
     try:
-        response = requests.get(url)
-        if response.status_code == 200:
+        response = await session.get(url)
+        if response.status == 200:
             return True
         else:
             return False
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         return False
 
 
@@ -87,7 +88,7 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                validate_localai(user_input)
+                validate_localai(self.hass, user_input)
                 # add the mode to user_input
                 return self.async_create_entry(title="GPT4Vision LocalAI", data=user_input)
             except ServiceValidationError as e:
