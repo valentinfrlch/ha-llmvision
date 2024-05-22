@@ -4,7 +4,7 @@ from homeassistant.exceptions import ServiceValidationError
 from .const import DOMAIN, CONF_OPENAI_API_KEY, CONF_IP_ADDRESS, CONF_PORT
 import voluptuous as vol
 import logging
-import socket
+import requests
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,13 +35,14 @@ def validate_openai(user_input: dict):
 
 
 def validate_connection(ip_address, port):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(1)  # One second timeout
+    url = f'http://{ip_address}:{port}/readyz'
     try:
-        sock.connect((ip_address, port))
-        sock.close()
-        return True
-    except socket.error:
+        response = requests.get(url)
+        if response.status_code == 200:
+            return True
+        else:
+            return False
+    except requests.exceptions.RequestException as e:
         return False
 
 
