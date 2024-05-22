@@ -41,10 +41,19 @@ image_analyzer:
           multiline: false
     target_width:
       required: false
-      description: 'Width (in px) to downscale to'
+      description: 'Width in pixels to downscale to'
       example: 1280
       default: 1280
       selector:
         number:
           min: 640
           max: 3840
+    temperature:
+      required: true
+      description: 'Randomness. Lower is more accurate, higher more creative'
+      example: 0.5
+      default: 0.5
+      selector:
+        number:
+          min: 0
+          max: 1

@@ -1,5 +1,17 @@
 # Declare variables
-from .const import DOMAIN, CONF_PROVIDER, CONF_OPENAI_API_KEY, CONF_MAXTOKENS, CONF_TARGET_WIDTH, CONF_MODEL, CONF_MESSAGE, CONF_IMAGE_FILE, CONF_IP_ADDRESS, CONF_PORT
+from .const import (
+    DOMAIN,
+    CONF_PROVIDER,
+    CONF_OPENAI_API_KEY,
+    CONF_MAXTOKENS,
+    CONF_TARGET_WIDTH,
+    CONF_MODEL,
+    CONF_MESSAGE,
+    CONF_IMAGE_FILE,
+    CONF_IP_ADDRESS,
+    CONF_PORT,
+    CONF_TEMPERATURE
+)
 from .request_handlers import handle_localai_request, handle_openai_request
 import base64
 import io
@@ -8,6 +20,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
 from PIL import Image
+
 
 async def async_setup_entry(hass, entry):
     """Set up gpt4vision from a config entry."""
@@ -82,20 +95,22 @@ def setup(hass, config):
         image_paths = image_path.split("\n")
         # Resolution (width only) of the image. Example: 1280 for 720p etc.
         target_width = data_call.data.get(CONF_TARGET_WIDTH, 1280)
-
+        # Temperature parameter. Default is 0.5
+        temperature = float(data_call.data.get(CONF_TEMPERATURE), 0.5)
+        
         # Validate configuration
         validate(mode, api_key, ip_address, port, image_paths)
 
         if mode == "OpenAI":
             # GPT model: Default model is gpt-4o for OpenAI
-            model = str(data_call.data.get(CONF_MODEL, "gpt-4o"))
+            model= str(data_call.data.get(CONF_MODEL, "gpt-4o"))
             # Maximum number of tokens used by model. Default is 100.
-            max_tokens = int(data_call.data.get(CONF_MAXTOKENS))
+            max_tokens= int(data_call.data.get(CONF_MAXTOKENS))
         if mode == "LocalAI":
             # GPT model: Default model is gpt-4-vision-preview for LocalAI
-            model = str(data_call.data.get(CONF_MODEL, "gpt-4-vision-preview"))
+            model= str(data_call.data.get(CONF_MODEL, "gpt-4-vision-preview"))
             # Maximum number of tokens used by model. Default is 100.
-            max_tokens = int(data_call.data.get(CONF_MAXTOKENS))
+            max_tokens= int(data_call.data.get(CONF_MAXTOKENS))
 
         def encode_image(image_path):
             """Encode image as base64
@@ -110,42 +125,42 @@ def setup(hass, config):
             # Open the image file
             with Image.open(image_path) as img:
                 # calculate new height based on aspect ratio
-                width, height = img.size
-                aspect_ratio = width / height
-                target_height = int(target_width / aspect_ratio)
+                width, height= img.size
+                aspect_ratio= width / height
+                target_height= int(target_width / aspect_ratio)
 
                 # Resize the image only if it's larger than the target size
                 if width > target_width or height > target_height:
-                    img = img.resize((target_width, target_height))
+                    img= img.resize((target_width, target_height))
 
                 # Convert the image to base64
-                img_byte_arr = io.BytesIO()
+                img_byte_arr= io.BytesIO()
                 img.save(img_byte_arr, format='JPEG')
-                base64_image = base64.b64encode(
+                base64_image= base64.b64encode(
                     img_byte_arr.getvalue()).decode('utf-8')
 
             return base64_image
 
         # Get the base64 string from the images
-        base64_images = []
+        base64_images= []
         for image_path in image_paths:
-            base64_image = encode_image(image_path)
+            base64_image= encode_image(image_path)
             base64_images.append(base64_image)
 
         # Get the Home Assistant http client
-        session = async_get_clientsession(hass)
+        session= async_get_clientsession(hass)
 
         if mode == "LocalAI":
-            response_text = await handle_localai_request(session, model, message, base64_images, ip_address, port, max_tokens)
+            response_text= await handle_localai_request(session, model, message, base64_images, ip_address, port, max_tokens, temperature, top_p)
 
         elif mode == "OpenAI":
-            response_text = await handle_openai_request(session, model, message, base64_images, api_key, max_tokens)
+            response_text= await handle_openai_request(session, model, message, base64_images, api_key, max_tokens, temperature, top_p)
 
         return {"response_text": response_text}
 
     hass.services.register(
         DOMAIN, "image_analyzer", image_analyzer,
-        supports_response=SupportsResponse.ONLY
+        supports_response = SupportsResponse.ONLY
     )
 
     return True
