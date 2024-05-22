@@ -78,8 +78,6 @@ The parameters `message`, `max_tokens`, `image_file` and `provider` are required
 
 Optionally, the `model` and `target_width` properties can be set. For available models check these pages: [OpenAI](https://platform.openai.com/docs/models) and [LocalAI](https://localai.io/models/).
 
-
-
 ## How to report a bug or request a feature
 > [!NOTE]
 > **Bugs:** If you encounter any bugs and have followed the instructions carefully, feel free to file a bug report.  
