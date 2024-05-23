@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Choose your provider",
-                "description": "Select the provider you want to use for your AI.",
+                "description": "Select the provider you want to use.",
                 "data": {
                     "api_key": "Your API key"
                 }
@@ -11,6 +11,14 @@
             "localai": {
                 "title": "Connect to your LocalAI server",
                 "description": "Provide the IP address and port of your LocalAI server.",
+                "data": {
+                    "localai_ip": "IP address",
+                    "localai_port": "Port"
+                }
+            },
+            "ollama": {
+                "title": "Connect to your Ollama server",
+                "description": "Provide the IP address and port of your Ollama server.",
                 "data": {
                     "localai_ip": "IP address",
                     "localai_port": "Port"
@@ -27,6 +35,7 @@
         "error": {
             "openai_not_configured": "OpenAI provider is not configured",
             "localai_not_configured": "LocalAI provider is not configured",
+            "ollama_not_configured": "Ollama provider is not configured",
             "invalid_image_path": "Image not found. Check the path and try again.",
             "already_configured": "Provider is already configured. Delete the existing configuration to add a new one.",
             "handshake_failed": "Failed to connect to LocalAI server. Please check the IP address and port and try again."
