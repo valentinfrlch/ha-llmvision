@@ -61,9 +61,8 @@ async def handle_openai_request(session, model, message, base64_images, api_key,
         "choices")[0].get("message").get("content")
     return response_text
 
+
 async def handle_ollama_request(session, model, message, base64_images, ip_address, port, max_tokens, temperature):
-    
-    # TODO: Add temperature and max_tokens to the request
     data = {
         "model": model,
         "messages": [
@@ -72,7 +71,12 @@ async def handle_ollama_request(session, model, message, base64_images, ip_addre
                 "content": message,
                 "images": []
             }
-        ]
+        ],
+        "stream": False,
+        "options": {
+            "max_tokens": max_tokens,
+            "temperature": temperature
+        }
     }
     
     for image in base64_images:
@@ -88,6 +92,6 @@ async def handle_ollama_request(session, model, message, base64_images, ip_addre
     if response.status != 200:
         raise ServiceValidationError(
             f"Request failed with status code {response.status}")
-    response_text = (await response.json()).get("choices")[0].get(
+    response_text = (await response.json()).get(
         "message").get("content")
     return response_text
