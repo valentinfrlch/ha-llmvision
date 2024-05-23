@@ -76,7 +76,7 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required("provider", default="OpenAI"): selector({
                 "select": {
-                    "options": ["OpenAI", "LocalAI"],
+                    "options": ["OpenAI", "LocalAI", "Ollama"],
                     "mode": "dropdown",
                     "sort": True,
                     "custom_value": False
