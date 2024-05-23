@@ -93,6 +93,7 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             elif user_input[CONF_PROVIDER] == "Ollama":
                 if DOMAIN in self.hass.data and CONF_OLLAMA_IP_ADDRESS in self.hass.data[DOMAIN] and CONF_OLLAMA_PORT in self.hass.data[DOMAIN]:
                     return self.async_abort(reason="already_configured")
+                return await self.async_step_ollama()
             else:
                 if DOMAIN in self.hass.data and CONF_OPENAI_API_KEY in self.hass.data[DOMAIN]:
                     return self.async_abort(reason="already_configured")
