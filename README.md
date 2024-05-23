@@ -6,7 +6,7 @@
       <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-gpt4vision?color=0088ff" />
     </a>
     <p align=center style="font-weight:bold">
-      Image Analyzer for Home Assistant using GPT-4o.
+      Image Analyzer for Home Assistant using GPT Vision
     </p>
 </p>
 
@@ -71,10 +71,11 @@ data:
     /config/www/tmp/example.jpg
     /config/www/tmp/example2.jpg
   provider: LocalAI
-  model: gpt-4o
+  model: gpt-4-vision-preview
   target_width: 1280
+  temperature: 0.5
 ```
-The parameters `message`, `max_tokens`, `image_file` and `provider` are required. You can send multiple images per service call. Note that each path must be on a new line and that sending multiple images may require higher `max_tokens` values for accurate results.
+The parameters `message`, `max_tokens`, `image_file`, `provider` and `temperature` are required. You can send multiple images per service call. Note that each path must be on a new line.
 
 Optionally, the `model` and `target_width` properties can be set. For available models check these pages: [OpenAI](https://platform.openai.com/docs/models) and [LocalAI](https://localai.io/models/).
 
@@ -82,3 +83,11 @@ Optionally, the `model` and `target_width` properties can be set. For available 
 > [!NOTE]
 > **Bugs:** If you encounter any bugs and have followed the instructions carefully, feel free to file a bug report.  
 > **Feature Requests:** If you have an idea for a feature, create a feature request.
+><div align = left>
+>
+>[<kbd> <br> Create new Issue <br> </kbd>][KBD]
+>
+></div>
+>
+>[KBD]: https://github.com/valentinfrlch/ha-gpt4vision/issues/new/choose
+
