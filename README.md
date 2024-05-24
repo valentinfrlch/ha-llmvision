@@ -36,13 +36,6 @@ Supported providers are OpenAI and [LocalAI](https://github.com/mudler/LocalAI).
 ## Resources
 Check the [wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki/Usage-Examples) for examples on how you can integrate gpt4vision into your Home Assistant or join the [discussion](https://community.home-assistant.io/t/gpt-4o-vision-capabilities-in-home-assistant/729241) in the Home Assistant Community.
 
-## API key
-> [!IMPORTANT]  
-> If you're planning on using **OpenAI's API** you'll **need an API key**. You must obtain a valid OpenAI key from [here](https://platform.openai.com/api-keys).
-
-A pricing calculator is available here: [https://openai.com/api/pricing/](https://openai.com/api/pricing/).
-
-
 # Installation
 ### Installation via HACS (recommended)
 1. Add this repository's url (https://github.com/valentinfrlch/ha-gpt4vision) to HACS under custom repositories.
@@ -57,6 +50,59 @@ A pricing calculator is available here: [https://openai.com/api/pricing/](https:
 1. Download and copy the **gpt4vision** folder into your **custom_components** folder.
 2. Add integration in Home Assistant Settings/Devices & services
 3. Provide your API key or IP address and port of your LocalAI server
+
+
+## Provider specific setup
+### OpenAI
+Simply obtain an API key from [OpenAI](https://platform.openai.com/api-keys) and enter it in the Home Assistant UI during setup.  
+A pricing calculator is available here: [https://openai.com/api/pricing/](https://openai.com/api/pricing/).
+
+
+### LocalAI
+To use LocalAI, you need to have a LocalAI server running. You can find the installation instructions [here](https://localai.io/basics/getting_started/).  During setup you'll need to provide the IP address of your machine and the port on which LocalAI is running (default is 8000).
+
+### Ollama
+---
+To use Ollama you need to install Ollama. You can download it from [here](https://ollama.com/). Once installed you need to run the following command to download the `llava` model:
+```bash
+ollama run llava
+```
+If your Home Assistant is **not** running on the same machine as Ollama, you need to set the `OLLAMA_HOST` environment variable.
+
+**On Linux:**
+1. Edit the systemd service by calling systemctl edit ollama.service. This will open an editor.
+2. For each environment variable, add a line Environment under section [Service]:
+
+```
+[Service]
+Environment="OLLAMA_HOST=0.0.0.0"
+```
+3. Save and close the editor.
+4. Reload systemd and restart Ollama
+```bash
+systemctl daemon-reload
+systemctl restart ollama
+```
+
+**On Windows:**
+1. Quit Ollama from the system tray
+2. Open File Explorer
+3. Right click on This PC and select Properties
+4. Click on Advanced system settings
+5. Select Environment Variables
+6. Under User variables click New
+7. For variable name enter `OLLAMA_HOST` and for value enter 0.0.0.0
+8. Click OK and start Ollama again from the Start Menu
+
+**On macOS:**
+1. Open Terminal
+2. Run the following command
+```bash
+launchctl setenv OLLAMA_HOST "0.0.0.0"
+```
+3. Restart Ollama
+
+<br>
 
 ## Service call and usage
 After restarting, the gpt4vision.image_analyzer service will be available. You can test it in the developer tools section in home assistant.

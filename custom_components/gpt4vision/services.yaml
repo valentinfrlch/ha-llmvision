@@ -9,6 +9,7 @@ image_analyzer:
           options:
             - 'OpenAI'
             - 'LocalAI'
+            - 'Ollama'
     message:
       required: true
       description: 'Prompt'
