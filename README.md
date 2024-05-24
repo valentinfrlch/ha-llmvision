@@ -63,11 +63,11 @@ To use LocalAI, you need to have a LocalAI server running. You can find the inst
 
 ### Ollama
 ---
-To use Ollama you need to install Ollama. You can download it from [here](https://ollama.com/). Once installed you need to run the following command to download the `llava` model:
+To use Ollama you first need to install Ollama on your machine. You can download it from [here](https://ollama.com/). Once installed you need to run the following command to download the `llava` model:
 ```bash
 ollama run llava
 ```
-If your Home Assistant is **not** running on the same machine as Ollama, you need to set the `OLLAMA_HOST` environment variable.
+If your Home Assistant is **not** running on the same computer as Ollama, you need to set the `OLLAMA_HOST` environment variable.
 
 **On Linux:**
 1. Edit the systemd service by calling systemctl edit ollama.service. This will open an editor.
