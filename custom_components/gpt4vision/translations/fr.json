@@ -40,7 +40,7 @@
             "handshake_failed": "Échec de la connexion au serveur LocalAI. Veuillez vérifier l'adresse IP et le port et réessayer."
         },
         "abort": {
-            "already_configured": "Le fournisseur est déjà configuré. Supprimez la configuration existante pour en ajouter une nouvelle.",
+            "already_configured": "Le fournisseur est déjà configuré. Supprimez la configuration existante pour en ajouter une nouvelle."
         }
     }
 }
