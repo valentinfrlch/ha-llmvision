@@ -1,4 +1,4 @@
-# GPT-4 Vision for Home Assistant
+<h1 align=center> GPT-4 Vision for Home Assistant </h1>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
 <img src=https://img.shields.io/badge/version-0.3.0-blue>
