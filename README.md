@@ -70,7 +70,7 @@ ollama run llava
 If your Home Assistant is **not** running on the same computer as Ollama, you need to set the `OLLAMA_HOST` environment variable.
 
 **On Linux:**
-1. Edit the systemd service by calling systemctl edit ollama.service. This will open an editor.
+1. Edit the systemd service by calling `systemctl edit ollama.service`. This will open an editor.
 2. For each environment variable, add a line Environment under section [Service]:
 
 ```
