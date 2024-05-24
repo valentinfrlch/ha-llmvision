@@ -113,7 +113,7 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                validate_localai(self.hass, user_input)
+                await validate_localai(self.hass, user_input)
                 # add the mode to user_input
                 return self.async_create_entry(title="GPT4Vision LocalAI", data=user_input)
             except ServiceValidationError as e:
@@ -136,7 +136,7 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                validate_ollama(self.hass, user_input)
+                await validate_ollama(self.hass, user_input)
                 # add the mode to user_input
                 return self.async_create_entry(title="GPT4Vision Ollama", data=user_input)
             except ServiceValidationError as e:

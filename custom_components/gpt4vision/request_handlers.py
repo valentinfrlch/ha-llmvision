@@ -80,7 +80,7 @@ async def handle_ollama_request(session, model, message, base64_images, ip_addre
     }
     
     for image in base64_images:
-        data["messages"][0]["images"].append({image})
+        data["messages"][0]["images"].append(image)
 
     try:
         response = await session.post(
