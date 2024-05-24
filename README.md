@@ -62,7 +62,8 @@ A pricing calculator is available here: [https://openai.com/api/pricing/](https:
 To use LocalAI, you need to have a LocalAI server running. You can find the installation instructions [here](https://localai.io/basics/getting_started/).  During setup you'll need to provide the IP address of your machine and the port on which LocalAI is running (default is 8000).
 
 ### Ollama
-To use Ollama you need to install Ollama. You can download it from [here](https://ollama.com/). Once downloaded you need to run the following command to download the `llava` model:
+---
+To use Ollama you need to install Ollama. You can download it from [here](https://ollama.com/). Once installed you need to run the following command to download the `llava` model:
 ```bash
 ollama run llava
 ```
