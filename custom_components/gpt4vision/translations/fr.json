@@ -16,6 +16,14 @@
                     "localai_port": "Port"
                 }
             },
+            "ollama": {
+                "title": "Connectez-vous à votre serveur Ollama",
+                "description": "Fournissez l'adresse IP et le port de votre serveur Ollama.",
+                "data": {
+                    "localai_ip": "Adresse IP",
+                    "localai_port": "Port"
+                }
+            },
             "openai": {
                 "title": "Ajoutez la clé API OpenAI",
                 "description": "Fournissez une clé API OpenAI valide.",
@@ -27,9 +35,12 @@
         "error": {
             "openai_not_configured": "Le fournisseur OpenAI n'est pas configuré",
             "localai_not_configured": "Le fournisseur LocalAI n'est pas configuré",
+            "ollama_not_configured": "Le fournisseur Ollama n'est pas configuré",
             "invalid_image_path": "Image non trouvée. Vérifiez le chemin et essayez à nouveau.",
-            "already_configured": "Le fournisseur est déjà configuré. Supprimez la configuration existante pour en ajouter une nouvelle.",
             "handshake_failed": "Échec de la connexion au serveur LocalAI. Veuillez vérifier l'adresse IP et le port et réessayer."
+        },
+        "abort": {
+            "already_configured": "Le fournisseur est déjà configuré. Supprimez la configuration existante pour en ajouter une nouvelle.",
         }
     }
 }
