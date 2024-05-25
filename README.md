@@ -25,11 +25,11 @@
 
 **ha-gpt4vision** creates the `gpt4vision.image_analyzer` service in Home Assistant.
 This service sends an image to an AI provider and returns the output as a response variable for easy use in automations.
-Supported providers are OpenAI and [LocalAI](https://github.com/mudler/LocalAI).
+Supported providers are OpenAI, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/).
 
 ## Features
 - Multimodal conversation with AI models
-- Compatible with both OpenAI's API and [LocalAI](https://github.com/mudler/LocalAI)
+- Compatible with OpenAI's API, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/)
 - Images can be downscaled for faster processing
 - Can be installed and updated through HACS and can be set up in the Home Assistant UI
 
@@ -38,11 +38,9 @@ Check the [wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki/Usage-Examp
 
 # Installation
 ### Installation via HACS (recommended)
-1. Add this repository's url (https://github.com/valentinfrlch/ha-gpt4vision) to HACS under custom repositories.
-2. Install through HACS
-3. Restart Home Assistant
-4. Search for `GPT-4 Vision` in Home Assistant Settings/Devices & services
-5. Select wheter you want to use OpenAI or your own LocalAI server for processesing
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=valentinfrlch&repository=ha-gpt4vision&category=Integration)
+1. Search for `GPT-4 Vision` in Home Assistant Settings/Devices & services
+2. Select wheter you want to use OpenAI or your own LocalAI server for processesing
    - For OpenAI's API provide your API key
    - For LocalAI enter your IP address and port of your LocalAI server
 
