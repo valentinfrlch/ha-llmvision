@@ -34,7 +34,7 @@ Supported providers are OpenAI, [LocalAI](https://github.com/mudler/LocalAI) and
 - Can be installed and updated through HACS and can be set up in the Home Assistant UI
 
 ## Resources
-Check the [wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki/Usage-Examples) for examples on how you can integrate gpt4vision into your Home Assistant or join the [discussion](https://community.home-assistant.io/t/gpt-4o-vision-capabilities-in-home-assistant/729241) in the Home Assistant Community.
+Check the [wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki) for examples on how you can integrate gpt4vision into your Home Assistant or join the [discussion](https://community.home-assistant.io/t/gpt-4o-vision-capabilities-in-home-assistant/729241) in the Home Assistant Community.
 
 # Installation
 ### Installation via HACS (recommended)
