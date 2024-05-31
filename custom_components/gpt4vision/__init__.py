@@ -1,18 +1,19 @@
 # Declare variables
 from .const import (
     DOMAIN,
-    CONF_PROVIDER,
     CONF_OPENAI_API_KEY,
-    CONF_MAXTOKENS,
-    CONF_TARGET_WIDTH,
-    CONF_MODEL,
-    CONF_MESSAGE,
-    CONF_IMAGE_FILE,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
     CONF_OLLAMA_IP_ADDRESS,
     CONF_OLLAMA_PORT,
-    CONF_TEMPERATURE
+    PROVIDER,
+    MAXTOKENS,
+    TARGET_WIDTH,
+    MODEL,
+    MESSAGE,
+    IMAGE_FILE,
+    TEMPERATURE,
+    DETAIL
 )
 from .request_handlers import (
     handle_localai_request,
@@ -22,10 +23,13 @@ from .request_handlers import (
 import base64
 import io
 import os
+import logging
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
 from PIL import Image
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry):
@@ -103,30 +107,32 @@ def setup(hass, config):
         ollama_port = hass.data.get(DOMAIN, {}).get(CONF_OLLAMA_PORT)
 
         # Read data from service call
-        mode = str(data_call.data.get(CONF_PROVIDER))
+        mode = str(data_call.data.get(PROVIDER))
         # Message to be sent to AI model
-        message = str(data_call.data.get(CONF_MESSAGE)[0:2000])
+        message = str(data_call.data.get(MESSAGE)[0:2000])
         # Local path to your image. Example: "/config/www/images/garage.jpg"
-        image_path = data_call.data.get(CONF_IMAGE_FILE)
+        image_path = data_call.data.get(IMAGE_FILE)
         # create a list of image paths (separator: newline character)
         image_paths = image_path.split("\n")
         # Resolution (width only) of the image. Example: 1280 for 720p etc.
-        target_width = data_call.data.get(CONF_TARGET_WIDTH, 1280)
+        target_width = data_call.data.get(TARGET_WIDTH, 1280)
         # Temperature parameter. Default is 0.5
-        temperature = float(data_call.data.get(CONF_TEMPERATURE, 0.5))
+        temperature = float(data_call.data.get(TEMPERATURE, 0.5))
         # Maximum number of tokens used by model. Default is 100.
-        max_tokens = int(data_call.data.get(CONF_MAXTOKENS))
+        max_tokens = int(data_call.data.get(MAXTOKENS))
+        # Detail one of ["high", "low", "auto"] default is "auto"
+        detail = str(data_call.data.get(DETAIL, "auto"))
 
         # Validate configuration and input data and set model
         if mode == 'OpenAI':
             validate(mode, api_key, image_paths)
-            model = str(data_call.data.get(CONF_MODEL, "gpt-4o"))
+            model = str(data_call.data.get(MODEL, "gpt-4o"))
         elif mode == 'LocalAI':
             validate(mode, None, image_paths, localai_ip_address, localai_port)
-            model = str(data_call.data.get(CONF_MODEL, "gpt-4-vision-preview"))
+            model = str(data_call.data.get(MODEL, "gpt-4-vision-preview"))
         elif mode == 'Ollama':
             validate(mode, None, image_paths, ollama_ip_address, ollama_port)
-            model = str(data_call.data.get(CONF_MODEL, "llava"))
+            model = str(data_call.data.get(MODEL, "llava"))
             
 
         def encode_image(image_path):
@@ -171,7 +177,7 @@ def setup(hass, config):
             response_text = await handle_localai_request(session, model, message, base64_images, localai_ip_address, localai_port, max_tokens, temperature)
 
         elif mode == "OpenAI":
-            response_text = await handle_openai_request(session, model, message, base64_images, api_key, max_tokens, temperature)
+            response_text = await handle_openai_request(session, model, message, base64_images, api_key, max_tokens, temperature, detail)
 
         elif mode == 'Ollama':
             response_text = await handle_ollama_request(session, model, message, base64_images, ollama_ip_address, ollama_port, max_tokens, temperature)

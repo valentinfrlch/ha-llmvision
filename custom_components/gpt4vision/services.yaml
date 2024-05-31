@@ -50,6 +50,15 @@ image_analyzer:
         number:
           min: 640
           max: 3840
+    detail:
+      required: false
+      description: "Detail parameter (OpenAI only), leave empty for 'auto'"
+      default: 'high'
+      selector:
+        select:
+          options:
+            - 'high'
+            - 'low'
     temperature:
       required: true
       description: 'Randomness. Lower is more accurate, higher is more creative'

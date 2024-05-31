@@ -31,7 +31,7 @@ async def handle_localai_request(session, model, message, base64_images, ip_addr
     return response_text
 
 
-async def handle_openai_request(session, model, message, base64_images, api_key, max_tokens, temperature):
+async def handle_openai_request(session, model, message, base64_images, api_key, max_tokens, temperature, detail):
     headers = {'Content-type': 'application/json',
                'Authorization': 'Bearer ' + api_key}
     data = {"model": model,
@@ -45,7 +45,7 @@ async def handle_openai_request(session, model, message, base64_images, api_key,
     # Add the images to the request
     for image in base64_images:
         data["messages"][0]["content"].append(
-            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image}"}})
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image}", "detail": detail}})
 
     try:
         response = await session.post(
