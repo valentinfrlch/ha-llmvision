@@ -40,9 +40,8 @@ Check the [📖 wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki) for e
 ### Installation via HACS (recommended)
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=valentinfrlch&repository=ha-gpt4vision&category=Integration)
 1. Search for `GPT-4 Vision` in Home Assistant Settings/Devices & services
-2. Select wheter you want to use OpenAI or your own LocalAI server for processesing
-   - For OpenAI's API provide your API key
-   - For LocalAI enter your IP address and port of your LocalAI server
+2. Select your provider
+3. Follow the instructions to complete setup
 
 ### Manual Installation
 1. Download and copy the **gpt4vision** folder into your **custom_components** folder.
