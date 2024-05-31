@@ -1,7 +1,7 @@
-# GPT-4 Vision for Home Assistant
+<h1 align=center> GPT-4 Vision for Home Assistant </h1>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
-<img src=https://img.shields.io/badge/version-0.3.0-blue>
+<img src=https://img.shields.io/badge/version-0.3.5-blue>
 <a href="https://github.com/valentinfrlch/ha-gpt4vision/issues">
       <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-gpt4vision?color=0088ff" />
     </a>
@@ -25,26 +25,23 @@
 
 **ha-gpt4vision** creates the `gpt4vision.image_analyzer` service in Home Assistant.
 This service sends an image to an AI provider and returns the output as a response variable for easy use in automations.
-Supported providers are OpenAI and [LocalAI](https://github.com/mudler/LocalAI).
+Supported providers are OpenAI, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/).
 
 ## Features
 - Multimodal conversation with AI models
-- Compatible with both OpenAI's API and [LocalAI](https://github.com/mudler/LocalAI)
+- Compatible with OpenAI's API, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/)
 - Images can be downscaled for faster processing
 - Can be installed and updated through HACS and can be set up in the Home Assistant UI
 
 ## Resources
-Check the [wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki/Usage-Examples) for examples on how you can integrate gpt4vision into your Home Assistant or join the [discussion](https://community.home-assistant.io/t/gpt-4o-vision-capabilities-in-home-assistant/729241) in the Home Assistant Community.
+Check the [📖 wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki) for examples on how you can integrate gpt4vision into your Home Assistant or join the [🗨️ discussion](https://community.home-assistant.io/t/gpt-4o-vision-capabilities-in-home-assistant/729241) in the Home Assistant Community.
 
 # Installation
 ### Installation via HACS (recommended)
-1. Add this repository's url (https://github.com/valentinfrlch/ha-gpt4vision) to HACS under custom repositories.
-2. Install through HACS
-3. Restart Home Assistant
-4. Search for `GPT-4 Vision` in Home Assistant Settings/Devices & services
-5. Select wheter you want to use OpenAI or your own LocalAI server for processesing
-   - For OpenAI's API provide your API key
-   - For LocalAI enter your IP address and port of your LocalAI server
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=valentinfrlch&repository=ha-gpt4vision&category=Integration)
+1. Search for `GPT-4 Vision` in Home Assistant Settings/Devices & services
+2. Select your provider
+3. Follow the instructions to complete setup
 
 ### Manual Installation
 1. Download and copy the **gpt4vision** folder into your **custom_components** folder.
@@ -63,14 +60,14 @@ To use LocalAI, you need to have a LocalAI server running. You can find the inst
 
 ### Ollama
 ---
-To use Ollama you need to install Ollama. You can download it from [here](https://ollama.com/). Once installed you need to run the following command to download the `llava` model:
+To use Ollama you first need to install Ollama on your machine. You can download it from [here](https://ollama.com/). Once installed you need to run the following command to download the `llava` model:
 ```bash
 ollama run llava
 ```
-If your Home Assistant is **not** running on the same machine as Ollama, you need to set the `OLLAMA_HOST` environment variable.
+If your Home Assistant is **not** running on the same computer as Ollama, you need to set the `OLLAMA_HOST` environment variable.
 
 **On Linux:**
-1. Edit the systemd service by calling systemctl edit ollama.service. This will open an editor.
+1. Edit the systemd service by calling `systemctl edit ollama.service`. This will open an editor.
 2. For each environment variable, add a line Environment under section [Service]:
 
 ```
