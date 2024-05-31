@@ -108,20 +108,23 @@ To get GPT's analysis of a local image, use the following service call.
 ```yaml
 service: gpt4vision.image_analyzer
 data:
+  provider: OpenAI
+  message: Describe what you see?
   max_tokens: 100
-  message: Describe what you see
+  model: gpt-4o
   image_file: |-
     /config/www/tmp/example.jpg
     /config/www/tmp/example2.jpg
-  provider: LocalAI
-  model: gpt-4-vision-preview
   target_width: 1280
+  detail: low
   temperature: 0.5
 ```
-The parameters `message`, `max_tokens`, `image_file`, `provider` and `temperature` are required. You can send multiple images per service call. Note that each path must be on a new line.
+The parameters `provider`, `message`, `max_tokens`, `image_file` and `temperature` are required. You can send multiple images per service call. Note that each path must be on a new line.
 
-Optionally, the `model` and `target_width` properties can be set. For available models check these pages: [OpenAI](https://platform.openai.com/docs/models) and [LocalAI](https://localai.io/models/).
-
+Optionally, the `model`, `target_width` and `detail` properties can be set.  
+- For available **models** check these pages: [supported models for OpenAI](https://platform.openai.com/docs/models) and [LocalAI model gallery](https://localai.io/models/).
+- The **target_width** is an integer between 640 and 3840 representing the image width in pixels. It is used to downscale the image before encoding it.
+- The **detail** parameter can be set to `low` or `high`. If it is not set, it is set to 'auto'. OpenAI will then use the image size to determine the detail level. For more information check the [OpenAI documentation](https://platform.openai.com/docs/guides/vision/low-or-high-fidelity-image-understanding).
 ## How to report a bug or request a feature
 > [!NOTE]
 > **Bugs:** If you encounter any bugs and have followed the instructions carefully, feel free to file a bug report.  

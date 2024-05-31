@@ -3,8 +3,7 @@ from homeassistant.helpers.selector import selector
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .const import (
-    DOMAIN, 
-    CONF_PROVIDER,
+    DOMAIN,
     CONF_OPENAI_API_KEY, 
     CONF_LOCALAI_IP_ADDRESS, 
     CONF_LOCALAI_PORT,
@@ -19,7 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def validate_mode(user_input: dict):
     # check CONF_MODE is not empty
-    if not user_input[CONF_PROVIDER]:
+    if not user_input["provider"]:
         raise ServiceValidationError("empty_mode")
 
 
@@ -33,6 +32,7 @@ async def validate_localai(hass, user_input: dict):
         raise ServiceValidationError("empty_port")
     # perform handshake with LocalAI server
     if not await validate_connection(hass, user_input[CONF_LOCALAI_IP_ADDRESS], user_input[CONF_LOCALAI_PORT], "/readyz"):
+        _LOGGER.error("Could not connect to LocalAI server.")
         raise ServiceValidationError("handshake_failed")
 
 
@@ -46,12 +46,14 @@ async def validate_ollama(hass, user_input: dict):
         raise ServiceValidationError("empty_port")
     # perform handshake with LocalAI server
     if not await validate_connection(hass, user_input[CONF_OLLAMA_IP_ADDRESS], user_input[CONF_OLLAMA_PORT], "/api/tags"):
+        _LOGGER.error("Could not connect to Ollama server.")
         raise ServiceValidationError("handshake_failed")
 
 
 def validate_openai(user_input: dict):
     # check CONF_API_KEY is not empty
     if not user_input[CONF_OPENAI_API_KEY]:
+        _LOGGER.error("OpenAI API key is empty.")
         raise ServiceValidationError("empty_api_key")
 
 
@@ -65,6 +67,7 @@ async def validate_connection(hass, ip_address, port, endpoint, expected_status=
         else:
             return False
     except Exception as e:
+        _LOGGER.error(f"Could not connect to {url}: {e}")
         return False
 
 
@@ -86,16 +89,19 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             self.init_info = user_input
-            if user_input[CONF_PROVIDER] == "LocalAI":
+            if user_input["provider"] == "LocalAI":
                 if DOMAIN in self.hass.data and CONF_LOCALAI_IP_ADDRESS in self.hass.data[DOMAIN] and CONF_LOCALAI_PORT in self.hass.data[DOMAIN]:
+                    _LOGGER.error("LocalAI already configured.")
                     return self.async_abort(reason="already_configured")
                 return await self.async_step_localai()
-            elif user_input[CONF_PROVIDER] == "Ollama":
+            elif user_input["provider"] == "Ollama":
                 if DOMAIN in self.hass.data and CONF_OLLAMA_IP_ADDRESS in self.hass.data[DOMAIN] and CONF_OLLAMA_PORT in self.hass.data[DOMAIN]:
+                    _LOGGER.error("Ollama already configured.")
                     return self.async_abort(reason="already_configured")
                 return await self.async_step_ollama()
             else:
                 if DOMAIN in self.hass.data and CONF_OPENAI_API_KEY in self.hass.data[DOMAIN]:
+                    _LOGGER.error("OpenAI already configured.")
                     return self.async_abort(reason="already_configured")
                 return await self.async_step_openai()
 
@@ -117,6 +123,7 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # add the mode to user_input
                 return self.async_create_entry(title="GPT4Vision LocalAI", data=user_input)
             except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
                     step_id="localai",
                     data_schema=data_schema,
@@ -140,6 +147,7 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # add the mode to user_input
                 return self.async_create_entry(title="GPT4Vision Ollama", data=user_input)
             except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
                     step_id="ollama",
                     data_schema=data_schema,
@@ -163,6 +171,7 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 user_input["provider"] = self.init_info["provider"]
                 return self.async_create_entry(title="GPT4Vision OpenAI", data=user_input)
             except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
                     step_id="openai",
                     data_schema=data_schema,
