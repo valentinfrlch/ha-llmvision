@@ -1,7 +1,7 @@
 <h1 align=center> GPT-4 Vision for Home Assistant </h1>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
-<img src=https://img.shields.io/badge/version-0.3.5-blue>
+<img src=https://img.shields.io/badge/version-0.3.6-blue>
 <a href="https://github.com/valentinfrlch/ha-gpt4vision/issues">
       <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-gpt4vision?color=0088ff" />
     </a>
