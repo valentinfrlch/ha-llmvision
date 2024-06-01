@@ -48,7 +48,7 @@ image_analyzer:
       default: 1280
       selector:
         number:
-          min: 640
+          min: 512
           max: 3840
     detail:
       required: false
