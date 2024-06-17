@@ -14,7 +14,11 @@ from .const import (
     IMAGE_FILE,
     IMAGE_ENTITY,
     TEMPERATURE,
-    DETAIL
+    DETAIL,
+    ERROR_OPENAI_NOT_CONFIGURED,
+    ERROR_LOCALAI_NOT_CONFIGURED,
+    ERROR_OLLAMA_NOT_CONFIGURED,
+    ERROR_NO_IMAGE_INPUT
 )
 from .request_handlers import (
     handle_localai_request,
@@ -62,7 +66,7 @@ async def async_setup_entry(hass, entry):
     return True
 
 
-def validate(mode, api_key, image_paths, image_data, ip_address=None, port=None):
+def validate(mode, api_key, base64_images, ip_address=None, port=None):
     """Validate the configuration for the component
 
     Args:
@@ -77,30 +81,18 @@ def validate(mode, api_key, image_paths, image_data, ip_address=None, port=None)
     # Checks for OpenAI
     if mode == 'OpenAI':
         if not api_key:
-            raise ServiceValidationError("openai_not_configured")
+            raise ServiceValidationError(ERROR_OPENAI_NOT_CONFIGURED)
     # Checks for LocalAI
     elif mode == 'LocalAI':
         if not ip_address or not port:
-            raise ServiceValidationError("localai_not_configured")
+            raise ServiceValidationError(ERROR_LOCALAI_NOT_CONFIGURED)
     # Checks for Ollama
     elif mode == 'Ollama':
         if not ip_address or not port:
-            raise ServiceValidationError("ollama_not_configured")
+            raise ServiceValidationError(ERROR_OLLAMA_NOT_CONFIGURED)
     # File path validation
-    # check if either image_data or image_paths is provided
-    if not image_data and not image_paths:
-        raise ServiceValidationError("no_image_input")
-    if image_data:
-        # check if image_data is a valid image
-        try:
-            Image.open(image_data)
-        except:
-            raise ServiceValidationError("invalid_image_data")
-
-    if image_paths:
-        for image_path in image_paths:
-            if not os.path.exists(image_path):
-                raise ServiceValidationError("invalid_image_path")
+    if base64_images == []:
+        raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
 
 
 def setup(hass, config):
@@ -116,9 +108,7 @@ def setup(hass, config):
             async with async_get_clientsession(hass) as session:
                 async with session.get(image_url, ssl=False) as response:
                     image_data = await response.read()
-            # encode the image data as base64
-            encoded_image = encode_image(image_data=image_data)
-            return encoded_image
+            return image_data
 
         def encode_image(image_path=None, image_data=None):
             """Encode image as base64
@@ -170,52 +160,47 @@ def setup(hass, config):
         # Read data from service call
         mode = str(data_call.data.get(PROVIDER))
         message = str(data_call.data.get(MESSAGE)[0:2000])
-        image_paths = data_call.data.get(IMAGE_FILE, "").split("\n")
-        image_entity = data_call.data.get(IMAGE_ENTITY, "")
+        image_paths = data_call.data.get(IMAGE_FILE, "").split(
+            "\n") if data_call.data.get(IMAGE_FILE) else None
+        image_entities = data_call.data.get(IMAGE_ENTITY)
         target_width = data_call.data.get(TARGET_WIDTH, 1280)
         temperature = float(data_call.data.get(TEMPERATURE, 0.5))
         max_tokens = int(data_call.data.get(MAXTOKENS))
         detail = str(data_call.data.get(DETAIL, "auto"))
 
-        # If an image entity is specified, get the image data from the entity
-        if image_entity:
-            image_data_list = []
-            for cur_entity in image_entity:
-                image_url = "https://localhost:8123" + hass.states.get(
-                    cur_entity).attributes.get('entity_picture')
-                # make a GET request to the image entity with the built-in aiohttp client
-                image_data = await download_image(image_url)
-                image_data_list.append(image_data)
+        base64_images = []
+        if image_paths:
+            for image_path in image_paths:
+                try:
+                    image_path = image_path.strip()
+                    if not os.path.exists(image_path):
+                        raise ServiceValidationError(
+                            f"File {image_path} does not exist")
+                    base64_image = encode_image(image_path=image_path)
+                    base64_images.append(base64_image)
+                except Exception as e:
+                    raise ServiceValidationError(f"Error: {e}")
 
-        else:
-            # Local path to your image. Example: "/config/www/images/garage.jpg"
-            image_paths = data_call.data.get(IMAGE_FILE).split("\n")
-            image_path = image_paths[0]  # Use the first image path
+        if image_entities:
+            for image_entity in image_entities:
+                image_url = "https://localhost:8123" + hass.states.get(
+                    image_entity).attributes.get('entity_picture')
+                image_data = await download_image(image_url)
+            base64_image = encode_image(image_data=image_data)
+            base64_images.append(base64_image)
 
         # Validate configuration and input data and set model
         if mode == 'OpenAI':
-            validate(mode, api_key, image_paths, image_data)
+            validate(mode, api_key, base64_images)
             model = str(data_call.data.get(MODEL, "gpt-4o"))
         elif mode == 'LocalAI':
-            validate(mode, None, image_paths, image_data,
+            validate(mode, None, base64_images,
                      localai_ip_address, localai_port)
             model = str(data_call.data.get(MODEL, "gpt-4-vision-preview"))
         elif mode == 'Ollama':
-            validate(mode, None, image_paths, image_data,
+            validate(mode, None, base64_images,
                      ollama_ip_address, ollama_port)
             model = str(data_call.data.get(MODEL, "llava"))
-
-
-        # Get the base64 string from the images
-        base64_images = []
-        if image_path:
-            for image_path in image_paths:
-                base64_image = encode_image(image_path=image_path)
-                base64_images.append(base64_image)
-
-        elif image_data:
-            base64_image = encode_image(image_data=image_data)
-            base64_images.append(base64_image)
 
         # Get the Home Assistant http client
         session = async_get_clientsession(hass)

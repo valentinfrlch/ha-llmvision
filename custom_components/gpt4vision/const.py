@@ -20,3 +20,10 @@ IMAGE_FILE = 'image_file'
 IMAGE_ENTITY = 'image_entity'
 TEMPERATURE = 'temperature'
 DETAIL = 'detail'
+
+# Error messages
+ERROR_OPENAI_NOT_CONFIGURED = "OpenAI provider is not configured"
+ERROR_LOCALAI_NOT_CONFIGURED = "LocalAI provider is not configured"
+ERROR_OLLAMA_NOT_CONFIGURED = "Ollama provider is not configured"
+ERROR_NO_IMAGE_INPUT = "No image input. Either provide image_file path or image_entity"
+ERROR_HANDSHAKE_FAILED = "Handshake with LocalAI server failed"
