@@ -28,8 +28,9 @@ This service sends an image to an AI provider and returns the output as a respon
 Supported providers are OpenAI, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/).
 
 ## Features
-- Multimodal conversation with AI models
+- Multimodal, natural language conversation in Home Assistant
 - Compatible with OpenAI's API, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/)
+- Integrates with Frigate and other integrations that provide image entities
 - Images can be downscaled for faster processing
 - Can be installed and updated through HACS and can be set up in the Home Assistant UI
 
