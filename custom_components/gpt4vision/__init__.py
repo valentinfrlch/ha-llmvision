@@ -12,8 +12,13 @@ from .const import (
     MODEL,
     MESSAGE,
     IMAGE_FILE,
+    IMAGE_ENTITY,
     TEMPERATURE,
-    DETAIL
+    DETAIL,
+    ERROR_OPENAI_NOT_CONFIGURED,
+    ERROR_LOCALAI_NOT_CONFIGURED,
+    ERROR_OLLAMA_NOT_CONFIGURED,
+    ERROR_NO_IMAGE_INPUT
 )
 from .request_handlers import (
     handle_localai_request,
@@ -61,7 +66,7 @@ async def async_setup_entry(hass, entry):
     return True
 
 
-def validate(mode, api_key, image_paths, ip_address=None, port=None):
+def validate(mode, api_key, base64_images, ip_address=None, port=None):
     """Validate the configuration for the component
 
     Args:
@@ -76,66 +81,36 @@ def validate(mode, api_key, image_paths, ip_address=None, port=None):
     # Checks for OpenAI
     if mode == 'OpenAI':
         if not api_key:
-            raise ServiceValidationError("openai_not_configured")
+            raise ServiceValidationError(ERROR_OPENAI_NOT_CONFIGURED)
     # Checks for LocalAI
     elif mode == 'LocalAI':
         if not ip_address or not port:
-            raise ServiceValidationError("localai_not_configured")
+            raise ServiceValidationError(ERROR_LOCALAI_NOT_CONFIGURED)
     # Checks for Ollama
     elif mode == 'Ollama':
         if not ip_address or not port:
-            raise ServiceValidationError("ollama_not_configured")
+            raise ServiceValidationError(ERROR_OLLAMA_NOT_CONFIGURED)
     # File path validation
-    for image_path in image_paths:
-        if not os.path.exists(image_path):
-            raise ServiceValidationError("invalid_image_path")
+    if base64_images == []:
+        raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
 
 
 def setup(hass, config):
     async def image_analyzer(data_call):
-        """send GET request to OpenAI API '/v1/chat/completions' endpoint
+        """Handle the service call to analyze an image with GPT-4 Vision
 
         Returns:
             json: response_text
         """
 
-        # Read from configuration (hass.data)
-        api_key = hass.data.get(DOMAIN, {}).get(CONF_OPENAI_API_KEY)
-        localai_ip_address = hass.data.get(DOMAIN, {}).get(CONF_LOCALAI_IP_ADDRESS)
-        localai_port = hass.data.get(DOMAIN, {}).get(CONF_LOCALAI_PORT)
-        ollama_ip_address = hass.data.get(DOMAIN, {}).get(CONF_OLLAMA_IP_ADDRESS)
-        ollama_port = hass.data.get(DOMAIN, {}).get(CONF_OLLAMA_PORT)
+        async def download_image(image_url):
+            """use async_get_clientsession to download the image"""
+            async with async_get_clientsession(hass) as session:
+                async with session.get(image_url, ssl=False) as response:
+                    image_data = await response.read()
+            return image_data
 
-        # Read data from service call
-        mode = str(data_call.data.get(PROVIDER))
-        # Message to be sent to AI model
-        message = str(data_call.data.get(MESSAGE)[0:2000])
-        # Local path to your image. Example: "/config/www/images/garage.jpg"
-        image_path = data_call.data.get(IMAGE_FILE)
-        # create a list of image paths (separator: newline character)
-        image_paths = image_path.split("\n")
-        # Resolution (width only) of the image. Example: 1280 for 720p etc.
-        target_width = data_call.data.get(TARGET_WIDTH, 1280)
-        # Temperature parameter. Default is 0.5
-        temperature = float(data_call.data.get(TEMPERATURE, 0.5))
-        # Maximum number of tokens used by model. Default is 100.
-        max_tokens = int(data_call.data.get(MAXTOKENS))
-        # Detail one of ["high", "low", "auto"] default is "auto"
-        detail = str(data_call.data.get(DETAIL, "auto"))
-
-        # Validate configuration and input data and set model
-        if mode == 'OpenAI':
-            validate(mode, api_key, image_paths)
-            model = str(data_call.data.get(MODEL, "gpt-4o"))
-        elif mode == 'LocalAI':
-            validate(mode, None, image_paths, localai_ip_address, localai_port)
-            model = str(data_call.data.get(MODEL, "gpt-4-vision-preview"))
-        elif mode == 'Ollama':
-            validate(mode, None, image_paths, ollama_ip_address, ollama_port)
-            model = str(data_call.data.get(MODEL, "llava"))
-            
-
-        def encode_image(image_path):
+        def encode_image(image_path=None, image_data=None):
             """Encode image as base64
 
             Args:
@@ -144,34 +119,91 @@ def setup(hass, config):
             Returns:
                 string: image encoded as base64
             """
+            if image_path:
+                # Open the image file
+                with Image.open(image_path) as img:
+                    # calculate new height based on aspect ratio
+                    width, height = img.size
+                    aspect_ratio = width / height
+                    target_height = int(target_width / aspect_ratio)
 
-            # Open the image file
-            with Image.open(image_path) as img:
-                # calculate new height based on aspect ratio
-                width, height= img.size
-                aspect_ratio= width / height
-                target_height= int(target_width / aspect_ratio)
+                    # Resize the image only if it's larger than the target size
+                    if width > target_width or height > target_height:
+                        img = img.resize((target_width, target_height))
 
-                # Resize the image only if it's larger than the target size
-                if width > target_width or height > target_height:
-                    img= img.resize((target_width, target_height))
+                    # Convert the image to base64
+                    img_byte_arr = io.BytesIO()
+                    img.save(img_byte_arr, format='JPEG')
+                    base64_image = base64.b64encode(
+                        img_byte_arr.getvalue()).decode('utf-8')
 
+            elif image_data:
                 # Convert the image to base64
-                img_byte_arr= io.BytesIO()
+                img_byte_arr = io.BytesIO()
+                img_byte_arr.write(image_data)
+                img = Image.open(img_byte_arr)
                 img.save(img_byte_arr, format='JPEG')
-                base64_image= base64.b64encode(
+                base64_image = base64.b64encode(
                     img_byte_arr.getvalue()).decode('utf-8')
 
             return base64_image
 
-        # Get the base64 string from the images
-        base64_images= []
-        for image_path in image_paths:
-            base64_image= encode_image(image_path)
+        # Read from configuration (hass.data)
+        api_key = hass.data.get(DOMAIN, {}).get(CONF_OPENAI_API_KEY)
+        localai_ip_address = hass.data.get(
+            DOMAIN, {}).get(CONF_LOCALAI_IP_ADDRESS)
+        localai_port = hass.data.get(DOMAIN, {}).get(CONF_LOCALAI_PORT)
+        ollama_ip_address = hass.data.get(
+            DOMAIN, {}).get(CONF_OLLAMA_IP_ADDRESS)
+        ollama_port = hass.data.get(DOMAIN, {}).get(CONF_OLLAMA_PORT)
+
+        # Read data from service call
+        mode = str(data_call.data.get(PROVIDER))
+        message = str(data_call.data.get(MESSAGE)[0:2000])
+        image_paths = data_call.data.get(IMAGE_FILE, "").split(
+            "\n") if data_call.data.get(IMAGE_FILE) else None
+        image_entities = data_call.data.get(IMAGE_ENTITY)
+        target_width = data_call.data.get(TARGET_WIDTH, 1280)
+        temperature = float(data_call.data.get(TEMPERATURE, 0.5))
+        max_tokens = int(data_call.data.get(MAXTOKENS))
+        detail = str(data_call.data.get(DETAIL, "auto"))
+
+        base64_images = []
+        if image_paths:
+            for image_path in image_paths:
+                try:
+                    image_path = image_path.strip()
+                    if not os.path.exists(image_path):
+                        raise ServiceValidationError(
+                            f"File {image_path} does not exist")
+                    base64_image = encode_image(image_path=image_path)
+                    base64_images.append(base64_image)
+                except Exception as e:
+                    raise ServiceValidationError(f"Error: {e}")
+
+        if image_entities:
+            for image_entity in image_entities:
+                image_url = "https://localhost:8123" + hass.states.get(
+                    image_entity).attributes.get('entity_picture')
+                image_data = await download_image(image_url)
+            base64_image = encode_image(image_data=image_data)
             base64_images.append(base64_image)
 
+        # Validate configuration and input data and set model
+        if mode == 'OpenAI':
+            validate(mode, api_key, base64_images)
+            model = str(data_call.data.get(MODEL, "gpt-4o"))
+        elif mode == 'LocalAI':
+            validate(mode, None, base64_images,
+                     localai_ip_address, localai_port)
+            model = str(data_call.data.get(MODEL, "gpt-4-vision-preview"))
+        elif mode == 'Ollama':
+            validate(mode, None, base64_images,
+                     ollama_ip_address, ollama_port)
+            model = str(data_call.data.get(MODEL, "llava"))
+
         # Get the Home Assistant http client
-        session= async_get_clientsession(hass)
+        session = async_get_clientsession(hass)
 
         if mode == "LocalAI":
             response_text = await handle_localai_request(session, model, message, base64_images, localai_ip_address, localai_port, max_tokens, temperature)
@@ -185,7 +217,7 @@ def setup(hass, config):
 
     hass.services.register(
         DOMAIN, "image_analyzer", image_analyzer,
-        supports_response = SupportsResponse.ONLY
+        supports_response=SupportsResponse.ONLY
     )
 
     return True

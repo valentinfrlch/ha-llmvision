@@ -27,12 +27,20 @@ image_analyzer:
           min: 10
           max: 1000
     image_file:
-      required: true
+      required: false
       description: 'The path to you image'
       example: "/config/www/images/img.jpg"
       selector:
         text:
           multiline: true
+    image_entity:
+      required: false
+      description: 'Image entity you want to submit'
+      example: 'image.front_door_person'
+      selector:
+        entity:
+          domain: image
+          multiple: true
     model:
       required: false
       description: 'Which model to use'
