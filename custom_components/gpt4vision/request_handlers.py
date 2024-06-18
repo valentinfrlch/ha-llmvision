@@ -24,8 +24,11 @@ async def handle_localai_request(session, model, message, base64_images, ip_addr
         raise ServiceValidationError(f"Request failed: {e}")
 
     if response.status != 200:
+        _LOGGER.error(
+            f"Request failed with status code {response.status}")
         raise ServiceValidationError(
             f"Request failed with status code {response.status}")
+    
     response_text = (await response.json()).get("choices")[0].get(
         "message").get("content")
     return response_text
@@ -55,8 +58,11 @@ async def handle_openai_request(session, model, message, base64_images, api_key,
         raise ServiceValidationError(f"Request failed: {e}")
 
     if response.status != 200:
-        raise ServiceValidationError(
-            (await response.json()).get('error').get('message'))
+        error_message = (await response.json()).get('error').get('message')
+        _LOGGER.error(
+            f"Request failed with status: {response.status} and error: {error_message}")
+        raise ServiceValidationError(error_message)
+    
     response_text = (await response.json()).get(
         "choices")[0].get("message").get("content")
     return response_text
@@ -78,7 +84,7 @@ async def handle_ollama_request(session, model, message, base64_images, ip_addre
             "temperature": temperature
         }
     }
-    
+
     for image in base64_images:
         data["messages"][0]["images"].append(image)
 
@@ -90,8 +96,19 @@ async def handle_ollama_request(session, model, message, base64_images, ip_addre
         raise ServiceValidationError(f"Request failed: {e}")
 
     if response.status != 200:
+        _LOGGER.error(
+            f"Request failed with status code {response.status}")
         raise ServiceValidationError(
             f"Request failed with status code {response.status}")
+    
     response_text = (await response.json()).get(
         "message").get("content")
     return response_text
+
+
+async def download_image(session, url):
+    """use async_get_clientsession to download the image"""
+    _LOGGER.debug(f"Fetching image from: {url}")
+    response = await session.get(url)
+    image_data = await response.read()
+    return image_data
