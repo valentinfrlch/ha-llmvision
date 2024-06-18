@@ -23,13 +23,15 @@ from .const import (
 from .request_handlers import (
     handle_localai_request,
     handle_openai_request,
-    handle_ollama_request
+    handle_ollama_request,
+    download_image
 )
 import base64
 import io
 import os
 import logging
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.network import get_url
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
 from PIL import Image
@@ -102,14 +104,7 @@ def setup(hass, config):
         Returns:
             json: response_text
         """
-
-        async def download_image(image_url):
-            """use async_get_clientsession to download the image"""
-            async with async_get_clientsession(hass) as session:
-                async with session.get(image_url, ssl=False) as response:
-                    image_data = await response.read()
-            return image_data
-
+        # HELPERS
         def encode_image(image_path=None, image_data=None):
             """Encode image as base64
 
@@ -168,6 +163,9 @@ def setup(hass, config):
         max_tokens = int(data_call.data.get(MAXTOKENS))
         detail = str(data_call.data.get(DETAIL, "auto"))
 
+        # Get the Home Assistant http client
+        session = async_get_clientsession(hass)
+
         base64_images = []
         if image_paths:
             for image_path in image_paths:
@@ -183,9 +181,11 @@ def setup(hass, config):
 
         if image_entities:
             for image_entity in image_entities:
-                image_url = "https://localhost:8123" + hass.states.get(
+                base_url = get_url(hass)
+                # protocol = get_url(hass).split('://')[0]
+                image_url = base_url + hass.states.get(
                     image_entity).attributes.get('entity_picture')
-                image_data = await download_image(image_url)
+                image_data = await download_image(session=session, url=image_url)
             base64_image = encode_image(image_data=image_data)
             base64_images.append(base64_image)
 
@@ -201,9 +201,6 @@ def setup(hass, config):
             validate(mode, None, base64_images,
                      ollama_ip_address, ollama_port)
             model = str(data_call.data.get(MODEL, "llava"))
-
-        # Get the Home Assistant http client
-        session = async_get_clientsession(hass)
 
         if mode == "LocalAI":
             response_text = await handle_localai_request(session, model, message, base64_images, localai_ip_address, localai_port, max_tokens, temperature)
