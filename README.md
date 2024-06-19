@@ -1,7 +1,7 @@
 <h1 align=center> GPT-4 Vision for Home Assistant </h1>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
-<img src=https://img.shields.io/badge/version-0.3.8-blue>
+<img src=https://img.shields.io/badge/version-0.3.9-blue>
 <a href="https://github.com/valentinfrlch/ha-gpt4vision/issues">
       <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-gpt4vision?color=0088ff" />
     </a>
@@ -17,14 +17,17 @@
     ·
     <a href="#installation">⬇️ Installation</a>
     ·
-    <a href="#service-call-and-usage">▶️ Usage</a>
+    <a href="#usage">▶️ Usage</a>
     ·
     <a href="#how-to-report-a-bug-or-request-a-feature">🪲 How to report Bugs</a>
-    
   </p>
 
-**ha-gpt4vision** creates the `gpt4vision.image_analyzer` service in Home Assistant.
-This service sends an image to an AI provider and returns the output as a response variable for easy use in automations.
+
+<br>
+<br>
+<br>
+
+**gpt4vision** is a Home Assistant integration that allows you to analyze images using GPT-4 Vision.  
 Supported providers are OpenAI, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/).
 
 ## Features
@@ -102,7 +105,7 @@ launchctl setenv OLLAMA_HOST "0.0.0.0"
 
 <br>
 
-## Service call and usage
+## Usage
 After restarting, the gpt4vision.image_analyzer service will be available. You can test it in the developer tools section in home assistant.
 To get OpenAI gpt-4o's analysis of a local image, use the following service call.
 
@@ -133,6 +136,16 @@ Optionally, the `model`, `target_width` and `detail` properties can be set.
 - For available **models** check these pages: [supported models for OpenAI](https://platform.openai.com/docs/models) and [LocalAI model gallery](https://localai.io/models/).
 - The **target_width** is an integer between 512 and 3840 representing the image width in pixels. It is used to downscale the image before encoding it.
 - The **detail** parameter can be set to `low` or `high`. If it is not set, it is set to `auto`. OpenAI will then use the image size to determine the detail level. For more information check the [OpenAI documentation](https://platform.openai.com/docs/guides/vision/low-or-high-fidelity-image-understanding).
+
+### Debugging
+To enable debugging, add the following to your `configuration.yaml`:
+```yaml
+logger:
+  logs:
+    custom_components.gpt4vision: debug
+```
+
+
 ## How to report a bug or request a feature
 > [!IMPORTANT]
 > **Bugs:** If you encounter any bugs and have followed the instructions carefully, feel free to file a bug report.  
