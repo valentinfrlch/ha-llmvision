@@ -1,7 +1,7 @@
 image_analyzer:
   fields:
     provider:
-      description: 'Select Provider'
+      description: 'Provider to use'
       required: true
       default: 'OpenAI'
       selector:
@@ -28,22 +28,22 @@ image_analyzer:
           max: 1000
     image_file:
       required: false
-      description: 'The path to you image'
+      description: 'Local path to image'
       example: "/config/www/images/img.jpg"
       selector:
         text:
           multiline: true
     image_entity:
       required: false
-      description: 'Image entity you want to submit'
+      description: 'Image or camera entity to analyze'
       example: 'image.front_door_person'
       selector:
         entity:
-          domain: image
+          domain: ["image", "camera"]
           multiple: true
     model:
       required: false
-      description: 'Which model to use'
+      description: 'Model to use'
       example: "gpt-4o"
       default: "gpt-4o"
       selector:
@@ -60,7 +60,7 @@ image_analyzer:
           max: 3840
     detail:
       required: false
-      description: "Detail parameter (OpenAI only), leave empty for 'auto'"
+      description: "Detail parameter, leave empty for 'auto'"
       default: 'high'
       selector:
         select:
