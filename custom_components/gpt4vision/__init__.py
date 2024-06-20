@@ -20,17 +20,11 @@ from .const import (
     ERROR_OLLAMA_NOT_CONFIGURED,
     ERROR_NO_IMAGE_INPUT
 )
-from .request_handlers import (
-    handle_localai_request,
-    handle_openai_request,
-    handle_ollama_request,
-    download_image
-)
+from .request_handlers import RequestHandler
 import base64
 import io
 import os
 import logging
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.network import get_url
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
@@ -163,8 +157,8 @@ def setup(hass, config):
         max_tokens = int(data_call.data.get(MAXTOKENS))
         detail = str(data_call.data.get(DETAIL, "auto"))
 
-        # Get the Home Assistant http client
-        session = async_get_clientsession(hass)
+        # Initialize RequestHandler
+        handler = RequestHandler(hass)
 
         base64_images = []
         if image_paths:
@@ -185,31 +179,28 @@ def setup(hass, config):
                 # protocol = get_url(hass).split('://')[0]
                 image_url = base_url + hass.states.get(
                     image_entity).attributes.get('entity_picture')
-                image_data = await download_image(session=session, url=image_url)
+                image_data = await handler.fetch(image_url)
             base64_image = encode_image(image_data=image_data)
             base64_images.append(base64_image)
 
-        # Validate configuration and input data and set model
+        # Validate configuration and input data and call handler
         if mode == 'OpenAI':
             validate(mode, api_key, base64_images)
             model = str(data_call.data.get(MODEL, "gpt-4o"))
+            response_text = await handler.openai(model, message, base64_images, api_key, max_tokens, temperature, detail)
         elif mode == 'LocalAI':
             validate(mode, None, base64_images,
                      localai_ip_address, localai_port)
             model = str(data_call.data.get(MODEL, "gpt-4-vision-preview"))
+            response_text = await handler.localai(model, message, base64_images, localai_ip_address, localai_port, max_tokens, temperature)
         elif mode == 'Ollama':
             validate(mode, None, base64_images,
                      ollama_ip_address, ollama_port)
             model = str(data_call.data.get(MODEL, "llava"))
+            response_text = await handler.ollama(model, message, base64_images, ollama_ip_address, ollama_port, max_tokens, temperature)
 
-        if mode == "LocalAI":
-            response_text = await handle_localai_request(session, model, message, base64_images, localai_ip_address, localai_port, max_tokens, temperature)
-
-        elif mode == "OpenAI":
-            response_text = await handle_openai_request(session, model, message, base64_images, api_key, max_tokens, temperature, detail)
-
-        elif mode == 'Ollama':
-            response_text = await handle_ollama_request(session, model, message, base64_images, ollama_ip_address, ollama_port, max_tokens, temperature)
+        # close the RequestHandler and return response_text
+        await handler.close()
         return {"response_text": response_text}
 
     hass.services.register(
