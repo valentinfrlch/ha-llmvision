@@ -1,9 +1,10 @@
 <h1 align=center> GPT-4 Vision for Home Assistant </h1>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
-<img src=https://img.shields.io/badge/version-0.3.9-blue>
+<img src=https://img.shields.io/badge/version-0.4-blue>
 <a href="https://github.com/valentinfrlch/ha-gpt4vision/issues">
-      <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-gpt4vision?color=0088ff" />
+<img src="https://img.shields.io/maintenance/yes/2024.svg">
+<img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-gpt4vision?color=0088ff"/>
     </a>
     <p align=center style="font-weight:bold">
       Image Analyzer for Home Assistant using GPT Vision
@@ -27,18 +28,17 @@
 <br>
 <br>
 
-**gpt4vision** is a Home Assistant integration that allows you to analyze images using GPT-4 Vision.  
+**gpt4vision** is a Home Assistant integration that allows you to analyze images and camera feeds using GPT-4 Vision.  
 Supported providers are OpenAI, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/).
 
 ## Features
-- Multimodal, natural language conversation in Home Assistant
 - Compatible with OpenAI's API, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/)
-- Integrates with Frigate and other integrations that provide image entities
+- Takes images and camera entities as input as well as image files
 - Images can be downscaled for faster processing
 - Can be installed and updated through HACS and can be set up in the Home Assistant UI
 
 ## Resources
-Check the [📖 wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki) for examples on how you can integrate gpt4vision into your Home Assistant or join the [🗨️ discussion](https://community.home-assistant.io/t/gpt-4o-vision-capabilities-in-home-assistant/729241) in the Home Assistant Community.
+Check the [📖 wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki) for examples on how you can integrate gpt4vision into your Home Assistant setup or join the [🗨️ discussion](https://community.home-assistant.io/t/gpt-4o-vision-capabilities-in-home-assistant/729241) in the Home Assistant Community.
 
 # Installation
 ### Installation via HACS (recommended)
@@ -120,8 +120,8 @@ data:
     /config/www/tmp/example.jpg
     /config/www/tmp/example2.jpg
   image_entity:
+    - camera.garage
     - image.front_door_person
-    - image.garage_car
   target_width: 1280
   detail: low
   temperature: 0.5
