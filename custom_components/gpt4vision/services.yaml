@@ -39,7 +39,7 @@ image_analyzer:
       example: 'image.front_door_person'
       selector:
         entity:
-          domain: image
+          domain: ["image", "camera"]
           multiple: true
     model:
       required: false
