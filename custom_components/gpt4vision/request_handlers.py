@@ -1,7 +1,6 @@
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import logging
-import json
 from .const import (
     VERSION_ANTHROPIC
 )
