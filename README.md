@@ -1,7 +1,7 @@
 <h1 align=center> GPT-4 Vision for Home Assistant </h1>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
-<img src=https://img.shields.io/badge/version-0.4-blue>
+<img src=https://img.shields.io/badge/version-0.4.2-blue>
 <a href="https://github.com/valentinfrlch/ha-gpt4vision/issues">
 <img src="https://img.shields.io/maintenance/yes/2024.svg">
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-gpt4vision?color=0088ff"/>
@@ -29,10 +29,10 @@
 <br>
 
 **gpt4vision** is a Home Assistant integration that allows you to analyze images and camera feeds using GPT-4 Vision.  
-Supported providers are OpenAI, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/).
+Supported providers are OpenAI, Anthropic, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/).
 
 ## Features
-- Compatible with OpenAI's API, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/)
+- Compatible with OpenAI, Anthropic Claude, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/)
 - Takes images and camera entities as input as well as image files
 - Images can be downscaled for faster processing
 - Can be installed and updated through HACS and can be set up in the Home Assistant UI
@@ -50,7 +50,7 @@ Check the [📖 wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki) for e
 ### Manual Installation
 1. Download and copy the **gpt4vision** folder into your **custom_components** folder.
 2. Add integration in Home Assistant Settings/Devices & services
-3. Provide your API key or IP address and port of your LocalAI server
+3. Provide your API key or IP address and port of your self-hosted server
 
 
 ## Provider specific setup
@@ -58,6 +58,9 @@ Check the [📖 wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki) for e
 Simply obtain an API key from [OpenAI](https://platform.openai.com/api-keys) and enter it in the Home Assistant UI during setup.  
 A pricing calculator is available here: [https://openai.com/api/pricing/](https://openai.com/api/pricing/).
 
+### Anthropic
+Obtain an API key from [Anthropic](https://claude.ai/) and enter it in the Home Assistant UI during setup.
+Pricing is available here: [Anthropic image cost](https://docs.anthropic.com/en/docs/build-with-claude/vision#calculate-image-costs). Images can be downscaled with the built-in downscaler.
 
 ### LocalAI
 To use LocalAI you need to have a LocalAI server running. You can find the installation instructions [here](https://localai.io/basics/getting_started/).  During setup you'll need to provide the IP address of your machine and the port on which LocalAI is running (default is 8000).
@@ -133,9 +136,22 @@ data:
 >You can send multiple images per service call as well as mix `image_file` and `image_path` inputs.
 
 Optionally, the `model`, `target_width` and `detail` properties can be set.  
-- For available **models** check these pages: [supported models for OpenAI](https://platform.openai.com/docs/models) and [LocalAI model gallery](https://localai.io/models/).
+- For available **models** check these pages: [OpenAI models](https://platform.openai.com/docs/models), [Anthropic Claude models](https://docs.anthropic.com/en/docs/about-claude/models), [Ollama models](https://ollama.com/blog/vision-models) and [LocalAI model gallery](https://localai.io/models/).
 - The **target_width** is an integer between 512 and 3840 representing the image width in pixels. It is used to downscale the image before encoding it.
 - The **detail** parameter can be set to `low` or `high`. If it is not set, it is set to `auto`. OpenAI will then use the image size to determine the detail level. For more information check the [OpenAI documentation](https://platform.openai.com/docs/guides/vision/low-or-high-fidelity-image-understanding).
+
+### Additional information
+Requests will look roughly like the following to the LLM
+```
+Image 1:
+<base64 encoded image>
+Image 2:
+<base64 encoded image>
+...
+<Your prompt>
+```
+
+
 
 ### Debugging
 To enable debugging, add the following to your `configuration.yaml`:
