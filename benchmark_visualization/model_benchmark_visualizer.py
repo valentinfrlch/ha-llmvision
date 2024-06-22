@@ -20,6 +20,8 @@ def category_name(model_name):
         return 'OpenAI GPT-4'
     elif "Claude 3" in model_name:
         return 'Anthropic Claude 3'
+    elif "Gemini 1.5" in model_name:
+        return 'Google Gemini 1.5'
     return 'Other'
 
 
@@ -32,22 +34,24 @@ def create_benchmark_visualization(df: pd.DataFrame):
             return 'GPT-4'
         elif "Claude 3" in model_name:
             return 'Claude 3'
+        elif "Gemini 1.5" in model_name:
+            return 'Gemini 1.5'
         return 'Other'
 
     # Categorize each model in the DataFrame
     df['Category'] = df['Model'].apply(categorize_model)
 
     # Set order for legend
-    category_order = ['GPT-4', 'Claude 3', 'Other']
+    category_order = ['GPT-4', 'Claude 3'] # Add 'Gemini 1.5'
     df['Category'] = pd.Categorical(
         df['Category'], categories=category_order, ordered=True)
     df = df.sort_values('Category')
 
     # Set colors for different providers
-    colors = {'GPT-4': '#00cbbf', 'Claude 3': '#d97857', 'Other': 'gray'}
+    colors = {'GPT-4': '#00cbbf', 'Claude 3': '#d97857', 'Gemini 1.5': '#5da9ff', 'Other': 'gray'}
 
     for category, group_df in df.groupby('Category'):
-        if category not in ['GPT-4', 'Claude 3']:
+        if category not in ['GPT-4', 'Claude 3', 'Gemini 1.5', 'Other']:
             continue
 
         x = group_df['Cost'].astype(float)
@@ -67,9 +71,12 @@ def create_benchmark_visualization(df: pd.DataFrame):
     # plot the actual datapoints
     # plot the actual datapoints
     for index, model in df.iterrows():
-        fig.add_trace(go.Scatter(x=[model['Cost']], y=[model['Overall']],
-                      mode='markers', # Removed 'text' from mode
-                      name=model['Model'], marker=dict(size=15, color=colors[model['Category']])))
+        try:
+            fig.add_trace(go.Scatter(x=[model['Cost']], y=[model['Overall']],
+                        mode='markers', # Removed 'text' from mode
+                        name=model['Model'], marker=dict(size=15, color=colors[model['Category']])))
+        except Exception as e:
+            continue
     
         # Add model name
         fig.add_annotation(x=model['Cost'], y=model['Overall'],

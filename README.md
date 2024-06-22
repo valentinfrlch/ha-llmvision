@@ -20,6 +20,8 @@
     ·
     <a href="#usage">▶️ Usage</a>
     ·
+    <a href="#usage">Model Overview</a>
+    ·
     <a href="#how-to-report-a-bug-or-request-a-feature">🪲 How to report Bugs</a>
   </p>
 
@@ -151,7 +153,18 @@ Image 2:
 <Your prompt>
 ```
 
-## Choosing the right model for you
+## Model Overview
+
+| Model Name     | Hosting Options | Description     |
+|----------------|------------|----------------------|
+| GPT-4o         | Cloud (OpenAI API key required)       | Best all-round model|
+| Claude 3 Haiku   | Cloud (Anthropic API key required)       | Fast model optimized for speed |
+| Claude 3 Sonnet  | Cloud (Anthropic API key required)       | Balance between performance and speed |
+| Claude 3 Opus | Cloud (Anthropic API key required)       | High-performance model for more accuracy |
+| LLaVA-1.5 | Self-hosted (LocalAI or Ollama)       | Open-Source alternative |
+
+
+### Choosing the right model for you
 >[!NOTE]
 > **GPT-4o** achieves strong performance in the Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark MMMU<sup>1</sup>, while being cost-effective. This makes it a good choice for most use cases.
 
