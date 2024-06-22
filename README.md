@@ -151,6 +151,19 @@ Image 2:
 <Your prompt>
 ```
 
+## Choosing the right model for you
+>[!NOTE]
+> **GPT-4o** achieves strong performance in the Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark MMMU<sup>1</sup>, while being cost-effective. This makes it a good choice for most use cases.
+
+
+gpt4vision is compatible with multiple providers, each of which has different models available. Some providers run in the cloud, while others are self-hosted.  
+To see which model is best for your use case, check the figure below. It visualizes the averaged MMMU<sup>1</sup> scores of available cloud-based models. The higher the score, the better the model performs. An ideal model would exhibit a high MMMU score and low cost.
+
+<sup>1</sup> MMMU stands for "Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark". It assesses multimodal capabilities including image understanding.  
+<sup>2</sup> The data is based on the [MMMU Leaderboard](https://mmmu-benchmark.github.io/#leaderboard)
+
+<img src="benchmark_visualization\benchmark_visualization.jpg" alt="MMMU Benchmark visualization">
+<p align="right">The Benchmark will be updated regularly to include new models.</p>
 
 
 ### Debugging
