@@ -30,17 +30,21 @@
                 "data": {
                     "api_key": "Your API key"
                 }
+            },
+            "anthropic": {
+                "title": "Add Anthropic API key",
+                "description": "Provide a valid Anthropic API key.",
+                "data": {
+                    "api_key": "Your API key"
+                }
             }
         },
-        "error": {
-            "openai_not_configured": "OpenAI provider is not configured",
-            "localai_not_configured": "LocalAI provider is not configured",
-            "ollama_not_configured": "Ollama provider is not configured",
-            "invalid_image_path": "Image not found. Check the path and try again.",
-            "handshake_failed": "Failed to connect to LocalAI server. Please check the IP address and port and try again."
+        "errors": {
+            "handshake_failed": "Could not connect to the server. Check you API key or IP and port",
+            "empty_api_key": "You must provide an API key"
         },
         "abort": {
-            "already_configured": "Provider is already configured. Delete the existing configuration to add a new one."
+            "already_configured": "This provider is already configured. Delete the existing configuration to reconfigure"
         }
     }
 }

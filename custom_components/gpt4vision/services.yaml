@@ -8,8 +8,9 @@ image_analyzer:
         select:
           options:
             - 'OpenAI'
-            - 'LocalAI'
+            - 'Anthropic'
             - 'Ollama'
+            - 'LocalAI'
     message:
       required: true
       description: 'Prompt'

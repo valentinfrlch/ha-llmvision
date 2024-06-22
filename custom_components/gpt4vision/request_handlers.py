@@ -1,6 +1,10 @@
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import logging
+import json
+from .const import (
+    VERSION_ANTHROPIC
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -10,11 +14,11 @@ class RequestHandler:
         self.session = async_get_clientsession(hass)
 
     async def openai(self, model, message, base64_images, api_key, max_tokens, temperature, detail):
+        # Set headers and payload
         headers = {'Content-type': 'application/json',
                    'Authorization': 'Bearer ' + api_key}
         data = {"model": model,
                 "messages": [{"role": "user", "content": [
-                    {"type": "text", "text": message}
                 ]}],
                 "max_tokens": max_tokens,
                 "temperature": temperature
@@ -23,7 +27,14 @@ class RequestHandler:
         # Add the images to the request
         for image in base64_images:
             data["messages"][0]["content"].append(
+                {"type": "text", "text": "Image " + str(base64_images.index(image) + 1) + ":"})
+            data["messages"][0]["content"].append(
                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image}", "detail": detail}})
+
+        # append the message to the end of the request
+        data["messages"][0]["content"].append(
+            {"type": "text", "text": message}
+        )
 
         try:
             response = await self.session.post(
@@ -43,12 +54,14 @@ class RequestHandler:
         return response_text
 
     async def anthropic(self, model, message, base64_images, api_key, max_tokens, temperature):
-        headers = {'Content-type': 'application/json',
-                   'x-api-key': api_key}
+        # Set headers and payload
+        headers = {'content-type': 'application/json',
+                   'x-api-key': api_key,
+                   'anthropic-version': VERSION_ANTHROPIC}
         data = {"model": model,
-                "messages": [{"role": "user", "content": [
-                    {"type": "text", "text": message}
-                ]}],
+                "messages": [
+                    {"role": "user", "content": []}
+                ],
                 "max_tokens": max_tokens,
                 "temperature": temperature
                 }
@@ -56,13 +69,25 @@ class RequestHandler:
         # Add the images to the request
         for image in base64_images:
             data["messages"][0]["content"].append(
+                {
+                    "type": "text",
+                    "text": "Image " + str(base64_images.index(image) + 1) + ":"
+                })
+            data["messages"][0]["content"].append(
                 {"type": "image", "source":
                     {"type": "base64",
-                     "image_type": "image/jpeg",
+                     "media_type": "image/jpeg",
                      "data": f"{image}"
                      }
                  }
             )
+
+        # append the message to the end of the request
+        data["messages"][0]["content"].append(
+            {"type": "text", "text": message}
+        )
+
+        _LOGGER.debug(f"Anthropic request data: {data}")
 
         try:
             response = await self.session.post(
@@ -77,20 +102,26 @@ class RequestHandler:
                 f"Request failed with status: {response.status} and error: {error_message}")
             raise ServiceValidationError(error_message)
 
-        response_text = (await response.json()).get("content").get("text")
+        response_text = (await response.json()).get("content")[0].get("text")
         return response_text
 
     async def localai(self, model, message, base64_images, ip_address, port, max_tokens, temperature):
         data = {"model": model,
                 "messages": [{"role": "user", "content": [
-                    {"type": "text", "text": message}
                 ]}],
                 "max_tokens": max_tokens,
                 "temperature": temperature
                 }
         for image in base64_images:
             data["messages"][0]["content"].append(
+                {"type": "text", "text": "Image " + str(base64_images.index(image) + 1) + ":"})
+            data["messages"][0]["content"].append(
                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image}"}})
+        
+        # append the message to the end of the request
+        data["messages"][0]["content"].append(
+            {"type": "text", "text": message}
+        )
 
         try:
             response = await self.session.post(

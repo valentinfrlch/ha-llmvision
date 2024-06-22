@@ -2,6 +2,7 @@
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
+    CONF_ANTHROPIC_API_KEY,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
     CONF_OLLAMA_IP_ADDRESS,
@@ -16,6 +17,7 @@ from .const import (
     TEMPERATURE,
     DETAIL,
     ERROR_OPENAI_NOT_CONFIGURED,
+    ERROR_ANTHROPIC_NOT_CONFIGURED,
     ERROR_LOCALAI_NOT_CONFIGURED,
     ERROR_OLLAMA_NOT_CONFIGURED,
     ERROR_NO_IMAGE_INPUT
@@ -34,9 +36,10 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry):
-    """Set up gpt4vision from a config entry."""
+    """Save gpt4vision config entry in hass.data"""
     # Get all entries from config flow
     openai_api_key = entry.data.get(CONF_OPENAI_API_KEY)
+    anthropic_api_key = entry.data.get(CONF_ANTHROPIC_API_KEY)
     localai_ip_address = entry.data.get(CONF_LOCALAI_IP_ADDRESS)
     localai_port = entry.data.get(CONF_LOCALAI_PORT)
     ollama_ip_address = entry.data.get(CONF_OLLAMA_IP_ADDRESS)
@@ -51,6 +54,7 @@ async def async_setup_entry(hass, entry):
         key: value
         for key, value in {
             CONF_OPENAI_API_KEY: openai_api_key,
+            CONF_ANTHROPIC_API_KEY: anthropic_api_key,
             CONF_LOCALAI_IP_ADDRESS: localai_ip_address,
             CONF_LOCALAI_PORT: localai_port,
             CONF_OLLAMA_IP_ADDRESS: ollama_ip_address,
@@ -78,6 +82,9 @@ def validate(mode, api_key, base64_images, ip_address=None, port=None):
     if mode == 'OpenAI':
         if not api_key:
             raise ServiceValidationError(ERROR_OPENAI_NOT_CONFIGURED)
+    if mode == 'Anthropic':
+        if not api_key:
+            raise ServiceValidationError(ERROR_ANTHROPIC_NOT_CONFIGURED)
     # Checks for LocalAI
     elif mode == 'LocalAI':
         if not ip_address or not port:
@@ -138,7 +145,6 @@ def setup(hass, config):
             return base64_image
 
         # Read from configuration (hass.data)
-        api_key = hass.data.get(DOMAIN, {}).get(CONF_OPENAI_API_KEY)
         localai_ip_address = hass.data.get(
             DOMAIN, {}).get(CONF_LOCALAI_IP_ADDRESS)
         localai_port = hass.data.get(DOMAIN, {}).get(CONF_LOCALAI_PORT)
@@ -158,7 +164,7 @@ def setup(hass, config):
         detail = str(data_call.data.get(DETAIL, "auto"))
 
         # Initialize RequestHandler
-        handler = RequestHandler(hass)
+        client = RequestHandler(hass)
 
         base64_images = []
         if image_paths:
@@ -179,28 +185,36 @@ def setup(hass, config):
                 # protocol = get_url(hass).split('://')[0]
                 image_url = base_url + hass.states.get(
                     image_entity).attributes.get('entity_picture')
-                image_data = await handler.fetch(image_url)
-            base64_image = encode_image(image_data=image_data)
-            base64_images.append(base64_image)
+                image_data = await client.fetch(image_url)
+                base64_image = encode_image(image_data=image_data)
+                base64_images.append(base64_image)
 
         # Validate configuration and input data and call handler
         if mode == 'OpenAI':
-            validate(mode, api_key, base64_images)
+            api_key = hass.data.get(DOMAIN).get(CONF_OPENAI_API_KEY)
+            validate(mode=mode, api_key=api_key, base64_images=base64_images)
             model = str(data_call.data.get(MODEL, "gpt-4o"))
-            response_text = await handler.openai(model, message, base64_images, api_key, max_tokens, temperature, detail)
+            response_text = await client.openai(model, message, base64_images, api_key, max_tokens, temperature, detail)
+        elif mode == 'Anthropic':
+            api_key = hass.data.get(DOMAIN).get(CONF_ANTHROPIC_API_KEY)
+            _LOGGER.info(f"Anthropic API Key: {api_key}")
+            validate(mode=mode, api_key=api_key, base64_images=base64_images)
+            model = str(data_call.data.get(
+                MODEL, "claude-3-5-sonnet-20240620"))
+            response_text = await client.anthropic(model, message, base64_images, api_key, max_tokens, temperature)
         elif mode == 'LocalAI':
             validate(mode, None, base64_images,
                      localai_ip_address, localai_port)
             model = str(data_call.data.get(MODEL, "gpt-4-vision-preview"))
-            response_text = await handler.localai(model, message, base64_images, localai_ip_address, localai_port, max_tokens, temperature)
+            response_text = await client.localai(model, message, base64_images, localai_ip_address, localai_port, max_tokens, temperature)
         elif mode == 'Ollama':
             validate(mode, None, base64_images,
                      ollama_ip_address, ollama_port)
             model = str(data_call.data.get(MODEL, "llava"))
-            response_text = await handler.ollama(model, message, base64_images, ollama_ip_address, ollama_port, max_tokens, temperature)
+            response_text = await client.ollama(model, message, base64_images, ollama_ip_address, ollama_port, max_tokens, temperature)
 
         # close the RequestHandler and return response_text
-        await handler.close()
+        await client.close()
         return {"response_text": response_text}
 
     hass.services.register(
