@@ -18,6 +18,8 @@ def read_benchmark_data(file_path="./benchmark_visualization/benchmark_data.csv"
 def category_name(model_name):
     if "GPT-4" in model_name:
         return 'OpenAI GPT-4'
+    elif "Claude 3.5" in model_name:
+        return 'Anthropic Claude 3.5'
     elif "Claude 3" in model_name:
         return 'Anthropic Claude 3'
     elif "Gemini 1.5" in model_name:
@@ -32,6 +34,8 @@ def create_benchmark_visualization(df: pd.DataFrame):
         """Categories models based on name"""
         if "GPT-4" in model_name:
             return 'GPT-4'
+        elif "Claude 3.5" in model_name:
+            return 'Claude 3.5'
         elif "Claude 3" in model_name:
             return 'Claude 3'
         elif "Gemini 1.5" in model_name:
@@ -42,16 +46,17 @@ def create_benchmark_visualization(df: pd.DataFrame):
     df['Category'] = df['Model'].apply(categorize_model)
 
     # Set order for legend
-    category_order = ['GPT-4', 'Claude 3'] # Add 'Gemini 1.5'
+    category_order = ['GPT-4', 'Claude 3', 'Claude 3.5']  # Add 'Gemini 1.5'
     df['Category'] = pd.Categorical(
         df['Category'], categories=category_order, ordered=True)
     df = df.sort_values('Category')
 
     # Set colors for different providers
-    colors = {'GPT-4': '#00cbbf', 'Claude 3': '#d97857', 'Gemini 1.5': '#5da9ff', 'Other': 'gray'}
+    colors = {'GPT-4': '#00cbbf', 'Claude 3': '#d97857',
+              'Gemini 1.5': '#5da9ff', 'Claude 3.5': '#d4a27f', 'Other': 'gray'}
 
     for category, group_df in df.groupby('Category'):
-        if category not in ['GPT-4', 'Claude 3', 'Gemini 1.5', 'Other']:
+        if category not in ['GPT-4', 'Claude 3', 'Claude 3.5', 'Gemini 1.5', 'Other']:
             continue
 
         x = group_df['Cost'].astype(float)
@@ -69,12 +74,11 @@ def create_benchmark_visualization(df: pd.DataFrame):
                       name=f"{category_name(category)}", line=dict(color=colors[category], width=6, dash='dash'), opacity=0.5))
 
     # plot the actual datapoints
-    # plot the actual datapoints
     for index, model in df.iterrows():
         try:
             fig.add_trace(go.Scatter(x=[model['Cost']], y=[model['Overall']],
                         mode='markers', # Removed 'text' from mode
-                        name=model['Model'], marker=dict(size=15, color=colors[model['Category']])))
+                        name=model['Model'], marker=dict(size=20, color=colors[model['Category']])))
         except Exception as e:
             continue
     
@@ -82,7 +86,7 @@ def create_benchmark_visualization(df: pd.DataFrame):
         fig.add_annotation(x=model['Cost'], y=model['Overall'],
                            text=model['Model'],
                            showarrow=False,
-                           yshift=-40)
+                           yshift=-35)
 
     fig.update_layout(title='Performance of Cloud-Based Models in gpt4vision',
                       xaxis_title='$/1M Input Tokens', yaxis_title='MMMU Score Average',
