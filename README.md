@@ -20,7 +20,7 @@
     ·
     <a href="#usage">▶️ Usage</a>
     ·
-    <a href="#usage">🧠 Model Overview</a>
+    <a href="#model-overview">🧠 Model Overview</a>
     ·
     <a href="#how-to-report-a-bug-or-request-a-feature">🪲 How to report Bugs</a>
   </p>
