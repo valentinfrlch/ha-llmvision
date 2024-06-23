@@ -173,7 +173,7 @@ front_door_2024-12-31_23:59:59:
 
 ## Model Overview
 
-| Model Name     |       Hosting Options     | Description          |   MMMU Score   |
+| Model Name     |       Hosting Options     | Description          |   MMMU<sup>1</sup> Score   |
 |----------------|---------------------------|----------------------|----------------|
 | GPT-4o         | Cloud (OpenAI API key required)       | Best all-round model| 69.1 |
 | Claude 3 Haiku   | Cloud (Anthropic API key required)       | Fast model optimized for speed | 50.2| 
