@@ -25,7 +25,7 @@ class Validator:
 
     async def _validate_api_key(self, key):
         if not key or key == "":
-            _LOGGER.error("You need to provide an API key.")
+            _LOGGER.error("You need to provide a valid API key.")
             raise ServiceValidationError("empty_api_key")
         if self.user_input["provider"] == "OpenAI":
             header = {'Content-type': 'application/json',
@@ -36,7 +36,7 @@ class Validator:
             method = "GET"
         elif self.user_input["provider"] == "Anthropic":
             header = {
-                'x-api-key': key, 'Content-Type': 'application/json', 'anthropic-version': VERSION_ANTHROPIC}
+                'x-api-key': key, 'content-type': 'application/json', 'anthropic-version': VERSION_ANTHROPIC}
             payload = {
                 "model": "claude-3-haiku-20240307",
                 "messages": [
