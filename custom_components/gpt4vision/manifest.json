@@ -1,8 +1,8 @@
 {
     "domain": "gpt4vision",
     "name": "GPT-4 Vision",
-    "config_flow": true,
     "codeowners": ["@valentinfrlch"],
+    "config_flow": true,
     "documentation": "https://github.com/valentinfrlch/ha-gpt4vision",
     "issue_tracker": "https://github.com/valentinfrlch/ha-gpt4vision/issues",
     "iot_class": "cloud_polling",
