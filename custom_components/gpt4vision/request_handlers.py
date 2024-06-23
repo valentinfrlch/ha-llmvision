@@ -26,7 +26,7 @@ class RequestHandler:
         # Add the images to the request
         for image, filename in zip(base64_images, filenames):
             tag = ("Image " + str(base64_images.index(image) + 1)
-                   ) if filename == "" or not filename else filename
+                   ) if filename == "" else filename
             data["messages"][0]["content"].append(
                 {"type": "text", "text": tag + ":"})
             data["messages"][0]["content"].append(

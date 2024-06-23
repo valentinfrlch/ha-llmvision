@@ -107,7 +107,7 @@ def setup(hass, config):
             json: response_text
         """
         # HELPERS
-        def encode_image(image_path=None, image_data=None):
+        async def encode_image(image_path=None, image_data=None):
             """Encode image as base64
 
             Args:
@@ -116,9 +116,11 @@ def setup(hass, config):
             Returns:
                 string: image encoded as base64
             """
+            loop = hass.loop
             if image_path:
                 # Open the image file
-                with Image.open(image_path) as img:
+                img = await loop.run_in_executor(None, Image.open, image_path)
+                with img:
                     # calculate new height based on aspect ratio
                     width, height = img.size
                     aspect_ratio = width / height
@@ -138,10 +140,19 @@ def setup(hass, config):
                 # Convert the image to base64
                 img_byte_arr = io.BytesIO()
                 img_byte_arr.write(image_data)
-                img = Image.open(img_byte_arr)
-                img.save(img_byte_arr, format='JPEG')
-                base64_image = base64.b64encode(
-                    img_byte_arr.getvalue()).decode('utf-8')
+                img = await loop.run_in_executor(None, Image.open, img_byte_arr)
+                with img:
+                    # calculate new height based on aspect ratio
+                    width, height = img.size
+                    aspect_ratio = width / height
+                    target_height = int(target_width / aspect_ratio)
+
+                    if width > target_width or height > target_height:
+                        img = img.resize((target_width, target_height))
+
+                    img.save(img_byte_arr, format='JPEG')
+                    base64_image = base64.b64encode(
+                        img_byte_arr.getvalue()).decode('utf-8')
 
             return base64_image
 
@@ -179,10 +190,12 @@ def setup(hass, config):
                         # Append filename (without extension)
                         filenames.append(image_path.split('/')
                                          [-1].split('.')[0])
+                    else:
+                        filenames.append("")
                     if not os.path.exists(image_path):
                         raise ServiceValidationError(
                             f"File {image_path} does not exist")
-                    base64_image = encode_image(image_path=image_path)
+                    base64_image = await encode_image(image_path=image_path)
                     base64_images.append(base64_image)
                 except Exception as e:
                     raise ServiceValidationError(f"Error: {e}")
@@ -199,32 +212,62 @@ def setup(hass, config):
                     entity_name = base_url + hass.states.get(
                         image_entity).attributes.get('friendly_name')
                     filenames.append(entity_name)
-                base64_image = encode_image(image_data=image_data)
+                else:
+                    filenames.append("")
+                base64_image = await encode_image(image_data=image_data)
                 base64_images.append(base64_image)
+
+        _LOGGER.info(f"Base64 Images: {base64_images}")
 
         # Validate configuration and input data and call handler
         if mode == 'OpenAI':
             api_key = hass.data.get(DOMAIN).get(CONF_OPENAI_API_KEY)
             validate(mode=mode, api_key=api_key, base64_images=base64_images)
             model = str(data_call.data.get(MODEL, "gpt-4o"))
-            response_text = await client.openai(model, message, base64_images, filenames, api_key, max_tokens, temperature, detail)
+            response_text = await client.openai(model=model,
+                                                message=message,
+                                                base64_images=base64_images,
+                                                filenames=filenames,
+                                                api_key=api_key,
+                                                max_tokens=max_tokens,
+                                                temperature=temperature,
+                                                detail=detail)
         elif mode == 'Anthropic':
             api_key = hass.data.get(DOMAIN).get(CONF_ANTHROPIC_API_KEY)
-            _LOGGER.info(f"Anthropic API Key: {api_key}")
             validate(mode=mode, api_key=api_key, base64_images=base64_images)
             model = str(data_call.data.get(
                 MODEL, "claude-3-5-sonnet-20240620"))
-            response_text = await client.anthropic(model, message, base64_images, filenames, api_key, max_tokens, temperature)
+            response_text = await client.anthropic(model=model,
+                                                   message=message,
+                                                   base64_images=base64_images,
+                                                   filenames=filenames,
+                                                   api_key=api_key,
+                                                   max_tokens=max_tokens,
+                                                   temperature=temperature)
         elif mode == 'LocalAI':
             validate(mode, None, base64_images,
                      localai_ip_address, localai_port)
             model = str(data_call.data.get(MODEL, "gpt-4-vision-preview"))
-            response_text = await client.localai(model, message, base64_images, filenames, localai_ip_address, localai_port, max_tokens, temperature)
+            response_text = await client.localai(model=model,
+                                                 message=message,
+                                                 base64_images=base64_images,
+                                                 filenames=filenames,
+                                                 ip_address=localai_ip_address,
+                                                 port=localai_port,
+                                                 max_tokens=max_tokens,
+                                                 temperature=temperature)
         elif mode == 'Ollama':
             validate(mode, None, base64_images,
                      ollama_ip_address, ollama_port)
             model = str(data_call.data.get(MODEL, "llava"))
-            response_text = await client.ollama(model, message, base64_images, filenames, ollama_ip_address, ollama_port, max_tokens, temperature)
+            response_text = await client.ollama(model=model,
+                                                message=message,
+                                                base64_images=base64_images,
+                                                filenames=filenames,
+                                                ip_address=ollama_ip_address,
+                                                port=ollama_port,
+                                                max_tokens=max_tokens,
+                                                temperature=temperature)
 
         # close the RequestHandler and return response_text
         await client.close()

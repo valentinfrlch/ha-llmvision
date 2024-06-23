@@ -14,7 +14,6 @@ from .const import (
 )
 import voluptuous as vol
 import logging
-import json
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +45,6 @@ class Validator:
                 "max_tokens": 50,
                 "temperature": 0.5
             }
-            payload = json.dumps(payload)
             base_url = "api.anthropic.com"
             endpoint = "/v1/messages"
             method = "POST"
@@ -65,7 +63,7 @@ class Validator:
             if method == "GET":
                 response = await session.get(url, headers=header)
             elif method == "POST":
-                response = await session.post(url, headers=header, data=payload)
+                response = await session.post(url, headers=header, json=payload)
             if response.status == expected_status:
                 return True
             else:
