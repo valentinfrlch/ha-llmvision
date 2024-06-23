@@ -19,8 +19,9 @@ MODEL = 'model'
 MESSAGE = 'message'
 IMAGE_FILE = 'image_file'
 IMAGE_ENTITY = 'image_entity'
-TEMPERATURE = 'temperature'
 DETAIL = 'detail'
+TEMPERATURE = 'temperature'
+INCLUDE_FILENAME = 'include_filename'
 
 # Error messages
 ERROR_OPENAI_NOT_CONFIGURED = "OpenAI provider is not configured"

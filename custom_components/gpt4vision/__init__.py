@@ -16,6 +16,7 @@ from .const import (
     IMAGE_ENTITY,
     TEMPERATURE,
     DETAIL,
+    INCLUDE_FILENAME,
     ERROR_OPENAI_NOT_CONFIGURED,
     ERROR_ANTHROPIC_NOT_CONFIGURED,
     ERROR_LOCALAI_NOT_CONFIGURED,
@@ -162,15 +163,22 @@ def setup(hass, config):
         temperature = float(data_call.data.get(TEMPERATURE, 0.5))
         max_tokens = int(data_call.data.get(MAXTOKENS))
         detail = str(data_call.data.get(DETAIL, "auto"))
+        include_filename = data_call.data.get(INCLUDE_FILENAME, False)
 
         # Initialize RequestHandler
         client = RequestHandler(hass)
 
         base64_images = []
+        filenames = []
+
         if image_paths:
             for image_path in image_paths:
                 try:
                     image_path = image_path.strip()
+                    if include_filename:
+                        # Append filename (without extension)
+                        filenames.append(image_path.split('/')
+                                         [-1].split('.')[0])
                     if not os.path.exists(image_path):
                         raise ServiceValidationError(
                             f"File {image_path} does not exist")
@@ -186,6 +194,11 @@ def setup(hass, config):
                 image_url = base_url + hass.states.get(
                     image_entity).attributes.get('entity_picture')
                 image_data = await client.fetch(image_url)
+                if include_filename:
+                    # If entity snapshot requested, use entity name as 'filename'
+                    entity_name = base_url + hass.states.get(
+                        image_entity).attributes.get('friendly_name')
+                    filenames.append(entity_name)
                 base64_image = encode_image(image_data=image_data)
                 base64_images.append(base64_image)
 
@@ -194,24 +207,24 @@ def setup(hass, config):
             api_key = hass.data.get(DOMAIN).get(CONF_OPENAI_API_KEY)
             validate(mode=mode, api_key=api_key, base64_images=base64_images)
             model = str(data_call.data.get(MODEL, "gpt-4o"))
-            response_text = await client.openai(model, message, base64_images, api_key, max_tokens, temperature, detail)
+            response_text = await client.openai(model, message, base64_images, filenames, api_key, max_tokens, temperature, detail)
         elif mode == 'Anthropic':
             api_key = hass.data.get(DOMAIN).get(CONF_ANTHROPIC_API_KEY)
             _LOGGER.info(f"Anthropic API Key: {api_key}")
             validate(mode=mode, api_key=api_key, base64_images=base64_images)
             model = str(data_call.data.get(
                 MODEL, "claude-3-5-sonnet-20240620"))
-            response_text = await client.anthropic(model, message, base64_images, api_key, max_tokens, temperature)
+            response_text = await client.anthropic(model, message, base64_images, filenames, api_key, max_tokens, temperature)
         elif mode == 'LocalAI':
             validate(mode, None, base64_images,
                      localai_ip_address, localai_port)
             model = str(data_call.data.get(MODEL, "gpt-4-vision-preview"))
-            response_text = await client.localai(model, message, base64_images, localai_ip_address, localai_port, max_tokens, temperature)
+            response_text = await client.localai(model, message, base64_images, filenames, localai_ip_address, localai_port, max_tokens, temperature)
         elif mode == 'Ollama':
             validate(mode, None, base64_images,
                      ollama_ip_address, ollama_port)
             model = str(data_call.data.get(MODEL, "llava"))
-            response_text = await client.ollama(model, message, base64_images, ollama_ip_address, ollama_port, max_tokens, temperature)
+            response_text = await client.ollama(model, message, base64_images, filenames, ollama_ip_address, ollama_port, max_tokens, temperature)
 
         # close the RequestHandler and return response_text
         await client.close()
