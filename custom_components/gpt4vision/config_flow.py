@@ -36,7 +36,10 @@ class Validator:
             method = "GET"
         elif self.user_input["provider"] == "Anthropic":
             header = {
-                'x-api-key': key, 'content-type': 'application/json', 'anthropic-version': VERSION_ANTHROPIC}
+                'x-api-key': key,
+                'content-type': 'application/json',
+                'anthropic-version': VERSION_ANTHROPIC
+            }
             payload = {
                 "model": "claude-3-haiku-20240307",
                 "messages": [
@@ -158,7 +161,6 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return await self.async_step_ollama()
             elif provider == "LocalAI":
                 return await self.async_step_localai()
-
 
         return self.async_show_form(
             step_id="user",
