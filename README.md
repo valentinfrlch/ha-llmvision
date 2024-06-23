@@ -130,12 +130,13 @@ data:
   target_width: 1280
   detail: low
   temperature: 0.5
+  include_filename: true
 ```
 >[!NOTE]
 >Note that for `image_file` each path must be on a new line.  
 >The parameters `provider`, `message`, `max_tokens` and `temperature` are required.
 >Additionally, either `image_file` or `image_entity` need to have at least one input.  
->You can send multiple images per service call as well as mix `image_file` and `image_path` inputs.
+>You can send multiple images per service call as well as mix `image_file` and `image_path` inputs. To also include the filname in the request, set `include_filename` to `true`.
 
 Optionally, the `model`, `target_width` and `detail` properties can be set.  
 - Most **models** are listed below. For all available models check these pages: [OpenAI models](https://platform.openai.com/docs/models), [Anthropic Claude models](https://docs.anthropic.com/en/docs/about-claude/models), [Ollama models](https://ollama.com/blog/vision-models) and [LocalAI model gallery](https://localai.io/models/).
@@ -143,7 +144,9 @@ Optionally, the `model`, `target_width` and `detail` properties can be set.
 - The **detail** parameter can be set to `low` or `high`. If it is not set, it is set to `auto`. OpenAI will then use the image size to determine the detail level. For more information check the [OpenAI documentation](https://platform.openai.com/docs/guides/vision/low-or-high-fidelity-image-understanding).
 
 ### Additional information
-Requests will look roughly like the following to the LLM
+>[!NOTE]
+> If you set `include_filename` to `false` (the default) requests will look roughly like the following:
+> Images will be numbered sequentially starting from 1. You can refer to the images by their number in the prompt.
 ```
 Image 1:
 <base64 encoded image>
@@ -152,6 +155,21 @@ Image 2:
 ...
 <Your prompt>
 ```
+
+>[!NOTE]
+> If you set `include_filename` to `true` requests will look roughly like the following
+> - If the input is an image entity, the filename will be the entity's `friendly_name` attribute.
+> - If the input is an image file, the filename will be the file's name without the extension.
+> - Your prompt will be appended to the end of the request.
+```
+Front Door:
+<base64 encoded image>
+front_door_2024-12-31_23:59:59:
+<base64 encoded image>
+...
+<Your prompt>
+```
+
 
 ## Model Overview
 
