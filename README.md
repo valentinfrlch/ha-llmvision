@@ -155,14 +155,15 @@ Image 2:
 
 ## Model Overview
 
-| Model Name     | Hosting Options | Description     |
-|----------------|------------|----------------------|
-| GPT-4o         | Cloud (OpenAI API key required)       | Best all-round model|
-| Claude 3 Haiku   | Cloud (Anthropic API key required)       | Fast model optimized for speed |
-| Claude 3 Sonnet  | Cloud (Anthropic API key required)       | Balance between performance and speed |
-| Claude 3 Opus | Cloud (Anthropic API key required)       | High-performance model for more accuracy |
-| LLaVA-1.5 | Self-hosted (LocalAI or Ollama)       | Open-Source alternative |
-
+| Model Name     |       Hosting Options     | Description          |   MMMU Score   |
+|----------------|---------------------------|----------------------|----------------|
+| GPT-4o         | Cloud (OpenAI API key required)       | Best all-round model| 69.1
+| Claude 3 Haiku   | Cloud (Anthropic API key required)       | Fast model optimized for speed | 50.2
+| Claude 3 Sonnet  | Cloud (Anthropic API key required)       | Balance between performance and speed | 53.1
+| Claude 3 Opus | Cloud (Anthropic API key required)       | High-performance model for more accuracy | 59.4
+| Claude 3.5 Sonnet | Cloud (Anthropic API key required)      | Balance between performance and speed | 68.3
+| LLaVA-1.5 | Self-hosted (LocalAI or Ollama)       | Open-Source alternative | 36.4
+<p align="right">Data is based on the MMMU Leaderboard<sup>2</sup></p>
 
 ### Choosing the right model for you
 >[!NOTE]
@@ -172,11 +173,11 @@ Image 2:
 gpt4vision is compatible with multiple providers, each of which has different models available. Some providers run in the cloud, while others are self-hosted.  
 To see which model is best for your use case, check the figure below. It visualizes the averaged MMMU<sup>1</sup> scores of available cloud-based models. The higher the score, the better the model performs. An ideal model would exhibit a high MMMU score and low cost.
 
-<sup>1</sup> MMMU stands for "Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark". It assesses multimodal capabilities including image understanding.  
-<sup>2</sup> The data is based on the [MMMU Leaderboard](https://mmmu-benchmark.github.io/#leaderboard)
-
 <img src="benchmark_visualization\benchmark_visualization.jpg" alt="MMMU Benchmark visualization">
 <p align="right">The Benchmark will be updated regularly to include new models.</p>
+
+<sup>1</sup> MMMU stands for "Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark". It assesses multimodal capabilities including image understanding.  
+<sup>2</sup> The data is based on the [MMMU Leaderboard](https://mmmu-benchmark.github.io/#leaderboard)
 
 
 ### Debugging
