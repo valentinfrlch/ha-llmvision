@@ -39,10 +39,6 @@
                 }
             }
         },
-        "errors": {
-            "handshake_failed": "Could not connect to the server. Check you API key or IP and port",
-            "empty_api_key": "You must provide an API key"
-        },
         "abort": {
             "already_configured": "This provider is already configured. Delete the existing configuration to reconfigure"
         }
