@@ -138,7 +138,7 @@ data:
 >You can send multiple images per service call as well as mix `image_file` and `image_path` inputs.
 
 Optionally, the `model`, `target_width` and `detail` properties can be set.  
-- For available **models** check these pages: [OpenAI models](https://platform.openai.com/docs/models), [Anthropic Claude models](https://docs.anthropic.com/en/docs/about-claude/models), [Ollama models](https://ollama.com/blog/vision-models) and [LocalAI model gallery](https://localai.io/models/).
+- Most **models** are listed below. For all available models check these pages: [OpenAI models](https://platform.openai.com/docs/models), [Anthropic Claude models](https://docs.anthropic.com/en/docs/about-claude/models), [Ollama models](https://ollama.com/blog/vision-models) and [LocalAI model gallery](https://localai.io/models/).
 - The **target_width** is an integer between 512 and 3840 representing the image width in pixels. It is used to downscale the image before encoding it.
 - The **detail** parameter can be set to `low` or `high`. If it is not set, it is set to `auto`. OpenAI will then use the image size to determine the detail level. For more information check the [OpenAI documentation](https://platform.openai.com/docs/guides/vision/low-or-high-fidelity-image-understanding).
 
@@ -157,21 +157,21 @@ Image 2:
 
 | Model Name     |       Hosting Options     | Description          |   MMMU Score   |
 |----------------|---------------------------|----------------------|----------------|
-| GPT-4o         | Cloud (OpenAI API key required)       | Best all-round model| 69.1
-| Claude 3 Haiku   | Cloud (Anthropic API key required)       | Fast model optimized for speed | 50.2
+| GPT-4o         | Cloud (OpenAI API key required)       | Best all-round model| 69.1 |
+| Claude 3 Haiku   | Cloud (Anthropic API key required)       | Fast model optimized for speed | 50.2| 
 | Claude 3 Sonnet  | Cloud (Anthropic API key required)       | Balance between performance and speed | 53.1
 | Claude 3 Opus | Cloud (Anthropic API key required)       | High-performance model for more accuracy | 59.4
 | Claude 3.5 Sonnet | Cloud (Anthropic API key required)      | Balance between performance and speed | 68.3
-| LLaVA-1.5 | Self-hosted (LocalAI or Ollama)       | Open-Source alternative | 36.4
+| LLaVA-1.6 | Self-hosted (LocalAI or Ollama)       | Open-Source alternative | 43.8
 <p align="right">Data is based on the MMMU Leaderboard<sup>2</sup></p>
 
 ### Choosing the right model for you
 >[!NOTE]
-> **GPT-4o** achieves strong performance in the Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark MMMU<sup>1</sup>, while being cost-effective. This makes it a good choice for most use cases.
+> **Claude 3.5 Sonnet** achieves strong performance - comparable to GPT-4o - in the Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark MMMU<sup>1</sup>, while being 40% less expensive. This makes it the go-to model for most use cases.
 
 
 gpt4vision is compatible with multiple providers, each of which has different models available. Some providers run in the cloud, while others are self-hosted.  
-To see which model is best for your use case, check the figure below. It visualizes the averaged MMMU<sup>1</sup> scores of available cloud-based models. The higher the score, the better the model performs. An ideal model would exhibit a high MMMU score and low cost.
+To see which model is best for your use case, check the figure below. It visualizes the averaged MMMU<sup>1</sup> scores of available cloud-based models. The higher the score, the better the model performs.
 
 <img src="benchmark_visualization\benchmark_visualization.jpg" alt="MMMU Benchmark visualization">
 <p align="right">The Benchmark will be updated regularly to include new models.</p>
