@@ -32,6 +32,10 @@
                 }
             }
         },
+        "error": {
+            "handshake_failed": "Verbindung zum Server konnte nicht hergestellt werden. Überprüfen Sie Ihren API-Schlüssel oder die IP und den Port",
+            "empty_api_key": "Ungültiger API-Key"
+        },
         "abort": {
             "already_configured": "Anbieter ist bereits konfiguriert. Löschen Sie die vorhandene Konfiguration, um eine neue hinzuzufügen."
         }

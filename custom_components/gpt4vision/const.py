@@ -5,6 +5,7 @@ DOMAIN = "gpt4vision"
 
 # Configuration values from setup
 CONF_OPENAI_API_KEY = 'api_key'
+CONF_ANTHROPIC_API_KEY = 'anthropic_api_key'
 CONF_LOCALAI_IP_ADDRESS = 'localai_ip'
 CONF_LOCALAI_PORT = 'localai_port'
 CONF_OLLAMA_IP_ADDRESS = 'ollama_ip'
@@ -18,12 +19,17 @@ MODEL = 'model'
 MESSAGE = 'message'
 IMAGE_FILE = 'image_file'
 IMAGE_ENTITY = 'image_entity'
-TEMPERATURE = 'temperature'
 DETAIL = 'detail'
+TEMPERATURE = 'temperature'
+INCLUDE_FILENAME = 'include_filename'
 
 # Error messages
 ERROR_OPENAI_NOT_CONFIGURED = "OpenAI provider is not configured"
+ERROR_ANTHROPIC_NOT_CONFIGURED = "Anthropic provider is not configured"
 ERROR_LOCALAI_NOT_CONFIGURED = "LocalAI provider is not configured"
 ERROR_OLLAMA_NOT_CONFIGURED = "Ollama provider is not configured"
 ERROR_NO_IMAGE_INPUT = "No image input. Either provide image_file path or image_entity"
 ERROR_HANDSHAKE_FAILED = "Handshake with LocalAI server failed"
+
+# Versions
+VERSION_ANTHROPIC = "2023-06-01"

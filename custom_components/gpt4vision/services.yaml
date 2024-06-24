@@ -1,6 +1,9 @@
 image_analyzer:
+  name: GPT-4 Vision Image Analyzer
+  description: Analyze an image with AI
   fields:
     provider:
+      name: Provider
       description: 'Provider to use'
       required: true
       default: 'OpenAI'
@@ -8,9 +11,11 @@ image_analyzer:
         select:
           options:
             - 'OpenAI'
-            - 'LocalAI'
+            - 'Anthropic'
             - 'Ollama'
+            - 'LocalAI'
     message:
+      name: Prompt
       required: true
       description: 'Prompt'
       example: "Describe the person present in the photo"
@@ -18,6 +23,7 @@ image_analyzer:
         text:
           multiline: true
     max_tokens:
+      name: Maximum Tokens
       description: 'Maximum number of tokens to generate'
       required: true
       example: 100
@@ -27,6 +33,7 @@ image_analyzer:
           min: 10
           max: 1000
     image_file:
+      name: Image File
       required: false
       description: 'Local path to image'
       example: "/config/www/images/img.jpg"
@@ -34,6 +41,7 @@ image_analyzer:
         text:
           multiline: true
     image_entity:
+      name: Image Entity
       required: false
       description: 'Image or camera entity to analyze'
       example: 'image.front_door_person'
@@ -41,15 +49,8 @@ image_analyzer:
         entity:
           domain: ["image", "camera"]
           multiple: true
-    model:
-      required: false
-      description: 'Model to use'
-      example: "gpt-4o"
-      default: "gpt-4o"
-      selector:
-        text:
-          multiline: false
     target_width:
+      name: Target Width
       required: false
       description: 'Width in pixels to downscale to'
       example: 1280
@@ -58,7 +59,17 @@ image_analyzer:
         number:
           min: 512
           max: 3840
+    model:
+      name: Model
+      required: false
+      description: 'Model to use'
+      example: "gpt-4o"
+      default: "gpt-4o"
+      selector:
+        text:
+          multiline: false
     detail:
+      name: Detail
       required: false
       description: "Detail parameter, leave empty for 'auto'"
       default: 'high'
@@ -68,6 +79,7 @@ image_analyzer:
             - 'high'
             - 'low'
     temperature:
+      name: Temperature
       required: true
       description: 'Randomness. Lower is more accurate, higher is more creative'
       example: 0.5
@@ -77,3 +89,10 @@ image_analyzer:
           min: 0.0
           max: 1.0
           step: 0.1
+    include_filename:
+      name: Include Filename
+      required: false
+      description: 'Include filename in the request'
+      default: false
+      selector:
+        boolean:

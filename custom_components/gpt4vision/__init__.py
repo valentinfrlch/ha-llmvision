@@ -2,6 +2,7 @@
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
+    CONF_ANTHROPIC_API_KEY,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
     CONF_OLLAMA_IP_ADDRESS,
@@ -15,7 +16,9 @@ from .const import (
     IMAGE_ENTITY,
     TEMPERATURE,
     DETAIL,
+    INCLUDE_FILENAME,
     ERROR_OPENAI_NOT_CONFIGURED,
+    ERROR_ANTHROPIC_NOT_CONFIGURED,
     ERROR_LOCALAI_NOT_CONFIGURED,
     ERROR_OLLAMA_NOT_CONFIGURED,
     ERROR_NO_IMAGE_INPUT
@@ -34,9 +37,10 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry):
-    """Set up gpt4vision from a config entry."""
+    """Save gpt4vision config entry in hass.data"""
     # Get all entries from config flow
     openai_api_key = entry.data.get(CONF_OPENAI_API_KEY)
+    anthropic_api_key = entry.data.get(CONF_ANTHROPIC_API_KEY)
     localai_ip_address = entry.data.get(CONF_LOCALAI_IP_ADDRESS)
     localai_port = entry.data.get(CONF_LOCALAI_PORT)
     ollama_ip_address = entry.data.get(CONF_OLLAMA_IP_ADDRESS)
@@ -51,6 +55,7 @@ async def async_setup_entry(hass, entry):
         key: value
         for key, value in {
             CONF_OPENAI_API_KEY: openai_api_key,
+            CONF_ANTHROPIC_API_KEY: anthropic_api_key,
             CONF_LOCALAI_IP_ADDRESS: localai_ip_address,
             CONF_LOCALAI_PORT: localai_port,
             CONF_OLLAMA_IP_ADDRESS: ollama_ip_address,
@@ -78,6 +83,9 @@ def validate(mode, api_key, base64_images, ip_address=None, port=None):
     if mode == 'OpenAI':
         if not api_key:
             raise ServiceValidationError(ERROR_OPENAI_NOT_CONFIGURED)
+    if mode == 'Anthropic':
+        if not api_key:
+            raise ServiceValidationError(ERROR_ANTHROPIC_NOT_CONFIGURED)
     # Checks for LocalAI
     elif mode == 'LocalAI':
         if not ip_address or not port:
@@ -99,7 +107,7 @@ def setup(hass, config):
             json: response_text
         """
         # HELPERS
-        def encode_image(image_path=None, image_data=None):
+        async def encode_image(image_path=None, image_data=None):
             """Encode image as base64
 
             Args:
@@ -108,9 +116,11 @@ def setup(hass, config):
             Returns:
                 string: image encoded as base64
             """
+            loop = hass.loop
             if image_path:
                 # Open the image file
-                with Image.open(image_path) as img:
+                img = await loop.run_in_executor(None, Image.open, image_path)
+                with img:
                     # calculate new height based on aspect ratio
                     width, height = img.size
                     aspect_ratio = width / height
@@ -130,15 +140,23 @@ def setup(hass, config):
                 # Convert the image to base64
                 img_byte_arr = io.BytesIO()
                 img_byte_arr.write(image_data)
-                img = Image.open(img_byte_arr)
-                img.save(img_byte_arr, format='JPEG')
-                base64_image = base64.b64encode(
-                    img_byte_arr.getvalue()).decode('utf-8')
+                img = await loop.run_in_executor(None, Image.open, img_byte_arr)
+                with img:
+                    # calculate new height based on aspect ratio
+                    width, height = img.size
+                    aspect_ratio = width / height
+                    target_height = int(target_width / aspect_ratio)
+
+                    if width > target_width or height > target_height:
+                        img = img.resize((target_width, target_height))
+
+                    img.save(img_byte_arr, format='JPEG')
+                    base64_image = base64.b64encode(
+                        img_byte_arr.getvalue()).decode('utf-8')
 
             return base64_image
 
         # Read from configuration (hass.data)
-        api_key = hass.data.get(DOMAIN, {}).get(CONF_OPENAI_API_KEY)
         localai_ip_address = hass.data.get(
             DOMAIN, {}).get(CONF_LOCALAI_IP_ADDRESS)
         localai_port = hass.data.get(DOMAIN, {}).get(CONF_LOCALAI_PORT)
@@ -156,19 +174,28 @@ def setup(hass, config):
         temperature = float(data_call.data.get(TEMPERATURE, 0.5))
         max_tokens = int(data_call.data.get(MAXTOKENS))
         detail = str(data_call.data.get(DETAIL, "auto"))
+        include_filename = data_call.data.get(INCLUDE_FILENAME, False)
 
         # Initialize RequestHandler
-        handler = RequestHandler(hass)
+        client = RequestHandler(hass)
 
         base64_images = []
+        filenames = []
+
         if image_paths:
             for image_path in image_paths:
                 try:
                     image_path = image_path.strip()
+                    if include_filename:
+                        # Append filename (without extension)
+                        filenames.append(image_path.split('/')
+                                         [-1].split('.')[0])
+                    else:
+                        filenames.append("")
                     if not os.path.exists(image_path):
                         raise ServiceValidationError(
                             f"File {image_path} does not exist")
-                    base64_image = encode_image(image_path=image_path)
+                    base64_image = await encode_image(image_path=image_path)
                     base64_images.append(base64_image)
                 except Exception as e:
                     raise ServiceValidationError(f"Error: {e}")
@@ -179,28 +206,71 @@ def setup(hass, config):
                 # protocol = get_url(hass).split('://')[0]
                 image_url = base_url + hass.states.get(
                     image_entity).attributes.get('entity_picture')
-                image_data = await handler.fetch(image_url)
-            base64_image = encode_image(image_data=image_data)
-            base64_images.append(base64_image)
+                image_data = await client.fetch(image_url)
+                if include_filename:
+                    # If entity snapshot requested, use entity name as 'filename'
+                    entity_name = base_url + hass.states.get(
+                        image_entity).attributes.get('friendly_name')
+                    filenames.append(entity_name)
+                else:
+                    filenames.append("")
+                base64_image = await encode_image(image_data=image_data)
+                base64_images.append(base64_image)
+
+        _LOGGER.info(f"Base64 Images: {base64_images}")
 
         # Validate configuration and input data and call handler
         if mode == 'OpenAI':
-            validate(mode, api_key, base64_images)
+            api_key = hass.data.get(DOMAIN).get(CONF_OPENAI_API_KEY)
+            validate(mode=mode, api_key=api_key, base64_images=base64_images)
             model = str(data_call.data.get(MODEL, "gpt-4o"))
-            response_text = await handler.openai(model, message, base64_images, api_key, max_tokens, temperature, detail)
+            response_text = await client.openai(model=model,
+                                                message=message,
+                                                base64_images=base64_images,
+                                                filenames=filenames,
+                                                api_key=api_key,
+                                                max_tokens=max_tokens,
+                                                temperature=temperature,
+                                                detail=detail)
+        elif mode == 'Anthropic':
+            api_key = hass.data.get(DOMAIN).get(CONF_ANTHROPIC_API_KEY)
+            validate(mode=mode, api_key=api_key, base64_images=base64_images)
+            model = str(data_call.data.get(
+                MODEL, "claude-3-5-sonnet-20240620"))
+            response_text = await client.anthropic(model=model,
+                                                   message=message,
+                                                   base64_images=base64_images,
+                                                   filenames=filenames,
+                                                   api_key=api_key,
+                                                   max_tokens=max_tokens,
+                                                   temperature=temperature)
         elif mode == 'LocalAI':
             validate(mode, None, base64_images,
                      localai_ip_address, localai_port)
             model = str(data_call.data.get(MODEL, "gpt-4-vision-preview"))
-            response_text = await handler.localai(model, message, base64_images, localai_ip_address, localai_port, max_tokens, temperature)
+            response_text = await client.localai(model=model,
+                                                 message=message,
+                                                 base64_images=base64_images,
+                                                 filenames=filenames,
+                                                 ip_address=localai_ip_address,
+                                                 port=localai_port,
+                                                 max_tokens=max_tokens,
+                                                 temperature=temperature)
         elif mode == 'Ollama':
             validate(mode, None, base64_images,
                      ollama_ip_address, ollama_port)
             model = str(data_call.data.get(MODEL, "llava"))
-            response_text = await handler.ollama(model, message, base64_images, ollama_ip_address, ollama_port, max_tokens, temperature)
+            response_text = await client.ollama(model=model,
+                                                message=message,
+                                                base64_images=base64_images,
+                                                filenames=filenames,
+                                                ip_address=ollama_ip_address,
+                                                port=ollama_port,
+                                                max_tokens=max_tokens,
+                                                temperature=temperature)
 
         # close the RequestHandler and return response_text
-        await handler.close()
+        await client.close()
         return {"response_text": response_text}
 
     hass.services.register(

@@ -30,10 +30,21 @@
                 "data": {
                     "api_key": "Your API key"
                 }
+            },
+            "anthropic": {
+                "title": "Add Anthropic API key",
+                "description": "Provide a valid Anthropic API key.",
+                "data": {
+                    "anthropic_api_key": "Your API key"
+                }
             }
         },
+        "error": {
+            "handshake_failed": "Could not connect to the server. Check you API key or IP and port",
+            "empty_api_key": "Invalid API key"
+        },
         "abort": {
-            "already_configured": "Provider is already configured. Delete the existing configuration to add a new one."
+            "already_configured": "This provider is already configured. Delete the existing configuration to reconfigure"
         }
     }
 }
