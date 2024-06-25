@@ -37,22 +37,10 @@ class RequestHandler:
             {"type": "text", "text": message}
         )
 
-        _LOGGER.debug(f"OpenAI request data: {data}")
+        response = await self._post(
+            url="https://api.openai.com/v1/chat/completions", headers=headers, data=data)
 
-        try:
-            response = await self.session.post(
-                "https://api.openai.com/v1/chat/completions", headers=headers, json=data)
-        except Exception as e:
-            _LOGGER.error(f"Request failed: {e}")
-            raise ServiceValidationError(f"Request failed: {e}")
-
-        if response.status != 200:
-            error_message = (await response.json()).get('error').get('message')
-            _LOGGER.error(
-                f"Request failed with status: {response.status} and error: {error_message}")
-            raise ServiceValidationError(error_message)
-
-        response_text = (await response.json()).get(
+        response_text = response.get(
             "choices")[0].get("message").get("content")
         return response_text
 
@@ -92,22 +80,56 @@ class RequestHandler:
             {"type": "text", "text": message}
         )
 
-        _LOGGER.debug(f"Anthropic request data: {data}")
+        response = await self._post(
+            url="https://api.anthropic.com/v1/messages", headers=headers, data=data)
 
-        try:
-            response = await self.session.post(
-                "https://api.anthropic.com/v1/messages", headers=headers, json=data)
-        except Exception as e:
-            _LOGGER.error(f"Request failed: {e}")
-            raise ServiceValidationError(f"Request failed: {e}")
+        response_text = response.get("content")[0].get("text")
+        return response_text
 
-        if response.status != 200:
-            error_message = (await response.json()).get('error').get('message')
-            _LOGGER.error(
-                f"Request failed with status: {response.status} and error: {error_message}")
-            raise ServiceValidationError(error_message)
+    async def google(self, model, message, base64_images, filenames, api_key, max_tokens, temperature):
+        # Set headers and payload
+        headers = {'content-type': 'application/json'}
+        data = {"contents": [
+        ],
+            "generationConfig": {
+                "maxOutputTokens": max_tokens,
+                "temperature": temperature
+        }
+        }
 
-        response_text = (await response.json()).get("content")[0].get("text")
+        # Add the images to the request
+        for image, filename in zip(base64_images, filenames):
+            tag = ("Image " + str(base64_images.index(image) + 1)
+                   ) if filename == "" or not filename else filename
+            data["contents"].append(
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "text": tag + ":"
+                        },
+                        {
+                            "inline_data": {
+                                "mime_type": "image/jpeg",
+                                "data": image
+                            }
+                        }
+                    ]
+                }
+            )
+
+        # append the message to the end of the request
+        data["contents"].append(
+            {"role": "user",
+             "parts": [{"text": message}
+                       ]
+             }
+        )
+
+        response = await self._post(
+            url=f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}", headers=headers, data=data)
+
+        response_text = response.get("candidates")[0].get("content").get("parts")[0].get("text")
         return response_text
 
     async def localai(self, model, message, base64_images, filenames, ip_address, port, max_tokens, temperature):
@@ -130,23 +152,10 @@ class RequestHandler:
             {"type": "text", "text": message}
         )
 
-        _LOGGER.debug(f"LocalAI request data: {data}")
+        response = await self._post(
+            url=f"http://{ip_address}:{port}/v1/chat/completions", headers={}, data=data)
 
-        try:
-            response = await self.session.post(
-                f"http://{ip_address}:{port}/v1/chat/completions", json=data)
-        except Exception as e:
-            _LOGGER.error(f"Request failed: {e}")
-            raise ServiceValidationError(f"Request failed: {e}")
-
-        if response.status != 200:
-            _LOGGER.error(
-                f"Request failed with status code {response.status}")
-            raise ServiceValidationError(
-                f"Request failed with status code {response.status}")
-
-        response_text = (await response.json()).get("choices")[0].get(
-            "message").get("content")
+        response_text = response.get("choices")[0].get("message").get("content")
         return response_text
 
     async def ollama(self, model, message, base64_images, filenames, ip_address, port, max_tokens, temperature):
@@ -169,30 +178,35 @@ class RequestHandler:
                 "images": [image]
             }
             data["messages"].append(image_message)
+        # append to the end of the request
         prompt_message = {
             "role": "user",
             "content": message
         }
         data["messages"].append(prompt_message)
 
-        _LOGGER.debug(f"Ollama request data: {data}")
+        response = await self._post(
+            url=f"http://{ip_address}:{port}/api/chat", headers={}, data=data)
 
+        response_text = response.get("message").get("content")
+        return response_text
+
+    async def _post(self, url, headers, data):
+        """Post data to url and return response data"""
+        _LOGGER.debug(f"Request data: {data}")
         try:
-            response = await self.session.post(
-                f"http://{ip_address}:{port}/api/chat", json=data)
+            response = await self.session.post(url, headers=headers, json=data)
         except Exception as e:
-            _LOGGER.error(f"Request failed: {e}")
             raise ServiceValidationError(f"Request failed: {e}")
 
         if response.status != 200:
-            _LOGGER.error(
-                f"Request failed with status code {response.status}")
+            error_message = (await response.json()).get('error').get('message')
             raise ServiceValidationError(
-                f"Request failed with status code {response.status}")
+                f"Request failed with status: {response.status} and error: {error_message}")
 
-        response_text = (await response.json()).get(
-            "message").get("content")
-        return response_text
+        response_data = await response.json()
+        _LOGGER.debug(f"Response data: {response_data}")
+        return response_data
 
     async def fetch(self, url):
         """Fetch image from url and return image data"""

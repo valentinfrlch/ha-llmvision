@@ -3,6 +3,7 @@ from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
     CONF_ANTHROPIC_API_KEY,
+    CONF_GOOGLE_API_KEY,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
     CONF_OLLAMA_IP_ADDRESS,
@@ -19,6 +20,7 @@ from .const import (
     INCLUDE_FILENAME,
     ERROR_OPENAI_NOT_CONFIGURED,
     ERROR_ANTHROPIC_NOT_CONFIGURED,
+    ERROR_GOOGLE_NOT_CONFIGURED,
     ERROR_LOCALAI_NOT_CONFIGURED,
     ERROR_OLLAMA_NOT_CONFIGURED,
     ERROR_NO_IMAGE_INPUT
@@ -41,6 +43,7 @@ async def async_setup_entry(hass, entry):
     # Get all entries from config flow
     openai_api_key = entry.data.get(CONF_OPENAI_API_KEY)
     anthropic_api_key = entry.data.get(CONF_ANTHROPIC_API_KEY)
+    google_api_key = entry.data.get(CONF_GOOGLE_API_KEY)
     localai_ip_address = entry.data.get(CONF_LOCALAI_IP_ADDRESS)
     localai_port = entry.data.get(CONF_LOCALAI_PORT)
     ollama_ip_address = entry.data.get(CONF_OLLAMA_IP_ADDRESS)
@@ -56,6 +59,7 @@ async def async_setup_entry(hass, entry):
         for key, value in {
             CONF_OPENAI_API_KEY: openai_api_key,
             CONF_ANTHROPIC_API_KEY: anthropic_api_key,
+            CONF_GOOGLE_API_KEY: google_api_key,
             CONF_LOCALAI_IP_ADDRESS: localai_ip_address,
             CONF_LOCALAI_PORT: localai_port,
             CONF_OLLAMA_IP_ADDRESS: ollama_ip_address,
@@ -83,9 +87,13 @@ def validate(mode, api_key, base64_images, ip_address=None, port=None):
     if mode == 'OpenAI':
         if not api_key:
             raise ServiceValidationError(ERROR_OPENAI_NOT_CONFIGURED)
-    if mode == 'Anthropic':
+    # Checks for Anthropic
+    elif mode == 'Anthropic':
         if not api_key:
             raise ServiceValidationError(ERROR_ANTHROPIC_NOT_CONFIGURED)
+    elif mode == 'Google':
+        if not api_key:
+            raise ServiceValidationError(ERROR_GOOGLE_NOT_CONFIGURED)
     # Checks for LocalAI
     elif mode == 'LocalAI':
         if not ip_address or not port:
@@ -238,6 +246,18 @@ def setup(hass, config):
             model = str(data_call.data.get(
                 MODEL, "claude-3-5-sonnet-20240620"))
             response_text = await client.anthropic(model=model,
+                                                   message=message,
+                                                   base64_images=base64_images,
+                                                   filenames=filenames,
+                                                   api_key=api_key,
+                                                   max_tokens=max_tokens,
+                                                   temperature=temperature)
+        elif mode == 'Google':
+            api_key = hass.data.get(DOMAIN).get(CONF_GOOGLE_API_KEY)
+            validate(mode=mode, api_key=api_key, base64_images=base64_images)
+            model = str(data_call.data.get(
+                MODEL, "gemini-1.5-flash-latest"))
+            response_text = await client.google(model=model,
                                                    message=message,
                                                    base64_images=base64_images,
                                                    filenames=filenames,

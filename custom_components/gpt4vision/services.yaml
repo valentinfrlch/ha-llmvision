@@ -12,6 +12,7 @@ image_analyzer:
           options:
             - 'OpenAI'
             - 'Anthropic'
+            - 'Google'
             - 'Ollama'
             - 'LocalAI'
     message:
