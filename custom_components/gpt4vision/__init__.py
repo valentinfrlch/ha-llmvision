@@ -180,7 +180,7 @@ def setup(hass, config):
         image_entities = data_call.data.get(IMAGE_ENTITY)
         target_width = data_call.data.get(TARGET_WIDTH, 1280)
         temperature = float(data_call.data.get(TEMPERATURE, 0.5))
-        max_tokens = int(data_call.data.get(MAXTOKENS), 100)
+        max_tokens = int(data_call.data.get(MAXTOKENS, 100))
         detail = str(data_call.data.get(DETAIL, "auto"))
         include_filename = data_call.data.get(INCLUDE_FILENAME, False)
 
