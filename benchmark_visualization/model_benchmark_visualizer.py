@@ -46,7 +46,8 @@ def create_benchmark_visualization(df: pd.DataFrame):
     df['Category'] = df['Model'].apply(categorize_model)
 
     # Set order for legend
-    category_order = ['GPT-4', 'Claude 3', 'Claude 3.5']  # Add 'Gemini 1.5'
+    category_order = ['GPT-4', 'Claude 3',
+                      'Claude 3.5', 'Gemini 1.5']  # Add 'Gemini 1.5'
     df['Category'] = pd.Categorical(
         df['Category'], categories=category_order, ordered=True)
     df = df.sort_values('Category')
@@ -77,26 +78,26 @@ def create_benchmark_visualization(df: pd.DataFrame):
     for index, model in df.iterrows():
         try:
             fig.add_trace(go.Scatter(x=[model['Cost']], y=[model['Overall']],
-                        mode='markers', # Removed 'text' from mode
-                        name=model['Model'], marker=dict(size=20, color=colors[model['Category']])))
+                                     mode='markers',  # Removed 'text' from mode
+                                     name=model['Model'], marker=dict(size=20, color=colors[model['Category']])))
         except Exception as e:
             continue
-    
+
         # Add model name
         fig.add_annotation(x=model['Cost'], y=model['Overall'],
                            text=model['Model'],
                            showarrow=False,
                            yshift=-35)
 
-    fig.update_layout(title='Performance of Cloud-Based Models in gpt4vision',
+    fig.update_layout(title={'text': 'Performance vs Cost of Cloud-Based Models in gpt4vision',
+                             'font': {'size': 50}},
                       xaxis_title='$/1M Input Tokens', yaxis_title='MMMU Score Average',
                       paper_bgcolor='#0d1117', plot_bgcolor='#161b22',
                       font=dict(color='white', family='Product Sans', size=25),
                       xaxis=dict(color='white', linecolor='grey',
                                  showgrid=False, zeroline=False),
                       yaxis=dict(color='white', linecolor='grey',
-                                 showgrid=False, zeroline=False)
-                      )
+                                 showgrid=False, zeroline=False))
     # Save the plot as an image
     fig.write_image("benchmark_visualization/benchmark_visualization.jpg",
                     width=1920, height=1080, scale=1)
