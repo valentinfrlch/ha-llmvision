@@ -30,6 +30,20 @@
                 "data": {
                     "api_key": "Votre clé API"
                 }
+            },
+            "anthropic": {
+                "title": "Ajoutez la clé API OpenAI",
+                "description": "Fournissez une clé API Anthropic valide.",
+                "data": {
+                    "api_key": "Votre clé API"
+                }
+            },
+            "google": {
+                "title": "Ajoutez la clé API Google Gemini",
+                "description": "Fournissez une clé API Google Gemini valide.",
+                "data": {
+                    "api_key": "Votre clé API"
+                }
             }
         },
         "error": {
