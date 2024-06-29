@@ -1,7 +1,7 @@
 <h1 align=center> GPT-4 Vision for Home Assistant </h1>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
-<img src=https://img.shields.io/badge/version-0.4.3-blue>
+<img src=https://img.shields.io/badge/version-0.4.5-blue>
 <a href="https://github.com/valentinfrlch/ha-gpt4vision/issues">
 <img src="https://img.shields.io/maintenance/yes/2024.svg">
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-gpt4vision?color=0088ff"/>
@@ -31,10 +31,10 @@
 <br>
 
 **gpt4vision** is a Home Assistant integration that allows you to analyze images and camera feeds using GPT-4 Vision.  
-Supported providers are OpenAI, Anthropic, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/).
+Supported providers are OpenAI, Anthropic, Google Gemini, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/).
 
 ## Features
-- Compatible with OpenAI, Anthropic Claude, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/)
+- Compatible with OpenAI, Anthropic Claude, Google Gemini, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/)
 - Takes images and camera entities as input as well as image files
 - Images can be downscaled for faster processing
 - Can be installed and updated through HACS and can be set up in the Home Assistant UI
@@ -63,6 +63,9 @@ A pricing calculator is available here: [https://openai.com/api/pricing/](https:
 ### Anthropic
 Obtain an API key from [Anthropic](https://claude.ai/) and enter it in the Home Assistant UI during setup.
 Pricing is available here: [Anthropic image cost](https://docs.anthropic.com/en/docs/build-with-claude/vision#calculate-image-costs). Images can be downscaled with the built-in downscaler.
+
+### Google
+To use Google Gemini you need to have a Google account and obtain an API key from the [AI Studio](https://aistudio.google.com/app/apikey). Depending on your region, you may need to enable billing. Pricing is available here: [Gemini Pricing](https://ai.google.dev/pricing)
 
 ### LocalAI
 To use LocalAI you need to have a LocalAI server running. You can find the installation instructions [here](https://localai.io/basics/getting_started/).  During setup you'll need to provide the IP address of your machine and the port on which LocalAI is running (default is 8000).
@@ -132,16 +135,20 @@ data:
   temperature: 0.5
   include_filename: true
 ```
->[!NOTE]
->Note that for `image_file` each path must be on a new line.  
->The parameters `provider`, `message`, `max_tokens` and `temperature` are required.
->Additionally, either `image_file` or `image_entity` need to have at least one input.  
->You can send multiple images per service call as well as mix `image_file` and `image_path` inputs. To also include the filname in the request, set `include_filename` to `true`.
+| Parameter        | Optional | Description                                                                                                                                                                                                                   | Valid Values                                                                                                                                                                                                                                  |
+|------------------|----------|-------------------------|-------------------------------|
+| `provider`       | No      | The AI provider call.                                                                                                                                                                                       |                                                                                                                                                                                                                                               |
+| `message`        | No      | The prompt to send along with the image(s).                                                                                                                                                                        |                                                                                                                                                                                                                                               |
+| `max_tokens`     | No      | The maximum number of response tokens to generate.                                                                                                                                                                        |                                                                                                                                                                                                                                               |
+| `temperature`    | No      | Randomness of the output.                                                                                                                                                                                       |                                                                                                                                                                                                                                               |
+| `image_file`     | Yes*      | The path to the image file(s). Each path must be on a new line.                                                                                                                                                              |                                                                                                                                                                                                                                               |
+| `image_entity`   | Yes*      | An alternative to `image_file` for providing image input.                                                                                                                                                                    |                                                                                                                                                                                                                                               |
+| `include_filename` | Yes     | Whether to include the filename in the request.                                                                                                                                                                              | `true`, `false`                                                                                                                                                                                                                               |
+| `model`          | Yes       | The model used for processing the image(s).                                                                                                                                                                                  |
+| `target_width`   | Yes       | The width to downscale the image to before encoding.                                                                                                                                                                         | An integer between 512 and 3840                                                                                                                                                                                                               |
+| `detail`         | Yes       | The level of detail to use for image understanding.                                                                                                                                                                          | `low`, `high`, `auto` (If not set, it is set to `auto`. OpenAI uses the image size to determine the detail level.)                                                                                                                            |
 
-Optionally, the `model`, `target_width` and `detail` properties can be set.  
-- Most **models** are listed below. For all available models check these pages: [OpenAI models](https://platform.openai.com/docs/models), [Anthropic Claude models](https://docs.anthropic.com/en/docs/about-claude/models), [Ollama models](https://ollama.com/blog/vision-models) and [LocalAI model gallery](https://localai.io/models/).
-- The **target_width** is an integer between 512 and 3840 representing the image width in pixels. It is used to downscale the image before encoding it.
-- The **detail** parameter can be set to `low` or `high`. If it is not set, it is set to `auto`. OpenAI will then use the image size to determine the detail level. For more information check the [OpenAI documentation](https://platform.openai.com/docs/guides/vision/low-or-high-fidelity-image-understanding).
+
 
 ### Additional information
 >[!NOTE]
@@ -176,10 +183,12 @@ front_door_2024-12-31_23:59:59:
 | Model Name     |       Hosting Options     | Description          |   MMMU<sup>1</sup> Score   |
 |----------------|---------------------------|----------------------|----------------|
 | GPT-4o         | Cloud (OpenAI API key required)       | Best all-round model| 69.1 |
+| Claude 3.5 Sonnet | Cloud (Anthropic API key required)      | Balance between performance and speed | 68.3
 | Claude 3 Haiku   | Cloud (Anthropic API key required)       | Fast model optimized for speed | 50.2| 
 | Claude 3 Sonnet  | Cloud (Anthropic API key required)       | Balance between performance and speed | 53.1
 | Claude 3 Opus | Cloud (Anthropic API key required)       | High-performance model for more accuracy | 59.4
-| Claude 3.5 Sonnet | Cloud (Anthropic API key required)      | Balance between performance and speed | 68.3
+| Gemini 1.5 Flash | Cloud (Google API key required)      | Fast model optimized for speed | 56.1
+| Gemini 1.5 Pro | Cloud (Google API key required)      | High-performance model for more accuracy | 62.2
 | LLaVA-1.6 | Self-hosted (LocalAI or Ollama)       | Open-Source alternative | 43.8
 <p align="right">Data is based on the MMMU Leaderboard<sup>2</sup></p>
 

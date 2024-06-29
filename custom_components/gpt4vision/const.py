@@ -4,8 +4,9 @@
 DOMAIN = "gpt4vision"
 
 # Configuration values from setup
-CONF_OPENAI_API_KEY = 'api_key'
+CONF_OPENAI_API_KEY = 'openai_api_key'
 CONF_ANTHROPIC_API_KEY = 'anthropic_api_key'
+CONF_GOOGLE_API_KEY = 'google_api_key'
 CONF_LOCALAI_IP_ADDRESS = 'localai_ip'
 CONF_LOCALAI_PORT = 'localai_port'
 CONF_OLLAMA_IP_ADDRESS = 'ollama_ip'
@@ -26,6 +27,7 @@ INCLUDE_FILENAME = 'include_filename'
 # Error messages
 ERROR_OPENAI_NOT_CONFIGURED = "OpenAI provider is not configured"
 ERROR_ANTHROPIC_NOT_CONFIGURED = "Anthropic provider is not configured"
+ERROR_GOOGLE_NOT_CONFIGURED = "Google provider is not configured"
 ERROR_LOCALAI_NOT_CONFIGURED = "LocalAI provider is not configured"
 ERROR_OLLAMA_NOT_CONFIGURED = "Ollama provider is not configured"
 ERROR_NO_IMAGE_INPUT = "No image input. Either provide image_file path or image_entity"

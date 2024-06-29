@@ -30,6 +30,20 @@
                 "data": {
                     "api_key": "Ihr API-Schlüssel"
                 }
+            },
+            "anthropic": {
+                "title": "Fügen Sie den Anthropic-API-Schlüssel hinzu",
+                "description": "Geben Sie einen gültigen Anthropic-API-Schlüssel an.",
+                "data": {
+                    "api_key": "Ihr API-Schlüssel"
+                }
+            },
+            "google": {
+                "title": "Fügen Sie den Google Gemini-API-Schlüssel hinzu",
+                "description": "Geben Sie einen gültigen Google Gemini-API-Schlüssel an.",
+                "data": {
+                    "api_key": "Ihr API-Schlüssel"
+                }
             }
         },
         "error": {

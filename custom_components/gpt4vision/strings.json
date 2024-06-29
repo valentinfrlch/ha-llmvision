@@ -37,6 +37,13 @@
                 "data": {
                     "anthropic_api_key": "Your API key"
                 }
+            },
+            "google": {
+                "title": "Add Google API key",
+                "description": "Provide a valid Google Gemini API key.",
+                "data": {
+                    "google_api_key": "Your API key"
+                }
             }
         },
         "error": {
