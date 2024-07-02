@@ -137,17 +137,16 @@ data:
 ```
 | Parameter        | Optional |                     Description        | Default | Valid Values                   |
 |------------------|----------|--------------------------------------|---------------------|----------------------|
-| `provider`       | No      | The AI provider call.     |         `OpenAI`                      |                |
-| `message`        | No      | The prompt to send along with the image(s).     |                 |                |
-| `max_tokens`     | No      | The maximum number of response tokens to generate.     | 100      |                |
-| `temperature`    | No      | Randomness of the output.       |       0.5                        |                |
-| `image_file`     | Yes*      | The path to the image file(s). Each path must be on a new line.| |                |
-| `image_entity`   | Yes*      | An alternative to `image_file` for providing image input.|       |                |
+| `provider`       | No      | The AI provider call.     |         `OpenAI`                      |`OpenAI`, `Anthropic`, `Google`, `Ollama`, `LocalAI`|
+| `model`          | Yes       | Model used for processing the image(s).            |      |  See table below |
+| `message`        | No      | The prompt to send along with the image(s).     |                 |  String  |
+| `image_file`     | Yes*      | The path to the image file(s). Each path must be on a new line.| |Valid path to an image file|
+| `image_entity`   | Yes*      | An alternative to `image_file` for providing image input.|       |any `image` or `camera` entity|
 | `include_filename` | Yes     | Whether to include the filename in the request.        | `false` | `true`, `false`|
-| `model`          | Yes       | The model used for processing the image(s).            |         |                |
-| `target_width`   | Yes       | The width to downscale the image to before encoding. |  1280  | An integer between 512 and 3840|
-| `detail`         | Yes       | The level of detail to use for image understanding.  | `auto` | `auto`, `low`, `high` |
-
+| `target_width`   | Yes       | Width to downscale the image to before encoding. |  1280  | Integer between 512 and 3840|
+| `detail`         | Yes       | Level of detail to use for image understanding.  | `auto` | `auto`, `low`, `high` |
+| `max_tokens`     | No      | The maximum number of response tokens to generate.     | 100      |Integer between 10 and 1000|
+| `temperature`    | No      | Randomness of the output.       |       0.5                        |Float between 0.0 and 1.0|
 
 
 ### Additional information
@@ -201,7 +200,7 @@ gpt4vision is compatible with multiple providers, each of which has different mo
 To see which model is best for your use case, check the figure below. It visualizes the averaged MMMU<sup>1</sup> scores of available cloud-based models. The higher the score, the better the model performs.
 
 <img src="benchmark_visualization\benchmark_visualization.jpg" alt="MMMU Benchmark visualization">
-<p align="right">The Benchmark will be updated regularly to include new models.</p>
+<p align="right">Benchmark will be updated regularly to include new models.</p>
 
 <sup>1</sup> MMMU stands for "Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark". It assesses multimodal capabilities including image understanding.  
 <sup>2</sup> The data is based on the [MMMU Leaderboard](https://mmmu-benchmark.github.io/#leaderboard)
