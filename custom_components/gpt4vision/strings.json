@@ -51,7 +51,8 @@
             "empty_api_key": "Invalid API key"
         },
         "abort": {
-            "already_configured": "This provider is already configured. Delete the existing configuration to reconfigure"
+            "already_configured": "This provider is already configured. Delete the existing configuration to reconfigure",
+            "unknown_provider": "Unknown provider"
         }
     }
 }

@@ -152,6 +152,26 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    async def handle_provider(self, provider, configured_providers):
+        if provider in configured_providers:
+            _LOGGER.error(f"{provider} already configured.")
+            return self.async_abort(reason="already_configured")
+
+        provider_steps = {
+            "OpenAI": self.async_step_openai,
+            "Anthropic": self.async_step_anthropic,
+            "Google": self.async_step_google,
+            "Ollama": self.async_step_ollama,
+            "LocalAI": self.async_step_localai,
+        }
+
+        step_method = provider_steps.get(provider)
+        if step_method:
+            return await step_method()
+        else:
+            _LOGGER.error(f"Unknown provider: {provider}")
+            return self.async_abort(reason="unknown_provider")
+
     async def async_step_user(self, user_input=None):
         data_schema = vol.Schema({
             vol.Required("provider", default="OpenAI"): selector({
@@ -171,19 +191,8 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             validator = Validator(self.hass, user_input)
             configured_providers = validator.get_configured_providers()
             _LOGGER.debug(f"Configured providers: {configured_providers}")
-            if provider in configured_providers:
-                _LOGGER.error(f"{provider} already configured.")
-                return self.async_abort(reason="already_configured")
-            if provider == "OpenAI":
-                return await self.async_step_openai()
-            elif provider == "Anthropic":
-                return await self.async_step_anthropic()
-            elif provider == "Google":
-                return await self.async_step_google()
-            elif provider == "Ollama":
-                return await self.async_step_ollama()
-            elif provider == "LocalAI":
-                return await self.async_step_localai()
+
+            await self.handle_provider(provider, configured_providers)
 
         return self.async_show_form(
             step_id="user",

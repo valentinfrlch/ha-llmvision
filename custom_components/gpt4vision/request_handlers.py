@@ -9,42 +9,51 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class RequestHandler:
-    def __init__(self, hass):
+    def __init__(self, hass, message, base64_images, filenames, max_tokens, temperature, detail):
         self.session = async_get_clientsession(hass)
+        self.message = message
+        self.base64_images = base64_images
+        self.filenames = filenames
+        self.max_tokens = max_tokens
+        self.temperature = temperature
+        self.detail = detail
 
-    async def openai(self, model, message, base64_images, filenames, api_key, max_tokens, temperature, detail):
+
+    async def openai(self, model, api_key):
+        from .const import ENDPOINT_OPENAI
         # Set headers and payload
         headers = {'Content-type': 'application/json',
                    'Authorization': 'Bearer ' + api_key}
         data = {"model": model,
                 "messages": [{"role": "user", "content": [
                 ]}],
-                "max_tokens": max_tokens,
-                "temperature": temperature
+                "max_tokens": self.max_tokens,
+                "temperature": self.temperature
                 }
 
         # Add the images to the request
-        for image, filename in zip(base64_images, filenames):
-            tag = ("Image " + str(base64_images.index(image) + 1)
+        for image, filename in zip(self.base64_images, self.filenames):
+            tag = ("Image " + str(self.base64_images.index(image) + 1)
                    ) if filename == "" else filename
             data["messages"][0]["content"].append(
                 {"type": "text", "text": tag + ":"})
             data["messages"][0]["content"].append(
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image}", "detail": detail}})
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image}", "detail": self.detail}})
 
         # append the message to the end of the request
         data["messages"][0]["content"].append(
-            {"type": "text", "text": message}
+            {"type": "text", "text": self.message}
         )
 
         response = await self._post(
-            url="https://api.openai.com/v1/chat/completions", headers=headers, data=data)
+            url=ENDPOINT_OPENAI, headers=headers, data=data)
 
         response_text = response.get(
             "choices")[0].get("message").get("content")
         return response_text
 
-    async def anthropic(self, model, message, base64_images, filenames, api_key, max_tokens, temperature):
+    async def anthropic(self, model, api_key):
+        from .const import ENDPOINT_ANTHROPIC
         # Set headers and payload
         headers = {'content-type': 'application/json',
                    'x-api-key': api_key,
@@ -53,13 +62,13 @@ class RequestHandler:
                 "messages": [
                     {"role": "user", "content": []}
                 ],
-                "max_tokens": max_tokens,
-                "temperature": temperature
+                "max_tokens": self.max_tokens,
+                "temperature": self.temperature
                 }
 
         # Add the images to the request
-        for image, filename in zip(base64_images, filenames):
-            tag = ("Image " + str(base64_images.index(image) + 1)
+        for image, filename in zip(self.base64_images, self.filenames):
+            tag = ("Image " + str(self.base64_images.index(image) + 1)
                    ) if filename == "" or not filename else filename
             data["messages"][0]["content"].append(
                 {
@@ -77,29 +86,30 @@ class RequestHandler:
 
         # append the message to the end of the request
         data["messages"][0]["content"].append(
-            {"type": "text", "text": message}
+            {"type": "text", "text": self.message}
         )
 
         response = await self._post(
-            url="https://api.anthropic.com/v1/messages", headers=headers, data=data)
+            url=ENDPOINT_ANTHROPIC, headers=headers, data=data)
 
         response_text = response.get("content")[0].get("text")
         return response_text
 
-    async def google(self, model, message, base64_images, filenames, api_key, max_tokens, temperature):
+    async def google(self, model, api_key):
+        from .const import ENDPOINT_GOOGLE
         # Set headers and payload
         headers = {'content-type': 'application/json'}
         data = {"contents": [
         ],
             "generationConfig": {
-                "maxOutputTokens": max_tokens,
-                "temperature": temperature
+                "maxOutputTokens": self.max_tokens,
+                "temperature": self.temperature
         }
         }
 
         # Add the images to the request
-        for image, filename in zip(base64_images, filenames):
-            tag = ("Image " + str(base64_images.index(image) + 1)
+        for image, filename in zip(self.base64_images, self.filenames):
+            tag = ("Image " + str(self.base64_images.index(image) + 1)
                    ) if filename == "" or not filename else filename
             data["contents"].append(
                 {
@@ -121,26 +131,28 @@ class RequestHandler:
         # append the message to the end of the request
         data["contents"].append(
             {"role": "user",
-             "parts": [{"text": message}
+             "parts": [{"text": self.message}
                        ]
              }
         )
 
         response = await self._post(
-            url=f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}", headers=headers, data=data)
+            url=ENDPOINT_GOOGLE.format(model=model, api_key=api_key), headers=headers, data=data)
 
-        response_text = response.get("candidates")[0].get("content").get("parts")[0].get("text")
+        response_text = response.get("candidates")[0].get(
+            "content").get("parts")[0].get("text")
         return response_text
 
-    async def localai(self, model, message, base64_images, filenames, ip_address, port, max_tokens, temperature):
+    async def localai(self, model, ip_address, port):
+        from .const import ENDPOINT_LOCALAI
         data = {"model": model,
                 "messages": [{"role": "user", "content": [
                 ]}],
-                "max_tokens": max_tokens,
-                "temperature": temperature
+                "max_tokens": self.max_tokens,
+                "temperature": self.temperature
                 }
-        for image, filename in zip(base64_images, filenames):
-            tag = ("Image " + str(base64_images.index(image) + 1)
+        for image, filename in zip(self.base64_images, self.filenames):
+            tag = ("Image " + str(self.base64_images.index(image) + 1)
                    ) if filename == "" or not filename else filename
             data["messages"][0]["content"].append(
                 {"type": "text", "text": tag + ":"})
@@ -149,28 +161,30 @@ class RequestHandler:
 
         # append the message to the end of the request
         data["messages"][0]["content"].append(
-            {"type": "text", "text": message}
+            {"type": "text", "text": self.message}
         )
 
         response = await self._post(
-            url=f"http://{ip_address}:{port}/v1/chat/completions", headers={}, data=data)
+            url=ENDPOINT_LOCALAI.format(ip_address=ip_address, port=port), headers={}, data=data)
 
-        response_text = response.get("choices")[0].get("message").get("content")
+        response_text = response.get(
+            "choices")[0].get("message").get("content")
         return response_text
 
-    async def ollama(self, model, message, base64_images, filenames, ip_address, port, max_tokens, temperature):
+    async def ollama(self, model, ip_address, port):
+        from .const import ENDPOINT_OLLAMA
         data = {
             "model": model,
             "messages": [],
             "stream": False,
             "options": {
-                "max_tokens": max_tokens,
-                "temperature": temperature
+                "max_tokens": self.max_tokens,
+                "temperature": self.temperature
             }
         }
 
-        for image, filename in zip(base64_images, filenames):
-            tag = ("Image " + str(base64_images.index(image) + 1)
+        for image, filename in zip(self.base64_images, self.filenames):
+            tag = ("Image " + str(self.base64_images.index(image) + 1)
                    ) if filename == "" or not filename else filename
             image_message = {
                 "role": "user",
@@ -181,13 +195,11 @@ class RequestHandler:
         # append to the end of the request
         prompt_message = {
             "role": "user",
-            "content": message
+            "content": self.message
         }
         data["messages"].append(prompt_message)
 
-        response = await self._post(
-            url=f"http://{ip_address}:{port}/api/chat", headers={}, data=data)
-
+        response = await self._post(url=ENDPOINT_OLLAMA.format(ip_address=ip_address, port=port), headers={}, data=data)
         response_text = response.get("message").get("content")
         return response_text
 
@@ -200,9 +212,12 @@ class RequestHandler:
             raise ServiceValidationError(f"Request failed: {e}")
 
         if response.status != 200:
-            error_message = (await response.json()).get('error').get('message')
-            raise ServiceValidationError(
-                f"Request failed with status: {response.status} and error: {error_message}")
+            # TODO: Better error handling
+            try:
+                error_message = await (response.json()).get("error").get("message")
+                raise ServiceValidationError(f"Request failed with status {response.status} and error: {error_message}")
+            except AttributeError:
+                raise ServiceValidationError(f"Request failed with status {response.status} and error: {response.text}")
 
         response_data = await response.json()
         _LOGGER.debug(f"Response data: {response_data}")
@@ -223,4 +238,5 @@ class RequestHandler:
         return data
 
     async def close(self):
-        await self.session.close()
+        # await self.session.close()
+        pass
