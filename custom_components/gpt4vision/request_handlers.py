@@ -225,6 +225,7 @@ class RequestHandler:
 
     async def fetch(self, url):
         """Fetch image from url and return image data"""
+        _LOGGER.debug(f"Fetching image from {url}")
         try:
             response = await self.session.get(url)
         except Exception as e:
@@ -238,5 +239,7 @@ class RequestHandler:
         return data
 
     async def close(self):
+        # Home Assistant will close the session
+        # TODO: There is a warning "Unclosed client session", but if closed it throws an error...
         # await self.session.close()
         pass
