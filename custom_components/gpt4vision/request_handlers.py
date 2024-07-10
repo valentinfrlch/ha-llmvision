@@ -219,11 +219,9 @@ class RequestHandler:
         if response.status != 200:
             try:
                 parsed_response = self._resolve_error(url, response)
-                raise ServiceValidationError(
-                    f"Error code: {response.status}, {parsed_response}")
+                raise ServiceValidationError(parsed_response)
             except Exception as e:
-                raise ServiceValidationError(
-                    f"Request failed with status {response.status} and error: {e}")
+                raise ServiceValidationError(e)
 
         response_data = await response.json()
         _LOGGER.debug(f"Response data: {response_data}")
