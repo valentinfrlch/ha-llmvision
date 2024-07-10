@@ -2,7 +2,12 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import logging
 from .const import (
-    VERSION_ANTHROPIC
+    VERSION_ANTHROPIC,
+    ENDPOINT_OPENAI,
+    ENDPOINT_ANTHROPIC,
+    ENDPOINT_GOOGLE,
+    ENDPOINT_LOCALAI,
+    ENDPOINT_OLLAMA
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -212,12 +217,13 @@ class RequestHandler:
             raise ServiceValidationError(f"Request failed: {e}")
 
         if response.status != 200:
-            # TODO: Better error handling
             try:
-                error_message = await (response.json()).get("error").get("message")
-                raise ServiceValidationError(f"Request failed with status {response.status} and error: {error_message}")
-            except AttributeError:
-                raise ServiceValidationError(f"Request failed with status {response.status} and error: {response.text}")
+                parsed_response = self._resolve_error(url, response)
+                raise ServiceValidationError(
+                    f"Error code: {response.status}, {parsed_response}")
+            except Exception as e:
+                raise ServiceValidationError(
+                    f"Request failed with status {response.status} and error: {e}")
 
         response_data = await response.json()
         _LOGGER.debug(f"Response data: {response_data}")
@@ -236,6 +242,76 @@ class RequestHandler:
 
         data = await response.read()
         return data
+
+    def _resolve_error(self, url, response):
+        """Translate response status to error message"""
+        if url == ENDPOINT_OPENAI:
+            if response.status == 401:
+                return "Invalid Authentication. Ensure you are using a valid API key."
+            if response.status == 403:
+                return "Country, region, or territory not supported."
+            if response.status == 404:
+                return "The requested model does not exist."
+            if response.status == 429:
+                return "Rate limit exceeded. You are sending requests too quickly."
+            if response.status == 500:
+                return "Issue on OpenAI's servers. Wait a few minutes and try again."
+            if response.status == 503:
+                return "OpenAI's Servers are experiencing high traffic. Try again later."
+            else:
+                return f"Error: {response}"
+        elif url == ENDPOINT_ANTHROPIC:
+            if response.status == 400:
+                return "Invalid Request. There was an issue with the format or content of your request."
+            if response.status == 401:
+                return "Invalid Authentication. Ensure you are using a valid API key."
+            if response.status == 403:
+                return "Access Error. Your API key does not have permission to use the specified resource."
+            if response.status == 404:
+                return "The requested model does not exist."
+            if response.status == 429:
+                return "Rate limit exceeded. You are sending requests too quickly."
+            if response.status == 500:
+                return "Issue on Anthropic's servers. Wait a few minutes and try again."
+            if response.status == 529:
+                return "Anthropic's Servers are experiencing high traffic. Try again later."
+            else:
+                return f"Error: {response}"
+        elif url == ENDPOINT_GOOGLE:
+            if response.status == 400:
+                return "User location is not supported for the API use without a billing account linked."
+            if response.status == 403:
+                return "Access Error. Your API key does not have permission to use the specified resource."
+            if response.status == 404:
+                return "The requested model does not exist."
+            if response.status == 406:
+                return "Insufficient Funds. Ensure you have enough credits to use the service."
+            if response.status == 429:
+                return "Rate limit exceeded. You are sending requests too quickly."
+            if response.status == 503:
+                return "Google's Servers are temporarily overloaded or down. Try again later."
+            else:
+                return f"Error: {response}"
+        elif url == ENDPOINT_OLLAMA:
+            if response.status == 400:
+                return "Invalid Request. There was an issue with the format or content of your request."
+            if response.status == 404:
+                return "The requested model does not exist."
+            if response.status == 500:
+                return "Internal server issue (on Ollama server)."
+            else:
+                return f"Error: {response}"
+        elif url == ENDPOINT_LOCALAI:
+            if response.status == 400:
+                return "Invalid Request. There was an issue with the format or content of your request."
+            if response.status == 404:
+                return "The requested model does not exist."
+            if response.status == 500:
+                return "Internal server issue (on LocalAI server)."
+            else:
+                return f"Error: {response}"
+
+
 
     async def close(self):
         # await self.session.close()
