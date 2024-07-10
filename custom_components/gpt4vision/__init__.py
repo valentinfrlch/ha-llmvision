@@ -175,8 +175,7 @@ def setup(hass, config):
         # Read data from service call
         mode = str(data_call.data.get(PROVIDER))
         message = str(data_call.data.get(MESSAGE)[0:2000])
-        image_paths = data_call.data.get(IMAGE_FILE, "").split(
-            "\n") if data_call.data.get(IMAGE_FILE) else None
+        image_paths = data_call.data.get(IMAGE_FILE, "").split("\n") if data_call.data.get(IMAGE_FILE) else None
         image_entities = data_call.data.get(IMAGE_ENTITY)
         target_width = data_call.data.get(TARGET_WIDTH, 1280)
         temperature = float(data_call.data.get(TEMPERATURE, 0.5))
@@ -208,12 +207,11 @@ def setup(hass, config):
         if image_entities:
             for image_entity in image_entities:
                 base_url = get_url(hass)
-                # protocol = get_url(hass).split('://')[0]
                 image_url = base_url + hass.states.get(
                     image_entity).attributes.get('entity_picture')
                 image_data = await client.fetch(image_url)
+                # If entity snapshot requested, use entity name as 'filename'
                 if include_filename:
-                    # If entity snapshot requested, use entity name as 'filename'
                     entity_name = base_url + hass.states.get(
                         image_entity).attributes.get('friendly_name')
                     filenames.append(entity_name)
@@ -224,7 +222,7 @@ def setup(hass, config):
 
         _LOGGER.info(f"Base64 Images: {base64_images}")
 
-        # Initialize RequestHandler
+        # Initialize RequestHandler instance
         client = RequestHandler(hass,
                                 message=message,
                                 base64_images=base64_images,
@@ -233,7 +231,7 @@ def setup(hass, config):
                                 temperature=temperature,
                                 detail=detail)
 
-        # Validate configuration and input data and call handler
+        # Validate configuration and input data, make the call
         if mode == 'OpenAI':
             api_key = hass.data.get(DOMAIN).get(CONF_OPENAI_API_KEY)
             validate(mode=mode, api_key=api_key, base64_images=base64_images)
