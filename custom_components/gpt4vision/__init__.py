@@ -175,17 +175,13 @@ def setup(hass, config):
         # Read data from service call
         mode = str(data_call.data.get(PROVIDER))
         message = str(data_call.data.get(MESSAGE)[0:2000])
-        image_paths = data_call.data.get(IMAGE_FILE, "").split(
-            "\n") if data_call.data.get(IMAGE_FILE) else None
+        image_paths = data_call.data.get(IMAGE_FILE, "").split("\n") if data_call.data.get(IMAGE_FILE) else None
         image_entities = data_call.data.get(IMAGE_ENTITY)
         target_width = data_call.data.get(TARGET_WIDTH, 1280)
         temperature = float(data_call.data.get(TEMPERATURE, 0.5))
         max_tokens = int(data_call.data.get(MAXTOKENS, 100))
         detail = str(data_call.data.get(DETAIL, "auto"))
         include_filename = data_call.data.get(INCLUDE_FILENAME, False)
-
-        # Initialize RequestHandler
-        client = RequestHandler(hass)
 
         base64_images = []
         filenames = []
@@ -211,12 +207,11 @@ def setup(hass, config):
         if image_entities:
             for image_entity in image_entities:
                 base_url = get_url(hass)
-                # protocol = get_url(hass).split('://')[0]
                 image_url = base_url + hass.states.get(
                     image_entity).attributes.get('entity_picture')
                 image_data = await client.fetch(image_url)
+                # If entity snapshot requested, use entity name as 'filename'
                 if include_filename:
-                    # If entity snapshot requested, use entity name as 'filename'
                     entity_name = base_url + hass.states.get(
                         image_entity).attributes.get('friendly_name')
                     filenames.append(entity_name)
@@ -227,67 +222,43 @@ def setup(hass, config):
 
         _LOGGER.info(f"Base64 Images: {base64_images}")
 
-        # Validate configuration and input data and call handler
+        # Initialize RequestHandler instance
+        client = RequestHandler(hass,
+                                message=message,
+                                base64_images=base64_images,
+                                filenames=filenames,
+                                max_tokens=max_tokens,
+                                temperature=temperature,
+                                detail=detail)
+
+        # Validate configuration and input data, make the call
         if mode == 'OpenAI':
             api_key = hass.data.get(DOMAIN).get(CONF_OPENAI_API_KEY)
             validate(mode=mode, api_key=api_key, base64_images=base64_images)
             model = str(data_call.data.get(MODEL, "gpt-4o"))
-            response_text = await client.openai(model=model,
-                                                message=message,
-                                                base64_images=base64_images,
-                                                filenames=filenames,
-                                                api_key=api_key,
-                                                max_tokens=max_tokens,
-                                                temperature=temperature,
-                                                detail=detail)
+            response_text = await client.openai(model=model, api_key=api_key)
         elif mode == 'Anthropic':
             api_key = hass.data.get(DOMAIN).get(CONF_ANTHROPIC_API_KEY)
             validate(mode=mode, api_key=api_key, base64_images=base64_images)
             model = str(data_call.data.get(
                 MODEL, "claude-3-5-sonnet-20240620"))
-            response_text = await client.anthropic(model=model,
-                                                   message=message,
-                                                   base64_images=base64_images,
-                                                   filenames=filenames,
-                                                   api_key=api_key,
-                                                   max_tokens=max_tokens,
-                                                   temperature=temperature)
+            response_text = await client.anthropic(model=model, api_key=api_key)
         elif mode == 'Google':
             api_key = hass.data.get(DOMAIN).get(CONF_GOOGLE_API_KEY)
             validate(mode=mode, api_key=api_key, base64_images=base64_images)
             model = str(data_call.data.get(
                 MODEL, "gemini-1.5-flash-latest"))
-            response_text = await client.google(model=model,
-                                                   message=message,
-                                                   base64_images=base64_images,
-                                                   filenames=filenames,
-                                                   api_key=api_key,
-                                                   max_tokens=max_tokens,
-                                                   temperature=temperature)
+            response_text = await client.google(model=model, api_key=api_key)
         elif mode == 'LocalAI':
             validate(mode, None, base64_images,
                      localai_ip_address, localai_port)
             model = str(data_call.data.get(MODEL, "gpt-4-vision-preview"))
-            response_text = await client.localai(model=model,
-                                                 message=message,
-                                                 base64_images=base64_images,
-                                                 filenames=filenames,
-                                                 ip_address=localai_ip_address,
-                                                 port=localai_port,
-                                                 max_tokens=max_tokens,
-                                                 temperature=temperature)
+            response_text = await client.localai(model=model, ip_address=localai_ip_address, port=localai_port)
         elif mode == 'Ollama':
             validate(mode, None, base64_images,
                      ollama_ip_address, ollama_port)
             model = str(data_call.data.get(MODEL, "llava"))
-            response_text = await client.ollama(model=model,
-                                                message=message,
-                                                base64_images=base64_images,
-                                                filenames=filenames,
-                                                ip_address=ollama_ip_address,
-                                                port=ollama_port,
-                                                max_tokens=max_tokens,
-                                                temperature=temperature)
+            response_text = await client.ollama(model=model, ip_address=ollama_ip_address, port=ollama_port)
 
         # close the RequestHandler and return response_text
         await client.close()

@@ -51,7 +51,8 @@
             "empty_api_key": "Ungültiger API-Key"
         },
         "abort": {
-            "already_configured": "Anbieter ist bereits konfiguriert. Löschen Sie die vorhandene Konfiguration, um eine neue hinzuzufügen."
+            "already_configured": "Anbieter ist bereits konfiguriert. Löschen Sie die vorhandene Konfiguration, um eine neue hinzuzufügen.",
+            "unknown_provider": "Unbekannter Anbieter"
         }
     }
 }

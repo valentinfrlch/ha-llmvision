@@ -35,3 +35,10 @@ ERROR_HANDSHAKE_FAILED = "Handshake with LocalAI server failed"
 
 # Versions
 VERSION_ANTHROPIC = "2023-06-01"
+
+# API Endpoints
+ENDPOINT_OPENAI = "https://api.openai.com/v1/chat/completions"
+ENDPOINT_ANTHROPIC = "https://api.anthropic.com/v1/messages"
+ENDPOINT_GOOGLE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+ENDPOINT_LOCALAI = "http://{ip_address}:{port}/v1/chat/completions"
+ENDPOINT_OLLAMA = "http://{ip_address}:{port}/api/chat"

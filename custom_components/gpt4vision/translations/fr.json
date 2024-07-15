@@ -51,7 +51,8 @@
             "empty_api_key": "clé API invalide"
         },
         "abort": {
-            "already_configured": "Le fournisseur est déjà configuré. Supprimez la configuration existante pour en ajouter une nouvelle."
+            "already_configured": "Le fournisseur est déjà configuré. Supprimez la configuration existante pour en ajouter une nouvelle.",
+            "unknown_provider": "Fournisseur inconnu"
         }
     }
 }
