@@ -26,6 +26,9 @@ class RequestHandler:
     def add_image(self, base64_image, filename):
         self.base64_images.append(base64_image)
         self.filenames.append(filename)
+    
+    def get_images(self):
+        return self.base64_images
 
 
     async def openai(self, model, api_key):

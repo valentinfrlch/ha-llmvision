@@ -236,36 +236,51 @@ def setup(hass, config):
                         filename=""
                     )
 
-        _LOGGER.info(f"Base64 Images: {base64_images}")
+        _LOGGER.info(f"Base64 Images: {client.get_images()}")
 
         # Validate configuration and input data, make the call
         if mode == 'OpenAI':
             api_key = hass.data.get(DOMAIN).get(CONF_OPENAI_API_KEY)
-            validate(mode=mode, api_key=api_key, base64_images=base64_images)
+            validate(mode=mode,
+                     api_key=api_key,
+                     base64_images=client.get_images())
             model = str(data_call.data.get(MODEL, "gpt-4o"))
             response_text = await client.openai(model=model, api_key=api_key)
         elif mode == 'Anthropic':
             api_key = hass.data.get(DOMAIN).get(CONF_ANTHROPIC_API_KEY)
-            validate(mode=mode, api_key=api_key, base64_images=base64_images)
+            validate(mode=mode,
+                     api_key=api_key,
+                     base64_images=client.get_images())
             model = str(data_call.data.get(
                 MODEL, "claude-3-5-sonnet-20240620"))
             response_text = await client.anthropic(model=model, api_key=api_key)
         elif mode == 'Google':
             api_key = hass.data.get(DOMAIN).get(CONF_GOOGLE_API_KEY)
-            validate(mode=mode, api_key=api_key, base64_images=base64_images)
+            validate(mode=mode, api_key=api_key,
+                     base64_images=client.get_images())
             model = str(data_call.data.get(
                 MODEL, "gemini-1.5-flash-latest"))
             response_text = await client.google(model=model, api_key=api_key)
         elif mode == 'LocalAI':
-            validate(mode, None, base64_images,
-                     localai_ip_address, localai_port)
+            validate(mode=mode,
+                     api_key=None,
+                     base64_images=client.get_images(),
+                     ip_address=localai_ip_address,
+                     port=localai_port)
             model = str(data_call.data.get(MODEL, "gpt-4-vision-preview"))
-            response_text = await client.localai(model=model, ip_address=localai_ip_address, port=localai_port)
+            response_text = await client.localai(model=model,
+                                                 ip_address=localai_ip_address,
+                                                 port=localai_port)
         elif mode == 'Ollama':
-            validate(mode, None, base64_images,
-                     ollama_ip_address, ollama_port)
+            validate(mode=mode,
+                     api_key=None,
+                     base64_images=client.get_images(),
+                     ip_address=ollama_ip_address,
+                     port=ollama_port)
             model = str(data_call.data.get(MODEL, "llava"))
-            response_text = await client.ollama(model=model, ip_address=ollama_ip_address, port=ollama_port)
+            response_text = await client.ollama(model=model,
+                                                ip_address=ollama_ip_address,
+                                                port=ollama_port)
 
         # close the RequestHandler and return response_text
         await client.close()
