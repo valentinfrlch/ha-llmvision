@@ -14,14 +14,18 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class RequestHandler:
-    def __init__(self, hass, message, base64_images, filenames, max_tokens, temperature, detail):
+    def __init__(self, hass, message, max_tokens, temperature, detail):
         self.session = async_get_clientsession(hass)
         self.message = message
-        self.base64_images = base64_images
-        self.filenames = filenames
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.detail = detail
+        self.base64_images = []
+        self.filenames = []
+
+    def add_image(self, base64_image, filename):
+        self.base64_images.append(base64_image)
+        self.filenames.append(filename)
 
 
     async def openai(self, model, api_key):
