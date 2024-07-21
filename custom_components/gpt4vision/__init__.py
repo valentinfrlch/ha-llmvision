@@ -175,7 +175,8 @@ def setup(hass, config):
         # Read data from service call
         mode = str(data_call.data.get(PROVIDER))
         message = str(data_call.data.get(MESSAGE)[0:2000])
-        image_paths = data_call.data.get(IMAGE_FILE, "").split("\n") if data_call.data.get(IMAGE_FILE) else None
+        image_paths = data_call.data.get(IMAGE_FILE, "").split(
+            "\n") if data_call.data.get(IMAGE_FILE) else None
         image_entities = data_call.data.get(IMAGE_ENTITY)
         target_width = data_call.data.get(TARGET_WIDTH, 1280)
         temperature = float(data_call.data.get(TEMPERATURE, 0.5))
@@ -186,24 +187,34 @@ def setup(hass, config):
         base64_images = []
         filenames = []
 
+        client = RequestHandler(hass,
+                                message=message,
+                                max_tokens=max_tokens,
+                                temperature=temperature,
+                                detail=detail)
+
+        # If image_paths is not empty, encode the images as base64 and add them to the client
         if image_paths:
             for image_path in image_paths:
                 try:
                     image_path = image_path.strip()
-                    if include_filename:
-                        # Append filename (without extension)
-                        filenames.append(image_path.split('/')
-                                         [-1].split('.')[0])
-                    else:
-                        filenames.append("")
+                    if include_filename and os.path.exists(image_path):
+                        client.add_image(
+                            base64_image=await encode_image(image_path=image_path),
+                            filename=image_path.split('/')[-1].split('.')[0]
+                        )
+                    elif os.path.exists(image_path):
+                        client.add_image(
+                            base64_image=await encode_image(image_path=image_path),
+                            filename=""
+                        )
                     if not os.path.exists(image_path):
                         raise ServiceValidationError(
                             f"File {image_path} does not exist")
-                    base64_image = await encode_image(image_path=image_path)
-                    base64_images.append(base64_image)
                 except Exception as e:
                     raise ServiceValidationError(f"Error: {e}")
 
+        # If image_entities is not empty, fetch, encode the images as base64 and add them to the client
         if image_entities:
             for image_entity in image_entities:
                 base_url = get_url(hass)
@@ -214,51 +225,62 @@ def setup(hass, config):
                 if include_filename:
                     entity_name = base_url + hass.states.get(
                         image_entity).attributes.get('friendly_name')
-                    filenames.append(entity_name)
+
+                    client.add_image(
+                        base64_image=await encode_image(image_data=image_data),
+                        filename=entity_name
+                    )
                 else:
-                    filenames.append("")
-                base64_image = await encode_image(image_data=image_data)
-                base64_images.append(base64_image)
+                    client.add_image(
+                        base64_image=await encode_image(image_data=image_data),
+                        filename=""
+                    )
 
-        _LOGGER.info(f"Base64 Images: {base64_images}")
-
-        # Initialize RequestHandler instance
-        client = RequestHandler(hass,
-                                message=message,
-                                base64_images=base64_images,
-                                filenames=filenames,
-                                max_tokens=max_tokens,
-                                temperature=temperature,
-                                detail=detail)
+        _LOGGER.info(f"Base64 Images: {client.get_images()}")
 
         # Validate configuration and input data, make the call
         if mode == 'OpenAI':
             api_key = hass.data.get(DOMAIN).get(CONF_OPENAI_API_KEY)
-            validate(mode=mode, api_key=api_key, base64_images=base64_images)
+            validate(mode=mode,
+                     api_key=api_key,
+                     base64_images=client.get_images())
             model = str(data_call.data.get(MODEL, "gpt-4o"))
             response_text = await client.openai(model=model, api_key=api_key)
         elif mode == 'Anthropic':
             api_key = hass.data.get(DOMAIN).get(CONF_ANTHROPIC_API_KEY)
-            validate(mode=mode, api_key=api_key, base64_images=base64_images)
+            validate(mode=mode,
+                     api_key=api_key,
+                     base64_images=client.get_images())
             model = str(data_call.data.get(
                 MODEL, "claude-3-5-sonnet-20240620"))
             response_text = await client.anthropic(model=model, api_key=api_key)
         elif mode == 'Google':
             api_key = hass.data.get(DOMAIN).get(CONF_GOOGLE_API_KEY)
-            validate(mode=mode, api_key=api_key, base64_images=base64_images)
+            validate(mode=mode, api_key=api_key,
+                     base64_images=client.get_images())
             model = str(data_call.data.get(
                 MODEL, "gemini-1.5-flash-latest"))
             response_text = await client.google(model=model, api_key=api_key)
         elif mode == 'LocalAI':
-            validate(mode, None, base64_images,
-                     localai_ip_address, localai_port)
+            validate(mode=mode,
+                     api_key=None,
+                     base64_images=client.get_images(),
+                     ip_address=localai_ip_address,
+                     port=localai_port)
             model = str(data_call.data.get(MODEL, "gpt-4-vision-preview"))
-            response_text = await client.localai(model=model, ip_address=localai_ip_address, port=localai_port)
+            response_text = await client.localai(model=model,
+                                                 ip_address=localai_ip_address,
+                                                 port=localai_port)
         elif mode == 'Ollama':
-            validate(mode, None, base64_images,
-                     ollama_ip_address, ollama_port)
+            validate(mode=mode,
+                     api_key=None,
+                     base64_images=client.get_images(),
+                     ip_address=ollama_ip_address,
+                     port=ollama_port)
             model = str(data_call.data.get(MODEL, "llava"))
-            response_text = await client.ollama(model=model, ip_address=ollama_ip_address, port=ollama_port)
+            response_text = await client.ollama(model=model,
+                                                ip_address=ollama_ip_address,
+                                                port=ollama_port)
 
         # close the RequestHandler and return response_text
         await client.close()
