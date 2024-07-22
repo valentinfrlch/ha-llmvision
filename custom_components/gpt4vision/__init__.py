@@ -244,7 +244,7 @@ def setup(hass, config):
             validate(mode=mode,
                      api_key=api_key,
                      base64_images=client.get_images())
-            model = str(data_call.data.get(MODEL, "gpt-4o"))
+            model = str(data_call.data.get(MODEL, "gpt-4o-mini"))
             response_text = await client.openai(model=model, api_key=api_key)
         elif mode == 'Anthropic':
             api_key = hass.data.get(DOMAIN).get(CONF_ANTHROPIC_API_KEY)
