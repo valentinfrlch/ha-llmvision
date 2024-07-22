@@ -1,4 +1,4 @@
-<h1 align=center> GPT-4 Vision for Home Assistant </h1>
+<h1 align=center> LLM Vision for Home Assistant </h1>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
 <img src=https://img.shields.io/badge/version-0.4.7-blue>
@@ -30,7 +30,7 @@
 <br>
 <br>
 
-**gpt4vision** is a Home Assistant integration that allows you to analyze images and camera feeds using GPT-4 Vision.  
+**LLM Vision** is a Home Assistant integration that allows you to analyze images and camera feeds using the vision capabilities of multimodal LLMs.  
 Supported providers are OpenAI, Anthropic, Google Gemini, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/).
 
 ## Features
@@ -40,7 +40,7 @@ Supported providers are OpenAI, Anthropic, Google Gemini, [LocalAI](https://gith
 - Can be installed and updated through HACS and can be set up in the Home Assistant UI
 
 ## Resources
-Check the [📖 wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki) for examples on how you can integrate gpt4vision into your Home Assistant setup or join the [🗨️ discussion](https://community.home-assistant.io/t/gpt-4o-vision-capabilities-in-home-assistant/729241) in the Home Assistant Community.
+Check the [📖 wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki) for examples on how you can integrate llmvision into your Home Assistant setup or join the [🗨️ discussion](https://community.home-assistant.io/t/gpt-4o-vision-capabilities-in-home-assistant/729241) in the Home Assistant Community.
 
 # Installation
 ### Installation via HACS (recommended)
@@ -50,7 +50,7 @@ Check the [📖 wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki) for e
 3. Follow the instructions to complete setup
 
 ### Manual Installation
-1. Download and copy the **gpt4vision** folder into your **custom_components** folder.
+1. Download and copy the **llmvision** folder into your **custom_components** folder.
 2. Add integration in Home Assistant Settings/Devices & services
 3. Provide your API key or IP address and port of your self-hosted server
 
@@ -114,11 +114,11 @@ launchctl setenv OLLAMA_HOST "0.0.0.0"
 <br>
 
 ## Usage
-After restarting, the gpt4vision.image_analyzer service will be available. You can test it in the developer tools section in home assistant.
+After restarting, the llmvision.image_analyzer service will be available. You can test it in the developer tools section in home assistant.
 To get OpenAI gpt-4o's analysis of a local image, use the following service call.
 
 ```yaml
-service: gpt4vision.image_analyzer
+service: llmvision.image_analyzer
 data:
   provider: OpenAI
   message: Describe what you see?
@@ -196,7 +196,7 @@ front_door_2024-12-31_23:59:59:
 > **Claude 3.5 Sonnet** achieves strong performance - comparable to GPT-4o - in the Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark MMMU<sup>1</sup>, while being 40% less expensive. This makes it the go-to model for most use cases.
 
 
-gpt4vision is compatible with multiple providers, each of which has different models available. Some providers run in the cloud, while others are self-hosted.  
+LLM Vision is compatible with multiple providers, each of which has different models available. Some providers run in the cloud, while others are self-hosted.  
 To see which model is best for your use case, check the figure below. It visualizes the averaged MMMU<sup>1</sup> scores of available cloud-based models. The higher the score, the better the model performs.
 
 <img src="benchmark_visualization\benchmark_visualization.jpg" alt="MMMU Benchmark visualization">
@@ -211,7 +211,7 @@ To enable debugging, add the following to your `configuration.yaml`:
 ```yaml
 logger:
   logs:
-    custom_components.gpt4vision: debug
+    custom_components.llmvision: debug
 ```
 
 

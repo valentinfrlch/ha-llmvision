@@ -148,7 +148,7 @@ class Validator:
         return providers
 
 
-class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
@@ -212,7 +212,7 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 await validator.localai()
                 # add the mode to user_input
-                return self.async_create_entry(title="GPT4Vision LocalAI", data=user_input)
+                return self.async_create_entry(title="LLM Vision LocalAI", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -239,7 +239,7 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 await validator.ollama()
                 # add the mode to user_input
-                return self.async_create_entry(title="GPT4Vision Ollama", data=user_input)
+                return self.async_create_entry(title="LLM Vision Ollama", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -266,7 +266,7 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await validator.openai()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="GPT4Vision OpenAI", data=user_input)
+                return self.async_create_entry(title="LLM Vision OpenAI", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -293,7 +293,7 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await validator.anthropic()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="GPT4Vision Anthropic", data=user_input)
+                return self.async_create_entry(title="LLM Vision Anthropic", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -320,7 +320,7 @@ class gpt4visionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await validator.google()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="GPT4Vision Google", data=user_input)
+                return self.async_create_entry(title="LLM Vision Google", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(

@@ -39,7 +39,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry):
-    """Save gpt4vision config entry in hass.data"""
+    """Save llmvision config entry in hass.data"""
     # Get all entries from config flow
     openai_api_key = entry.data.get(CONF_OPENAI_API_KEY)
     anthropic_api_key = entry.data.get(CONF_ANTHROPIC_API_KEY)
@@ -109,7 +109,7 @@ def validate(mode, api_key, base64_images, ip_address=None, port=None):
 
 def setup(hass, config):
     async def image_analyzer(data_call):
-        """Handle the service call to analyze an image with GPT-4 Vision
+        """Handle the service call to analyze an image with LLM Vision
 
         Returns:
             json: response_text
