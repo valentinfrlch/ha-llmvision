@@ -1,13 +1,15 @@
-<h1 align=center> LLM Vision for Home Assistant </h1>
+<p align="center">
+<img src="https://github.com/user-attachments/assets/bebd92b8-765e-4d63-bb3d-47e1bb8b51ad" width=500px>
+</p>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
-<img src=https://img.shields.io/badge/version-0.4.7-blue>
+<img src=https://img.shields.io/badge/version-1.0.0-blue>
 <a href="https://github.com/valentinfrlch/ha-gpt4vision/issues">
 <img src="https://img.shields.io/maintenance/yes/2024.svg">
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-gpt4vision?color=0088ff"/>
     </a>
     <p align=center style="font-weight:bold">
-      Image Analyzer for Home Assistant using GPT Vision
+      Image Analyzer for Home Assistant using Multimodal LLMs
     </p>
 </p>
 
