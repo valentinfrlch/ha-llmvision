@@ -223,7 +223,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="localai",
-            data_schema=data_schema,
+            data_schema=data_schema
         )
 
     async def async_step_ollama(self, user_input=None):
