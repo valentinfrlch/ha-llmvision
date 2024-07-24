@@ -217,24 +217,29 @@ def setup(hass, config):
         # If image_entities is not empty, fetch, encode the images as base64 and add them to the client
         if image_entities:
             for image_entity in image_entities:
-                base_url = get_url(hass)
-                image_url = base_url + hass.states.get(
-                    image_entity).attributes.get('entity_picture')
-                image_data = await client.fetch(image_url)
-                # If entity snapshot requested, use entity name as 'filename'
-                if include_filename:
-                    entity_name = hass.states.get(image_entity).attributes.get('friendly_name')
+                try:
+                    base_url = get_url(hass)
+                    image_url = base_url + hass.states.get(image_entity).attributes.get('entity_picture')
+                    image_data = await client.fetch(image_url)
+                
 
-                    client.add_image(
-                        base64_image=await encode_image(image_data=image_data),
-                        filename=entity_name
-                    )
-                else:
-                    client.add_image(
-                        base64_image=await encode_image(image_data=image_data),
-                        filename=""
-                    )
+                    # If entity snapshot requested, use entity name as 'filename'
+                    if include_filename:
+                        entity_name = hass.states.get(image_entity).attributes.get('friendly_name')
 
+                        client.add_image(
+                            base64_image=await encode_image(image_data=image_data),
+                            filename=entity_name
+                        )
+                    else:
+                        client.add_image(
+                            base64_image=await encode_image(image_data=image_data),
+                            filename=""
+                        )
+                except AttributeError as e:
+                    raise ServiceValidationError(
+                        f"Entity {image_entity} does not exist")
+                
         _LOGGER.info(f"Base64 Images: {client.get_images()}")
 
         # Validate configuration and input data, make the call
