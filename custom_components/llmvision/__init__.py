@@ -201,7 +201,7 @@ def setup(hass, config):
                     if include_filename and os.path.exists(image_path):
                         client.add_image(
                             base64_image=await encode_image(image_path=image_path),
-                            filename=image_path.split('/')[-1].split('.')[0]
+                            filename=image_path.split('/')[-1].split('.')[-2]
                         )
                     elif os.path.exists(image_path):
                         client.add_image(
@@ -223,8 +223,7 @@ def setup(hass, config):
                 image_data = await client.fetch(image_url)
                 # If entity snapshot requested, use entity name as 'filename'
                 if include_filename:
-                    entity_name = base_url + hass.states.get(
-                        image_entity).attributes.get('friendly_name')
+                    entity_name = hass.states.get(image_entity).attributes.get('friendly_name')
 
                     client.add_image(
                         base64_image=await encode_image(image_data=image_data),
