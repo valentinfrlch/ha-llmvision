@@ -240,7 +240,7 @@ def setup(hass, config):
                     raise ServiceValidationError(
                         f"Entity {image_entity} does not exist")
                 
-        _LOGGER.info(f"Base64 Images: {client.get_images()}")
+        _LOGGER.debug(f"Base64 Images: {client.get_images()}")
 
         # Validate configuration and input data, make the call
         if mode == 'OpenAI':
