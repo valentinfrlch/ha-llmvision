@@ -24,6 +24,8 @@
     ·
     <a href="#model-overview">🧠 Model Overview</a>
     ·
+    <a href="#roadmap">🚧 Roadmap</a>
+    ·
     <a href="#how-to-report-a-bug-or-request-a-feature">🪲 How to report Bugs</a>
   </p>
 
@@ -215,6 +217,18 @@ logger:
   logs:
     custom_components.llmvision: debug
 ```
+
+
+## Roadmap
+> [!NOTE]
+> These are planned features and ideas. They are subject to change and may not be implemented in the order listed or at all.
+
+1. **Feature**: HTTPS support for LocalAI and Ollama
+2. **New Provider**: NVIDIA ChatRTX 
+3. **Feature**: Support for video files  
+  Extract images in variable intervals and analyze them
+4. **HACS**: Submit PR to include in HACS default repository
+
 
 
 ## How to report a bug or request a feature
