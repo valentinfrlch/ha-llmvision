@@ -290,6 +290,10 @@ def setup(hass, config):
         await client.close()
         return {"response_text": response_text}
 
+    async def video_analyzer(data_call):
+       """Handle the service call to analyze a video (future implementation)"""
+       pass 
+
     hass.services.register(
         DOMAIN, "image_analyzer", image_analyzer,
         supports_response=SupportsResponse.ONLY
