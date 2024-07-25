@@ -1,7 +1,7 @@
-""" Constants for gpt4vision component"""
+""" Constants for llmvision component"""
 
 # Global constants
-DOMAIN = "gpt4vision"
+DOMAIN = "llmvision"
 
 # Configuration values from setup
 CONF_OPENAI_API_KEY = 'openai_api_key'

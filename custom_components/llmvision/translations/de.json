@@ -3,10 +3,7 @@
         "step": {
             "user": {
                 "title": "Wählen Sie Ihren Provider",
-                "description": "Wählen Sie den Anbieter den verwenden möchten.",
-                "data": {
-                    "api_key": "Ihr API-Schlüssel"
-                }
+                "description": "Wählen Sie den Anbieter den verwenden möchten."
             },
             "localai": {
                 "title": "Verbinden Sie sich mit Ihrem LocalAI-Server",
