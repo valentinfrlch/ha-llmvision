@@ -3,10 +3,10 @@
 </p>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
-<img src=https://img.shields.io/badge/version-1.0.0-blue>
-<a href="https://github.com/valentinfrlch/ha-gpt4vision/issues">
+<img src=https://img.shields.io/badge/version-1.0.1-blue>
+<a href="https://github.com/valentinfrlch/ha-llmvision/issues">
 <img src="https://img.shields.io/maintenance/yes/2024.svg">
-<img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-gpt4vision?color=0088ff"/>
+<img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-llmvision?color=0088ff"/>
     </a>
     <p align=center style="font-weight:bold">
       Image Analyzer for Home Assistant using Multimodal LLMs
@@ -44,11 +44,11 @@ Supported providers are OpenAI, Anthropic, Google Gemini, [LocalAI](https://gith
 - Can be installed and updated through HACS and can be set up in the Home Assistant UI
 
 ## Resources
-Check the [📖 wiki](https://github.com/valentinfrlch/ha-gpt4vision/wiki) for examples on how you can integrate llmvision into your Home Assistant setup or join the [🗨️ discussion](https://community.home-assistant.io/t/gpt-4o-vision-capabilities-in-home-assistant/729241) in the Home Assistant Community.
+Check the [📖 wiki](https://github.com/valentinfrlch/ha-llmvision/wiki) for examples on how you can integrate llmvision into your Home Assistant setup or join the [🗨️ discussion](https://community.home-assistant.io/t/gpt-4o-vision-capabilities-in-home-assistant/729241) in the Home Assistant Community.
 
 # Installation
 ### Installation via HACS (recommended)
-[![Open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=valentinfrlch&repository=ha-gpt4vision&category=Integration)
+[![Open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=valentinfrlch&repository=ha-llmvision&category=Integration)
 1. Search for `LLM Vision` in Home Assistant Settings/Devices & services
 2. Select your provider
 3. Follow the instructions to add your AI providers.
@@ -241,5 +241,5 @@ logger:
 >
 ></div>
 >
->[KBD]: https://github.com/valentinfrlch/ha-gpt4vision/issues/new/choose
+>[KBD]: https://github.com/valentinfrlch/ha-llmvision/issues/new/choose
 
