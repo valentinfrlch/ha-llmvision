@@ -6,8 +6,10 @@ from .const import (
     CONF_GOOGLE_API_KEY,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
+    CONF_LOCALAI_HTTPS,
     CONF_OLLAMA_IP_ADDRESS,
     CONF_OLLAMA_PORT,
+    CONF_OLLAMA_HTTPS,
     PROVIDER,
     MAXTOKENS,
     TARGET_WIDTH,
@@ -26,14 +28,12 @@ from .const import (
     ERROR_NO_IMAGE_INPUT
 )
 from .request_handlers import RequestHandler
-import base64
-import io
+from .helpers import ImageEncoder
 import os
 import logging
 from homeassistant.helpers.network import get_url
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
-from PIL import Image
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,8 +46,10 @@ async def async_setup_entry(hass, entry):
     google_api_key = entry.data.get(CONF_GOOGLE_API_KEY)
     localai_ip_address = entry.data.get(CONF_LOCALAI_IP_ADDRESS)
     localai_port = entry.data.get(CONF_LOCALAI_PORT)
+    localai_https = entry.data.get(CONF_LOCALAI_HTTPS)
     ollama_ip_address = entry.data.get(CONF_OLLAMA_IP_ADDRESS)
     ollama_port = entry.data.get(CONF_OLLAMA_PORT)
+    ollama_https = entry.data.get(CONF_OLLAMA_HTTPS)
 
     # Ensure DOMAIN exists in hass.data
     if DOMAIN not in hass.data:
@@ -62,8 +64,10 @@ async def async_setup_entry(hass, entry):
             CONF_GOOGLE_API_KEY: google_api_key,
             CONF_LOCALAI_IP_ADDRESS: localai_ip_address,
             CONF_LOCALAI_PORT: localai_port,
+            CONF_LOCALAI_HTTPS: localai_https,
             CONF_OLLAMA_IP_ADDRESS: ollama_ip_address,
-            CONF_OLLAMA_PORT: ollama_port
+            CONF_OLLAMA_PORT: ollama_port,
+            CONF_OLLAMA_HTTPS: ollama_https,
         }.items()
         if value is not None
     })
@@ -114,63 +118,16 @@ def setup(hass, config):
         Returns:
             json: response_text
         """
-        # HELPERS
-        async def encode_image(image_path=None, image_data=None):
-            """Encode image as base64
-
-            Args:
-                image_path (string): path where image is stored e.g.: "/config/www/tmp/image.jpg"
-
-            Returns:
-                string: image encoded as base64
-            """
-            loop = hass.loop
-            if image_path:
-                # Open the image file
-                img = await loop.run_in_executor(None, Image.open, image_path)
-                with img:
-                    # calculate new height based on aspect ratio
-                    width, height = img.size
-                    aspect_ratio = width / height
-                    target_height = int(target_width / aspect_ratio)
-
-                    # Resize the image only if it's larger than the target size
-                    if width > target_width or height > target_height:
-                        img = img.resize((target_width, target_height))
-
-                    # Convert the image to base64
-                    img_byte_arr = io.BytesIO()
-                    img.save(img_byte_arr, format='JPEG')
-                    base64_image = base64.b64encode(
-                        img_byte_arr.getvalue()).decode('utf-8')
-
-            elif image_data:
-                # Convert the image to base64
-                img_byte_arr = io.BytesIO()
-                img_byte_arr.write(image_data)
-                img = await loop.run_in_executor(None, Image.open, img_byte_arr)
-                with img:
-                    # calculate new height based on aspect ratio
-                    width, height = img.size
-                    aspect_ratio = width / height
-                    target_height = int(target_width / aspect_ratio)
-
-                    if width > target_width or height > target_height:
-                        img = img.resize((target_width, target_height))
-
-                    img.save(img_byte_arr, format='JPEG')
-                    base64_image = base64.b64encode(
-                        img_byte_arr.getvalue()).decode('utf-8')
-
-            return base64_image
 
         # Read from configuration (hass.data)
         localai_ip_address = hass.data.get(
             DOMAIN, {}).get(CONF_LOCALAI_IP_ADDRESS)
         localai_port = hass.data.get(DOMAIN, {}).get(CONF_LOCALAI_PORT)
+        localai_https = hass.data.get(DOMAIN, {}).get(CONF_LOCALAI_HTTPS)
         ollama_ip_address = hass.data.get(
             DOMAIN, {}).get(CONF_OLLAMA_IP_ADDRESS)
         ollama_port = hass.data.get(DOMAIN, {}).get(CONF_OLLAMA_PORT)
+        ollama_https = hass.data.get(DOMAIN, {}).get(CONF_OLLAMA_HTTPS)
 
         # Read data from service call
         mode = str(data_call.data.get(PROVIDER))
@@ -192,6 +149,8 @@ def setup(hass, config):
                                 max_tokens=max_tokens,
                                 temperature=temperature,
                                 detail=detail)
+        
+        encoder = ImageEncoder(hass)
 
         # If image_paths is not empty, encode the images as base64 and add them to the client
         if image_paths:
@@ -200,12 +159,12 @@ def setup(hass, config):
                     image_path = image_path.strip()
                     if include_filename and os.path.exists(image_path):
                         client.add_image(
-                            base64_image=await encode_image(image_path=image_path),
+                            base64_image=await encoder.encode_image(target_width=target_width, image_path=image_path),
                             filename=image_path.split('/')[-1].split('.')[-2]
                         )
                     elif os.path.exists(image_path):
                         client.add_image(
-                            base64_image=await encode_image(image_path=image_path),
+                            base64_image=await encoder.encode_image(target_width=target_width, image_path=image_path),
                             filename=""
                         )
                     if not os.path.exists(image_path):
@@ -219,27 +178,29 @@ def setup(hass, config):
             for image_entity in image_entities:
                 try:
                     base_url = get_url(hass)
-                    image_url = base_url + hass.states.get(image_entity).attributes.get('entity_picture')
+                    image_url = base_url + \
+                        hass.states.get(image_entity).attributes.get(
+                            'entity_picture')
                     image_data = await client.fetch(image_url)
-                
 
                     # If entity snapshot requested, use entity name as 'filename'
                     if include_filename:
-                        entity_name = hass.states.get(image_entity).attributes.get('friendly_name')
+                        entity_name = hass.states.get(
+                            image_entity).attributes.get('friendly_name')
 
                         client.add_image(
-                            base64_image=await encode_image(image_data=image_data),
+                            base64_image=await encoder.encode_image(target_width=target_width, image_data=image_data),
                             filename=entity_name
                         )
                     else:
                         client.add_image(
-                            base64_image=await encode_image(image_data=image_data),
+                            base64_image=await encoder.encode_image(target_width=target_width, image_data=image_data),
                             filename=""
                         )
                 except AttributeError as e:
                     raise ServiceValidationError(
                         f"Entity {image_entity} does not exist")
-                
+
         _LOGGER.debug(f"Base64 Images: {client.get_images()}")
 
         # Validate configuration and input data, make the call
@@ -274,7 +235,8 @@ def setup(hass, config):
             model = str(data_call.data.get(MODEL, "gpt-4-vision-preview"))
             response_text = await client.localai(model=model,
                                                  ip_address=localai_ip_address,
-                                                 port=localai_port)
+                                                 port=localai_port,
+                                                 https=localai_https)
         elif mode == 'Ollama':
             validate(mode=mode,
                      api_key=None,
@@ -284,15 +246,14 @@ def setup(hass, config):
             model = str(data_call.data.get(MODEL, "llava"))
             response_text = await client.ollama(model=model,
                                                 ip_address=ollama_ip_address,
-                                                port=ollama_port)
+                                                port=ollama_port,
+                                                https=ollama_https)
 
-        # close the RequestHandler and return response_text
-        await client.close()
         return {"response_text": response_text}
 
     async def video_analyzer(data_call):
-       """Handle the service call to analyze a video (future implementation)"""
-       pass 
+        """Handle the service call to analyze a video (future implementation)"""
+        pass
 
     hass.services.register(
         DOMAIN, "image_analyzer", image_analyzer,

@@ -3,8 +3,8 @@
     "name": "LLM Vision",
     "codeowners": ["@valentinfrlch"],
     "config_flow": true,
-    "documentation": "https://github.com/valentinfrlch/ha-gpt4vision",
+    "documentation": "https://github.com/valentinfrlch/ha-llmvision",
     "iot_class": "cloud_polling",
-    "issue_tracker": "https://github.com/valentinfrlch/ha-gpt4vision/issues",
-    "version": "1.0.0"
+    "issue_tracker": "https://github.com/valentinfrlch/ha-llmvision/issues",
+    "version": "1.0.1"
 }

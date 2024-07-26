@@ -9,8 +9,10 @@ CONF_ANTHROPIC_API_KEY = 'anthropic_api_key'
 CONF_GOOGLE_API_KEY = 'google_api_key'
 CONF_LOCALAI_IP_ADDRESS = 'localai_ip'
 CONF_LOCALAI_PORT = 'localai_port'
+CONF_LOCALAI_HTTPS = 'localai_https'
 CONF_OLLAMA_IP_ADDRESS = 'ollama_ip'
 CONF_OLLAMA_PORT = 'ollama_port'
+CONF_OLLAMA_HTTPS = 'ollama_https'
 
 # service call constants
 PROVIDER = 'provider'
@@ -40,5 +42,5 @@ VERSION_ANTHROPIC = "2023-06-01"
 ENDPOINT_OPENAI = "https://api.openai.com/v1/chat/completions"
 ENDPOINT_ANTHROPIC = "https://api.anthropic.com/v1/messages"
 ENDPOINT_GOOGLE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-ENDPOINT_LOCALAI = "http://{ip_address}:{port}/v1/chat/completions"
-ENDPOINT_OLLAMA = "http://{ip_address}:{port}/api/chat"
+ENDPOINT_LOCALAI = "{protocol}://{ip_address}:{port}/v1/chat/completions"
+ENDPOINT_OLLAMA = "{protocol}://{ip_address}:{port}/api/chat"

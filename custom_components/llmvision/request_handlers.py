@@ -168,7 +168,7 @@ class RequestHandler:
             "content").get("parts")[0].get("text")
         return response_text
 
-    async def localai(self, model, ip_address, port):
+    async def localai(self, model, ip_address, port, https):
         from .const import ENDPOINT_LOCALAI
         data = {"model": model,
                 "messages": [{"role": "user", "content": [
@@ -189,14 +189,15 @@ class RequestHandler:
             {"type": "text", "text": self.message}
         )
 
+        protocol = "https" if https else "http"
         response = await self._post(
-            url=ENDPOINT_LOCALAI.format(ip_address=ip_address, port=port), headers={}, data=data)
+            url=ENDPOINT_LOCALAI.format(ip_address=ip_address, port=port, protocol=protocol), headers={}, data=data)
 
         response_text = response.get(
             "choices")[0].get("message").get("content")
         return response_text
 
-    async def ollama(self, model, ip_address, port):
+    async def ollama(self, model, ip_address, port, https):
         from .const import ENDPOINT_OLLAMA
         data = {
             "model": model,
@@ -224,7 +225,8 @@ class RequestHandler:
         }
         data["messages"].append(prompt_message)
 
-        response = await self._post(url=ENDPOINT_OLLAMA.format(ip_address=ip_address, port=port), headers={}, data=data)
+        protocol = "https" if https else "http"
+        response = await self._post(url=ENDPOINT_OLLAMA.format(ip_address=ip_address, port=port, protocol=protocol), headers={}, data=data)
         response_text = response.get("message").get("content")
         return response_text
 
@@ -329,9 +331,3 @@ class RequestHandler:
                 return "Internal server issue (on LocalAI server)."
             else:
                 return f"Error: {response}"
-
-    async def close(self):
-        # Home Assistant will close the session
-        # TODO: There is a warning "Unclosed client session", but if closed it throws an error...
-        # await self.session.close()
-        pass
