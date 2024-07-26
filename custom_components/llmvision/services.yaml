@@ -1,5 +1,5 @@
 image_analyzer:
-  name: GPT-4 Vision Image Analyzer
+  name: LLM Vision Image Analyzer
   description: Analyze an image with AI
   fields:
     provider:

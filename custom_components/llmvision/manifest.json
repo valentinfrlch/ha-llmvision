@@ -1,10 +1,10 @@
 {
-    "domain": "gpt4vision",
-    "name": "GPT-4 Vision",
+    "domain": "llmvision",
+    "name": "LLM Vision",
     "codeowners": ["@valentinfrlch"],
     "config_flow": true,
     "documentation": "https://github.com/valentinfrlch/ha-gpt4vision",
     "iot_class": "cloud_polling",
     "issue_tracker": "https://github.com/valentinfrlch/ha-gpt4vision/issues",
-    "version": "0.4.7"
+    "version": "1.0.0"
 }

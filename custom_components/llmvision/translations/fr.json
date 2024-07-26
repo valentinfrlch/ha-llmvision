@@ -3,10 +3,7 @@
         "step": {
             "user": {
                 "title": "Choisissez votre fournisseur",
-                "description": "Sélectionnez le fournisseur que vous souhaitez utiliser pour votre IA.",
-                "data": {
-                    "api_key": "Votre clé API"
-                }
+                "description": "Sélectionnez le fournisseur que vous souhaitez utiliser pour votre IA."
             },
             "localai": {
                 "title": "Connectez-vous à votre serveur LocalAI",

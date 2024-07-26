@@ -1,6 +1,7 @@
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import logging
+import re
 from .const import (
     VERSION_ANTHROPIC,
     ENDPOINT_OPENAI,
@@ -11,6 +12,19 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+base64_pattern = re.compile(r'([A-Za-z0-9+/=]{1000,})')
+
+
+def sanitize_data(data):
+    """Remove base64 image data from request data to reduce log size"""
+    if isinstance(data, dict):
+        return {key: sanitize_data(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [sanitize_data(item) for item in data]
+    elif isinstance(data, str) and base64_pattern.match(data):
+        return '<base64_image>'
+    else:
+        return data
 
 
 class RequestHandler:
@@ -26,10 +40,9 @@ class RequestHandler:
     def add_image(self, base64_image, filename):
         self.base64_images.append(base64_image)
         self.filenames.append(filename)
-    
+
     def get_images(self):
         return self.base64_images
-
 
     async def openai(self, model, api_key):
         from .const import ENDPOINT_OPENAI
@@ -217,7 +230,7 @@ class RequestHandler:
 
     async def _post(self, url, headers, data):
         """Post data to url and return response data"""
-        _LOGGER.debug(f"Request data: {data}")
+        _LOGGER.info(f"Request data: {sanitize_data(data)}")
         try:
             response = await self.session.post(url, headers=headers, json=data)
         except Exception as e:
@@ -231,12 +244,12 @@ class RequestHandler:
                 raise ServiceValidationError(e)
 
         response_data = await response.json()
-        _LOGGER.debug(f"Response data: {response_data}")
+        _LOGGER.info(f"Response data: {response_data}")
         return response_data
 
     async def fetch(self, url):
         """Fetch image from url and return image data"""
-        _LOGGER.debug(f"Fetching image from {url}")
+        _LOGGER.info(f"Fetching image from {url}")
         try:
             response = await self.session.get(url)
         except Exception as e:
@@ -316,8 +329,6 @@ class RequestHandler:
                 return "Internal server issue (on LocalAI server)."
             else:
                 return f"Error: {response}"
-
-
 
     async def close(self):
         # Home Assistant will close the session

@@ -89,7 +89,7 @@ def create_benchmark_visualization(df: pd.DataFrame):
                            showarrow=False,
                            yshift=-35)
 
-    fig.update_layout(title={'text': 'Performance vs Cost of Cloud-Based Models in gpt4vision',
+    fig.update_layout(title={'text': 'Performance vs Cost of Cloud-Based Models in LLM Vision',
                              'font': {'size': 50}},
                       xaxis_title='$/1M Input Tokens', yaxis_title='MMMU Score Average',
                       paper_bgcolor='#0d1117', plot_bgcolor='#161b22',
