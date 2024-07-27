@@ -2,8 +2,8 @@ import base64
 import io
 from PIL import Image
 
-class ImageEncoder:
-    def init(self, hass):
+class MediaProcessor:
+    def __init__(self, hass):
         self.hass = hass
     async def encode_image(self, target_width, image_path=None, image_data=None):
         """Encode image as base64

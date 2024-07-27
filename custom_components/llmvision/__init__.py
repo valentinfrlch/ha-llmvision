@@ -28,7 +28,7 @@ from .const import (
     ERROR_NO_IMAGE_INPUT
 )
 from .request_handlers import RequestHandler
-from .helpers import ImageEncoder
+from .helpers import MediaProcessor
 import os
 import logging
 from homeassistant.helpers.network import get_url
@@ -150,7 +150,7 @@ def setup(hass, config):
                                 temperature=temperature,
                                 detail=detail)
         
-        encoder = ImageEncoder(hass)
+        encoder = MediaProcessor(hass)
 
         # If image_paths is not empty, encode the images as base64 and add them to the client
         if image_paths:
