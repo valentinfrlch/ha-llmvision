@@ -3,12 +3,28 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import logging
 import re
 from .const import (
+    DOMAIN,
+    CONF_OPENAI_API_KEY,
+    CONF_ANTHROPIC_API_KEY,
+    CONF_GOOGLE_API_KEY,
+    CONF_LOCALAI_IP_ADDRESS,
+    CONF_LOCALAI_PORT,
+    CONF_LOCALAI_HTTPS,
+    CONF_OLLAMA_IP_ADDRESS,
+    CONF_OLLAMA_PORT,
+    CONF_OLLAMA_HTTPS,
     VERSION_ANTHROPIC,
     ENDPOINT_OPENAI,
     ENDPOINT_ANTHROPIC,
     ENDPOINT_GOOGLE,
     ENDPOINT_LOCALAI,
-    ENDPOINT_OLLAMA
+    ENDPOINT_OLLAMA,
+    ERROR_OPENAI_NOT_CONFIGURED,
+    ERROR_ANTHROPIC_NOT_CONFIGURED,
+    ERROR_GOOGLE_NOT_CONFIGURED,
+    ERROR_LOCALAI_NOT_CONFIGURED,
+    ERROR_OLLAMA_NOT_CONFIGURED,
+    ERROR_NO_IMAGE_INPUT
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,12 +46,69 @@ def sanitize_data(data):
 class RequestHandler:
     def __init__(self, hass, message, max_tokens, temperature, detail):
         self.session = async_get_clientsession(hass)
+        self.hass = hass
         self.message = message
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.detail = detail
         self.base64_images = []
         self.filenames = []
+
+    async def make_request(self, call):
+        if call.provider == 'OpenAI':
+            api_key = self.hass.data.get(DOMAIN).get(CONF_OPENAI_API_KEY)
+            model = call.model
+            self._validate_call(provider=call.provider,
+                                api_key=api_key,
+                                base64_images=self.base64_images)
+            response_text = await self.openai(model=model, api_key=api_key)
+        elif call.provider == 'Anthropic':
+            api_key = self.hass.data.get(DOMAIN).get(CONF_ANTHROPIC_API_KEY)
+            model = call.model
+            self._validate_call(provider=call.provider,
+                                api_key=api_key,
+                                base64_images=self.base64_images)
+            response_text = await self.anthropic(model=model, api_key=api_key)
+        elif call.provider == 'Google':
+            api_key = self.hass.data.get(DOMAIN).get(CONF_GOOGLE_API_KEY)
+            model = call.model
+            self._validate_call(provider=call.provider,
+                                api_key=api_key,
+                                base64_images=self.base64_images)
+            response_text = await self.google(model=model, api_key=api_key)
+        elif call.provider == 'LocalAI':
+            ip_address = self.hass.data.get(
+                DOMAIN, {}).get(CONF_LOCALAI_IP_ADDRESS)
+            port = self.hass.data.get(
+                DOMAIN, {}).get(CONF_LOCALAI_PORT)
+            https = self.hass.data.get(
+                DOMAIN, {}).get(CONF_LOCALAI_HTTPS, False)
+            model = call.model
+            self._validate_call(provider=call.provider,
+                                api_key=None,
+                                base64_images=self.base64_images,
+                                ip_address=ip_address,
+                                port=port)
+            response_text = await self.localai(model=model,
+                                               ip_address=ip_address,
+                                               port=port,
+                                               https=https)
+        elif call.provider == 'Ollama':
+            ip_address = self.hass.data.get(DOMAIN, {}).get(CONF_OLLAMA_IP_ADDRESS)
+            port = self.hass.data.get(DOMAIN, {}).get(CONF_OLLAMA_PORT)
+            https = self.hass.data.get(DOMAIN, {}).get(CONF_OLLAMA_HTTPS, False)
+            model = call.model
+            self._validate_call(provider=call.provider,
+                                api_key=None,
+                                base64_images=self.base64_images,
+                                ip_address=ip_address,
+                                port=port)
+            response_text = await self.ollama(model=model,
+                                              ip_address=ip_address,
+                                              port=port,
+                                              https=https)
+
+        return {"response_text": response_text}
 
     def add_image(self, base64_image, filename):
         self.base64_images.append(base64_image)
@@ -263,6 +336,41 @@ class RequestHandler:
 
         data = await response.read()
         return data
+
+    def _validate_call(self, provider, api_key, base64_images, ip_address=None, port=None):
+        """Validate the configuration for the component
+
+        Args:
+            mode (string): "OpenAI" or "LocalAI"
+            api_key (string): OpenAI API key
+            ip_address (string): LocalAI server IP address
+            port (string): LocalAI server port
+
+        Raises:
+            ServiceValidationError: if configuration is invalid
+        """
+        # Checks for OpenAI
+        if provider == 'OpenAI':
+            if not api_key:
+                raise ServiceValidationError(ERROR_OPENAI_NOT_CONFIGURED)
+        # Checks for Anthropic
+        elif provider == 'Anthropic':
+            if not api_key:
+                raise ServiceValidationError(ERROR_ANTHROPIC_NOT_CONFIGURED)
+        elif provider == 'Google':
+            if not api_key:
+                raise ServiceValidationError(ERROR_GOOGLE_NOT_CONFIGURED)
+        # Checks for LocalAI
+        elif provider == 'LocalAI':
+            if not ip_address or not port:
+                raise ServiceValidationError(ERROR_LOCALAI_NOT_CONFIGURED)
+        # Checks for Ollama
+        elif provider == 'Ollama':
+            if not ip_address or not port:
+                raise ServiceValidationError(ERROR_OLLAMA_NOT_CONFIGURED)
+        # File path validation
+        if base64_images == []:
+            raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
 
     def _resolve_error(self, url, response):
         """Translate response status to error message"""

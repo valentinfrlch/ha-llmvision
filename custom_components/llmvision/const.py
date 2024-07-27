@@ -36,6 +36,7 @@ ERROR_NO_IMAGE_INPUT = "No image input. Either provide image_file path or image_
 ERROR_HANDSHAKE_FAILED = "Handshake with LocalAI server failed"
 
 # Versions
+# https://docs.anthropic.com/en/api/versioning
 VERSION_ANTHROPIC = "2023-06-01"
 
 # API Endpoints

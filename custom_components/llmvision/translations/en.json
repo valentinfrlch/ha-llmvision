@@ -10,22 +10,24 @@
                 "description": "Provide the IP address and port of your LocalAI server.",
                 "data": {
                     "localai_ip": "IP address",
-                    "localai_port": "Port"
+                    "localai_port": "Port",
+                    "localai_https": "HTTPS"
                 }
             },
             "ollama": {
                 "title": "Connect to your Ollama server",
                 "description": "Provide the IP address and port of your Ollama server.",
                 "data": {
-                    "localai_ip": "IP address",
-                    "localai_port": "Port"
+                    "ollama_ip": "IP address",
+                    "ollama_port": "Port",
+                    "ollama_https": "HTTPS"
                 }
             },
             "openai": {
                 "title": "Add OpenAI API key",
                 "description": "Provide a valid OpenAI API key.",
                 "data": {
-                    "api_key": "Your API key"
+                    "openai_api_key": "Your API key"
                 }
             },
             "anthropic": {
