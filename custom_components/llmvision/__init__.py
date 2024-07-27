@@ -31,7 +31,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry):
-    """Save llmvision config entry in hass.data"""
+    """Save config entry to hass.data"""
     # Get all entries from config flow
     openai_api_key = entry.data.get(CONF_OPENAI_API_KEY)
     anthropic_api_key = entry.data.get(CONF_ANTHROPIC_API_KEY)
@@ -68,6 +68,7 @@ async def async_setup_entry(hass, entry):
 
 
 class ServiceCallData:
+    """Store service call data and set default values"""
     def __init__(self, data_call):
         self.provider = str(data_call.data.get(PROVIDER))
         self.model = str(data_call.data.get(MODEL, self._default_model(self.provider)))
@@ -99,27 +100,23 @@ class ServiceCallData:
 
 def setup(hass, config):
     async def image_analyzer(data_call):
-        """Handle the service call to analyze an image with LLM Vision
-
-        Returns:
-            json: response_text
-        """
+        """Handle the service call to analyze an image with LLM Vision"""
+        
+        # Initialize call objecto with service call data
         call = ServiceCallData(data_call).get_service_call_data()
-
+        # Initialize the RequestHandler client
         client = RequestHandler(hass,
                                 message=call.message,
                                 max_tokens=call.max_tokens,
                                 temperature=call.temperature,
                                 detail=call.detail)
 
-        # Add images to the client
+        # Fetch and preprocess images
         processor = MediaProcessor(hass, client)
-        # override client with added images
+        # Send images to RequestHandler client
         client = await processor.add_image(call.image_entities, call.image_paths, call.target_width, call.include_filename)
 
-        _LOGGER.debug(f"Base64 Images: {client.get_images()}")
-
-        # Validate configuration and input data, make the call
+        # Validate configuration, input data and make the call
         try:
             response = await client.make_request(call)
         except ServiceValidationError as e:

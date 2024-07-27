@@ -68,7 +68,7 @@ class MediaProcessor:
                     image_url = base_url + \
                         self.hass.states.get(image_entity).attributes.get(
                             'entity_picture')
-                    image_data = await self.client.fetch(image_url)
+                    image_data = await self.client._fetch(image_url)
 
                     # If entity snapshot requested, use entity name as 'filename'
                     if include_filename:

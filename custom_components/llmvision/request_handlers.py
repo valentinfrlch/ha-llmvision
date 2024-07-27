@@ -55,6 +55,7 @@ class RequestHandler:
         self.filenames = []
 
     async def make_request(self, call):
+        _LOGGER.debug(f"Base64 Images: {self.base64_images}")
         if call.provider == 'OpenAI':
             api_key = self.hass.data.get(DOMAIN).get(CONF_OPENAI_API_KEY)
             model = call.model
@@ -114,9 +115,7 @@ class RequestHandler:
         self.base64_images.append(base64_image)
         self.filenames.append(filename)
 
-    def get_images(self):
-        return self.base64_images
-
+    # Request Handlers
     async def openai(self, model, api_key):
         from .const import ENDPOINT_OPENAI
         # Set headers and payload
@@ -303,6 +302,7 @@ class RequestHandler:
         response_text = response.get("message").get("content")
         return response_text
 
+    # Helpers
     async def _post(self, url, headers, data):
         """Post data to url and return response data"""
         _LOGGER.info(f"Request data: {sanitize_data(data)}")
@@ -322,7 +322,7 @@ class RequestHandler:
         _LOGGER.info(f"Response data: {response_data}")
         return response_data
 
-    async def fetch(self, url):
+    async def _fetch(self, url):
         """Fetch image from url and return image data"""
         _LOGGER.info(f"Fetching image from {url}")
         try:
