@@ -133,8 +133,6 @@ class MediaProcessor:
                         # extract frames from video every 'interval' seconds using ffmpeg
                         tmp_dir = "tmp_frames"
                         os.makedirs(tmp_dir, exist_ok=True)
-                        _LOGGER.debug(
-                            f"Created {tmp_dir} {os.path.exists(tmp_dir)}")
                         ffmpeg_cmd = [
                             "ffmpeg",
                             "-i", video_path,
