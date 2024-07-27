@@ -1,5 +1,5 @@
 image_analyzer:
-  name: LLM Vision Image Analyzer
+  name: Image Analyzer
   description: Analyze an image with AI
   fields:
     provider:
@@ -99,6 +99,7 @@ image_analyzer:
           step: 0.1
 
 video_analyzer:
+  name: Vision Analyzer
   description: Analyze video with AI
   fields:
     provider:
