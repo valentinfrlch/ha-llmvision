@@ -99,7 +99,7 @@ image_analyzer:
           step: 0.1
 
 video_analyzer:
-  name: Vision Analyzer
+  name: Video Analyzer
   description: Analyze video with AI
   fields:
     provider:
