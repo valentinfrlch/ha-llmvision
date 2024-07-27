@@ -126,10 +126,27 @@ def setup(hass, config):
 
     async def video_analyzer(data_call):
         """Handle the service call to analyze a video (future implementation)"""
-        pass
+        call = ServiceCallData(data_call).get_service_call_data()
+        client = RequestHandler(hass,
+                                message=call.message,
+                                max_tokens=call.max_tokens,
+                                temperature=call.temperature,
+                                detail=call.detail)
+        processor = MediaProcessor(hass, client)
+        client = await processor.add_video(call.video_paths, call.interval, call.target_width, call.include_filename)
+        try:
+            response = await client.make_request(call)
+        except ServiceValidationError as e:
+            _LOGGER.error(f"Error: {e}")
+            return {"error": str(e)}
+        return response
 
     hass.services.register(
         DOMAIN, "image_analyzer", image_analyzer,
+        supports_response=SupportsResponse.ONLY
+    )
+    hass.services.register(
+        DOMAIN, "video_analyzer", video_analyzer,
         supports_response=SupportsResponse.ONLY
     )
 
