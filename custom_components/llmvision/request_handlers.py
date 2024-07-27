@@ -55,7 +55,7 @@ class RequestHandler:
         self.filenames = []
 
     async def make_request(self, call):
-        _LOGGER.debug(f"Base64 Images: {self.base64_images}")
+        _LOGGER.debug(f"Base64 Images: {sanitize_data(self.base64_images)}")
         if call.provider == 'OpenAI':
             api_key = self.hass.data.get(DOMAIN).get(CONF_OPENAI_API_KEY)
             model = call.model
@@ -338,17 +338,7 @@ class RequestHandler:
         return data
 
     def _validate_call(self, provider, api_key, base64_images, ip_address=None, port=None):
-        """Validate the configuration for the component
-
-        Args:
-            mode (string): "OpenAI" or "LocalAI"
-            api_key (string): OpenAI API key
-            ip_address (string): LocalAI server IP address
-            port (string): LocalAI server port
-
-        Raises:
-            ServiceValidationError: if configuration is invalid
-        """
+        """Validate the service call data"""
         # Checks for OpenAI
         if provider == 'OpenAI':
             if not api_key:
@@ -368,7 +358,7 @@ class RequestHandler:
         elif provider == 'Ollama':
             if not ip_address or not port:
                 raise ServiceValidationError(ERROR_OLLAMA_NOT_CONFIGURED)
-        # File path validation
+        # Check media input
         if base64_images == []:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
 

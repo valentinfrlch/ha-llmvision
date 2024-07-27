@@ -17,6 +17,8 @@ from .const import (
     MESSAGE,
     IMAGE_FILE,
     IMAGE_ENTITY,
+    VIDEO_FILE,
+    INTERVAL,
     TEMPERATURE,
     DETAIL,
     INCLUDE_FILENAME
@@ -76,6 +78,9 @@ class ServiceCallData:
         self.image_paths = data_call.data.get(IMAGE_FILE, "").split(
             "\n") if data_call.data.get(IMAGE_FILE) else None
         self.image_entities = data_call.data.get(IMAGE_ENTITY)
+        self.video_paths = data_call.data.get(VIDEO_FILE, "").split(
+            "\n") if data_call.data.get(VIDEO_FILE) else None
+        self.interval = int(data_call.data.get(INTERVAL, 3))
         self.target_width = data_call.data.get(TARGET_WIDTH, 1280)
         self.temperature = float(data_call.data.get(TEMPERATURE, 0.5))
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 100))
@@ -114,7 +119,7 @@ def setup(hass, config):
         # Fetch and preprocess images
         processor = MediaProcessor(hass, client)
         # Send images to RequestHandler client
-        client = await processor.add_image(call.image_entities, call.image_paths, call.target_width, call.include_filename)
+        client = await processor.add_images(call.image_entities, call.image_paths, call.target_width, call.include_filename)
 
         # Validate configuration, input data and make the call
         try:
@@ -127,13 +132,14 @@ def setup(hass, config):
     async def video_analyzer(data_call):
         """Handle the service call to analyze a video (future implementation)"""
         call = ServiceCallData(data_call).get_service_call_data()
+        call.message = "The attached images are frames from a video." + call.message
         client = RequestHandler(hass,
                                 message=call.message,
                                 max_tokens=call.max_tokens,
                                 temperature=call.temperature,
                                 detail=call.detail)
         processor = MediaProcessor(hass, client)
-        client = await processor.add_video(call.video_paths, call.interval, call.target_width, call.include_filename)
+        client = await processor.add_videos(call.video_paths, call.interval, call.target_width, call.include_filename)
         try:
             response = await client.make_request(call)
         except ServiceValidationError as e:

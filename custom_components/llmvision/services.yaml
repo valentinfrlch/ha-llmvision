@@ -132,7 +132,7 @@ video_analyzer:
         text:
           multiline: true
     video_file:
-      name: Image File
+      name: Video File
       required: true
       description: 'Local path to video'
       example: "/config/www/recordings/front_door.mp4"
@@ -147,8 +147,8 @@ video_analyzer:
       default: 3
       selector:
         number:
-          min: 0.1
-          max: 100.0
+          min: 1
+          max: 60
     include_filename:
       name: Include Filename
       required: false
