@@ -131,7 +131,7 @@ video_analyzer:
       selector:
         text:
           multiline: true
-    image_file:
+    video_file:
       name: Image File
       required: true
       description: 'Local path to video'
@@ -139,6 +139,16 @@ video_analyzer:
       selector:
         text:
           multiline: true
+    interval:
+      name: Interval
+      description: Analyze frames every <interval> seconds
+      required: true
+      example: 3
+      default: 3
+      selector:
+        number:
+          min: 0.1
+          max: 100.0
     include_filename:
       name: Include Filename
       required: false
