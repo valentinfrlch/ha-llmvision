@@ -2,8 +2,8 @@ import base64
 import io
 import os
 from homeassistant.helpers.network import get_url
+# TODO: Use ffmpeg instead of moviepy
 from PIL import Image
-from moviepy.editor import VideoFileClip
 from homeassistant.exceptions import ServiceValidationError
 
 
