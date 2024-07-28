@@ -74,7 +74,7 @@ class MediaProcessor:
         return base64_image
 
     async def add_images(self, image_entities, image_paths, target_width, include_filename):
-        """Wrapper for client.add_image"""
+        """Wrapper for client.add_frame for images"""
         if image_entities:
             for image_entity in image_entities:
                 try:
@@ -89,12 +89,12 @@ class MediaProcessor:
                         entity_name = self.hass.states.get(
                             image_entity).attributes.get('friendly_name')
 
-                        self.client.add_image(
+                        self.client.add_frame(
                             base64_image=await self.resize_image(target_width=target_width, image_data=image_data),
                             filename=entity_name
                         )
                     else:
-                        self.client.add_image(
+                        self.client.add_frame(
                             base64_image=await self.resize_image(target_width=target_width, image_data=image_data),
                             filename=""
                         )
@@ -106,12 +106,12 @@ class MediaProcessor:
                 try:
                     image_path = image_path.strip()
                     if include_filename and os.path.exists(image_path):
-                        self.client.add_image(
+                        self.client.add_frame(
                             base64_image=await self.resize_image(target_width=target_width, image_path=image_path),
                             filename=image_path.split('/')[-1].split('.')[-2]
                         )
                     elif os.path.exists(image_path):
-                        self.client.add_image(
+                        self.client.add_frame(
                             base64_image=await self.resize_image(target_width=target_width, image_path=image_path),
                             filename=""
                         )
@@ -123,7 +123,7 @@ class MediaProcessor:
         return self.client
 
     async def add_videos(self, video_paths, event_ids, interval, target_width, include_filename):
-        """Wrapper for client.add_image for videos"""
+        """Wrapper for client.add_frame for videos"""
         if event_ids:
             for event_id in event_ids:
                 try:
@@ -178,7 +178,7 @@ class MediaProcessor:
                             _LOGGER.debug(f"Adding frame {frame_file}")
                             frame_counter = 0
                             frame_path = os.path.join(tmp_dir, frame_file)
-                            self.client.add_image(
+                            self.client.add_frame(
                                 base64_image=await self.resize_image(image_path=frame_path, target_width=target_width),
                                 filename=video_path.split(
                                     '/')[-1].split('.')[-2] + " (frame " + str(frame_counter) + ")" if include_filename else "Video frame " + str(frame_counter)

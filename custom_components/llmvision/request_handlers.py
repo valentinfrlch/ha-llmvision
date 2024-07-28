@@ -110,7 +110,7 @@ class RequestHandler:
 
         return {"response_text": response_text}
 
-    def add_image(self, base64_image, filename):
+    def add_frame(self, base64_image, filename):
         self.base64_images.append(base64_image)
         self.filenames.append(filename)
 
@@ -323,11 +323,11 @@ class RequestHandler:
 
     async def _fetch(self, url):
         """Fetch image from url and return image data"""
-        _LOGGER.info(f"Fetching image from {url}")
+        _LOGGER.info(f"Fetching {url}")
         try:
             response = await self.session.get(url)
         except Exception as e:
-            raise ServiceValidationError(f"Failed to fetch image: {e}")
+            raise ServiceValidationError(f"Fetch failed: {e}")
 
         if response.status != 200:
             raise ServiceValidationError(
