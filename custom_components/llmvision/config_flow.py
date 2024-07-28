@@ -98,7 +98,8 @@ class Validator:
             raise ServiceValidationError("empty_ip_address")
         if not self.user_input[CONF_LOCALAI_PORT]:
             raise ServiceValidationError("empty_port")
-        if not await self._handshake(base_url=self.user_input[CONF_LOCALAI_IP_ADDRESS], port=":"+str(self.user_input[CONF_LOCALAI_PORT]), protocol=self.user_input[CONF_LOCALAI_HTTPS], endpoint="/readyz"):
+        protocol = "https" if self.user_input[CONF_LOCALAI_HTTPS] else "http"
+        if not await self._handshake(base_url=self.user_input[CONF_LOCALAI_IP_ADDRESS], port=":"+str(self.user_input[CONF_LOCALAI_PORT]), protocol=protocol, endpoint="/readyz"):
             _LOGGER.error("Could not connect to LocalAI server.")
             raise ServiceValidationError("handshake_failed")
 
@@ -108,7 +109,8 @@ class Validator:
             raise ServiceValidationError("empty_ip_address")
         if not self.user_input[CONF_OLLAMA_PORT]:
             raise ServiceValidationError("empty_port")
-        if not await self._handshake(base_url=self.user_input[CONF_OLLAMA_IP_ADDRESS], port=":"+str(self.user_input[CONF_OLLAMA_PORT]), protocol=self.user_input[CONF_OLLAMA_HTTPS], endpoint="/api/tags"):
+        protocol = "https" if self.user_input[CONF_OLLAMA_HTTPS] else "http"
+        if not await self._handshake(base_url=self.user_input[CONF_OLLAMA_IP_ADDRESS], port=":"+str(self.user_input[CONF_OLLAMA_PORT]), protocol=protocol, endpoint="/api/tags"):
             _LOGGER.error("Could not connect to Ollama server.")
             raise ServiceValidationError("handshake_failed")
 
