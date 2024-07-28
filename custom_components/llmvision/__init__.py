@@ -135,7 +135,7 @@ def setup(hass, config):
     async def video_analyzer(data_call):
         """Handle the service call to analyze a video (future implementation)"""
         call = ServiceCallData(data_call).get_service_call_data()
-        call.message = "The attached images are frames from a video." + call.message
+        call.message = "The attached images are frames from a video. " + call.message
         client = RequestHandler(hass,
                                 message=call.message,
                                 max_tokens=call.max_tokens,

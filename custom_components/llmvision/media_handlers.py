@@ -18,6 +18,18 @@ class MediaProcessor:
         self.base64_images = []
         self.filenames = []
 
+    async def _encode_image(self, img):
+        """Encode image as base64"""
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='PNG')
+        base64_image = base64.b64encode(
+            img_byte_arr.getvalue()).decode('utf-8')
+        return base64_image
+
+    def _save_clip(self, clip_data, clip_path):
+        with open(clip_path, "wb") as f:
+            f.write(clip_data)
+
     async def resize_image(self, target_width, image_path=None, image_data=None, img=None):
         """Resize image to target_width"""
         if image_path:
@@ -63,14 +75,6 @@ class MediaProcessor:
 
                 base64_image = await self._encode_image(img)
 
-        return base64_image
-
-    async def _encode_image(self, img):
-        """Encode image as base64"""
-        img_byte_arr = io.BytesIO()
-        img.save(img_byte_arr, format='PNG')
-        base64_image = base64.b64encode(
-            img_byte_arr.getvalue()).decode('utf-8')
         return base64_image
 
     async def add_images(self, image_entities, image_paths, target_width, include_filename):
@@ -134,21 +138,13 @@ class MediaProcessor:
                     base_url = get_url(self.hass)
                     frigate_url = base_url + "/api/frigate/notifications/" + event_id + "/clip.mp4"
                     clip_data = await self.client._fetch(frigate_url)
-                    # create tmp dir to store video
-                    
+                    # create tmp dir to store video clips
                     os.makedirs(tmp_clips_dir, exist_ok=True)
-                    if os.path.exists(tmp_clips_dir):
-                        _LOGGER.debug(f"Created {tmp_clips_dir}")
-                    else:
-                        _LOGGER.error(f"Failed to create temp directory {tmp_clips_dir} to store frigate clips")
+                    _LOGGER.info(f"Created {tmp_clips_dir}")
                     # save clip to file with event_id as filename
-                    clip_path = os.path.join(tmp_clips_dir, event_id + ".mp4")
-                    f = await self.hass.loop.run_in_executor(None, open, clip_path, "wb")
-                    try:
-                        await self.hass.loop.run_in_executor(None, f.write, clip_data)
-                    finally:
-                        await self.hass.loop.run_in_executor(None, f.close)
-                    
+                    clip_path = os.path.join(tmp_clips_dir, event_id.split("-")[-1] + ".mp4")
+                    await self.hass.loop.run_in_executor(None, self._save_clip, clip_data, clip_path)
+                    _LOGGER.info(f"Saved frigate clip to {clip_path} (temporarily)")
                     # append to video_paths
                     video_paths.append(clip_path)
 
@@ -193,7 +189,7 @@ class MediaProcessor:
                 except Exception as e:
                     raise ServiceValidationError(f"Error: {e}")
 
-                # Clean up tmp dirs
+        # Clean up tmp dirs
         try:
             await self.hass.loop.run_in_executor(None, shutil.rmtree, tmp_clips_dir)
             await self.hass.loop.run_in_executor(None, shutil.rmtree, tmp_frames_dir)
