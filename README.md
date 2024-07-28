@@ -144,6 +144,7 @@ data:
   video_file: |-
     /config/www/tmp/front_door.mp4
     /config/www/tmp/garage.mp4
+  event_id: 1712108310.968815-r28cdt
   interval: 5 # Analyze one frame every 5 seconds
   target_width: 1280
   detail: low
@@ -159,7 +160,8 @@ data:
 | `message`        | Yes       | The prompt to send along with the image(s).     |                 |  String  |
 | `image_file`     | No*      | The path to the image file(s). Each path must be on a new line.| |Valid path to an image file|
 | `image_entity`   | No*      | An alternative to `image_file` for providing image input.|       |any `image` or `camera` entity|
-| `video_file`     | Yes       | The path to the video file(s). Each path must be on a new line.| |Valid path to an video file|
+| `video_file`     | No*       | The path to the video file(s). Each path must be on a new line.| |Valid path to an video file|
+| `event_id`     | No*       | Event ID from Frigate. Each id must be on a new line.| |e.g. `1712108310.968815-r28cdt`|
 | `interval`       | Yes       | Analyze frame every 'interval' seconds | 3 | Integer between 1 and 100 file|
 | `include_filename` | No     | Whether to include the filename in the request.        | `false` | `true`, `false`|
 | `target_width`   | No       | Width to downscale the image to before encoding. |  1280  | Integer between 512 and 3840|

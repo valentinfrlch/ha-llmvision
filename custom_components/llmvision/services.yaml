@@ -144,6 +144,7 @@ video_analyzer:
       name: Frigate Event ID
       required: false
       description: 'Frigate Event ID'
+      example: 1712108310.968815-r28cdt
       selector:
         text:
           multiline: true
