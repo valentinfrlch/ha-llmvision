@@ -9,7 +9,7 @@
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-llmvision?color=0088ff"/>
     </a>
     <p align=center style="font-weight:bold">
-      Image Analyzer for Home Assistant using Multimodal LLMs
+      Image and video analyzer for Home Assistant using multimodal LLMs
     </p>
 </p>
 
@@ -34,7 +34,7 @@
 <br>
 <br>
 
-**LLM Vision** is a Home Assistant integration that allows you to analyze images and camera feeds using the vision capabilities of multimodal LLMs.  
+**LLM Vision** is a Home Assistant integration to analyze images, videos and camera feeds using the vision capabilities of multimodal LLMs.  
 Supported providers are OpenAI, Anthropic, Google Gemini, [LocalAI](https://github.com/mudler/LocalAI) and [Ollama](https://ollama.com/).
 
 ## Features
@@ -46,18 +46,11 @@ Supported providers are OpenAI, Anthropic, Google Gemini, [LocalAI](https://gith
 ## Resources
 Check the [📖 wiki](https://github.com/valentinfrlch/ha-llmvision/wiki) for examples on how you can integrate llmvision into your Home Assistant setup or join the [🗨️ discussion](https://community.home-assistant.io/t/gpt-4o-vision-capabilities-in-home-assistant/729241) in the Home Assistant Community.
 
-# Installation
-### Installation via HACS (recommended)
+## Installation
 [![Open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=valentinfrlch&repository=ha-llmvision&category=Integration)
 1. Search for `LLM Vision` in Home Assistant Settings/Devices & services
 2. Select your provider
 3. Follow the instructions to add your AI providers.
-
-### Manual Installation
-1. Download and copy the **llmvision** folder into your **custom_components** folder.
-2. Add integration in Home Assistant Settings/Devices & services
-3. Follow the instructions to add your AI providers.
-
 
 ## Provider specific setup
 ### OpenAI
@@ -118,8 +111,8 @@ launchctl setenv OLLAMA_HOST "0.0.0.0"
 <br>
 
 ## Usage
-After restarting, the llmvision.image_analyzer service will be available. You can test it in the developer tools section in home assistant.
-To get OpenAI gpt-4o's analysis of a local image, use the following service call.
+After restarting, the `llmvision.image_analyzer` and `llmvision.video_analyzer` service will be available. You can test it in the developer tools section in home assistant.
+To analyze an image, call the `llmvision.image_analyzer` service with the following data:
 
 ```yaml
 service: llmvision.image_analyzer
@@ -127,7 +120,7 @@ data:
   provider: OpenAI
   message: Describe what you see?
   max_tokens: 100
-  model: gpt-4o
+  model: gpt-4o-mini
   image_file: |-
     /config/www/tmp/example.jpg
     /config/www/tmp/example2.jpg
@@ -139,46 +132,40 @@ data:
   temperature: 0.5
   include_filename: true
 ```
-| Parameter        | Optional |                     Description        | Default | Valid Values                   |
+
+You can also analyze video files by calling the `llmvision.video_analyzer` service with the following data:
+```yaml
+service: llmvision.video_analyzer
+data:
+  provider: OpenAI
+  message: What is happening in the video?
+  max_tokens: 100
+  model: gpt-4o-mini
+  video_file: |-
+    /config/www/tmp/front_door.mp4
+    /config/www/tmp/garage.mp4
+  interval: 5 # Analyze one frame every 5 seconds
+  target_width: 1280
+  detail: low
+  temperature: 0.5
+  include_filename: true
+```
+
+
+| Parameter        | Required |                     Description        | Default | Valid Values                   |
 |------------------|----------|--------------------------------------|---------------------|----------------------|
-| `provider`       | No      | The AI provider call.     |         `OpenAI`                      |`OpenAI`, `Anthropic`, `Google`, `Ollama`, `LocalAI`|
-| `model`          | Yes       | Model used for processing the image(s).            |      |  See table below |
-| `message`        | No      | The prompt to send along with the image(s).     |                 |  String  |
-| `image_file`     | Yes*      | The path to the image file(s). Each path must be on a new line.| |Valid path to an image file|
-| `image_entity`   | Yes*      | An alternative to `image_file` for providing image input.|       |any `image` or `camera` entity|
-| `include_filename` | Yes     | Whether to include the filename in the request.        | `false` | `true`, `false`|
-| `target_width`   | Yes       | Width to downscale the image to before encoding. |  1280  | Integer between 512 and 3840|
-| `detail`         | Yes       | Level of detail to use for image understanding.  | `auto` | `auto`, `low`, `high` |
-| `max_tokens`     | No      | The maximum number of response tokens to generate.     | 100      |Integer between 10 and 1000|
-| `temperature`    | No      | Randomness of the output.       |       0.5                        |Float between 0.0 and 1.0|
-
-
-### Additional information
->[!NOTE]
-> If you set `include_filename` to `false` (the default) requests will look roughly like the following:
-> Images will be numbered sequentially starting from 1. You can refer to the images by their number in the prompt.
-```
-Image 1:
-<base64 encoded image>
-Image 2:
-<base64 encoded image>
-...
-<Your prompt>
-```
-
->[!NOTE]
-> If you set `include_filename` to `true` requests will look roughly like the following
-> - If the input is an image entity, the filename will be the entity's `friendly_name` attribute.
-> - If the input is an image file, the filename will be the file's name without the extension.
-> - Your prompt will be appended to the end of the request.
-```
-Front Door:
-<base64 encoded image>
-front_door_2024-12-31_23:59:59:
-<base64 encoded image>
-...
-<Your prompt>
-```
+| `provider`       | Yes       | The AI provider call.     |         `OpenAI`                      |`OpenAI`, `Anthropic`, `Google`, `Ollama`, `LocalAI`|
+| `model`          | No       | Model used for processing the image(s).            |      |  See table below |
+| `message`        | Yes       | The prompt to send along with the image(s).     |                 |  String  |
+| `image_file`     | No*      | The path to the image file(s). Each path must be on a new line.| |Valid path to an image file|
+| `image_entity`   | No*      | An alternative to `image_file` for providing image input.|       |any `image` or `camera` entity|
+| `video_file`     | Yes       | The path to the video file(s). Each path must be on a new line.| |Valid path to an video file|
+| `interval`       | Yes       | Analyze frame every 'interval' seconds | 3 | Integer between 1 and 100 file|
+| `include_filename` | No     | Whether to include the filename in the request.        | `false` | `true`, `false`|
+| `target_width`   | No       | Width to downscale the image to before encoding. |  1280  | Integer between 512 and 3840|
+| `detail`         | No       | Level of detail to use for image understanding.  | `auto` | `auto`, `low`, `high` |
+| `max_tokens`     | Yes      | The maximum number of response tokens to generate.     | 100      |Integer between 10 and 1000|
+| `temperature`    | Yes      | Randomness of the output.       |       0.5                        |Float between 0.0 and 1.0|
 
 
 ## Model Overview
@@ -186,6 +173,7 @@ front_door_2024-12-31_23:59:59:
 | Model Name     |       Hosting Options     | Description          |   MMMU<sup>1</sup> Score   |
 |----------------|---------------------------|----------------------|----------------|
 | GPT-4o         | Cloud (OpenAI API key required)       | Best all-round model| 69.1 |
+| GPT-4o-mini    | Cloud (OpenAI API key required)       | Fast and cheap      | 59.4 |
 | Claude 3.5 Sonnet | Cloud (Anthropic API key required)      | Balance between performance and speed | 68.3
 | Claude 3 Haiku   | Cloud (Anthropic API key required)       | Fast model optimized for speed | 50.2| 
 | Claude 3 Sonnet  | Cloud (Anthropic API key required)       | Balance between performance and speed | 53.1
@@ -223,12 +211,10 @@ logger:
 > [!NOTE]
 > These are planned features and ideas. They are subject to change and may not be implemented in the order listed or at all.
 
-1. **Feature**: HTTPS support for LocalAI and Ollama
-2. **New Provider**: NVIDIA ChatRTX 
-3. **Feature**: Support for video files  
-  Extract images in variable intervals and analyze them
-4. **HACS**: Submit PR to include in HACS default repository
-
+1. **New Provider**: NVIDIA ChatRTX 
+2. **HACS**: Include in HACS default
+3. [x] ~~**Feature**: HTTPS support for LocalAI and Ollama~~
+4. [x] ~~**Feature**: Support for video files~~
 
 
 ## How to report a bug or request a feature

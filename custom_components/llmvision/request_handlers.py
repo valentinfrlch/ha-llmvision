@@ -1,7 +1,6 @@
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import logging
-import re
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
@@ -28,17 +27,17 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-base64_pattern = re.compile(r'([A-Za-z0-9+/=]{1000,})')
+# base64_pattern = re.compile(r'([A-Za-z0-9+/=]{1000,})')
 
 
 def sanitize_data(data):
-    """Remove base64 image data from request data to reduce log size"""
+    """Remove long string data from request data to reduce log size"""
     if isinstance(data, dict):
         return {key: sanitize_data(value) for key, value in data.items()}
     elif isinstance(data, list):
         return [sanitize_data(item) for item in data]
-    elif isinstance(data, str) and base64_pattern.match(data):
-        return '<base64_image>'
+    elif isinstance(data, str) and len(data) > 200:
+        return '<long_string>'
     else:
         return data
 
