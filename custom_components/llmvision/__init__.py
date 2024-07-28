@@ -18,6 +18,7 @@ from .const import (
     IMAGE_FILE,
     IMAGE_ENTITY,
     VIDEO_FILE,
+    EVENT_ID,
     INTERVAL,
     TEMPERATURE,
     DETAIL,
@@ -80,6 +81,8 @@ class ServiceCallData:
         self.image_entities = data_call.data.get(IMAGE_ENTITY)
         self.video_paths = data_call.data.get(VIDEO_FILE, "").split(
             "\n") if data_call.data.get(VIDEO_FILE) else None
+        self.event_id = data_call.data.get(EVENT_ID, "").split(
+            "\n") if data_call.data.get(EVENT_ID) else None
         self.interval = int(data_call.data.get(INTERVAL, 3))
         self.target_width = data_call.data.get(TARGET_WIDTH, 1280)
         self.temperature = float(data_call.data.get(TEMPERATURE, 0.5))
@@ -139,7 +142,7 @@ def setup(hass, config):
                                 temperature=call.temperature,
                                 detail=call.detail)
         processor = MediaProcessor(hass, client)
-        client = await processor.add_videos(call.video_paths, call.interval, call.target_width, call.include_filename)
+        client = await processor.add_videos(call.video_paths, call.event_id, call.interval, call.target_width, call.include_filename)
         try:
             response = await client.make_request(call)
         except ServiceValidationError as e:

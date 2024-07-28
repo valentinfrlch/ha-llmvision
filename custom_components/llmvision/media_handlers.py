@@ -122,8 +122,32 @@ class MediaProcessor:
                     raise ServiceValidationError(f"Error: {e}")
         return self.client
 
-    async def add_videos(self, video_paths, interval, target_width, include_filename):
+    async def add_videos(self, video_paths, event_ids, interval, target_width, include_filename):
         """Wrapper for client.add_image for videos"""
+        if event_ids:
+            for event_id in event_ids:
+                try:
+                    base_url = get_url(self.hass)
+                    frigate_url = base_url + "/api/frigate/notification/" + event_id + "/clip.mp4"
+                    clip_data = await self.client._fetch(frigate_url)
+                    # create tmp dir to store video
+                    tmp_dir = "tmp_clips"
+                    os.makedirs(tmp_dir, exist_ok=True)
+                    if os.path.exists(tmp_dir):
+                        _LOGGER.debug(f"Created {tmp_dir}")
+                    else:
+                        _LOGGER.error(f"Failed to create temp directory {tmp_dir} to store frigate clips")
+                    # save clip to file with event_id as filename
+                    clip_path = os.path.join(tmp_dir, event_id + ".mp4")
+                    with open(clip_path, "wb") as f:
+                        f.write(clip_data)
+                    
+                    # append to video_paths
+                    video_paths.append(clip_path)
+
+                except AttributeError as e:
+                    raise ServiceValidationError(
+                        f"Failed to fetch frigate clip {event_id}")
         if video_paths:
             _LOGGER.debug(f"Processing videos: {video_paths}")
             for video_path in video_paths:
@@ -133,8 +157,12 @@ class MediaProcessor:
                         # extract frames from video every 'interval' seconds using ffmpeg
                         tmp_dir = "tmp_frames"
                         os.makedirs(tmp_dir, exist_ok=True)
-                        _LOGGER.debug(
-                            f"Created {tmp_dir} {os.path.exists(tmp_dir)}")
+
+                        if os.path.exists(tmp_dir):
+                            _LOGGER.debug(f"Created {tmp_dir}")
+                        else:
+                            _LOGGER.error(f"Failed to create temp directory {tmp_dir} to store video frames")
+
                         ffmpeg_cmd = [
                             "ffmpeg",
                             "-i", video_path,
@@ -163,6 +191,10 @@ class MediaProcessor:
                 except Exception as e:
                     raise ServiceValidationError(f"Error: {e}")
 
-                # Clean up tmp dir
-                await loop.run_in_executor(None, shutil.rmtree, tmp_dir)
+                # Clean up tmp dirs
+                try:
+                    await loop.run_in_executor(None, shutil.rmtree, "tmp_frames")
+                    await loop.run_in_executor(None, shutil.rmtree, "tmp_clips")
+                except FileNotFoundError as e:
+                    pass
             return self.client

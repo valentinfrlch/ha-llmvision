@@ -133,9 +133,16 @@ video_analyzer:
           multiline: true
     video_file:
       name: Video File
-      required: true
+      required: false
       description: 'Local path to video'
       example: "/config/www/recordings/front_door.mp4"
+      selector:
+        text:
+          multiline: true
+    event_id:
+      name: Frigate Event ID
+      required: false
+      description: 'Frigate Event ID'
       selector:
         text:
           multiline: true
