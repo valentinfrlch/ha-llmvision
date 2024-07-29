@@ -125,11 +125,7 @@ def setup(hass, config):
         client = await processor.add_images(call.image_entities, call.image_paths, call.target_width, call.include_filename)
 
         # Validate configuration, input data and make the call
-        try:
-            response = await client.make_request(call)
-        except ServiceValidationError as e:
-            _LOGGER.error(f"Error: {e}")
-            return {"error": str(e)}
+        response = await client.make_request(call)
         return response
 
     async def video_analyzer(data_call):
@@ -143,11 +139,7 @@ def setup(hass, config):
                                 detail=call.detail)
         processor = MediaProcessor(hass, client)
         client = await processor.add_videos(call.video_paths, call.event_id, call.interval, call.target_width, call.include_filename)
-        try:
-            response = await client.make_request(call)
-        except ServiceValidationError as e:
-            _LOGGER.error(f"Error: {e}")
-            return {"error": str(e)}
+        response = await client.make_request(call)
         return response
 
     hass.services.register(
