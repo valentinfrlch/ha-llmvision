@@ -22,6 +22,9 @@ MODEL = 'model'
 MESSAGE = 'message'
 IMAGE_FILE = 'image_file'
 IMAGE_ENTITY = 'image_entity'
+VIDEO_FILE = 'video_file'
+EVENT_ID = 'event_id'
+INTERVAL = 'interval'
 DETAIL = 'detail'
 TEMPERATURE = 'temperature'
 INCLUDE_FILENAME = 'include_filename'
@@ -32,7 +35,7 @@ ERROR_ANTHROPIC_NOT_CONFIGURED = "Anthropic provider is not configured"
 ERROR_GOOGLE_NOT_CONFIGURED = "Google provider is not configured"
 ERROR_LOCALAI_NOT_CONFIGURED = "LocalAI provider is not configured"
 ERROR_OLLAMA_NOT_CONFIGURED = "Ollama provider is not configured"
-ERROR_NO_IMAGE_INPUT = "No image input. Either provide image_file path or image_entity"
+ERROR_NO_IMAGE_INPUT = "No image input provided"
 ERROR_HANDSHAKE_FAILED = "Handshake with LocalAI server failed"
 
 # Versions

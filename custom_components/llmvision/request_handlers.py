@@ -1,7 +1,6 @@
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import logging
-import re
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
@@ -28,17 +27,17 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-base64_pattern = re.compile(r'([A-Za-z0-9+/=]{1000,})')
+# base64_pattern = re.compile(r'([A-Za-z0-9+/=]{1000,})')
 
 
 def sanitize_data(data):
-    """Remove base64 image data from request data to reduce log size"""
+    """Remove long string data from request data to reduce log size"""
     if isinstance(data, dict):
         return {key: sanitize_data(value) for key, value in data.items()}
     elif isinstance(data, list):
         return [sanitize_data(item) for item in data]
-    elif isinstance(data, str) and base64_pattern.match(data):
-        return '<base64_image>'
+    elif isinstance(data, str) and len(data) > 200:
+        return '<long_string>'
     else:
         return data
 
@@ -55,7 +54,7 @@ class RequestHandler:
         self.filenames = []
 
     async def make_request(self, call):
-        _LOGGER.debug(f"Base64 Images: {self.base64_images}")
+        _LOGGER.debug(f"Base64 Images: {sanitize_data(self.base64_images)}")
         if call.provider == 'OpenAI':
             api_key = self.hass.data.get(DOMAIN).get(CONF_OPENAI_API_KEY)
             model = call.model
@@ -111,7 +110,7 @@ class RequestHandler:
 
         return {"response_text": response_text}
 
-    def add_image(self, base64_image, filename):
+    def add_frame(self, base64_image, filename):
         self.base64_images.append(base64_image)
         self.filenames.append(filename)
 
@@ -324,11 +323,11 @@ class RequestHandler:
 
     async def _fetch(self, url):
         """Fetch image from url and return image data"""
-        _LOGGER.info(f"Fetching image from {url}")
+        _LOGGER.info(f"Fetching {url}")
         try:
             response = await self.session.get(url)
         except Exception as e:
-            raise ServiceValidationError(f"Failed to fetch image: {e}")
+            raise ServiceValidationError(f"Fetch failed: {e}")
 
         if response.status != 200:
             raise ServiceValidationError(
@@ -338,17 +337,7 @@ class RequestHandler:
         return data
 
     def _validate_call(self, provider, api_key, base64_images, ip_address=None, port=None):
-        """Validate the configuration for the component
-
-        Args:
-            mode (string): "OpenAI" or "LocalAI"
-            api_key (string): OpenAI API key
-            ip_address (string): LocalAI server IP address
-            port (string): LocalAI server port
-
-        Raises:
-            ServiceValidationError: if configuration is invalid
-        """
+        """Validate the service call data"""
         # Checks for OpenAI
         if provider == 'OpenAI':
             if not api_key:
@@ -368,7 +357,7 @@ class RequestHandler:
         elif provider == 'Ollama':
             if not ip_address or not port:
                 raise ServiceValidationError(ERROR_OLLAMA_NOT_CONFIGURED)
-        # File path validation
+        # Check media input
         if base64_images == []:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
 

@@ -1,5 +1,5 @@
 image_analyzer:
-  name: LLM Vision Image Analyzer
+  name: Image Analyzer
   description: Analyze an image with AI
   fields:
     provider:
@@ -99,6 +99,7 @@ image_analyzer:
           step: 0.1
 
 video_analyzer:
+  name: Video Analyzer
   description: Analyze video with AI
   fields:
     provider:
@@ -131,14 +132,32 @@ video_analyzer:
       selector:
         text:
           multiline: true
-    image_file:
-      name: Image File
-      required: true
+    video_file:
+      name: Video File
+      required: false
       description: 'Local path to video'
       example: "/config/www/recordings/front_door.mp4"
       selector:
         text:
           multiline: true
+    event_id:
+      name: Frigate Event ID
+      required: false
+      description: 'Frigate Event ID'
+      example: 1712108310.968815-r28cdt
+      selector:
+        text:
+          multiline: true
+    interval:
+      name: Interval
+      description: Analyze frames every <interval> seconds
+      required: true
+      example: 3
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 60
     include_filename:
       name: Include Filename
       required: false

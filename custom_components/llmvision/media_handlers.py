@@ -1,9 +1,14 @@
 import base64
 import io
 import os
+import shutil
+import logging
 from homeassistant.helpers.network import get_url
 from PIL import Image
 from homeassistant.exceptions import ServiceValidationError
+from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class MediaProcessor:
@@ -13,19 +18,23 @@ class MediaProcessor:
         self.base64_images = []
         self.filenames = []
 
-    async def encode_image(self, target_width, image_path=None, image_data=None):
-        """Encode image as base64
+    async def _encode_image(self, img):
+        """Encode image as base64"""
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='PNG')
+        base64_image = base64.b64encode(
+            img_byte_arr.getvalue()).decode('utf-8')
+        return base64_image
 
-        Args:
-            image_path (string): path where image is stored e.g.: "/config/www/tmp/image.jpg"
+    def _save_clip(self, clip_data, clip_path):
+        with open(clip_path, "wb") as f:
+            f.write(clip_data)
 
-        Returns:
-            string: image encoded as base64
-        """
-        loop = self.hass.loop
+    async def resize_image(self, target_width, image_path=None, image_data=None, img=None):
+        """Resize image to target_width"""
         if image_path:
             # Open the image file
-            img = await loop.run_in_executor(None, Image.open, image_path)
+            img = await self.hass.loop.run_in_executor(None, Image.open, image_path)
             with img:
                 # calculate new height based on aspect ratio
                 width, height = img.size
@@ -37,15 +46,13 @@ class MediaProcessor:
                     img = img.resize((target_width, target_height))
 
                 # Convert the image to base64
-                img_byte_arr = io.BytesIO()
-                img.save(img_byte_arr, format='JPEG')
-                base64_image = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
+                base64_image = await self._encode_image(img)
 
         elif image_data:
             # Convert the image to base64
             img_byte_arr = io.BytesIO()
             img_byte_arr.write(image_data)
-            img = await loop.run_in_executor(None, Image.open, img_byte_arr)
+            img = await self.hass.loop.run_in_executor(None, Image.open, img_byte_arr)
             with img:
                 # calculate new height based on aspect ratio
                 width, height = img.size
@@ -55,12 +62,23 @@ class MediaProcessor:
                 if width > target_width or height > target_height:
                     img = img.resize((target_width, target_height))
 
-                img.save(img_byte_arr, format='JPEG')
-                base64_image = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
+                base64_image = await self._encode_image(img)
+        elif img:
+            with img:
+                # calculate new height based on aspect ratio
+                width, height = img.size
+                aspect_ratio = width / height
+                target_height = int(target_width / aspect_ratio)
+
+                if width > target_width or height > target_height:
+                    img = img.resize((target_width, target_height))
+
+                base64_image = await self._encode_image(img)
 
         return base64_image
-    
-    async def add_image(self, image_entities, image_paths, target_width, include_filename):
+
+    async def add_images(self, image_entities, image_paths, target_width, include_filename):
+        """Wrapper for client.add_frame for images"""
         if image_entities:
             for image_entity in image_entities:
                 try:
@@ -75,13 +93,13 @@ class MediaProcessor:
                         entity_name = self.hass.states.get(
                             image_entity).attributes.get('friendly_name')
 
-                        self.client.add_image(
-                            base64_image=await self.encode_image(target_width=target_width, image_data=image_data),
+                        self.client.add_frame(
+                            base64_image=await self.resize_image(target_width=target_width, image_data=image_data),
                             filename=entity_name
                         )
                     else:
-                        self.client.add_image(
-                            base64_image=await self.encode_image(target_width=target_width, image_data=image_data),
+                        self.client.add_frame(
+                            base64_image=await self.resize_image(target_width=target_width, image_data=image_data),
                             filename=""
                         )
                 except AttributeError as e:
@@ -92,13 +110,13 @@ class MediaProcessor:
                 try:
                     image_path = image_path.strip()
                     if include_filename and os.path.exists(image_path):
-                        self.client.add_image(
-                            base64_image=await self.encode_image(target_width=target_width, image_path=image_path),
+                        self.client.add_frame(
+                            base64_image=await self.resize_image(target_width=target_width, image_path=image_path),
                             filename=image_path.split('/')[-1].split('.')[-2]
                         )
                     elif os.path.exists(image_path):
-                        self.client.add_image(
-                            base64_image=await self.encode_image(target_width=target_width, image_path=image_path),
+                        self.client.add_frame(
+                            base64_image=await self.resize_image(target_width=target_width, image_path=image_path),
                             filename=""
                         )
                     if not os.path.exists(image_path):
@@ -106,4 +124,75 @@ class MediaProcessor:
                             f"File {image_path} does not exist")
                 except Exception as e:
                     raise ServiceValidationError(f"Error: {e}")
+        return self.client
+
+    async def add_videos(self, video_paths, event_ids, interval, target_width, include_filename):
+        tmp_clips_dir = f"config/custom_components/{DOMAIN}/tmp_clips"
+        tmp_frames_dir = f"config/custom_components/{DOMAIN}/tmp_frames"
+        if not video_paths:
+            video_paths = []
+        """Wrapper for client.add_frame for videos"""
+        if event_ids:
+            for event_id in event_ids:
+                try:
+                    base_url = get_url(self.hass)
+                    frigate_url = base_url + "/api/frigate/notifications/" + event_id + "/clip.mp4"
+                    clip_data = await self.client._fetch(frigate_url)
+                    # create tmp dir to store video clips
+                    os.makedirs(tmp_clips_dir, exist_ok=True)
+                    _LOGGER.info(f"Created {tmp_clips_dir}")
+                    # save clip to file with event_id as filename
+                    clip_path = os.path.join(tmp_clips_dir, event_id.split("-")[-1] + ".mp4")
+                    await self.hass.loop.run_in_executor(None, self._save_clip, clip_data, clip_path)
+                    _LOGGER.info(f"Saved frigate clip to {clip_path} (temporarily)")
+                    # append to video_paths
+                    video_paths.append(clip_path)
+
+                except AttributeError as e:
+                    raise ServiceValidationError(f"Failed to fetch frigate clip {event_id}: {e}")
+        if video_paths:
+            _LOGGER.debug(f"Processing videos: {video_paths}")
+            for video_path in video_paths:
+                try:
+                    video_path = video_path.strip()
+                    if os.path.exists(video_path):
+                        # create tmp dir to store extracted frames
+                        os.makedirs(tmp_frames_dir, exist_ok=True)
+                        if os.path.exists(tmp_frames_dir):
+                            _LOGGER.debug(f"Created {tmp_frames_dir}")
+                        else:
+                            _LOGGER.error(f"Failed to create temp directory {tmp_frames_dir}")
+
+                        ffmpeg_cmd = [
+                            "ffmpeg",
+                            "-i", video_path,
+                            "-vf", f"fps=1/{interval},select='eq(n\\,0)+not(mod(n\\,{interval}))'",
+                            os.path.join(tmp_frames_dir, "frame%04d.png")
+                        ]
+                        # Run ffmpeg command
+                        await self.hass.loop.run_in_executor(None, os.system, " ".join(ffmpeg_cmd))
+
+                        frame_counter = 0
+                        for frame_file in await self.hass.loop.run_in_executor(None, os.listdir, tmp_frames_dir):
+                            _LOGGER.debug(f"Adding frame {frame_file}")
+                            frame_counter = 0
+                            frame_path = os.path.join(tmp_frames_dir, frame_file)
+                            self.client.add_frame(
+                                base64_image=await self.resize_image(image_path=frame_path, target_width=target_width),
+                                filename=video_path.split(
+                                    '/')[-1].split('.')[-2] + " (frame " + str(frame_counter) + ")" if include_filename else "Video frame " + str(frame_counter)
+                            )
+                            frame_counter += 1
+                    else:
+                        raise ServiceValidationError(
+                            f"File {video_path} does not exist")
+                except Exception as e:
+                    raise ServiceValidationError(f"Error: {e}")
+
+        # Clean up tmp dirs
+        try:
+            await self.hass.loop.run_in_executor(None, shutil.rmtree, tmp_clips_dir)
+            await self.hass.loop.run_in_executor(None, shutil.rmtree, tmp_frames_dir)
+        except FileNotFoundError as e:
+            pass
         return self.client
