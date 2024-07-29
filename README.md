@@ -216,7 +216,8 @@ logger:
 1. **New Provider**: NVIDIA ChatRTX 
 2. **HACS**: Include in HACS default
 3. [x] ~~**Feature**: HTTPS support for LocalAI and Ollama~~
-4. [x] ~~**Feature**: Support for video files~~
+4. [x] ~~**Feature**: Support for video files~~  
+5. [x] ~~**Feature**: Analyze Frigate Recordings using frigate's `event_id`~~
 
 
 ## How to report a bug or request a feature
