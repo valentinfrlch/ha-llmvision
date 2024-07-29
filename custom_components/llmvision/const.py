@@ -35,7 +35,7 @@ ERROR_ANTHROPIC_NOT_CONFIGURED = "Anthropic provider is not configured"
 ERROR_GOOGLE_NOT_CONFIGURED = "Google provider is not configured"
 ERROR_LOCALAI_NOT_CONFIGURED = "LocalAI provider is not configured"
 ERROR_OLLAMA_NOT_CONFIGURED = "Ollama provider is not configured"
-ERROR_NO_IMAGE_INPUT = "No image input. Either provide image_file path or image_entity"
+ERROR_NO_IMAGE_INPUT = "No image input provided"
 ERROR_HANDSHAKE_FAILED = "Handshake with LocalAI server failed"
 
 # Versions
