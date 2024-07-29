@@ -9,9 +9,11 @@ from .const import (
     CONF_GOOGLE_API_KEY,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
+    CONF_LOCALAI_HTTPS,
     CONF_OLLAMA_IP_ADDRESS,
     CONF_OLLAMA_PORT,
-    VERSION_ANTHROPIC
+    CONF_OLLAMA_HTTPS,
+    VERSION_ANTHROPIC,
 )
 import voluptuous as vol
 import logging
@@ -96,7 +98,8 @@ class Validator:
             raise ServiceValidationError("empty_ip_address")
         if not self.user_input[CONF_LOCALAI_PORT]:
             raise ServiceValidationError("empty_port")
-        if not await self._handshake(base_url=self.user_input[CONF_LOCALAI_IP_ADDRESS], port=":"+str(self.user_input[CONF_LOCALAI_PORT]), endpoint="/readyz"):
+        protocol = "https" if self.user_input[CONF_LOCALAI_HTTPS] else "http"
+        if not await self._handshake(base_url=self.user_input[CONF_LOCALAI_IP_ADDRESS], port=":"+str(self.user_input[CONF_LOCALAI_PORT]), protocol=protocol, endpoint="/readyz"):
             _LOGGER.error("Could not connect to LocalAI server.")
             raise ServiceValidationError("handshake_failed")
 
@@ -106,7 +109,8 @@ class Validator:
             raise ServiceValidationError("empty_ip_address")
         if not self.user_input[CONF_OLLAMA_PORT]:
             raise ServiceValidationError("empty_port")
-        if not await self._handshake(base_url=self.user_input[CONF_OLLAMA_IP_ADDRESS], port=":"+str(self.user_input[CONF_OLLAMA_PORT]), endpoint="/api/tags"):
+        protocol = "https" if self.user_input[CONF_OLLAMA_HTTPS] else "http"
+        if not await self._handshake(base_url=self.user_input[CONF_OLLAMA_IP_ADDRESS], port=":"+str(self.user_input[CONF_OLLAMA_PORT]), protocol=protocol, endpoint="/api/tags"):
             _LOGGER.error("Could not connect to Ollama server.")
             raise ServiceValidationError("handshake_failed")
 
@@ -203,6 +207,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required(CONF_LOCALAI_IP_ADDRESS): str,
             vol.Required(CONF_LOCALAI_PORT, default=8080): int,
+            vol.Required(CONF_LOCALAI_HTTPS, default=False): bool,
         })
 
         if user_input is not None:
@@ -230,6 +235,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required(CONF_OLLAMA_IP_ADDRESS): str,
             vol.Required(CONF_OLLAMA_PORT, default=11434): int,
+            vol.Required(CONF_OLLAMA_HTTPS, default=False): bool,
         })
 
         if user_input is not None:

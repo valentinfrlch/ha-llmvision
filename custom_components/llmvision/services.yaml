@@ -1,5 +1,5 @@
 image_analyzer:
-  name: LLM Vision Image Analyzer
+  name: Image Analyzer
   description: Analyze an image with AI
   fields:
     provider:
@@ -19,8 +19,8 @@ image_analyzer:
       name: Model
       required: false
       description: 'Model to use'
-      example: "gpt-4o"
-      default: "gpt-4o"
+      example: "gpt-4o-mini"
+      default: "gpt-4o-mini"
       selector:
         text:
           multiline: false
@@ -49,6 +49,115 @@ image_analyzer:
         entity:
           domain: ["image", "camera"]
           multiple: true
+    include_filename:
+      name: Include Filename
+      required: false
+      description: 'Include filename in the request'
+      default: false
+      selector:
+        boolean:
+    target_width:
+      name: Target Width
+      required: false
+      description: 'Width in pixels to downscale to'
+      example: 1280
+      default: 1280
+      selector:
+        number:
+          min: 512
+          max: 3840
+    detail:
+      name: Detail
+      required: false
+      description: "Detail parameter, leave empty for 'auto'"
+      default: 'high'
+      selector:
+        select:
+          options:
+            - 'high'
+            - 'low'
+    max_tokens:
+      name: Maximum Tokens
+      description: 'Maximum number of tokens to generate'
+      required: true
+      example: 100
+      default: 100
+      selector:
+        number:
+          min: 10
+          max: 1000
+    temperature:
+      name: Temperature
+      required: true
+      description: 'Randomness. Lower is more accurate, higher is more creative'
+      example: 0.5
+      default: 0.5
+      selector:
+        number:
+          min: 0.0
+          max: 1.0
+          step: 0.1
+
+video_analyzer:
+  name: Video Analyzer
+  description: Analyze video with AI
+  fields:
+    provider:
+      name: Provider
+      description: 'Provider to use'
+      required: true
+      default: 'OpenAI'
+      selector:
+        select:
+          options:
+            - 'OpenAI'
+            - 'Anthropic'
+            - 'Google'
+            - 'Ollama'
+            - 'LocalAI'
+    model:
+      name: Model
+      required: false
+      description: 'Model to use'
+      example: "gpt-4o-mini"
+      default: "gpt-4o-mini"
+      selector:
+        text:
+          multiline: false
+    message:
+      name: Prompt
+      required: true
+      description: 'Prompt'
+      example: "Describe what's going on in the video"
+      selector:
+        text:
+          multiline: true
+    video_file:
+      name: Video File
+      required: false
+      description: 'Local path to video'
+      example: "/config/www/recordings/front_door.mp4"
+      selector:
+        text:
+          multiline: true
+    event_id:
+      name: Frigate Event ID
+      required: false
+      description: 'Frigate Event ID'
+      example: 1712108310.968815-r28cdt
+      selector:
+        text:
+          multiline: true
+    interval:
+      name: Interval
+      description: Analyze frames every <interval> seconds
+      required: true
+      example: 3
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 60
     include_filename:
       name: Include Filename
       required: false
