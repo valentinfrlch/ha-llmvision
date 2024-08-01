@@ -1,6 +1,7 @@
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import logging
+import inspect
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
@@ -311,15 +312,14 @@ class RequestHandler:
             raise ServiceValidationError(f"Request failed: {e}")
 
         if response.status != 200:
-            try:
-                parsed_response = self._resolve_error(url, response)
-                raise ServiceValidationError(parsed_response)
-            except Exception as e:
-                raise ServiceValidationError(e)
-
-        response_data = await response.json()
-        _LOGGER.info(f"Response data: {response_data}")
-        return response_data
+            provider = inspect.stack()[1].function
+            _LOGGER.debug(f"Provider: {provider}")
+            parsed_response = self._resolve_error(url, response, provider)
+            raise ServiceValidationError(parsed_response)
+        else:
+            response_data = await response.json()
+            _LOGGER.info(f"Response data: {response_data}")
+            return response_data
 
     async def _fetch(self, url):
         """Fetch image from url and return image data"""
@@ -361,9 +361,9 @@ class RequestHandler:
         if base64_images == []:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
 
-    def _resolve_error(self, url, response):
+    def _resolve_error(self, url, response, provider):
         """Translate response status to error message"""
-        if url == ENDPOINT_OPENAI:
+        if provider == "openai":
             if response.status == 401:
                 return "Invalid Authentication. Ensure you are using a valid API key."
             if response.status == 403:
@@ -378,7 +378,7 @@ class RequestHandler:
                 return "OpenAI's Servers are experiencing high traffic. Try again later."
             else:
                 return f"Error: {response}"
-        elif url == ENDPOINT_ANTHROPIC:
+        elif provider == "anthropic":
             if response.status == 400:
                 return "Invalid Request. There was an issue with the format or content of your request."
             if response.status == 401:
@@ -395,9 +395,9 @@ class RequestHandler:
                 return "Anthropic's Servers are experiencing high traffic. Try again later."
             else:
                 return f"Error: {response}"
-        elif url == ENDPOINT_GOOGLE:
+        elif provider == "google":
             if response.status == 400:
-                return "User location is not supported for the API use without a billing account linked."
+                return "Max input tokens exceeded. Reduce target width or number of images."
             if response.status == 403:
                 return "Access Error. Your API key does not have permission to use the specified resource."
             if response.status == 404:
@@ -410,7 +410,7 @@ class RequestHandler:
                 return "Google's Servers are temporarily overloaded or down. Try again later."
             else:
                 return f"Error: {response}"
-        elif url == ENDPOINT_OLLAMA:
+        elif provider == "ollama":
             if response.status == 400:
                 return "Invalid Request. There was an issue with the format or content of your request."
             if response.status == 404:
@@ -419,7 +419,7 @@ class RequestHandler:
                 return "Internal server issue (on Ollama server)."
             else:
                 return f"Error: {response}"
-        elif url == ENDPOINT_LOCALAI:
+        elif provider == "localai":
             if response.status == 400:
                 return "Invalid Request. There was an issue with the format or content of your request."
             if response.status == 404:
