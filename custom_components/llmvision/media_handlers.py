@@ -21,7 +21,7 @@ class MediaProcessor:
     async def _encode_image(self, img):
         """Encode image as base64"""
         img_byte_arr = io.BytesIO()
-        img.save(img_byte_arr, format='PNG')
+        img.save(img_byte_arr, format='JPEG')
         base64_image = base64.b64encode(
             img_byte_arr.getvalue()).decode('utf-8')
         return base64_image

@@ -13,6 +13,8 @@ CONF_LOCALAI_HTTPS = 'localai_https'
 CONF_OLLAMA_IP_ADDRESS = 'ollama_ip'
 CONF_OLLAMA_PORT = 'ollama_port'
 CONF_OLLAMA_HTTPS = 'ollama_https'
+CONF_CUSTOM_OPENAI_ENDPOINT = 'custom_openai_endpoint'
+CONF_CUSTOM_OPENAI_API_KEY = 'custom_openai_api_key'
 
 # service call constants
 PROVIDER = 'provider'
@@ -35,6 +37,7 @@ ERROR_ANTHROPIC_NOT_CONFIGURED = "Anthropic provider is not configured"
 ERROR_GOOGLE_NOT_CONFIGURED = "Google provider is not configured"
 ERROR_LOCALAI_NOT_CONFIGURED = "LocalAI provider is not configured"
 ERROR_OLLAMA_NOT_CONFIGURED = "Ollama provider is not configured"
+ERROR_CUSTOM_OPENAI_NOT_CONFIGURED = "Custom OpenAI provider is not configured"
 ERROR_NO_IMAGE_INPUT = "No image input provided"
 ERROR_HANDSHAKE_FAILED = "Handshake with LocalAI server failed"
 
