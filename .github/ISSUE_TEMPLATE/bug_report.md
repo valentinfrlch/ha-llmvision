@@ -1,34 +1,32 @@
 ---
 name: Bug report
-about: Create a report to help us improve
-title: ''
+about: Submit bug report
+title: "[Your error message here]"
 labels: bug
 assignees: valentinfrlch
 
 ---
 
-**Describe the bug**
-<!-- A clear and concise description of what the bug is. -->
+<!-- Use the error message as the title -->
+<!-- Fill out all fields below. -->
 
-**To Reproduce**
-<!-- Steps to reproduce the behavior: -->
-1.
-2. 
+### Bug Description
+<!-- A clear and concise description of what error you are receiving -->
 
-**Version**
-<!-- Add an x between the [ ] to confirm you are on the latest version -->
-- [ ] I am on the latest version
+<!-- Type your version number below -->
+**Version**: 
 
-**Expected behavior**
-<!-- A clear and concise description of what you expected to happen. -->
+### Service Call
+<!-- Paste your service call below -->
+```yaml
+Paste your service call
+```
 
-**Screenshots**
-<!-- If applicable, add screenshots here to help explain your problem. -->
-
-**Logs**
+### Logs
+<!-- Check README to enable debugging -->
 ```
 Paste relevant logs here
 ```
 
-**Additional context**
-<!-- Add any other context about the problem here. -->
+### Additional context
+<!-- Add more info about the problem here. -->
