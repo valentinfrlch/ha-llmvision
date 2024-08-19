@@ -36,6 +36,10 @@ class MediaProcessor:
             # Open the image file
             img = await self.hass.loop.run_in_executor(None, Image.open, image_path)
             with img:
+                # Check if the image is a GIF and convert if necessary
+                if img.format == 'GIF':
+                    # Convert GIF to RGB
+                    img = img.convert('RGB')
                 # calculate new height based on aspect ratio
                 width, height = img.size
                 aspect_ratio = width / height
@@ -45,7 +49,7 @@ class MediaProcessor:
                 if width > target_width or height > target_height:
                     img = img.resize((target_width, target_height))
 
-                # Convert the image to base64
+                # Encode the image to base64
                 base64_image = await self._encode_image(img)
 
         elif image_data:
