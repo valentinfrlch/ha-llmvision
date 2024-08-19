@@ -91,6 +91,6 @@ logger:
 
 
 ## Support
-You can support this project by starring this GitHub repository. If you want you can also buy me a coffee here:  
+You can support this project by starring this GitHub repository. If you want, you can also buy me a coffee here:  
 <br>
 <a href="https://www.buymeacoffee.com/valentinfrlch"><img width="15%" src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=valentinfrlch&button_colour=FFDD00&font_colour=000000&font_family=Inter&outline_colour=000000&coffee_colour=ffffff" /></a>
