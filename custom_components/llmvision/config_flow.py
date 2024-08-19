@@ -122,6 +122,39 @@ class Validator:
             _LOGGER.error("Could not connect to OpenAI server.")
             raise ServiceValidationError("handshake_failed")
 
+    async def custom_openai(self):
+        self._validate_provider()
+        _LOGGER.debug(f"Splits: {len(self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(":"))}")
+        # URL with port
+        try:
+            if len(self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(":")) > 2:
+                protocol = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(
+                    "://")[0]
+                base_url = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(
+                    "://")[1].split("/")[0]
+                port = ":" + self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(":")[
+                    1].split("/")[0]
+            # URL without port
+            else:
+                protocol = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(
+                    "://")[0]
+                base_url = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(
+                    "://")[1].split("/")[0]
+                port = ""
+            endpoint = "/v1/models"
+            header = {'Content-type': 'application/json',
+                      'Authorization': 'Bearer ' + self.user_input[CONF_CUSTOM_OPENAI_API_KEY]}
+        except Exception as e:
+            _LOGGER.error(f"Could not parse endpoint: {e}")
+            raise ServiceValidationError("endpoint_parse_failed")
+
+        _LOGGER.debug(
+            f"Connecting to: [protocol: {protocol}, base_url: {base_url}, port: {port}, endpoint: {endpoint}]")
+
+        if not await self._handshake(base_url=base_url, port=port, protocol=protocol, endpoint=endpoint, header=header):
+            _LOGGER.error("Could not connect to Custom OpenAI server.")
+            raise ServiceValidationError("handshake_failed")
+
     async def anthropic(self):
         self._validate_provider()
         if not await self._validate_api_key(self.user_input[CONF_ANTHROPIC_API_KEY]):
@@ -133,15 +166,6 @@ class Validator:
         if not await self._validate_api_key(self.user_input[CONF_GOOGLE_API_KEY]):
             _LOGGER.error("Could not connect to Google server.")
             raise ServiceValidationError("handshake_failed")
-    async def custom_openai(self):
-        self._validate_provider()
-        protocol = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split("://")[0]
-        base_url = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split("://")[1]
-        port = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(":")[2].split("/")[0]
-        if not await self._handshake(base_url=base_url, port=":"+port, protocol=protocol, endpoint="/v1/models"):
-            _LOGGER.error("Could not connect to Custom OpenAI server.")
-            raise ServiceValidationError("handshake_failed")
-
 
     def get_configured_providers(self):
         providers = []
@@ -160,7 +184,7 @@ class Validator:
             providers.append("LocalAI")
         if CONF_OLLAMA_IP_ADDRESS in self.hass.data[DOMAIN] and CONF_OLLAMA_PORT in self.hass.data[DOMAIN]:
             providers.append("Ollama")
-        if CONF_CUSTOM_OPENAI_API_KEY in self.hass.data[DOMAIN] and CONF_CUSTOM_OPENAI_ENDPOINT in self.hass.data[DOMAIN]:
+        if CONF_CUSTOM_OPENAI_ENDPOINT in self.hass.data[DOMAIN]:
             providers.append("Custom OpenAI")
         return providers
 
@@ -180,7 +204,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "Google": self.async_step_google,
             "Ollama": self.async_step_ollama,
             "LocalAI": self.async_step_localai,
-            "Custom OpenAI": self.async_step_custom_openai
+            "Custom OpenAI": self.async_step_custom_openai,
         }
 
         step_method = provider_steps.get(provider)
@@ -194,7 +218,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required("provider", default="OpenAI"): selector({
                 "select": {
-                    "options": ["OpenAI", "Anthropic", "Google", "Ollama", "LocalAI", "Custom (OpenAI compatible)"],
+                    "options": ["OpenAI", "Anthropic", "Google", "Ollama", "LocalAI", "Custom OpenAI"],
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -357,7 +381,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_custom_openai(self, user_input=None):
         data_schema = vol.Schema({
             vol.Required(CONF_CUSTOM_OPENAI_ENDPOINT): str,
-            vol.Required(CONF_CUSTOM_OPENAI_API_KEY): str,
+            vol.Optional(CONF_CUSTOM_OPENAI_API_KEY): str,
         })
 
         if user_input is not None:
@@ -365,7 +389,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input["provider"] = self.init_info["provider"]
             validator = Validator(self.hass, user_input)
             try:
-                await validator.openai()
+                await validator.custom_openai()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
                 return self.async_create_entry(title="LLM Vision Custom OpenAI", data=user_input)

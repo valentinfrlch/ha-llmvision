@@ -107,8 +107,15 @@ class RequestHandler:
                                               port=port,
                                               https=https)
         elif call.provider == 'Custom OpenAI':
-            api_key = self.hass.data.get(DOMAIN).get(CONF_CUSTOM_OPENAI_API_KEY)
+            api_key = self.hass.data.get(DOMAIN).get(
+                CONF_CUSTOM_OPENAI_API_KEY, "")
             endpoint = self.hass.data.get(DOMAIN).get(CONF_CUSTOM_OPENAI_ENDPOINT)
+
+            # Additional debug logging
+            _LOGGER.debug(f"Data from DOMAIN: {self.hass.data.get(DOMAIN)}")
+            _LOGGER.debug(f"API Key: {api_key}")
+            _LOGGER.debug(f"Endpoint: {endpoint}")
+
             model = call.model
             self._validate_call(provider=call.provider,
                                 api_key=api_key,
@@ -310,6 +317,9 @@ class RequestHandler:
     async def _post(self, url, headers, data):
         """Post data to url and return response data"""
         _LOGGER.info(f"Request data: {sanitize_data(data)}")
+        _LOGGER.debug(
+            f"URL type: {type(url)}, Headers type: {type(headers)}, Data type: {type(data)}")
+
         try:
             response = await self.session.post(url, headers=headers, json=data)
         except Exception as e:

@@ -43,6 +43,14 @@
                 "data": {
                     "google_api_key": "Your API key"
                 }
+            },
+            "custom_openai": {
+                "title": "Configure Custom OpenAI provider",
+                "description": "Important: Only works if the API is compatible with OpenAI's API. If the API doesn't require an API key, leave it empty.",
+                "data": {
+                    "custom_openai_endpoint": "Custom Endpoint",
+                    "custom_openai_api_key": "Your API key"
+                }
             }
         },
         "error": {

@@ -15,6 +15,7 @@ image_analyzer:
             - 'Google'
             - 'Ollama'
             - 'LocalAI'
+            - 'Custom OpenAI'
     model:
       name: Model
       required: false
