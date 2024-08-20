@@ -127,8 +127,8 @@ class MediaProcessor:
         return self.client
 
     async def add_videos(self, video_paths, event_ids, interval, target_width, include_filename):
-        tmp_clips_dir = f"config/custom_components/{DOMAIN}/tmp_clips"
-        tmp_frames_dir = f"config/custom_components/{DOMAIN}/tmp_frames"
+        tmp_clips_dir = f"/config/custom_components/{DOMAIN}/tmp_clips"
+        tmp_frames_dir = f"/config/custom_components/{DOMAIN}/tmp_frames"
         if not video_paths:
             video_paths = []
         """Wrapper for client.add_frame for videos"""
@@ -192,7 +192,14 @@ class MediaProcessor:
         # Clean up tmp dirs
         try:
             await self.hass.loop.run_in_executor(None, shutil.rmtree, tmp_clips_dir)
-            await self.hass.loop.run_in_executor(None, shutil.rmtree, tmp_frames_dir)
+            _LOGGER.info(
+                f"Deleted tmp folder: {tmp_clips_dir}")
         except FileNotFoundError as e:
-            pass
+            _LOGGER.error(f"Failed to delete tmp folder: {e}")
+        try:
+            await self.hass.loop.run_in_executor(None, shutil.rmtree, tmp_frames_dir)
+            _LOGGER.info(
+                f"Deleted tmp folder: {tmp_frames_dir}")
+        except FileNotFoundError as e:
+            _LOGGER.error(f"Failed to delete tmp folders: {e}")
         return self.client
