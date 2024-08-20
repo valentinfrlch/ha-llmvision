@@ -22,6 +22,7 @@ from .const import (
     ERROR_GOOGLE_NOT_CONFIGURED,
     ERROR_LOCALAI_NOT_CONFIGURED,
     ERROR_OLLAMA_NOT_CONFIGURED,
+    ERROR_CUSTOM_OPENAI_NOT_CONFIGURED,
     ERROR_NO_IMAGE_INPUT
 )
 
@@ -371,6 +372,9 @@ class RequestHandler:
         elif provider == 'Ollama':
             if not ip_address or not port:
                 raise ServiceValidationError(ERROR_OLLAMA_NOT_CONFIGURED)
+        elif provider == 'Custom OpenAI':
+            if not api_key:
+                raise ServiceValidationError(ERROR_CUSTOM_OPENAI_NOT_CONFIGURED)
         # Check media input
         if base64_images == []:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
