@@ -13,12 +13,16 @@ from .const import (
     CONF_OLLAMA_IP_ADDRESS,
     CONF_OLLAMA_PORT,
     CONF_OLLAMA_HTTPS,
+    CONF_CUSTOM_OPENAI_ENDPOINT,
+    CONF_CUSTOM_OPENAI_API_KEY,
     VERSION_ANTHROPIC,
+    ENDPOINT_OPENAI,
     ERROR_OPENAI_NOT_CONFIGURED,
     ERROR_ANTHROPIC_NOT_CONFIGURED,
     ERROR_GOOGLE_NOT_CONFIGURED,
     ERROR_LOCALAI_NOT_CONFIGURED,
     ERROR_OLLAMA_NOT_CONFIGURED,
+    ERROR_CUSTOM_OPENAI_NOT_CONFIGURED,
     ERROR_NO_IMAGE_INPUT
 )
 
@@ -103,7 +107,21 @@ class RequestHandler:
                                               ip_address=ip_address,
                                               port=port,
                                               https=https)
+        elif call.provider == 'Custom OpenAI':
+            api_key = self.hass.data.get(DOMAIN).get(
+                CONF_CUSTOM_OPENAI_API_KEY, "")
+            endpoint = self.hass.data.get(DOMAIN).get(CONF_CUSTOM_OPENAI_ENDPOINT)
 
+            # Additional debug logging
+            _LOGGER.debug(f"Data from DOMAIN: {self.hass.data.get(DOMAIN)}")
+            _LOGGER.debug(f"API Key: {api_key}")
+            _LOGGER.debug(f"Endpoint: {endpoint}")
+
+            model = call.model
+            self._validate_call(provider=call.provider,
+                                api_key=api_key,
+                                base64_images=self.base64_images)
+            response_text = await self.openai(model=model, api_key=api_key, endpoint=endpoint)
         return {"response_text": response_text}
 
     def add_frame(self, base64_image, filename):
@@ -111,8 +129,7 @@ class RequestHandler:
         self.filenames.append(filename)
 
     # Request Handlers
-    async def openai(self, model, api_key):
-        from .const import ENDPOINT_OPENAI
+    async def openai(self, model, api_key, endpoint=ENDPOINT_OPENAI):
         # Set headers and payload
         headers = {'Content-type': 'application/json',
                    'Authorization': 'Bearer ' + api_key}
@@ -138,7 +155,7 @@ class RequestHandler:
         )
 
         response = await self._post(
-            url=ENDPOINT_OPENAI, headers=headers, data=data)
+            url=endpoint, headers=headers, data=data)
 
         response_text = response.get(
             "choices")[0].get("message").get("content")
@@ -301,6 +318,9 @@ class RequestHandler:
     async def _post(self, url, headers, data):
         """Post data to url and return response data"""
         _LOGGER.info(f"Request data: {sanitize_data(data)}")
+        _LOGGER.debug(
+            f"URL type: {type(url)}, Headers type: {type(headers)}, Data type: {type(data)}")
+
         try:
             response = await self.session.post(url, headers=headers, json=data)
         except Exception as e:
@@ -352,6 +372,9 @@ class RequestHandler:
         elif provider == 'Ollama':
             if not ip_address or not port:
                 raise ServiceValidationError(ERROR_OLLAMA_NOT_CONFIGURED)
+        elif provider == 'Custom OpenAI':
+            if not api_key:
+                raise ServiceValidationError(ERROR_CUSTOM_OPENAI_NOT_CONFIGURED)
         # Check media input
         if base64_images == []:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
