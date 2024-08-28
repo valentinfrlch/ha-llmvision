@@ -2,53 +2,61 @@
     "config": {
         "step": {
             "user": {
-                "title": "Wählen Sie Ihren Provider",
-                "description": "Wählen Sie den Anbieter den verwenden möchten."
+                "title": "Anbieter auswählen",
+                "description": "Wähle den Anbieter den du konfigurieren möchtest."
             },
             "localai": {
-                "title": "Verbinden Sie sich mit Ihrem LocalAI-Server",
-                "description": "Geben Sie die IP-Adresse und den Port Ihres LocalAI-Servers an.",
+                "title": "Mit LocalAI-Server verbinden",
+                "description": "Gib die IP-Adresse und den Port deines LocalAI-Servers an.",
                 "data": {
                     "localai_ip": "IP-Adresse",
                     "localai_port": "Port"
                 }
             },
             "ollama": {
-                "title": "Verbinden Sie sich mit Ihrem Ollama-Server",
-                "description": "Geben Sie die IP-Adresse und den Port Ihres Ollama-Servers an.",
+                "title": "Mit Ollama-Server verbinden",
+                "description": "Gib die IP-Adresse und den Port deines Ollama-Servers an.",
                 "data": {
                     "localai_ip": "IP-Addresse",
                     "localai_port": "Port"
                 }
             },
             "openai": {
-                "title": "Fügen Sie den OpenAI-API-Schlüssel hinzu",
-                "description": "Geben Sie einen gültigen OpenAI-API-Schlüssel an.",
+                "title": "OpenAI",
+                "description": "Gib einen gültigen OpenAI API-key ein.",
                 "data": {
-                    "api_key": "Ihr API-Schlüssel"
+                    "api_key": "Dein API-key"
                 }
             },
             "anthropic": {
-                "title": "Fügen Sie den Anthropic-API-Schlüssel hinzu",
-                "description": "Geben Sie einen gültigen Anthropic-API-Schlüssel an.",
+                "title": "Anthropic",
+                "description": "Gib einen gültigen Anthropic API-key ein.",
                 "data": {
-                    "api_key": "Ihr API-Schlüssel"
+                    "api_key": "Dein API-key"
                 }
             },
             "google": {
-                "title": "Fügen Sie den Google Gemini-API-Schlüssel hinzu",
-                "description": "Geben Sie einen gültigen Google Gemini-API-Schlüssel an.",
+                "title": "Google Gemini",
+                "description": "Gib einen gültigen Google Gemini API-key ein.",
                 "data": {
-                    "api_key": "Ihr API-Schlüssel"
+                    "api_key": "Dein API-key"
+                }
+            },
+            "custom_openai": {
+                "title": "OpenAI-kompatiblen Provider konfigurieren",
+                "description": "**Wichtig**: Funktioniert nur mit OpenAI API kompatiblen APIs. 'Custom Endpoint' muss das folgende Format haben: `http(s)://baseURL(:port)/some/endpoint`",
+                "data": {
+                    "custom_openai_endpoint": "Custom Endpoint",
+                    "custom_openai_api_key": "Dein API-key"
                 }
             }
         },
         "error": {
-            "handshake_failed": "Verbindung zum Server konnte nicht hergestellt werden. Überprüfen Sie Ihren API-Schlüssel oder die IP und den Port",
-            "empty_api_key": "Ungültiger API-Key"
+            "handshake_failed": "Verbindung zum Server konnte nicht hergestellt werden. Überprüfe deinen API-key oder IP und Port",
+            "empty_api_key": "Ungültiger API-key"
         },
         "abort": {
-            "already_configured": "Anbieter ist bereits konfiguriert. Löschen Sie die vorhandene Konfiguration, um eine neue hinzuzufügen.",
+            "already_configured": "Anbieter ist bereits konfiguriert. Lösche die vorhandene Konfiguration, um eine neue hinzuzufügen.",
             "unknown_provider": "Unbekannter Anbieter"
         }
     }

@@ -10,6 +10,8 @@ from .const import (
     CONF_OLLAMA_IP_ADDRESS,
     CONF_OLLAMA_PORT,
     CONF_OLLAMA_HTTPS,
+    CONF_CUSTOM_OPENAI_ENDPOINT,
+    CONF_CUSTOM_OPENAI_API_KEY,
     MODEL,
     PROVIDER,
     MAXTOKENS,
@@ -45,6 +47,8 @@ async def async_setup_entry(hass, entry):
     ollama_ip_address = entry.data.get(CONF_OLLAMA_IP_ADDRESS)
     ollama_port = entry.data.get(CONF_OLLAMA_PORT)
     ollama_https = entry.data.get(CONF_OLLAMA_HTTPS)
+    custom_openai_endpoint = entry.data.get(CONF_CUSTOM_OPENAI_ENDPOINT)
+    custom_openai_api_key = entry.data.get(CONF_CUSTOM_OPENAI_API_KEY)
 
     # Ensure DOMAIN exists in hass.data
     if DOMAIN not in hass.data:
@@ -63,6 +67,8 @@ async def async_setup_entry(hass, entry):
             CONF_OLLAMA_IP_ADDRESS: ollama_ip_address,
             CONF_OLLAMA_PORT: ollama_port,
             CONF_OLLAMA_HTTPS: ollama_https,
+            CONF_CUSTOM_OPENAI_ENDPOINT: custom_openai_endpoint,
+            CONF_CUSTOM_OPENAI_API_KEY: custom_openai_api_key
         }.items()
         if value is not None
     })
@@ -104,6 +110,8 @@ class ServiceCallData:
             return "gpt-4-vision-preview"
         elif provider == "Ollama":
             return "llava"
+        elif provider == "Custom OpenAI":
+            return "gpt-4o-mini"
 
 
 def setup(hass, config):
