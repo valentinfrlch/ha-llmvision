@@ -175,8 +175,8 @@ class MediaProcessor:
                         ffmpeg_cmd = [
                             "ffmpeg",
                             "-i", video_path,
-                            "-vf", f"fps=1/{interval},select='eq(n\\,0)+not(mod(n\\,{interval}))'",
-                            os.path.join(tmp_frames_dir, "frame%04d.png")
+                            "-vf", f"fps=1/{interval},select='eq(n\\,0)+not(mod(n\\,{interval}))'", os.path.join(
+                                tmp_frames_dir, "frame%04d.jpg")
                         ]
                         # Run ffmpeg command
                         await self.hass.loop.run_in_executor(None, os.system, " ".join(ffmpeg_cmd))
@@ -186,6 +186,13 @@ class MediaProcessor:
                             _LOGGER.debug(f"Adding frame {frame_file}")
                             frame_counter = 0
                             frame_path = os.path.join(tmp_frames_dir, frame_file)
+
+                            # Remove transparency for compatibility
+                            with Image.open(frame_path) as img:
+                                if img.mode == 'RGBA':
+                                    img = img.convert('RGB')
+                                    img.save(frame_path)
+
                             self.client.add_frame(
                                 base64_image=await self.resize_image(image_path=frame_path, target_width=target_width),
                                 filename=video_path.split(
