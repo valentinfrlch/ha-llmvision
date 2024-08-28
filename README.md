@@ -68,8 +68,8 @@ logger:
 > These are planned features and ideas. They are subject to change and may not be implemented in the order listed or at all.
 
 1. **New Provider**: NVIDIA ChatRTX 
-2. **Animation Support**: Support for animated GIFs
-3. **HACS**: Include in HACS default
+2. **HACS**: Include in HACS default
+3. [x] ~~**Animation Support**: Support for animated GIFs~~
 4. [x] ~~**New Provider**: Custom (OpenAI API compatible) Providers~~
 5. [x] ~~**Feature**: HTTPS support for LocalAI and Ollama~~
 6. [x] ~~**Feature**: Support for video files~~  
@@ -92,4 +92,4 @@ logger:
 ## Support
 You can support this project by starring this GitHub repository. If you want, you can also buy me a coffee here:  
 <br>
-<a href="https://www.buymeacoffee.com/valentinfrlch"><img width="15%" src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=valentinfrlch&button_colour=FFDD00&font_colour=000000&font_family=Inter&outline_colour=000000&coffee_colour=ffffff" /></a>
+<a href="https://www.buymeacoffee.com/valentinfrlch"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=valentinfrlch&button_colour=FFDD00&font_colour=000000&font_family=Inter&outline_colour=000000&coffee_colour=ffffff" /></a>
