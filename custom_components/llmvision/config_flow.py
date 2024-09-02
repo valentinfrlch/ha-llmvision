@@ -2,6 +2,7 @@ from homeassistant import config_entries
 from homeassistant.helpers.selector import selector
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import urllib.parse
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
@@ -124,26 +125,16 @@ class Validator:
 
     async def custom_openai(self):
         self._validate_provider()
-        _LOGGER.debug(f"Splits: {len(self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(":"))}")
-        # URL with port
         try:
-            if len(self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(":")) > 2:
-                protocol = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(
-                    "://")[0]
-                base_url = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(
-                    "://")[1].split("/")[0]
-                port = ":" + self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(":")[
-                    1].split("/")[0]
-            # URL without port
-            else:
-                protocol = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(
-                    "://")[0]
-                base_url = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(
-                    "://")[1].split("/")[0]
-                port = ""
+            url = urllib.parse.urlparse(
+                self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT])
+            protocol = url.scheme
+            base_url = url.hostname
+            port = ":" + str(url.port) if url.port else ""
+
             endpoint = "/v1/models"
             header = {'Content-type': 'application/json',
-                      'Authorization': 'Bearer ' + self.user_input[CONF_CUSTOM_OPENAI_API_KEY]}
+                      'Authorization': 'Bearer ' + self.user_input[CONF_CUSTOM_OPENAI_API_KEY]} if CONF_CUSTOM_OPENAI_API_KEY in self.user_input else {}
         except Exception as e:
             _LOGGER.error(f"Could not parse endpoint: {e}")
             raise ServiceValidationError("endpoint_parse_failed")

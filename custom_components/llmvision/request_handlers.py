@@ -22,7 +22,6 @@ from .const import (
     ERROR_GOOGLE_NOT_CONFIGURED,
     ERROR_LOCALAI_NOT_CONFIGURED,
     ERROR_OLLAMA_NOT_CONFIGURED,
-    ERROR_CUSTOM_OPENAI_NOT_CONFIGURED,
     ERROR_NO_IMAGE_INPUT
 )
 
@@ -111,11 +110,6 @@ class RequestHandler:
             api_key = self.hass.data.get(DOMAIN).get(
                 CONF_CUSTOM_OPENAI_API_KEY, "")
             endpoint = self.hass.data.get(DOMAIN).get(CONF_CUSTOM_OPENAI_ENDPOINT)
-
-            # Additional debug logging
-            _LOGGER.debug(f"Data from DOMAIN: {self.hass.data.get(DOMAIN)}")
-            _LOGGER.debug(f"API Key: {api_key}")
-            _LOGGER.debug(f"Endpoint: {endpoint}")
 
             model = call.model
             self._validate_call(provider=call.provider,
@@ -372,9 +366,6 @@ class RequestHandler:
         elif provider == 'Ollama':
             if not ip_address or not port:
                 raise ServiceValidationError(ERROR_OLLAMA_NOT_CONFIGURED)
-        elif provider == 'Custom OpenAI':
-            if not api_key:
-                raise ServiceValidationError(ERROR_CUSTOM_OPENAI_NOT_CONFIGURED)
         # Check media input
         if base64_images == []:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
