@@ -22,6 +22,7 @@ from .const import (
     ERROR_OPENAI_NOT_CONFIGURED,
     ERROR_ANTHROPIC_NOT_CONFIGURED,
     ERROR_GOOGLE_NOT_CONFIGURED,
+    ERROR_GROQ_NOT_CONFIGURED,
     ERROR_LOCALAI_NOT_CONFIGURED,
     ERROR_OLLAMA_NOT_CONFIGURED,
     ERROR_NO_IMAGE_INPUT
@@ -396,6 +397,10 @@ class RequestHandler:
         elif provider == 'Google':
             if not api_key:
                 raise ServiceValidationError(ERROR_GOOGLE_NOT_CONFIGURED)
+        # Checks for Groq
+        elif provider == 'Groq':
+            if not api_key:
+                raise ServiceValidationError(ERROR_GROQ_NOT_CONFIGURED)
         # Checks for LocalAI
         elif provider == 'LocalAI':
             if not ip_address or not port:

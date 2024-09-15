@@ -36,6 +36,7 @@ INCLUDE_FILENAME = 'include_filename'
 ERROR_OPENAI_NOT_CONFIGURED = "OpenAI provider is not configured"
 ERROR_ANTHROPIC_NOT_CONFIGURED = "Anthropic provider is not configured"
 ERROR_GOOGLE_NOT_CONFIGURED = "Google provider is not configured"
+ERROR_GROQ_NOT_CONFIGURED = "Groq provider is not configured"
 ERROR_LOCALAI_NOT_CONFIGURED = "LocalAI provider is not configured"
 ERROR_OLLAMA_NOT_CONFIGURED = "Ollama provider is not configured"
 ERROR_CUSTOM_OPENAI_NOT_CONFIGURED = "Custom OpenAI provider is not configured"
