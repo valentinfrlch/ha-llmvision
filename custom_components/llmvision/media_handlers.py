@@ -86,6 +86,26 @@ class MediaProcessor:
 
         return base64_image
 
+    async def record(self, image_entities, duration):
+        """Wrapper for client.add_frame with integrated recorder
+
+        Args:
+            image_entities (list[string]): List of camera entities to record
+            duration (float): Duration in seconds to record
+        """
+        import time
+        start = time.time()
+        _LOGGER.info(f"Recording from {image_entities} for {duration} seconds")
+        for image_entity in image_entities:
+            while time.time() - start < duration:
+                base_url = get_url(self.hass)
+                frame_url = base_url + \
+                    self.hass.states.get(image_entity).attributes.get(
+                        'entity_picture')
+                frame_data = await self.client._fetch(frame_url)
+                self.client.add_frame(frame_data)
+
+
     async def add_images(self, image_entities, image_paths, target_width, include_filename):
         """Wrapper for client.add_frame for images"""
         if image_entities:
@@ -135,12 +155,14 @@ class MediaProcessor:
                     raise ServiceValidationError(f"Error: {e}")
         return self.client
 
-    async def add_videos(self, video_paths, event_ids, interval, target_width, include_filename):
+    async def add_videos(self, image_entities, duration, video_paths, event_ids, interval, target_width, include_filename):
+        """Wrapper for client.add_frame for videos"""
         tmp_clips_dir = f"/config/custom_components/{DOMAIN}/tmp_clips"
         tmp_frames_dir = f"/config/custom_components/{DOMAIN}/tmp_frames"
         if not video_paths:
             video_paths = []
-        """Wrapper for client.add_frame for videos"""
+        if image_entities:
+            self.record(image_entities, duration)
         if event_ids:
             for event_id in event_ids:
                 try:

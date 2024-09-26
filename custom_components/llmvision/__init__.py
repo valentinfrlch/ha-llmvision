@@ -22,6 +22,7 @@ from .const import (
     VIDEO_FILE,
     EVENT_ID,
     INTERVAL,
+    DURATION,
     TEMPERATURE,
     DETAIL,
     INCLUDE_FILENAME
@@ -90,6 +91,7 @@ class ServiceCallData:
         self.event_id = data_call.data.get(EVENT_ID, "").split(
             "\n") if data_call.data.get(EVENT_ID) else None
         self.interval = int(data_call.data.get(INTERVAL, 3))
+        self.duration = int(data_call.data.get(DURATION, 10))
         self.target_width = data_call.data.get(TARGET_WIDTH, 1280)
         self.temperature = float(data_call.data.get(TEMPERATURE, 0.5))
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 100))
@@ -146,7 +148,7 @@ def setup(hass, config):
                                 temperature=call.temperature,
                                 detail=call.detail)
         processor = MediaProcessor(hass, client)
-        client = await processor.add_videos(call.video_paths, call.event_id, call.interval, call.target_width, call.include_filename)
+        client = await processor.add_videos(call.image_entities, call.duration, call.video_paths, call.event_id, call.interval, call.target_width, call.include_filename)
         response = await client.make_request(call)
         return response
 

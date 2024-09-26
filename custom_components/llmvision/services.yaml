@@ -159,6 +159,15 @@ video_analyzer:
         number:
           min: 1
           max: 60
+    duration:
+      name: Recording Duration
+      required: false
+      description: 'How long to record in seconds'
+      example: 10
+      selector:
+        number:
+          min: 0
+          max: 300
     include_filename:
       name: Include Filename
       required: false
