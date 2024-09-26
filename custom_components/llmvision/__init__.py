@@ -109,7 +109,7 @@ class ServiceCallData:
         elif provider == "LocalAI":
             return "gpt-4-vision-preview"
         elif provider == "Ollama":
-            return "llava"
+            return "llava-phi3:latest"
         elif provider == "Custom OpenAI":
             return "gpt-4o-mini"
 
