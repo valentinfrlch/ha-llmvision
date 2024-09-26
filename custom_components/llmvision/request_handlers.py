@@ -362,7 +362,7 @@ class RequestHandler:
             provider = inspect.stack()[1].function
             _LOGGER.error(
                 f"Provider {provider} failed with status code {response.status}")
-            parsed_response = self._resolve_error(url, response, provider)
+            parsed_response = self._resolve_error(response, provider)
             raise ServiceValidationError(parsed_response)
         else:
             response_data = await response.json()
@@ -417,17 +417,13 @@ class RequestHandler:
         if base64_images == []:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
 
-    def _resolve_error(self, url, response, provider):
+    def _resolve_error(self, response, provider):
         """Translate response status to error message"""
         if provider == "openai":
-            return f"Error: {response.get('error', {}).get('message', 'Unknown error')}"
-        elif provider == "anthropic":
-            return f"Error: {response.get('error', {}).get('message', 'Unknown error')}"
-        elif provider == "google":
-            return f"Error: {response.get('error', {}).get('message', 'Unknown error')}"
-        elif provider == "groq":
-            return f"Error: {response.get('error', {}).get('message', 'Unknown error')}"
-        elif provider == "ollama":
-            return f"Error: {response.get('error', {}).get('message', 'Unknown error')}"
-        elif provider == "localai":
-            return f"Error: {response.get('error', {}).get('message', 'Unknown error')}"
+            error_message = getattr(response.error, 'message', 'Unknown error') if hasattr(
+                response, 'error') else 'Unknown error'
+            return f"Error: {error_message}"
+        elif provider in ["anthropic", "google", "groq", "ollama", "localai"]:
+            error_message = getattr(response.error, 'message', 'Unknown error') if hasattr(
+                response, 'error') else 'Unknown error'
+            return f"Error: {error_message}"
