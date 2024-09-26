@@ -360,9 +360,7 @@ class RequestHandler:
 
         if response.status != 200:
             provider = inspect.stack()[1].function
-            _LOGGER.error(
-                f"Provider {provider} failed with status code {response.status}")
-            parsed_response = self._resolve_error(response, provider)
+            parsed_response = await self._resolve_error(response, provider)
             raise ServiceValidationError(parsed_response)
         else:
             response_data = await response.json()
@@ -417,13 +415,23 @@ class RequestHandler:
         if base64_images == []:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
 
-    def _resolve_error(self, response, provider):
+    async def _resolve_error(self, response, provider):
         """Translate response status to error message"""
-        if provider == "openai":
-            error_message = getattr(response.error, 'message', 'Unknown error') if hasattr(
-                response, 'error') else 'Unknown error'
-            return f"Error: {error_message}"
-        elif provider in ["anthropic", "google", "groq", "ollama", "localai"]:
-            error_message = getattr(response.error, 'message', 'Unknown error') if hasattr(
-                response, 'error') else 'Unknown error'
-            return f"Error: {error_message}"
+        import json
+        full_response_text = await response.text()
+        _LOGGER.info(f"[INFO] Full Response: {full_response_text}")
+
+        try:
+            response_json = json.loads(full_response_text)
+            if provider == 'anthropic':
+                error_info = response_json.get('error', {})
+                error_message = f"{error_info.get('type', 'Unknown error')}: {error_info.get('message', 'Unknown error')}"
+            elif provider == 'ollama':
+                error_message = response_json.get('error', 'Unknown error')
+            else:
+                error_info = response_json.get('error', {})
+                error_message = error_info.get('message', 'Unknown error')
+        except json.JSONDecodeError:
+            error_message = 'Unknown error'
+
+        return error_message
