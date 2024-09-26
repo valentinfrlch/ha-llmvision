@@ -103,7 +103,7 @@ class ServiceCallData:
         elif provider == "LocalAI":
             return "gpt-4-vision-preview"
         elif provider == "Ollama":
-            return "llava"
+            return "llava-phi3:latest"
 
 
 def setup(hass, config):
