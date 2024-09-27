@@ -2,11 +2,13 @@ from homeassistant import config_entries
 from homeassistant.helpers.selector import selector
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import urllib.parse
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
     CONF_ANTHROPIC_API_KEY,
     CONF_GOOGLE_API_KEY,
+    CONF_GROQ_API_KEY,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
     CONF_LOCALAI_HTTPS,
@@ -63,11 +65,22 @@ class Validator:
             payload = {
                 "contents": [{
                     "parts": [
-                        {"text": "Hello, world!"}
+                        {"text": "Hello"}
                     ]}
                 ]
             }
             method = "POST"
+        elif self.user_input["provider"] == "Groq":
+            header = {
+                'Authorization': 'Bearer ' + api_key,
+                'Content-Type': 'application/json'
+            }
+            base_url = "api.groq.com"
+            endpoint = "/openai/v1/chat/completions"
+            payload = {"messages": [
+                {"role": "user", "content": "Hello"}], "model": "gemma-7b-it"}
+            method = "POST"
+
         return await self._handshake(base_url=base_url, endpoint=endpoint, protocol="https", header=header, payload=payload, expected_status=200, method=method)
 
     def _validate_provider(self):
@@ -124,26 +137,16 @@ class Validator:
 
     async def custom_openai(self):
         self._validate_provider()
-        _LOGGER.debug(f"Splits: {len(self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(":"))}")
-        # URL with port
         try:
-            if len(self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(":")) > 2:
-                protocol = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(
-                    "://")[0]
-                base_url = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(
-                    "://")[1].split("/")[0]
-                port = ":" + self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(":")[
-                    1].split("/")[0]
-            # URL without port
-            else:
-                protocol = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(
-                    "://")[0]
-                base_url = self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT].split(
-                    "://")[1].split("/")[0]
-                port = ""
+            url = urllib.parse.urlparse(
+                self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT])
+            protocol = url.scheme
+            base_url = url.hostname
+            port = ":" + str(url.port) if url.port else ""
+
             endpoint = "/v1/models"
             header = {'Content-type': 'application/json',
-                      'Authorization': 'Bearer ' + self.user_input[CONF_CUSTOM_OPENAI_API_KEY]}
+                      'Authorization': 'Bearer ' + self.user_input[CONF_CUSTOM_OPENAI_API_KEY]} if CONF_CUSTOM_OPENAI_API_KEY in self.user_input else {}
         except Exception as e:
             _LOGGER.error(f"Could not parse endpoint: {e}")
             raise ServiceValidationError("endpoint_parse_failed")
@@ -167,6 +170,12 @@ class Validator:
             _LOGGER.error("Could not connect to Google server.")
             raise ServiceValidationError("handshake_failed")
 
+    async def groq(self):
+        self._validate_provider()
+        if not await self._validate_api_key(self.user_input[CONF_GROQ_API_KEY]):
+            _LOGGER.error("Could not connect to Groq server.")
+            raise ServiceValidationError("handshake_failed")
+
     def get_configured_providers(self):
         providers = []
         try:
@@ -186,6 +195,8 @@ class Validator:
             providers.append("Ollama")
         if CONF_CUSTOM_OPENAI_ENDPOINT in self.hass.data[DOMAIN]:
             providers.append("Custom OpenAI")
+        if CONF_GROQ_API_KEY in self.hass.data[DOMAIN]:
+            providers.append("Groq")
         return providers
 
 
@@ -202,6 +213,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "OpenAI": self.async_step_openai,
             "Anthropic": self.async_step_anthropic,
             "Google": self.async_step_google,
+            "Groq": self.async_step_groq,
             "Ollama": self.async_step_ollama,
             "LocalAI": self.async_step_localai,
             "Custom OpenAI": self.async_step_custom_openai,
@@ -218,7 +230,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required("provider", default="OpenAI"): selector({
                 "select": {
-                    "options": ["OpenAI", "Anthropic", "Google", "Ollama", "LocalAI", "Custom OpenAI"],
+                    "options": ["OpenAI", "Anthropic", "Google", "Groq", "Ollama", "LocalAI", "Custom OpenAI"],
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -375,6 +387,33 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="google",
+            data_schema=data_schema,
+        )
+
+    async def async_step_groq(self, user_input=None):
+        data_schema = vol.Schema({
+            vol.Required(CONF_GROQ_API_KEY): str,
+        })
+
+        if user_input is not None:
+            # save provider to user_input
+            user_input["provider"] = self.init_info["provider"]
+            validator = Validator(self.hass, user_input)
+            try:
+                await validator.groq()
+                # add the mode to user_input
+                user_input["provider"] = self.init_info["provider"]
+                return self.async_create_entry(title="LLM Vision Groq", data=user_input)
+            except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
+                return self.async_show_form(
+                    step_id="groq",
+                    data_schema=data_schema,
+                    errors={"base": "handshake_failed"}
+                )
+
+        return self.async_show_form(
+            step_id="groq",
             data_schema=data_schema,
         )
 

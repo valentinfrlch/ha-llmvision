@@ -7,6 +7,7 @@ from .const import (
     CONF_OPENAI_API_KEY,
     CONF_ANTHROPIC_API_KEY,
     CONF_GOOGLE_API_KEY,
+    CONF_GROQ_API_KEY,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
     CONF_LOCALAI_HTTPS,
@@ -17,18 +18,17 @@ from .const import (
     CONF_CUSTOM_OPENAI_API_KEY,
     VERSION_ANTHROPIC,
     ENDPOINT_OPENAI,
+    ENDPOINT_GROQ,
     ERROR_OPENAI_NOT_CONFIGURED,
     ERROR_ANTHROPIC_NOT_CONFIGURED,
     ERROR_GOOGLE_NOT_CONFIGURED,
+    ERROR_GROQ_NOT_CONFIGURED,
     ERROR_LOCALAI_NOT_CONFIGURED,
     ERROR_OLLAMA_NOT_CONFIGURED,
-    ERROR_CUSTOM_OPENAI_NOT_CONFIGURED,
     ERROR_NO_IMAGE_INPUT
 )
 
 _LOGGER = logging.getLogger(__name__)
-# base64_pattern = re.compile(r'([A-Za-z0-9+/=]{1000,})')
-
 
 def sanitize_data(data):
     """Remove long string data from request data to reduce log size"""
@@ -54,7 +54,6 @@ class RequestHandler:
         self.filenames = []
 
     async def make_request(self, call):
-        _LOGGER.debug(f"Base64 Images: {sanitize_data(self.base64_images)}")
         if call.provider == 'OpenAI':
             api_key = self.hass.data.get(DOMAIN).get(CONF_OPENAI_API_KEY)
             model = call.model
@@ -76,6 +75,13 @@ class RequestHandler:
                                 api_key=api_key,
                                 base64_images=self.base64_images)
             response_text = await self.google(model=model, api_key=api_key)
+        elif call.provider == 'Groq':
+            api_key = self.hass.data.get(DOMAIN).get(CONF_GROQ_API_KEY)
+            model = call.model
+            self._validate_call(provider=call.provider,
+                                api_key=api_key,
+                                base64_images=self.base64_images)
+            response_text = await self.groq(model=model, api_key=api_key)
         elif call.provider == 'LocalAI':
             ip_address = self.hass.data.get(
                 DOMAIN, {}).get(CONF_LOCALAI_IP_ADDRESS)
@@ -94,9 +100,11 @@ class RequestHandler:
                                                port=port,
                                                https=https)
         elif call.provider == 'Ollama':
-            ip_address = self.hass.data.get(DOMAIN, {}).get(CONF_OLLAMA_IP_ADDRESS)
+            ip_address = self.hass.data.get(
+                DOMAIN, {}).get(CONF_OLLAMA_IP_ADDRESS)
             port = self.hass.data.get(DOMAIN, {}).get(CONF_OLLAMA_PORT)
-            https = self.hass.data.get(DOMAIN, {}).get(CONF_OLLAMA_HTTPS, False)
+            https = self.hass.data.get(DOMAIN, {}).get(
+                CONF_OLLAMA_HTTPS, False)
             model = call.model
             self._validate_call(provider=call.provider,
                                 api_key=None,
@@ -110,12 +118,8 @@ class RequestHandler:
         elif call.provider == 'Custom OpenAI':
             api_key = self.hass.data.get(DOMAIN).get(
                 CONF_CUSTOM_OPENAI_API_KEY, "")
-            endpoint = self.hass.data.get(DOMAIN).get(CONF_CUSTOM_OPENAI_ENDPOINT)
-
-            # Additional debug logging
-            _LOGGER.debug(f"Data from DOMAIN: {self.hass.data.get(DOMAIN)}")
-            _LOGGER.debug(f"API Key: {api_key}")
-            _LOGGER.debug(f"Endpoint: {endpoint}")
+            endpoint = self.hass.data.get(DOMAIN).get(
+                CONF_CUSTOM_OPENAI_ENDPOINT)
 
             model = call.model
             self._validate_call(provider=call.provider,
@@ -252,6 +256,36 @@ class RequestHandler:
             "content").get("parts")[0].get("text")
         return response_text
 
+    async def groq(self, model, api_key, endpoint=ENDPOINT_GROQ):
+        first_image = self.base64_images[0]
+        # Set headers and payload
+        headers = {'Content-type': 'application/json',
+                   'Authorization': 'Bearer ' + api_key}
+        data = {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": self.message},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/jpeg;base64,{first_image}"}
+                        }
+                    ]
+                }
+            ],
+            "model": model
+        }
+
+        response = await self._post(
+            url=endpoint, headers=headers, data=data)
+
+        print(response)
+
+        response_text = response.get(
+            "choices")[0].get("message").get("content")
+        return response_text
+
     async def localai(self, model, ip_address, port, https):
         from .const import ENDPOINT_LOCALAI
         data = {"model": model,
@@ -318,8 +352,6 @@ class RequestHandler:
     async def _post(self, url, headers, data):
         """Post data to url and return response data"""
         _LOGGER.info(f"Request data: {sanitize_data(data)}")
-        _LOGGER.debug(
-            f"URL type: {type(url)}, Headers type: {type(headers)}, Data type: {type(data)}")
 
         try:
             response = await self.session.post(url, headers=headers, json=data)
@@ -328,8 +360,7 @@ class RequestHandler:
 
         if response.status != 200:
             provider = inspect.stack()[1].function
-            _LOGGER.debug(f"Provider: {provider}")
-            parsed_response = self._resolve_error(url, response, provider)
+            parsed_response = await self._resolve_error(response, provider)
             raise ServiceValidationError(parsed_response)
         else:
             response_data = await response.json()
@@ -364,6 +395,10 @@ class RequestHandler:
         elif provider == 'Google':
             if not api_key:
                 raise ServiceValidationError(ERROR_GOOGLE_NOT_CONFIGURED)
+        # Checks for Groq
+        elif provider == 'Groq':
+            if not api_key:
+                raise ServiceValidationError(ERROR_GROQ_NOT_CONFIGURED)
         # Checks for LocalAI
         elif provider == 'LocalAI':
             if not ip_address or not port:
@@ -373,76 +408,30 @@ class RequestHandler:
             if not ip_address or not port:
                 raise ServiceValidationError(ERROR_OLLAMA_NOT_CONFIGURED)
         elif provider == 'Custom OpenAI':
-            if not api_key:
-                raise ServiceValidationError(ERROR_CUSTOM_OPENAI_NOT_CONFIGURED)
+            pass
+        else:
+            raise ServiceValidationError("invalid_provider")
         # Check media input
         if base64_images == []:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
 
-    def _resolve_error(self, url, response, provider):
+    async def _resolve_error(self, response, provider):
         """Translate response status to error message"""
-        if provider == "openai":
-            if response.status == 401:
-                return "Invalid Authentication. Ensure you are using a valid API key."
-            if response.status == 403:
-                return "Country, region, or territory not supported."
-            if response.status == 404:
-                return "The requested model does not exist."
-            if response.status == 429:
-                return "Rate limit exceeded. You are sending requests too quickly."
-            if response.status == 500:
-                return "Issue on OpenAI's servers. Wait a few minutes and try again."
-            if response.status == 503:
-                return "OpenAI's Servers are experiencing high traffic. Try again later."
+        import json
+        full_response_text = await response.text()
+        _LOGGER.info(f"[INFO] Full Response: {full_response_text}")
+
+        try:
+            response_json = json.loads(full_response_text)
+            if provider == 'anthropic':
+                error_info = response_json.get('error', {})
+                error_message = f"{error_info.get('type', 'Unknown error')}: {error_info.get('message', 'Unknown error')}"
+            elif provider == 'ollama':
+                error_message = response_json.get('error', 'Unknown error')
             else:
-                return f"Error: {response}"
-        elif provider == "anthropic":
-            if response.status == 400:
-                return "Invalid Request. There was an issue with the format or content of your request."
-            if response.status == 401:
-                return "Invalid Authentication. Ensure you are using a valid API key."
-            if response.status == 403:
-                return "Access Error. Your API key does not have permission to use the specified resource."
-            if response.status == 404:
-                return "The requested model does not exist."
-            if response.status == 429:
-                return "Rate limit exceeded. You are sending requests too quickly."
-            if response.status == 500:
-                return "Issue on Anthropic's servers. Wait a few minutes and try again."
-            if response.status == 529:
-                return "Anthropic's Servers are experiencing high traffic. Try again later."
-            else:
-                return f"Error: {response}"
-        elif provider == "google":
-            if response.status == 400:
-                return "Max input tokens exceeded. Reduce target width or number of images."
-            if response.status == 403:
-                return "Access Error. Your API key does not have permission to use the specified resource."
-            if response.status == 404:
-                return "The requested model does not exist."
-            if response.status == 406:
-                return "Insufficient Funds. Ensure you have enough credits to use the service."
-            if response.status == 429:
-                return "Rate limit exceeded. You are sending requests too quickly."
-            if response.status == 503:
-                return "Google's Servers are temporarily overloaded or down. Try again later."
-            else:
-                return f"Error: {response}"
-        elif provider == "ollama":
-            if response.status == 400:
-                return "Invalid Request. There was an issue with the format or content of your request."
-            if response.status == 404:
-                return "The requested model does not exist."
-            if response.status == 500:
-                return "Internal server issue (on Ollama server)."
-            else:
-                return f"Error: {response}"
-        elif provider == "localai":
-            if response.status == 400:
-                return "Invalid Request. There was an issue with the format or content of your request."
-            if response.status == 404:
-                return "The requested model does not exist."
-            if response.status == 500:
-                return "Internal server issue (on LocalAI server)."
-            else:
-                return f"Error: {response}"
+                error_info = response_json.get('error', {})
+                error_message = error_info.get('message', 'Unknown error')
+        except json.JSONDecodeError:
+            error_message = 'Unknown error'
+
+        return error_message

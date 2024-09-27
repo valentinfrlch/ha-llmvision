@@ -4,6 +4,7 @@ from .const import (
     CONF_OPENAI_API_KEY,
     CONF_ANTHROPIC_API_KEY,
     CONF_GOOGLE_API_KEY,
+    CONF_GROQ_API_KEY,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
     CONF_LOCALAI_HTTPS,
@@ -28,12 +29,7 @@ from .const import (
 )
 from .request_handlers import RequestHandler
 from .media_handlers import MediaProcessor
-import logging
 from homeassistant.core import SupportsResponse
-from homeassistant.exceptions import ServiceValidationError
-
-_LOGGER = logging.getLogger(__name__)
-
 
 async def async_setup_entry(hass, entry):
     """Save config entry to hass.data"""
@@ -41,6 +37,7 @@ async def async_setup_entry(hass, entry):
     openai_api_key = entry.data.get(CONF_OPENAI_API_KEY)
     anthropic_api_key = entry.data.get(CONF_ANTHROPIC_API_KEY)
     google_api_key = entry.data.get(CONF_GOOGLE_API_KEY)
+    groq_api_key = entry.data.get(CONF_GROQ_API_KEY)
     localai_ip_address = entry.data.get(CONF_LOCALAI_IP_ADDRESS)
     localai_port = entry.data.get(CONF_LOCALAI_PORT)
     localai_https = entry.data.get(CONF_LOCALAI_HTTPS)
@@ -61,6 +58,7 @@ async def async_setup_entry(hass, entry):
             CONF_OPENAI_API_KEY: openai_api_key,
             CONF_ANTHROPIC_API_KEY: anthropic_api_key,
             CONF_GOOGLE_API_KEY: google_api_key,
+            CONF_GROQ_API_KEY: groq_api_key,
             CONF_LOCALAI_IP_ADDRESS: localai_ip_address,
             CONF_LOCALAI_PORT: localai_port,
             CONF_LOCALAI_HTTPS: localai_https,
@@ -106,10 +104,12 @@ class ServiceCallData:
             return "claude-3-5-sonnet-20240620"
         elif provider == "Google":
             return "gemini-1.5-flash-latest"
+        elif provider == "Groq":
+            return "llava-v1.5-7b-4096-preview"
         elif provider == "LocalAI":
             return "gpt-4-vision-preview"
         elif provider == "Ollama":
-            return "llava"
+            return "llava-phi3:latest"
         elif provider == "Custom OpenAI":
             return "gpt-4o-mini"
 
@@ -160,3 +160,4 @@ def setup(hass, config):
     )
 
     return True
+ 
