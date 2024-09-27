@@ -20,16 +20,15 @@ image_analyzer:
     model:
       name: Model
       required: false
-      description: 'Model to use'
+      description: 'Model to use. Uncheck for default.'
       example: "gpt-4o-mini"
-      default: "gpt-4o-mini"
       selector:
         text:
           multiline: false
     message:
       name: Prompt
       required: true
-      description: 'Prompt'
+      description: 'Model prompt'
       example: "Describe the person present in the photo"
       selector:
         text:
@@ -38,7 +37,7 @@ image_analyzer:
       name: Image File
       required: false
       description: 'Local path to image'
-      example: "/config/www/images/img.jpg"
+      example: "/config/www/tmp/front_door.jpg"
       selector:
         text:
           multiline: true
@@ -53,7 +52,7 @@ image_analyzer:
           multiple: true
     include_filename:
       name: Include Filename
-      required: false
+      required: true
       description: 'Include filename in the request'
       default: false
       selector:
@@ -61,7 +60,7 @@ image_analyzer:
     target_width:
       name: Target Width
       required: false
-      description: 'Width in pixels to downscale to'
+      description: 'Width in pixels to downscale'
       example: 1280
       default: 1280
       selector:
@@ -71,7 +70,7 @@ image_analyzer:
     detail:
       name: Detail
       required: false
-      description: "Detail parameter, leave empty for 'auto'"
+      description: "Detail parameter. Leave empty for 'auto'"
       default: 'high'
       selector:
         select:
@@ -120,29 +119,19 @@ video_analyzer:
     model:
       name: Model
       required: false
-      description: 'Model to use'
+      description: 'Model to use. Uncheck for default.'
       example: "gpt-4o-mini"
-      default: "gpt-4o-mini"
       selector:
         text:
           multiline: false
     message:
       name: Prompt
       required: true
-      description: 'Prompt'
+      description: 'Model prompt'
       example: "Describe what's going on in the video"
       selector:
         text:
           multiline: true
-    image_entity:
-      name: Image Entity
-      required: false
-      description: 'Camera entity to analyze'
-      example: 'camera.front_door'
-      selector:
-        entity:
-          domain: ["camera"]
-          multiple: true
     video_file:
       name: Video File
       required: false
@@ -169,18 +158,9 @@ video_analyzer:
         number:
           min: 1
           max: 60
-    duration:
-      name: Recording Duration
-      required: false
-      description: 'How long to record in seconds'
-      example: 10
-      selector:
-        number:
-          min: 0
-          max: 300
     include_filename:
       name: Include Filename
-      required: false
+      required: true
       description: 'Include filename in the request'
       default: false
       selector:
@@ -188,7 +168,118 @@ video_analyzer:
     target_width:
       name: Target Width
       required: false
-      description: 'Width in pixels to downscale to'
+      description: 'Width in pixels to downscale'
+      example: 1280
+      default: 1280
+      selector:
+        number:
+          min: 512
+          max: 3840
+    detail:
+      name: Detail
+      required: false
+      description: "Detail parameter, leave empty for 'auto'"
+      default: 'high'
+      selector:
+        select:
+          options:
+            - 'high'
+            - 'low'
+    max_tokens:
+      name: Maximum Tokens
+      description: 'Maximum number of tokens to generate'
+      required: true
+      example: 100
+      default: 100
+      selector:
+        number:
+          min: 10
+          max: 1000
+    temperature:
+      name: Temperature
+      required: true
+      description: 'Randomness. Lower is more accurate, higher is more creative'
+      example: 0.5
+      default: 0.5
+      selector:
+        number:
+          min: 0.0
+          max: 1.0
+          step: 0.1
+
+stream_analyzer:
+  name: Stream Analyzer
+  description: Analyze a live camera stream with AI
+  fields:
+    provider:
+      name: Provider
+      description: 'Provider to use'
+      required: true
+      default: 'OpenAI'
+      selector:
+        select:
+          options:
+            - 'OpenAI'
+            - 'Anthropic'
+            - 'Google'
+            - 'Ollama'
+            - 'LocalAI'
+    model:
+      name: Model
+      required: false
+      description: 'Model to use. Uncheck for default.'
+      example: "gpt-4o-mini"
+      selector:
+        text:
+          multiline: false
+    message:
+      name: Prompt
+      required: true
+      description: 'Model prompt'
+      example: "Describe what's going on in the video"
+      selector:
+        text:
+          multiline: true
+    image_entity:
+      name: Camera Entity
+      required: true
+      description: 'Camera entity to stream'
+      example: 'camera.front_door'
+      selector:
+        entity:
+          domain: ["camera"]
+          multiple: true
+    interval:
+      name: Interval
+      description: Analyze frames every <interval> seconds
+      required: true
+      example: 3
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 60
+    duration:
+      name: Recording Duration
+      required: true
+      description: 'How long to record in seconds'
+      example: 10
+      selector:
+        number:
+          default: 10
+          min: 0
+          max: 300
+    include_filename:
+      name: Include camera name
+      required: true
+      description: 'Include camera name in request'
+      default: false
+      selector:
+        boolean:
+    target_width:
+      name: Target Width
+      required: false
+      description: 'Width in pixels to downscale'
       example: 1280
       default: 1280
       selector:

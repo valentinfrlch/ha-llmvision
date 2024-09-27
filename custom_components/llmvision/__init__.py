@@ -166,6 +166,26 @@ def setup(hass, config):
         response = await client.make_request(call)
         return response
 
+    async def stream_analyzer(data_call):
+        """Handle the service call to analyze a stream (future implementation)"""
+        call = ServiceCallData(data_call).get_service_call_data()
+        call.message = "The attached images are frames from a live camera feed. " + call.message
+        client = RequestHandler(hass,
+                                message=call.message,
+                                max_tokens=call.max_tokens,
+                                temperature=call.temperature,
+                                detail=call.detail)
+        processor = MediaProcessor(hass, client)
+        client = await processor.add_streams(image_entities=call.image_entities,
+                                             duration=call.duration,
+                                             interval=call.interval,
+                                             target_width=call.target_width,
+                                             include_filename=call.include_filename
+                                             )
+        response = await client.make_request(call)
+        return response
+
+    # Register services
     hass.services.register(
         DOMAIN, "image_analyzer", image_analyzer,
         supports_response=SupportsResponse.ONLY
@@ -174,5 +194,10 @@ def setup(hass, config):
         DOMAIN, "video_analyzer", video_analyzer,
         supports_response=SupportsResponse.ONLY
     )
+    hass.services.register(
+        DOMAIN, "stream_analyzer", stream_analyzer,
+        supports_response=SupportsResponse.ONLY
+    )
+
 
     return True

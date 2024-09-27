@@ -86,7 +86,7 @@ class MediaProcessor:
 
         return base64_image
 
-    async def record(self, image_entities, duration, interval, target_width):
+    async def record(self, image_entities, duration, interval, target_width, include_filename):
         """Wrapper for client.add_frame with integrated recorder
 
         Args:
@@ -108,11 +108,10 @@ class MediaProcessor:
                 frame_data = await self.client._fetch(frame_url)
                 self.client.add_frame(
                     base64_image=await self.resize_image(target_width=target_width, image_data=frame_data),
-                    filename=image_entity.replace("camera.", "")
+                    filename=image_entity.replace(
+                        "camera.", "") if include_filename else ""
                 )
                 await asyncio.sleep(interval)
-
-
 
     async def add_images(self, image_entities, image_paths, target_width, include_filename):
         """Wrapper for client.add_frame for images"""
@@ -126,19 +125,13 @@ class MediaProcessor:
                     image_data = await self.client._fetch(image_url)
 
                     # If entity snapshot requested, use entity name as 'filename'
-                    if include_filename:
-                        entity_name = self.hass.states.get(
-                            image_entity).attributes.get('friendly_name')
 
-                        self.client.add_frame(
-                            base64_image=await self.resize_image(target_width=target_width, image_data=image_data),
-                            filename=entity_name
-                        )
-                    else:
-                        self.client.add_frame(
-                            base64_image=await self.resize_image(target_width=target_width, image_data=image_data),
-                            filename=""
-                        )
+                    self.client.add_frame(
+                        base64_image=await self.resize_image(target_width=target_width, image_data=image_data),
+                        filename=self.hass.states.get(
+                            image_entity).attributes.get('friendly_name') if include_filename else ""
+                    )
+
                 except AttributeError as e:
                     raise ServiceValidationError(
                         f"Entity {image_entity} does not exist")
@@ -163,14 +156,12 @@ class MediaProcessor:
                     raise ServiceValidationError(f"Error: {e}")
         return self.client
 
-    async def add_videos(self, image_entities, duration, video_paths, event_ids, interval, target_width, include_filename):
+    async def add_videos(self, video_paths, event_ids, interval, target_width, include_filename):
         """Wrapper for client.add_frame for videos"""
         tmp_clips_dir = f"/config/custom_components/{DOMAIN}/tmp_clips"
         tmp_frames_dir = f"/config/custom_components/{DOMAIN}/tmp_frames"
         if not video_paths:
             video_paths = []
-        if image_entities:
-            await self.record(image_entities, duration, interval, target_width)
         if event_ids:
             for event_id in event_ids:
                 try:
@@ -181,14 +172,17 @@ class MediaProcessor:
                     os.makedirs(tmp_clips_dir, exist_ok=True)
                     _LOGGER.info(f"Created {tmp_clips_dir}")
                     # save clip to file with event_id as filename
-                    clip_path = os.path.join(tmp_clips_dir, event_id.split("-")[-1] + ".mp4")
+                    clip_path = os.path.join(
+                        tmp_clips_dir, event_id.split("-")[-1] + ".mp4")
                     await self.hass.loop.run_in_executor(None, self._save_clip, clip_data, clip_path)
-                    _LOGGER.info(f"Saved frigate clip to {clip_path} (temporarily)")
+                    _LOGGER.info(
+                        f"Saved frigate clip to {clip_path} (temporarily)")
                     # append to video_paths
                     video_paths.append(clip_path)
 
                 except AttributeError as e:
-                    raise ServiceValidationError(f"Failed to fetch frigate clip {event_id}: {e}")
+                    raise ServiceValidationError(
+                        f"Failed to fetch frigate clip {event_id}: {e}")
         if video_paths:
             _LOGGER.debug(f"Processing videos: {video_paths}")
             for video_path in video_paths:
@@ -200,7 +194,8 @@ class MediaProcessor:
                         if os.path.exists(tmp_frames_dir):
                             _LOGGER.debug(f"Created {tmp_frames_dir}")
                         else:
-                            _LOGGER.error(f"Failed to create temp directory {tmp_frames_dir}")
+                            _LOGGER.error(
+                                f"Failed to create temp directory {tmp_frames_dir}")
 
                         ffmpeg_cmd = [
                             "ffmpeg",
@@ -215,7 +210,8 @@ class MediaProcessor:
                         for frame_file in await self.hass.loop.run_in_executor(None, os.listdir, tmp_frames_dir):
                             _LOGGER.debug(f"Adding frame {frame_file}")
                             frame_counter = 0
-                            frame_path = os.path.join(tmp_frames_dir, frame_file)
+                            frame_path = os.path.join(
+                                tmp_frames_dir, frame_file)
 
                             # Remove transparency for compatibility
                             with Image.open(frame_path) as img:
@@ -248,4 +244,9 @@ class MediaProcessor:
                 f"Deleted tmp folder: {tmp_frames_dir}")
         except FileNotFoundError as e:
             _LOGGER.error(f"Failed to delete tmp folders: {e}")
+        return self.client
+
+    async def add_streams(self, image_entities, duration, interval, target_width, include_filename):
+        if image_entities:
+            await self.record(image_entities, duration, interval, target_width, include_filename)
         return self.client
