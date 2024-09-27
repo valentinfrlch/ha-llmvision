@@ -134,6 +134,15 @@ video_analyzer:
       selector:
         text:
           multiline: true
+    image_entity:
+      name: Image Entity
+      required: false
+      description: 'Camera entity to analyze'
+      example: 'camera.front_door'
+      selector:
+        entity:
+          domain: ["camera"]
+          multiple: true
     video_file:
       name: Video File
       required: false

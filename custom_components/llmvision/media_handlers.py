@@ -86,24 +86,32 @@ class MediaProcessor:
 
         return base64_image
 
-    async def record(self, image_entities, duration):
+    async def record(self, image_entities, duration, interval, target_width):
         """Wrapper for client.add_frame with integrated recorder
 
         Args:
             image_entities (list[string]): List of camera entities to record
             duration (float): Duration in seconds to record
+            target_width (int): Target width for the images in pixels
         """
         import time
-        start = time.time()
+        import asyncio
         _LOGGER.info(f"Recording from {image_entities} for {duration} seconds")
+
         for image_entity in image_entities:
+            start = time.time()
             while time.time() - start < duration:
                 base_url = get_url(self.hass)
                 frame_url = base_url + \
                     self.hass.states.get(image_entity).attributes.get(
                         'entity_picture')
                 frame_data = await self.client._fetch(frame_url)
-                self.client.add_frame(frame_data)
+                self.client.add_frame(
+                    base64_image=await self.resize_image(target_width=target_width, image_data=frame_data),
+                    filename=image_entity.replace("camera.", "")
+                )
+                await asyncio.sleep(interval)
+
 
 
     async def add_images(self, image_entities, image_paths, target_width, include_filename):
@@ -162,7 +170,7 @@ class MediaProcessor:
         if not video_paths:
             video_paths = []
         if image_entities:
-            self.record(image_entities, duration)
+            await self.record(image_entities, duration, interval, target_width)
         if event_ids:
             for event_id in event_ids:
                 try:

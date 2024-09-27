@@ -32,6 +32,7 @@ from .request_handlers import RequestHandler
 from .media_handlers import MediaProcessor
 from homeassistant.core import SupportsResponse
 
+
 async def async_setup_entry(hass, entry):
     """Save config entry to hass.data"""
     # Get all entries from config flow
@@ -77,9 +78,11 @@ async def async_setup_entry(hass, entry):
 
 class ServiceCallData:
     """Store service call data and set default values"""
+
     def __init__(self, data_call):
         self.provider = str(data_call.data.get(PROVIDER))
-        self.model = str(data_call.data.get(MODEL, self._default_model(self.provider)))
+        self.model = str(data_call.data.get(
+            MODEL, self._default_model(self.provider)))
         self.message = str(data_call.data.get(MESSAGE)[0:2000])
         self.image_paths = data_call.data.get(IMAGE_FILE, "").split(
             "\n") if data_call.data.get(IMAGE_FILE) else None
@@ -98,7 +101,7 @@ class ServiceCallData:
 
     def get_service_call_data(self):
         return self
-    
+
     def _default_model(self, provider):
         if provider == "OpenAI":
             return "gpt-4o-mini"
@@ -119,7 +122,7 @@ class ServiceCallData:
 def setup(hass, config):
     async def image_analyzer(data_call):
         """Handle the service call to analyze an image with LLM Vision"""
-        
+
         # Initialize call objecto with service call data
         call = ServiceCallData(data_call).get_service_call_data()
         # Initialize the RequestHandler client
@@ -132,7 +135,11 @@ def setup(hass, config):
         # Fetch and preprocess images
         processor = MediaProcessor(hass, client)
         # Send images to RequestHandler client
-        client = await processor.add_images(call.image_entities, call.image_paths, call.target_width, call.include_filename)
+        client = await processor.add_images(image_entities=call.image_entities,
+                                            image_paths=call.image_paths,
+                                            target_width=call.target_width,
+                                            include_filename=call.include_filename
+                                            )
 
         # Validate configuration, input data and make the call
         response = await client.make_request(call)
@@ -148,7 +155,14 @@ def setup(hass, config):
                                 temperature=call.temperature,
                                 detail=call.detail)
         processor = MediaProcessor(hass, client)
-        client = await processor.add_videos(call.image_entities, call.duration, call.video_paths, call.event_id, call.interval, call.target_width, call.include_filename)
+        client = await processor.add_videos(image_entities=call.image_entities,
+                                            duration=call.duration,
+                                            video_paths=call.video_paths,
+                                            event_ids=call.event_id,
+                                            interval=call.interval,
+                                            target_width=call.target_width,
+                                            include_filename=call.include_filename
+                                            )
         response = await client.make_request(call)
         return response
 
@@ -162,4 +176,3 @@ def setup(hass, config):
     )
 
     return True
- 
