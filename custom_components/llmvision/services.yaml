@@ -29,7 +29,7 @@ image_analyzer:
       name: Prompt
       required: true
       description: 'Model prompt'
-      example: "Describe the person present in the photo"
+      example: "Describe the image"
       selector:
         text:
           multiline: true
@@ -54,6 +54,7 @@ image_analyzer:
       name: Include Filename
       required: true
       description: 'Include filename in the request'
+      example: false
       default: false
       selector:
         boolean:
@@ -128,7 +129,7 @@ video_analyzer:
       name: Prompt
       required: true
       description: 'Model prompt'
-      example: "Describe what's going on in the video"
+      example: "Describe what happens in the video"
       selector:
         text:
           multiline: true
@@ -162,6 +163,7 @@ video_analyzer:
       name: Include Filename
       required: true
       description: 'Include filename in the request'
+      example: false
       default: false
       selector:
         boolean:
@@ -236,7 +238,7 @@ stream_analyzer:
       name: Prompt
       required: true
       description: 'Model prompt'
-      example: "Describe what's going on in the video"
+      example: "Describe what happens in the camera feed"
       selector:
         text:
           multiline: true
@@ -264,15 +266,16 @@ stream_analyzer:
       required: true
       description: 'How long to record in seconds'
       example: 10
+      default: 10
       selector:
         number:
-          default: 10
           min: 0
           max: 300
     include_filename:
       name: Include camera name
       required: true
       description: 'Include camera name in request'
+      example: false
       default: false
       selector:
         boolean:
