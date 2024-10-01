@@ -96,10 +96,10 @@ class MediaProcessor:
         """
         import time
         import asyncio
-        _LOGGER.info(f"Recording from {image_entities} for {duration} seconds")
 
-        for image_entity in image_entities:
+        async def record_camera(image_entity, camera_number):
             start = time.time()
+            frame_counter = 0
             while time.time() - start < duration:
                 base_url = get_url(self.hass)
                 frame_url = base_url + \
@@ -109,9 +109,15 @@ class MediaProcessor:
                 self.client.add_frame(
                     base64_image=await self.resize_image(target_width=target_width, image_data=frame_data),
                     filename=image_entity.replace(
-                        "camera.", "") if include_filename else ""
+                        "camera.", "") + " frame " + str(frame_counter) if include_filename else "camera " + str(camera_number) + " frame " + str(frame_counter)
                 )
+                frame_counter += 1
                 await asyncio.sleep(interval)
+
+        _LOGGER.info(f"Recording {', '.join([entity.replace(
+            'camera.', '') for entity in image_entities])} for {duration} seconds")
+
+        await asyncio.gather(*(record_camera(image_entity, image_entities.index(image_entity)) for image_entity in image_entities))
 
     async def add_images(self, image_entities, image_paths, target_width, include_filename):
         """Wrapper for client.add_frame for images"""
