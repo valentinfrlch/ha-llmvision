@@ -23,6 +23,7 @@ from .const import (
     ERROR_ANTHROPIC_NOT_CONFIGURED,
     ERROR_GOOGLE_NOT_CONFIGURED,
     ERROR_GROQ_NOT_CONFIGURED,
+    ERROR_GROQ_MULTIPLE_IMAGES,
     ERROR_LOCALAI_NOT_CONFIGURED,
     ERROR_OLLAMA_NOT_CONFIGURED,
     ERROR_NO_IMAGE_INPUT
@@ -450,6 +451,8 @@ class RequestHandler:
         elif provider == 'Groq':
             if not api_key:
                 raise ServiceValidationError(ERROR_GROQ_NOT_CONFIGURED)
+            if len(base64_images) > 1:
+                raise ServiceValidationError(ERROR_GROQ_MULTIPLE_IMAGES)
         # Checks for LocalAI
         elif provider == 'LocalAI':
             if not ip_address or not port:

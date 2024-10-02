@@ -36,6 +36,7 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_setup_entry(hass, entry):
     """Save config entry to hass.data with the same unique identifier as the config entry"""
     # Use the entry_id from the config entry as the UID
@@ -100,25 +101,28 @@ async def async_remove_entry(hass, entry) -> None:
 
     return True
 
+
 async def async_unload_entry(hass, entry) -> bool: return True
+
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry):
     """Migrate old config entries to the new format with unique identifiers."""
     if DOMAIN not in hass.data:
         hass.data[DOMAIN] = {}
-
-    if config_entry.version == 1:
-        old_entries = hass.data[DOMAIN].copy()
-        for key, old_entry in old_entries.items():
+    old_entries = hass.data[DOMAIN].copy()
+    for key, old_entry in old_entries.items():
+        _LOGGER.info(f"Checking old entry {old_entry}")
+        if old_entry.version == 1:
             entry_uid = config_entry.entry_id
             # Move the old configuration data to the new format under the entry_id
             hass.data[DOMAIN][entry_uid] = old_entry
             # Remove the old configuration data
             hass.data[DOMAIN].pop(key)
 
-        hass.config_entries.async_update_entry(config_entry, version=2)
+            hass.config_entries.async_update_entry(config_entry, version=2)
 
         return True
+
 
 class ServiceCallData:
     """Store service call data and set default values"""
@@ -145,6 +149,7 @@ class ServiceCallData:
 
     def get_service_call_data(self):
         return self
+
 
 def setup(hass, config):
     async def image_analyzer(data_call):
