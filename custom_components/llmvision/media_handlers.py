@@ -97,27 +97,42 @@ class MediaProcessor:
         import time
         import asyncio
 
+        camera_frames = {}
+
+        # function to run on a separate thread for each camera 
         async def record_camera(image_entity, camera_number):
             start = time.time()
             frame_counter = 0
+            frames = {}
             while time.time() - start < duration:
                 base_url = get_url(self.hass)
                 frame_url = base_url + \
                     self.hass.states.get(image_entity).attributes.get(
                         'entity_picture')
                 frame_data = await self.client._fetch(frame_url)
-                self.client.add_frame(
-                    base64_image=await self.resize_image(target_width=target_width, image_data=frame_data),
-                    filename=image_entity.replace(
-                        "camera.", "") + " frame " + str(frame_counter) if include_filename else "camera " + str(camera_number) + " frame " + str(frame_counter)
-                )
+                
+                # use either entity name or assign number to each camera
+                frames.update({image_entity.replace(
+                    "camera.", "") + " frame " + str(frame_counter) if include_filename else "camera " + str(camera_number) + " frame " + str(frame_counter): frame_data})
+
                 frame_counter += 1
+
                 await asyncio.sleep(interval)
+            camera_frames.update({image_entity: frames})
 
         _LOGGER.info(f"Recording {', '.join([entity.replace(
             'camera.', '') for entity in image_entities])} for {duration} seconds")
 
+        # start threads for each camera
         await asyncio.gather(*(record_camera(image_entity, image_entities.index(image_entity)) for image_entity in image_entities))
+
+        # add frames to client
+        for frame in camera_frames:
+            for frame_name in camera_frames[frame]:
+                self.client.add_frame(
+                    base64_image=await self.resize_image(target_width=target_width, image_data=camera_frames[frame][frame_name]),
+                    filename=frame_name
+                )
 
     async def add_images(self, image_entities, image_paths, target_width, include_filename):
         """Wrapper for client.add_frame for images"""
@@ -131,7 +146,6 @@ class MediaProcessor:
                     image_data = await self.client._fetch(image_url)
 
                     # If entity snapshot requested, use entity name as 'filename'
-
                     self.client.add_frame(
                         base64_image=await self.resize_image(target_width=target_width, image_data=image_data),
                         filename=self.hass.states.get(

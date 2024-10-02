@@ -92,8 +92,8 @@ image_analyzer:
       name: Temperature
       required: true
       description: 'Randomness. Lower is more accurate, higher is more creative'
-      example: 0.5
-      default: 0.5
+      example: 0.3
+      default: 0.3
       selector:
         number:
           min: 0.0
@@ -201,8 +201,8 @@ video_analyzer:
       name: Temperature
       required: true
       description: 'Randomness. Lower is more accurate, higher is more creative'
-      example: 0.5
-      default: 0.5
+      example: 0.3
+      default: 0.3
       selector:
         number:
           min: 0.0
@@ -313,8 +313,8 @@ stream_analyzer:
       name: Temperature
       required: true
       description: 'Randomness. Lower is more accurate, higher is more creative'
-      example: 0.5
-      default: 0.5
+      example: 0.3
+      default: 0.3
       selector:
         number:
           min: 0.0
