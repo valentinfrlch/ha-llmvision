@@ -202,7 +202,7 @@ class Validator:
 
 class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
-    VERSION = 1
+    VERSION = 2
 
     async def handle_provider(self, provider, configured_providers):
         if provider in configured_providers:
@@ -267,7 +267,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 await validator.localai()
                 # add the mode to user_input
-                return self.async_create_entry(title="LLM Vision LocalAI", data=user_input)
+                return self.async_create_entry(title=f"LocalAI ({user_input[CONF_LOCALAI_IP_ADDRESS]})", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -295,7 +295,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 await validator.ollama()
                 # add the mode to user_input
-                return self.async_create_entry(title="LLM Vision Ollama", data=user_input)
+                return self.async_create_entry(title=f"Ollama ({user_input[CONF_OLLAMA_IP_ADDRESS]})", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -322,7 +322,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await validator.openai()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="LLM Vision OpenAI", data=user_input)
+                return self.async_create_entry(title="OpenAI", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -349,7 +349,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await validator.anthropic()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="LLM Vision Anthropic", data=user_input)
+                return self.async_create_entry(title="Anthropic Claude", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -376,7 +376,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await validator.google()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="LLM Vision Google", data=user_input)
+                return self.async_create_entry(title="Google Gemini", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -403,7 +403,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await validator.groq()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="LLM Vision Groq", data=user_input)
+                return self.async_create_entry(title="Groq", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -431,7 +431,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await validator.custom_openai()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="LLM Vision Custom OpenAI", data=user_input)
+                return self.async_create_entry(title="Custom OpenAI compatible Provider", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(

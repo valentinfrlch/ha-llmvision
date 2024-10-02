@@ -4,19 +4,11 @@ image_analyzer:
   fields:
     provider:
       name: Provider
-      description: 'Provider to use'
+      description: 'Configuration to use'
       required: true
-      default: 'OpenAI'
       selector:
-        select:
-          options:
-            - 'OpenAI'
-            - 'Anthropic'
-            - 'Google'
-            - 'Groq'
-            - 'Ollama'
-            - 'LocalAI'
-            - 'Custom OpenAI'
+        config_entry:
+          integration: llmvision
     model:
       name: Model
       required: false
@@ -106,17 +98,11 @@ video_analyzer:
   fields:
     provider:
       name: Provider
-      description: 'Provider to use'
+      description: 'Configuration to use'
       required: true
-      default: 'OpenAI'
       selector:
-        select:
-          options:
-            - 'OpenAI'
-            - 'Anthropic'
-            - 'Google'
-            - 'Ollama'
-            - 'LocalAI'
+        config_entry:
+          integration: llmvision
     model:
       name: Model
       required: false
@@ -215,17 +201,11 @@ stream_analyzer:
   fields:
     provider:
       name: Provider
-      description: 'Provider to use'
+      description: 'Configuration to use'
       required: true
-      default: 'OpenAI'
       selector:
-        select:
-          options:
-            - 'OpenAI'
-            - 'Anthropic'
-            - 'Google'
-            - 'Ollama'
-            - 'LocalAI'
+        config_entry:
+          integration: llmvision
     model:
       name: Model
       required: false

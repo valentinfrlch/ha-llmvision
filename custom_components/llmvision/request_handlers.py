@@ -30,6 +30,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+
 def sanitize_data(data):
     """Remove long string data from request data to reduce log size"""
     if isinstance(data, dict):
@@ -40,6 +41,45 @@ def sanitize_data(data):
         return '<long_string>'
     else:
         return data
+
+
+def get_provider(hass, provider_uid):
+    """Translate the UID of the config entry into the provider name."""
+    _LOGGER.info(f"llmvision storage: {hass.data[DOMAIN]}")
+    if DOMAIN not in hass.data:
+        return None
+
+    entry_data = hass.data[DOMAIN].get(provider_uid)
+    if not entry_data:
+        return None
+
+    if CONF_OPENAI_API_KEY in entry_data:
+        return "OpenAI"
+    elif CONF_ANTHROPIC_API_KEY in entry_data:
+        return "Anthropic"
+    elif CONF_GOOGLE_API_KEY in entry_data:
+        return "Google"
+    elif CONF_GROQ_API_KEY in entry_data:
+        return "Groq"
+    elif CONF_LOCALAI_IP_ADDRESS in entry_data:
+        return "LocalAI"
+    elif CONF_OLLAMA_IP_ADDRESS in entry_data:
+        return "Ollama"
+    elif CONF_CUSTOM_OPENAI_API_KEY in entry_data:
+        return "Custom OpenAI"
+
+    return None
+
+
+default_model = lambda provider: {
+    "OpenAI": "gpt-4o-mini",
+    "Anthropic": "claude-3-5-sonnet-20240620",
+    "Google": "gemini-1.5-flash-latest",
+    "Groq": "llava-v1.5-7b-4096-preview",
+    "LocalAI": "gpt-4-vision-preview",
+    "Ollama": "llava-phi3:latest",
+    "Custom OpenAI": "gpt-4o-mini"
+}.get(provider, "gpt-4o-mini")  # Default value if provider is not found
 
 
 class RequestHandler:
@@ -54,43 +94,52 @@ class RequestHandler:
         self.filenames = []
 
     async def make_request(self, call):
-        if call.provider == 'OpenAI':
-            api_key = self.hass.data.get(DOMAIN).get(CONF_OPENAI_API_KEY)
-            model = call.model
-            self._validate_call(provider=call.provider,
+        entry_id = call.provider
+        provider = get_provider(self.hass, entry_id)
+        model = call.model if call.model != "None" else default_model(provider)
+        _LOGGER.info(f"Provider: {provider}")
+        _LOGGER.info(f"Model Default: {model}")
+        _LOGGER.info(f"Model: {call.model} tyle: {type(call.model)}")
+
+        if provider == 'OpenAI':
+            api_key = self.hass.data.get(DOMAIN).get(
+                entry_id).get(CONF_OPENAI_API_KEY)
+            self._validate_call(provider=provider,
                                 api_key=api_key,
                                 base64_images=self.base64_images)
             response_text = await self.openai(model=model, api_key=api_key)
-        elif call.provider == 'Anthropic':
-            api_key = self.hass.data.get(DOMAIN).get(CONF_ANTHROPIC_API_KEY)
-            model = call.model
-            self._validate_call(provider=call.provider,
+        elif provider == 'Anthropic':
+            api_key = self.hass.data.get(DOMAIN).get(
+                entry_id).get(CONF_ANTHROPIC_API_KEY)
+            self._validate_call(provider=provider,
                                 api_key=api_key,
                                 base64_images=self.base64_images)
             response_text = await self.anthropic(model=model, api_key=api_key)
-        elif call.provider == 'Google':
-            api_key = self.hass.data.get(DOMAIN).get(CONF_GOOGLE_API_KEY)
-            model = call.model
-            self._validate_call(provider=call.provider,
+        elif provider == 'Google':
+            api_key = self.hass.data.get(DOMAIN).get(
+                entry_id).get(CONF_GOOGLE_API_KEY)
+            self._validate_call(provider=provider,
                                 api_key=api_key,
                                 base64_images=self.base64_images)
             response_text = await self.google(model=model, api_key=api_key)
-        elif call.provider == 'Groq':
-            api_key = self.hass.data.get(DOMAIN).get(CONF_GROQ_API_KEY)
-            model = call.model
-            self._validate_call(provider=call.provider,
+        elif provider == 'Groq':
+            api_key = self.hass.data.get(DOMAIN).get(
+                entry_id).get(CONF_GROQ_API_KEY)
+            self._validate_call(provider=provider,
                                 api_key=api_key,
                                 base64_images=self.base64_images)
             response_text = await self.groq(model=model, api_key=api_key)
-        elif call.provider == 'LocalAI':
+        elif provider == 'LocalAI':
             ip_address = self.hass.data.get(
-                DOMAIN, {}).get(CONF_LOCALAI_IP_ADDRESS)
+                DOMAIN).get(
+                entry_id).get(CONF_LOCALAI_IP_ADDRESS)
             port = self.hass.data.get(
-                DOMAIN, {}).get(CONF_LOCALAI_PORT)
+                DOMAIN).get(
+                entry_id).get(CONF_LOCALAI_PORT)
             https = self.hass.data.get(
-                DOMAIN, {}).get(CONF_LOCALAI_HTTPS, False)
-            model = call.model
-            self._validate_call(provider=call.provider,
+                DOMAIN).get(
+                entry_id).get(CONF_LOCALAI_HTTPS, False)
+            self._validate_call(provider=provider,
                                 api_key=None,
                                 base64_images=self.base64_images,
                                 ip_address=ip_address,
@@ -99,14 +148,16 @@ class RequestHandler:
                                                ip_address=ip_address,
                                                port=port,
                                                https=https)
-        elif call.provider == 'Ollama':
+        elif provider == 'Ollama':
             ip_address = self.hass.data.get(
-                DOMAIN, {}).get(CONF_OLLAMA_IP_ADDRESS)
-            port = self.hass.data.get(DOMAIN, {}).get(CONF_OLLAMA_PORT)
-            https = self.hass.data.get(DOMAIN, {}).get(
+                DOMAIN).get(
+                entry_id).get(CONF_OLLAMA_IP_ADDRESS)
+            port = self.hass.data.get(DOMAIN).get(
+                entry_id).get(CONF_OLLAMA_PORT)
+            https = self.hass.data.get(DOMAIN).get(
+                entry_id).get(
                 CONF_OLLAMA_HTTPS, False)
-            model = call.model
-            self._validate_call(provider=call.provider,
+            self._validate_call(provider=provider,
                                 api_key=None,
                                 base64_images=self.base64_images,
                                 ip_address=ip_address,
@@ -115,14 +166,14 @@ class RequestHandler:
                                               ip_address=ip_address,
                                               port=port,
                                               https=https)
-        elif call.provider == 'Custom OpenAI':
+        elif provider == 'Custom OpenAI':
             api_key = self.hass.data.get(DOMAIN).get(
+                entry_id).get(
                 CONF_CUSTOM_OPENAI_API_KEY, "")
             endpoint = self.hass.data.get(DOMAIN).get(
+                entry_id).get(
                 CONF_CUSTOM_OPENAI_ENDPOINT)
-
-            model = call.model
-            self._validate_call(provider=call.provider,
+            self._validate_call(provider=provider,
                                 api_key=api_key,
                                 base64_images=self.base64_images)
             response_text = await self.openai(model=model, api_key=api_key, endpoint=endpoint)
