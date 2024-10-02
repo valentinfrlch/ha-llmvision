@@ -107,18 +107,18 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry):
     if DOMAIN not in hass.data:
         hass.data[DOMAIN] = {}
 
-    old_entries = hass.data[DOMAIN].copy()
-    for key, old_entry in old_entries.items():
-        entry_uid = config_entry.entry_id
-        # Move the old configuration data to the new format under the entry_id
-        hass.data[DOMAIN][entry_uid] = old_entry
-        # Remove the old configuration data
-        hass.data[DOMAIN].pop(key)
+    if config_entry.version == 1:
+        old_entries = hass.data[DOMAIN].copy()
+        for key, old_entry in old_entries.items():
+            entry_uid = config_entry.entry_id
+            # Move the old configuration data to the new format under the entry_id
+            hass.data[DOMAIN][entry_uid] = old_entry
+            # Remove the old configuration data
+            hass.data[DOMAIN].pop(key)
 
-    config_entry.version = 2
-    hass.config_entries.async_update_entry(config_entry)
+        hass.config_entries.async_update_entry(config_entry, version=2)
 
-    return True
+        return True
 
 class ServiceCallData:
     """Store service call data and set default values"""
