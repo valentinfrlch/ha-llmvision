@@ -96,7 +96,8 @@ async def async_remove_entry(hass, entry) -> None:
         _LOGGER.info(f"Removing {entry.title} from hass.data")
         hass.data[DOMAIN].pop(entry_uid)
     else:
-        _LOGGER.warning(f"Entry {entry.title} not found but was requested to be removed")
+        _LOGGER.warning(
+            f"Entry {entry.title} not found but was requested to be removed")
 
     return True
 
@@ -108,7 +109,8 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry):
     if DOMAIN not in hass.data:
         return True
     if config_entry.version == 1:
-        _LOGGER.error("Providers could not be migrated automatically. Please set them up again.")
+        _LOGGER.error(
+            "Providers could not be migrated automatically. Please set them up again.")
         return False
 
 
@@ -175,9 +177,7 @@ def setup(hass, config):
                                 temperature=call.temperature,
                                 detail=call.detail)
         processor = MediaProcessor(hass, client)
-        client = await processor.add_videos(image_entities=call.image_entities,
-                                            duration=call.duration,
-                                            video_paths=call.video_paths,
+        client = await processor.add_videos(video_paths=call.video_paths,
                                             event_ids=call.event_id,
                                             interval=call.interval,
                                             target_width=call.target_width,
