@@ -112,6 +112,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry):
         _LOGGER.error(
             "Providers could not be migrated automatically. Please set them up again.")
         return False
+    return False
 
 
 class ServiceCallData:
