@@ -108,20 +108,24 @@ async def async_unload_entry(hass, entry) -> bool: return True
 async def async_migrate_entry(hass, config_entry: ConfigEntry):
     """Migrate old config entries to the new format with unique identifiers."""
     if DOMAIN not in hass.data:
-        hass.data[DOMAIN] = {}
-    old_entries = hass.data[DOMAIN].copy()
-    for key, old_entry in old_entries.items():
-        _LOGGER.info(f"Checking old entry {old_entry}")
-        if old_entry.version == 1:
-            entry_uid = config_entry.entry_id
-            # Move the old configuration data to the new format under the entry_id
-            hass.data[DOMAIN][entry_uid] = old_entry
-            # Remove the old configuration data
-            hass.data[DOMAIN].pop(key)
-
-            hass.config_entries.async_update_entry(config_entry, version=2)
-
         return True
+    if config_entry.version == 1:
+        old_entries = hass.data[DOMAIN].copy()
+        for key, old_entry in old_entries.items():
+            try:
+                _LOGGER.info(f"Checking old entry {old_entry}")
+                entry_uid = config_entry.entry_id
+                _LOGGER.info(f"Creating new entry with UID: {entry_uid}")
+                hass.data[DOMAIN][entry_uid] = old_entry
+                hass.data[DOMAIN].pop(key)
+            except Exception as e:
+                _LOGGER.error(f"Error migrating entry {old_entry}: {e}")
+                return False
+
+        _LOGGER.info(f"Config data: {hass.data[DOMAIN]}")
+        hass.config_entries.async_update_entry(config_entry, version=2)
+
+    return True
 
 
 class ServiceCallData:
