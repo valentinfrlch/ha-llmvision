@@ -29,6 +29,11 @@ class MediaProcessor:
     def _save_clip(self, clip_data, clip_path):
         with open(clip_path, "wb") as f:
             f.write(clip_data)
+    
+    def _convert_to_rgb(self, img):
+        if img.mode == 'RGBA' or img.format == 'GIF':
+            img = img.convert('RGB')
+        return img
 
     async def resize_image(self, target_width, image_path=None, image_data=None, img=None):
         """Resize image to target_width"""
@@ -38,9 +43,7 @@ class MediaProcessor:
             with img:
                 # Check if the image is a GIF and convert if necessary
                 _LOGGER.debug(f"Image format: {img.format}")
-                if img.format == 'GIF':
-                    # Convert GIF to RGB
-                    img = img.convert('RGB')
+                img = self._convert_to_rgb(img)
                 # calculate new height based on aspect ratio
                 width, height = img.size
                 aspect_ratio = width / height
@@ -60,9 +63,7 @@ class MediaProcessor:
             img = await self.hass.loop.run_in_executor(None, Image.open, img_byte_arr)
             with img:
                 _LOGGER.debug(f"Image format: {img.format}")
-                if img.format == 'GIF':
-                    # Convert GIF to RGB
-                    img = img.convert('RGB')
+                img = self._convert_to_rgb(img)
                 # calculate new height based on aspect ratio
                 width, height = img.size
                 aspect_ratio = width / height
@@ -73,6 +74,7 @@ class MediaProcessor:
 
                 base64_image = await self._encode_image(img)
         elif img:
+            img = self._convert_to_rgb(img)
             with img:
                 # calculate new height based on aspect ratio
                 width, height = img.size
