@@ -29,7 +29,7 @@ class MediaProcessor:
     def _save_clip(self, clip_data, clip_path):
         with open(clip_path, "wb") as f:
             f.write(clip_data)
-    
+
     def _convert_to_rgb(self, img):
         if img.mode == 'RGBA' or img.format == 'GIF':
             img = img.convert('RGB')
@@ -74,8 +74,8 @@ class MediaProcessor:
 
                 base64_image = await self._encode_image(img)
         elif img:
-            img = self._convert_to_rgb(img)
             with img:
+                img = self._convert_to_rgb(img)
                 # calculate new height based on aspect ratio
                 width, height = img.size
                 aspect_ratio = width / height
@@ -101,7 +101,7 @@ class MediaProcessor:
 
         camera_frames = {}
 
-        # function to run on a separate thread for each camera 
+        # Record on a separate thread for each camera
         async def record_camera(image_entity, camera_number):
             start = time.time()
             frame_counter = 0
@@ -112,7 +112,7 @@ class MediaProcessor:
                     self.hass.states.get(image_entity).attributes.get(
                         'entity_picture')
                 frame_data = await self.client._fetch(frame_url)
-                
+
                 # use either entity name or assign number to each camera
                 frames.update({image_entity.replace(
                     "camera.", "") + " frame " + str(frame_counter) if include_filename else "camera " + str(camera_number) + " frame " + str(frame_counter): frame_data})

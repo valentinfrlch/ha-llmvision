@@ -86,7 +86,7 @@ async def async_setup_entry(hass, entry):
     return True
 
 
-async def async_remove_entry(hass, entry) -> None:
+async def async_remove_entry(hass, entry):
     """Remove config entry from hass.data"""
     # Use the entry_id from the config entry as the UID
     entry_uid = entry.entry_id
@@ -105,14 +105,11 @@ async def async_remove_entry(hass, entry) -> None:
 async def async_unload_entry(hass, entry) -> bool: return True
 
 
-async def async_migrate_entry(hass, config_entry: ConfigEntry):
+async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
     if DOMAIN not in hass.data:
         return True
-    if config_entry.version == 1:
-        _LOGGER.error(
-            "Providers could not be migrated automatically. Please set them up again.")
+    else:
         return False
-    return False
 
 
 class ServiceCallData:
