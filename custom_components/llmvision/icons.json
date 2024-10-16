@@ -1,6 +1,7 @@
 {
     "services": {
-        "image_analyzer": "mdi:cube-scan",
-        "video_analyzer": "mdi:cube-scan"
+        "image_analyzer": "mdi:image-search",
+        "video_analyzer": "mdi:movie-search",
+        "stream_analyzer": "mdi:video-wireless"
     }
 }

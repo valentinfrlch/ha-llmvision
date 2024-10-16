@@ -4,33 +4,24 @@ image_analyzer:
   fields:
     provider:
       name: Provider
-      description: 'Provider to use'
+      description: 'Configuration to use'
       required: true
-      default: 'OpenAI'
       selector:
-        select:
-          options:
-            - 'OpenAI'
-            - 'Anthropic'
-            - 'Google'
-            - 'Groq'
-            - 'Ollama'
-            - 'LocalAI'
-            - 'Custom OpenAI'
+        config_entry:
+          integration: llmvision
     model:
       name: Model
       required: false
-      description: 'Model to use'
+      description: 'Model to use. Uncheck for default.'
       example: "gpt-4o-mini"
-      default: "gpt-4o-mini"
       selector:
         text:
           multiline: false
     message:
       name: Prompt
       required: true
-      description: 'Prompt'
-      example: "Describe the person present in the photo"
+      description: 'Model prompt'
+      example: "Describe the image"
       selector:
         text:
           multiline: true
@@ -38,7 +29,7 @@ image_analyzer:
       name: Image File
       required: false
       description: 'Local path to image'
-      example: "/config/www/images/img.jpg"
+      example: "/config/www/tmp/front_door.jpg"
       selector:
         text:
           multiline: true
@@ -53,25 +44,26 @@ image_analyzer:
           multiple: true
     include_filename:
       name: Include Filename
-      required: false
+      required: true
       description: 'Include filename in the request'
+      example: false
       default: false
       selector:
         boolean:
     target_width:
       name: Target Width
       required: false
-      description: 'Width in pixels to downscale to'
+      description: 'Width in pixels to downscale'
       example: 1280
       default: 1280
       selector:
         number:
           min: 512
-          max: 3840
+          max: 1920
     detail:
       name: Detail
       required: false
-      description: "Detail parameter, leave empty for 'auto'"
+      description: "Detail parameter. Leave empty for 'auto'"
       default: 'high'
       selector:
         select:
@@ -86,17 +78,17 @@ image_analyzer:
       default: 100
       selector:
         number:
-          min: 10
-          max: 1000
+          min: 1
+          max: 300
     temperature:
       name: Temperature
       required: true
       description: 'Randomness. Lower is more accurate, higher is more creative'
-      example: 0.5
-      default: 0.5
+      example: 0.2
+      default: 0.2
       selector:
         number:
-          min: 0.0
+          min: 0.1
           max: 1.0
           step: 0.1
 
@@ -106,31 +98,24 @@ video_analyzer:
   fields:
     provider:
       name: Provider
-      description: 'Provider to use'
+      description: 'Configuration to use'
       required: true
-      default: 'OpenAI'
       selector:
-        select:
-          options:
-            - 'OpenAI'
-            - 'Anthropic'
-            - 'Google'
-            - 'Ollama'
-            - 'LocalAI'
+        config_entry:
+          integration: llmvision
     model:
       name: Model
       required: false
-      description: 'Model to use'
+      description: 'Model to use. Uncheck for default.'
       example: "gpt-4o-mini"
-      default: "gpt-4o-mini"
       selector:
         text:
           multiline: false
     message:
       name: Prompt
       required: true
-      description: 'Prompt'
-      example: "Describe what's going on in the video"
+      description: 'Model prompt'
+      example: "Describe what happens in the video"
       selector:
         text:
           multiline: true
@@ -162,21 +147,22 @@ video_analyzer:
           max: 60
     include_filename:
       name: Include Filename
-      required: false
+      required: true
       description: 'Include filename in the request'
+      example: false
       default: false
       selector:
         boolean:
     target_width:
       name: Target Width
       required: false
-      description: 'Width in pixels to downscale to'
+      description: 'Width in pixels to downscale'
       example: 1280
       default: 1280
       selector:
         number:
           min: 512
-          max: 3840
+          max: 1920
     detail:
       name: Detail
       required: false
@@ -195,16 +181,122 @@ video_analyzer:
       default: 100
       selector:
         number:
-          min: 10
-          max: 1000
+          min: 1
+          max: 300
     temperature:
       name: Temperature
       required: true
       description: 'Randomness. Lower is more accurate, higher is more creative'
-      example: 0.5
-      default: 0.5
+      example: 0.2
+      default: 0.2
       selector:
         number:
           min: 0.0
+          max: 1.0
+          step: 0.1
+
+stream_analyzer:
+  name: Stream Analyzer
+  description: Analyze a live camera stream with AI
+  fields:
+    provider:
+      name: Provider
+      description: 'Configuration to use'
+      required: true
+      selector:
+        config_entry:
+          integration: llmvision
+    model:
+      name: Model
+      required: false
+      description: 'Model to use. Uncheck for default.'
+      example: "gpt-4o-mini"
+      selector:
+        text:
+          multiline: false
+    message:
+      name: Prompt
+      required: true
+      description: 'Model prompt'
+      example: "Describe what happens in the camera feed"
+      selector:
+        text:
+          multiline: true
+    image_entity:
+      name: Camera Entity
+      required: true
+      description: 'Camera entity to stream'
+      example: 'camera.front_door'
+      selector:
+        entity:
+          domain: ["camera"]
+          multiple: true
+    interval:
+      name: Interval
+      description: Analyze frames every <interval> seconds
+      required: true
+      example: 2
+      default: 2
+      selector:
+        number:
+          min: 1
+          max: 10
+    duration:
+      name: Recording Duration
+      required: true
+      description: 'How long to record in seconds'
+      example: 5
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 60
+    include_filename:
+      name: Include camera name
+      required: true
+      description: 'Include camera name in request'
+      example: false
+      default: false
+      selector:
+        boolean:
+    target_width:
+      name: Target Width
+      required: false
+      description: 'Width in pixels to downscale'
+      example: 1280
+      default: 1280
+      selector:
+        number:
+          min: 512
+          max: 1920
+    detail:
+      name: Detail
+      required: false
+      description: "Detail parameter, leave empty for 'auto'"
+      default: 'high'
+      selector:
+        select:
+          options:
+            - 'high'
+            - 'low'
+    max_tokens:
+      name: Maximum Tokens
+      description: 'Maximum number of tokens to generate'
+      required: true
+      example: 100
+      default: 100
+      selector:
+        number:
+          min: 1
+          max: 300
+    temperature:
+      name: Temperature
+      required: true
+      description: 'Randomness. Lower is more accurate, higher is more creative'
+      example: 0.2
+      default: 0.2
+      selector:
+        number:
+          min: 0.1
           max: 1.0
           step: 0.1
