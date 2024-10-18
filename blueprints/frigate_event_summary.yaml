@@ -103,7 +103,8 @@ condition:
          (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
 
 action:
-  - service: llmvision.video_analyzer
+  - alias: "Analyze event clip"
+    service: llmvision.video_analyzer
     data:
       event_id: '{{trigger.payload_json["after"]["id"]}}'
       provider: !input provider

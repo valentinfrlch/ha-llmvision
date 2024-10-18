@@ -117,7 +117,8 @@ condition:
          (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
 
 action:
-  - service: llmvision.stream_analyzer
+  - alias: "Analyze camera stream"
+    service: llmvision.stream_analyzer
     data:
       provider: !input provider
       model: !input model
@@ -136,5 +137,5 @@ action:
     domain: mobile_app
     type: notify
     device_id: !input notify_device
-    title: 'Motion detected in {{ trigger.entity_id.replace("camera.", "").replace("_", " ")|capitalize }}'
+    title: '{{ trigger.entity_id.replace("camera.", "").replace("_", " ")|capitalize }} detected motion'
     message: "{{ response.response_text }}"
