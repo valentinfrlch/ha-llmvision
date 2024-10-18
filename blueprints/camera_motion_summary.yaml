@@ -1,5 +1,5 @@
 blueprint:
-  name: Camera Motion Summary
+  name: Camera Motion Summary (LLM Vision)
   description: Summarizes camera motion events and sends a notification to your phone
   domain: automation
   input:

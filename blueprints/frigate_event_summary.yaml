@@ -1,5 +1,5 @@
 blueprint:
-  name: Frigate Event Summary
+  name: Frigate Event Summary (LLM Vision)
   description: Summarizes frigate events and sends a notification with a preview to your phone
   domain: automation
   input:
