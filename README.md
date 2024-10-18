@@ -23,20 +23,26 @@
     <a href="#roadmap">🚧 Roadmap</a>
     ·
     <a href="#how-to-report-a-bug-or-request-a-feature">🪲 How to report Bugs</a>
+    ·
+    <a href="#support">☕ Support</a>
   </p>
 
 
 <br>
 <br>
-<br>
-
-**LLM Vision** is a Home Assistant integration to analyze images, videos and camera feeds using the vision capabilities of multimodal LLMs.  
-Supported providers are OpenAI, Anthropic, Google Gemini, [LocalAI](https://github.com/mudler/LocalAI), [Ollama](https://ollama.com/) and any OpenAI compatible API.
+<p align="center">
+  <strong>LLM Vision</strong> is a Home Assistant integration to analyze images, videos,  
+  live camera feeds and frigate events using the vision capabilities of multimodal LLMs.  
+  Supported providers are OpenAI, Anthropic, Google Gemini, Groq, 
+  <a href="https://github.com/mudler/LocalAI">LocalAI</a>, 
+  <a href="https://ollama.com/">Ollama</a> and any OpenAI compatible API.
+</p>
 
 ## Features
-- Compatible with OpenAI, Anthropic Claude, Google Gemini, [LocalAI](https://github.com/mudler/LocalAI), [Ollama](https://ollama.com/) and custom OpenAI compatible APIs
-- Takes images and video from camera entities as input
-- Takes local image and video files as input
+- Compatible with OpenAI, Anthropic Claude, Google Gemini, Groq, [LocalAI](https://github.com/mudler/LocalAI), [Ollama](https://ollama.com/) and custom OpenAI compatible APIs
+- Analyzes images and video files
+- Captures and analyzes live camera feeds
+- Analyzes frigate events
 - Images can be downscaled for faster processing
 
 ## Resources
@@ -67,13 +73,9 @@ logger:
 > [!NOTE]
 > These are planned features and ideas. They are subject to change and may not be implemented in the order listed or at all.
 
-1. **New Provider**: NVIDIA ChatRTX 
-2. **HACS**: Include in HACS default
-3. [x] ~~**Animation Support**: Support for animated GIFs~~
-4. [x] ~~**New Provider**: Custom (OpenAI API compatible) Providers~~
-5. [x] ~~**Feature**: HTTPS support for LocalAI and Ollama~~
-6. [x] ~~**Feature**: Support for video files~~  
-7. [x] ~~**Feature**: Analyze Frigate Recordings using frigate's `event_id`~~
+1. **HACS**: Include in HACS default
+
+For features added in previous versions, check the changelogs in the release notes.
 
 
 ## How to report a bug or request a feature
