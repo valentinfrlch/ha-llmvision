@@ -98,7 +98,9 @@ condition:
   - condition: template
     value_template: '{{ trigger.payload_json["type"] == "end" }}'
   - condition: template
-    value_template: "{{ (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}"
+    value_template: >
+      {{ state_attr(this.entity_id, 'last_triggered') is none or 
+         (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
 
 action:
   - service: llmvision.video_analyzer
