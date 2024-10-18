@@ -39,7 +39,7 @@ blueprint:
     message:
       name: Prompt
       description: Model prompt for the video_analyzer service
-      default: "Summarize briefly what's happening in the camera feed (one sentence max). Don't describe the scene. If there is a person, describe what they're doing."
+      default: "Summarize briefly what's happening in the camera feed (one sentence max). Don't describe the scene! If there is a person, describe what they're doing. If nothing is happening, say so."
       selector:
         text:
           multiline: true
