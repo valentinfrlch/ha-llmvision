@@ -2,17 +2,21 @@ from homeassistant import config_entries
 from homeassistant.helpers.selector import selector
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import urllib.parse
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
     CONF_ANTHROPIC_API_KEY,
     CONF_GOOGLE_API_KEY,
+    CONF_GROQ_API_KEY,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
     CONF_LOCALAI_HTTPS,
     CONF_OLLAMA_IP_ADDRESS,
     CONF_OLLAMA_PORT,
     CONF_OLLAMA_HTTPS,
+    CONF_CUSTOM_OPENAI_API_KEY,
+    CONF_CUSTOM_OPENAI_ENDPOINT,
     VERSION_ANTHROPIC,
 )
 import voluptuous as vol
@@ -61,11 +65,22 @@ class Validator:
             payload = {
                 "contents": [{
                     "parts": [
-                        {"text": "Hello, world!"}
+                        {"text": "Hello"}
                     ]}
                 ]
             }
             method = "POST"
+        elif self.user_input["provider"] == "Groq":
+            header = {
+                'Authorization': 'Bearer ' + api_key,
+                'Content-Type': 'application/json'
+            }
+            base_url = "api.groq.com"
+            endpoint = "/openai/v1/chat/completions"
+            payload = {"messages": [
+                {"role": "user", "content": "Hello"}], "model": "gemma-7b-it"}
+            method = "POST"
+
         return await self._handshake(base_url=base_url, endpoint=endpoint, protocol="https", header=header, payload=payload, expected_status=200, method=method)
 
     def _validate_provider(self):
@@ -120,6 +135,29 @@ class Validator:
             _LOGGER.error("Could not connect to OpenAI server.")
             raise ServiceValidationError("handshake_failed")
 
+    async def custom_openai(self):
+        self._validate_provider()
+        try:
+            url = urllib.parse.urlparse(
+                self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT])
+            protocol = url.scheme
+            base_url = url.hostname
+            port = ":" + str(url.port) if url.port else ""
+
+            endpoint = "/v1/models"
+            header = {'Content-type': 'application/json',
+                      'Authorization': 'Bearer ' + self.user_input[CONF_CUSTOM_OPENAI_API_KEY]} if CONF_CUSTOM_OPENAI_API_KEY in self.user_input else {}
+        except Exception as e:
+            _LOGGER.error(f"Could not parse endpoint: {e}")
+            raise ServiceValidationError("endpoint_parse_failed")
+
+        _LOGGER.debug(
+            f"Connecting to: [protocol: {protocol}, base_url: {base_url}, port: {port}, endpoint: {endpoint}]")
+
+        if not await self._handshake(base_url=base_url, port=port, protocol=protocol, endpoint=endpoint, header=header):
+            _LOGGER.error("Could not connect to Custom OpenAI server.")
+            raise ServiceValidationError("handshake_failed")
+
     async def anthropic(self):
         self._validate_provider()
         if not await self._validate_api_key(self.user_input[CONF_ANTHROPIC_API_KEY]):
@@ -130,6 +168,12 @@ class Validator:
         self._validate_provider()
         if not await self._validate_api_key(self.user_input[CONF_GOOGLE_API_KEY]):
             _LOGGER.error("Could not connect to Google server.")
+            raise ServiceValidationError("handshake_failed")
+
+    async def groq(self):
+        self._validate_provider()
+        if not await self._validate_api_key(self.user_input[CONF_GROQ_API_KEY]):
+            _LOGGER.error("Could not connect to Groq server.")
             raise ServiceValidationError("handshake_failed")
 
     def get_configured_providers(self):
@@ -149,12 +193,16 @@ class Validator:
             providers.append("LocalAI")
         if CONF_OLLAMA_IP_ADDRESS in self.hass.data[DOMAIN] and CONF_OLLAMA_PORT in self.hass.data[DOMAIN]:
             providers.append("Ollama")
+        if CONF_CUSTOM_OPENAI_ENDPOINT in self.hass.data[DOMAIN]:
+            providers.append("Custom OpenAI")
+        if CONF_GROQ_API_KEY in self.hass.data[DOMAIN]:
+            providers.append("Groq")
         return providers
 
 
 class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
-    VERSION = 1
+    VERSION = 2
 
     async def handle_provider(self, provider, configured_providers):
         if provider in configured_providers:
@@ -165,8 +213,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "OpenAI": self.async_step_openai,
             "Anthropic": self.async_step_anthropic,
             "Google": self.async_step_google,
+            "Groq": self.async_step_groq,
             "Ollama": self.async_step_ollama,
             "LocalAI": self.async_step_localai,
+            "Custom OpenAI": self.async_step_custom_openai,
         }
 
         step_method = provider_steps.get(provider)
@@ -180,7 +230,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required("provider", default="OpenAI"): selector({
                 "select": {
-                    "options": ["OpenAI", "Anthropic", "Google", "Ollama", "LocalAI"],
+                    "options": ["OpenAI", "Anthropic", "Google", "Groq", "Ollama", "LocalAI", "Custom OpenAI"],
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -217,7 +267,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 await validator.localai()
                 # add the mode to user_input
-                return self.async_create_entry(title="LLM Vision LocalAI", data=user_input)
+                return self.async_create_entry(title=f"LocalAI ({user_input[CONF_LOCALAI_IP_ADDRESS]})", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -245,7 +295,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 await validator.ollama()
                 # add the mode to user_input
-                return self.async_create_entry(title="LLM Vision Ollama", data=user_input)
+                return self.async_create_entry(title=f"Ollama ({user_input[CONF_OLLAMA_IP_ADDRESS]})", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -272,7 +322,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await validator.openai()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="LLM Vision OpenAI", data=user_input)
+                return self.async_create_entry(title="OpenAI", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -299,7 +349,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await validator.anthropic()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="LLM Vision Anthropic", data=user_input)
+                return self.async_create_entry(title="Anthropic Claude", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -326,7 +376,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await validator.google()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="LLM Vision Google", data=user_input)
+                return self.async_create_entry(title="Google Gemini", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -337,5 +387,60 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="google",
+            data_schema=data_schema,
+        )
+
+    async def async_step_groq(self, user_input=None):
+        data_schema = vol.Schema({
+            vol.Required(CONF_GROQ_API_KEY): str,
+        })
+
+        if user_input is not None:
+            # save provider to user_input
+            user_input["provider"] = self.init_info["provider"]
+            validator = Validator(self.hass, user_input)
+            try:
+                await validator.groq()
+                # add the mode to user_input
+                user_input["provider"] = self.init_info["provider"]
+                return self.async_create_entry(title="Groq", data=user_input)
+            except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
+                return self.async_show_form(
+                    step_id="groq",
+                    data_schema=data_schema,
+                    errors={"base": "handshake_failed"}
+                )
+
+        return self.async_show_form(
+            step_id="groq",
+            data_schema=data_schema,
+        )
+
+    async def async_step_custom_openai(self, user_input=None):
+        data_schema = vol.Schema({
+            vol.Required(CONF_CUSTOM_OPENAI_ENDPOINT): str,
+            vol.Optional(CONF_CUSTOM_OPENAI_API_KEY): str,
+        })
+
+        if user_input is not None:
+            # save provider to user_input
+            user_input["provider"] = self.init_info["provider"]
+            validator = Validator(self.hass, user_input)
+            try:
+                await validator.custom_openai()
+                # add the mode to user_input
+                user_input["provider"] = self.init_info["provider"]
+                return self.async_create_entry(title="Custom OpenAI compatible Provider", data=user_input)
+            except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
+                return self.async_show_form(
+                    step_id="custom_openai",
+                    data_schema=data_schema,
+                    errors={"base": "handshake_failed"}
+                )
+
+        return self.async_show_form(
+            step_id="custom_openai",
             data_schema=data_schema,
         )

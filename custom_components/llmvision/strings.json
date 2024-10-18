@@ -2,7 +2,7 @@
     "config": {
         "step": {
             "user": {
-                "title": "Choose your provider",
+                "title": "Choose Provider",
                 "description": "Select the provider you want to use."
             },
             "localai": {
@@ -15,7 +15,7 @@
                 }
             },
             "ollama": {
-                "title": "Connect to your Ollama server",
+                "title": "Configure Ollama",
                 "description": "Provide the IP address and port of your Ollama server.",
                 "data": {
                     "ollama_ip": "IP address",
@@ -24,30 +24,46 @@
                 }
             },
             "openai": {
-                "title": "Add OpenAI API key",
+                "title": "Configure OpenAI",
                 "description": "Provide a valid OpenAI API key.",
                 "data": {
                     "openai_api_key": "Your API key"
                 }
             },
             "anthropic": {
-                "title": "Add Anthropic API key",
+                "title": "Configure Anthropic Claude",
                 "description": "Provide a valid Anthropic API key.",
                 "data": {
                     "anthropic_api_key": "Your API key"
                 }
             },
             "google": {
-                "title": "Add Google API key",
+                "title": "Configure Google Gemini",
                 "description": "Provide a valid Google Gemini API key.",
                 "data": {
                     "google_api_key": "Your API key"
+                }
+            },
+            "groq": {
+                "title": "Configure Groq",
+                "description": "Provide a valid Groq API key.",
+                "data": {
+                    "groq_api_key": "Your API key"
+                }
+            },
+            "custom_openai": {
+                "title": "Configure Custom OpenAI provider",
+                "description": "**Important**: Only works if the API is compatible with OpenAI's API. If the API doesn't require an API key, leave it empty. The endpoint must have the following format: `http(s)://baseURL(:port)/some/endpoint`",
+                "data": {
+                    "custom_openai_endpoint": "Custom Endpoint",
+                    "custom_openai_api_key": "Your API key"
                 }
             }
         },
         "error": {
             "handshake_failed": "Could not connect to the server. Check you API key or IP and port",
-            "empty_api_key": "Invalid API key"
+            "empty_api_key": "Invalid API key",
+            "invalid_provider": "Invalid provider selected"
         },
         "abort": {
             "already_configured": "This provider is already configured. Delete the existing configuration to reconfigure",
