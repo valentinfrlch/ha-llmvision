@@ -89,6 +89,8 @@ blueprint:
 variables:
   base_url: !input frigate_url
   cooldown: !input cooldown
+  tag: "{{trigger.payload_json['after']['camera'] + int(as_timestamp(now()))|string}}"
+  group: "{{trigger.payload_json['after']['camera']}}"
 
 trigger:
   platform: mqtt
@@ -103,6 +105,33 @@ condition:
          (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
 
 action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ base_url is not none and base_url != '' }}"
+        sequence:
+          - alias: "Send instant notification without summary"
+            domain: mobile_app
+            type: notify
+            device_id: !input notify_device
+            title: "{{ trigger.payload_json.after.label|capitalize }} seen"
+            message: "{{trigger.payload_json.after.camera.replace('_', ' ')|capitalize}}"
+            data:
+              video: "{{base_url}}/api/events/{{trigger.payload_json['after']['id']}}/clip.mp4"
+              tag: "{{tag}}"
+              group: "{{group}}"
+
+    default:
+      - alias: "Send notification"
+        domain: mobile_app
+        type: notify
+        device_id: !input notify_device
+        title: "{{ trigger.payload_json.after.label|capitalize }} seen"
+        message: "{{trigger.payload_json.after.camera.replace('_', ' ')|capitalize}}"
+        data:
+          tag: "{{tag}}"
+          group: "{{group}}"
+
   - alias: "Analyze event clip"
     service: llmvision.video_analyzer
     data:
@@ -131,6 +160,11 @@ action:
             message: "{{ response.response_text }}"
             data:
               video: "{{base_url}}/api/events/{{trigger.payload_json['after']['id']}}/clip.mp4"
+              tag: "{{tag}}"
+              group: "{{group}}"
+              push:
+                interruption-level: passive
+
     default:
       - alias: "Send notification"
         domain: mobile_app
@@ -138,3 +172,8 @@ action:
         device_id: !input notify_device
         title: "{{ trigger.payload_json.after.label|capitalize }} seen"
         message: "{{ response.response_text }}"
+        data:
+          tag: "{{tag}}"
+          group: "{{group}}"
+          push:
+                interruption-level: passive

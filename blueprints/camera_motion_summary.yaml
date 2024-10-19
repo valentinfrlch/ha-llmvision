@@ -104,6 +104,8 @@ blueprint:
 
 variables:
   cooldown: !input cooldown
+  tag: "{{trigger.entity_id + int(as_timestamp(now()))|string}}"
+  group: "{{trigger.entity_id}}"
 
 trigger:
   platform: state
@@ -117,6 +119,17 @@ condition:
          (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
 
 action:
+  - alias: "Send instant notification without summary"
+    domain: mobile_app
+    type: notify
+    device_id: !input notify_device
+    title: '{{ trigger.entity_id.replace("camera.", "").replace("_", " ")|capitalize }} detected motion'
+    message: "{{ response.response_text }}"
+    data:
+      tag: "{{tag}}"
+      group: "{{group}}"
+    
+
   - alias: "Analyze camera stream"
     service: llmvision.stream_analyzer
     data:
@@ -139,3 +152,8 @@ action:
     device_id: !input notify_device
     title: '{{ trigger.entity_id.replace("camera.", "").replace("_", " ")|capitalize }} detected motion'
     message: "{{ response.response_text }}"
+    data:
+      tag: "{{tag}}"
+      group: "{{group}}"
+      push:
+        interruption-level: passive
