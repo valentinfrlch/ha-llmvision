@@ -351,13 +351,13 @@ class MediaProcessor:
             _LOGGER.info(
                 f"Deleted tmp folder: {tmp_clips_dir}")
         except FileNotFoundError as e:
-            _LOGGER.error(f"Failed to delete tmp folder: {e}")
+            _LOGGER.info(f"Failed to delete tmp folder: {e}")
         try:
             await self.hass.loop.run_in_executor(None, shutil.rmtree, tmp_frames_dir)
             _LOGGER.info(
                 f"Deleted tmp folder: {tmp_frames_dir}")
         except FileNotFoundError as e:
-            _LOGGER.error(f"Failed to delete tmp folders: {e}")
+            _LOGGER.info(f"Failed to delete tmp folders: {e}")
         return self.client
 
     async def add_streams(self, image_entities, duration, max_frames, target_width, include_filename):

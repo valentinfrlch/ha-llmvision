@@ -67,6 +67,15 @@ blueprint:
         number:
           min: 1
           max: 60
+    max_frames:
+      name: Max Frames
+      description: How many frames to analyze. Picks frames with the most movement.
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 10
+          step: 1
     target_width:
       name: Target Width
       description: Width in pixels to downscale (uses less tokens)
@@ -138,7 +147,7 @@ action:
       model: !input model
       message: !input message
       image_entity: !input camera_entities
-      interval: !input interval
+      max_frames: !input max_frames
       duration: !input duration
       include_filename: true
       target_width: !input target_width

@@ -138,7 +138,7 @@ video_analyzer:
           multiline: true
     interval:
       name: Interval
-      description: "DEPRECATED: Analyze frames every <interval> seconds. Use max_frames"
+      description: "DEPRECATED: Use max_frames. Analyze frames every <interval> seconds."
       required: false
       example: 3
       default: 3
@@ -148,7 +148,7 @@ video_analyzer:
           max: 60
     max_frames:
       name: Max Frames
-      description: How many frames to extract. This will pick frames with the most movement.
+      description: How many frames to analyze. Picks frames with the most movement.
       required: false
       example: 3
       default: 3
@@ -246,7 +246,7 @@ stream_analyzer:
           multiple: true
     interval:
       name: Interval
-      description: "DEPRECATED: Analyze frames every <interval> seconds. Use max_frames"
+      description: "DEPRECATED: Use max_frames. Analyze frames every <interval> seconds."
       required: false
       example: 2
       default: 2
@@ -266,7 +266,7 @@ stream_analyzer:
           max: 60
     max_frames:
       name: Max Frames
-      description: How many frames to extract. This will pick frames with the most movement.
+      description: How many frames to analyze. Picks frames with the most movement.
       required: false
       example: 3
       default: 3
