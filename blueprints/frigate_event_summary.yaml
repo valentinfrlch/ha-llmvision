@@ -1,5 +1,6 @@
 blueprint:
-  name: Frigate Event Summary (LLM Vision)
+  name: Frigate Event Summary (LLM Vision v1.2.1)
+  author: valentinfrlch
   description: Summarizes frigate events and sends a notification with a preview to your phone
   domain: automation
   input:
@@ -11,7 +12,14 @@ blueprint:
           integration: mobile_app
     frigate_url:
       name: Frigate URL
-      description: Frigate's base url to fetch preview (e.g. http://localhost:5000)
+      description: Frigate's base url to fetch preview
+      default: "http://localhost:5005"
+      selector:
+        text:
+          multiline: false
+    tap_navigate:
+      name: Tap Navigate
+      description: Relativ path to navigate to when pressing notification (e.g. /lovelace/cameras)
       selector:
         text:
           multiline: false
@@ -98,9 +106,14 @@ blueprint:
 variables:
   base_url: !input frigate_url
   cooldown: !input cooldown
+  label: "{{ trigger.payload_json.after.label|capitalize }}"
+  camera: "{{trigger.payload_json.after.camera.replace('_', ' ')|capitalize}}"
+  video_preview: "{{base_url}}/api/events/{{trigger.payload_json['after']['id']}}/clip.mp4"
+  image_preview: "{{base_url}}/api/events/{{trigger.payload_json['after']['id']}}/snapshot.jpg"
   tag: "{{trigger.payload_json['after']['camera'] + int(as_timestamp(now()))|string}}"
   group: "{{trigger.payload_json['after']['camera']}}"
 
+mode: single
 trigger:
   platform: mqtt
   topic: "frigate/events"
@@ -114,75 +127,47 @@ condition:
          (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
 
 action:
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: "{{ base_url is not none and base_url != '' }}"
-        sequence:
-          - alias: "Send instant notification without summary"
-            domain: mobile_app
-            type: notify
-            device_id: !input notify_device
-            title: "{{ trigger.payload_json.after.label|capitalize }} seen"
-            message: "{{trigger.payload_json.after.camera.replace('_', ' ')|capitalize}}"
-            data:
-              video: "{{base_url}}/api/events/{{trigger.payload_json['after']['id']}}/clip.mp4"
-              tag: "{{tag}}"
-              group: "{{group}}"
+    - alias: "Send notification"
+      domain: mobile_app
+      type: notify
+      device_id: !input notify_device
+      title: "{{label}} seen"
+      message: "{{camera}}"
+      data:
+        video: "{{video_preview}}"
+        image: "{{image_preview}}"
+        tag: "{{tag}}"
+        group: "{{group}}"
+        url: !input tap_navigate #iOS
+        clickAction: !input tap_navigate #Android
 
-    default:
-      - alias: "Send notification"
-        domain: mobile_app
-        type: notify
-        device_id: !input notify_device
-        title: "{{ trigger.payload_json.after.label|capitalize }} seen"
-        message: "{{trigger.payload_json.after.camera.replace('_', ' ')|capitalize}}"
-        data:
-          tag: "{{tag}}"
-          group: "{{group}}"
+    - alias: "Analyze event clip"
+      service: llmvision.video_analyzer
+      data:
+        event_id: '{{trigger.payload_json["after"]["id"]}}'
+        provider: !input provider
+        model: !input model
+        message: !input message
+        max_frames: !input max_frames
+        include_filename: false
+        target_width: !input target_width
+        detail: !input detail
+        max_tokens: !input max_tokens
+        temperature: !input temperature
+      response_variable: response
 
-  - alias: "Analyze event clip"
-    service: llmvision.video_analyzer
-    data:
-      event_id: '{{trigger.payload_json["after"]["id"]}}'
-      provider: !input provider
-      model: !input model
-      message: !input message
-      max_frames: !input max_frames
-      include_filename: false
-      target_width: !input target_width
-      detail: !input detail
-      max_tokens: !input max_tokens
-      temperature: !input temperature
-    response_variable: response
-
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: "{{ base_url is not none and base_url != '' }}"
-        sequence:
-          - alias: "Send notification with preview"
-            domain: mobile_app
-            type: notify
-            device_id: !input notify_device
-            title: "{{ trigger.payload_json.after.label|capitalize }} seen"
-            message: "{{ response.response_text }}"
-            data:
-              video: "{{base_url}}/api/events/{{trigger.payload_json['after']['id']}}/clip.mp4"
-              tag: "{{tag}}"
-              group: "{{group}}"
-              push:
-                interruption-level: passive
-
-    default:
-      - alias: "Send notification"
-        domain: mobile_app
-        type: notify
-        device_id: !input notify_device
-        title: "{{ trigger.payload_json.after.label|capitalize }} seen"
-        message: "{{ response.response_text }}"
-        data:
-          tag: "{{tag}}"
-          group: "{{group}}"
-          push:
-                interruption-level: passive
+    - alias: "Send notification update with summary"
+      domain: mobile_app
+      type: notify
+      device_id: !input notify_device
+      title: "{{ trigger.payload_json.after.label|capitalize }} seen"
+      message: "{{ response.response_text }}"
+      data:
+        video: "{{video_preview}}"
+        image: "{{image_preview}}"
+        tag: "{{tag}}"
+        group: "{{group}}"
+        url: !input tap_navigate #iOS
+        clickAction: !input tap_navigate #Android
+        push:
+          interruption-level: passive
