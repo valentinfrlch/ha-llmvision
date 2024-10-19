@@ -46,7 +46,6 @@ def sanitize_data(data):
 
 def get_provider(hass, provider_uid):
     """Translate the UID of the config entry into the provider name."""
-    _LOGGER.info(f"llmvision storage: {hass.data[DOMAIN]}")
     if DOMAIN not in hass.data:
         return None
 
