@@ -163,7 +163,7 @@ class MediaProcessor:
 
                     # Use either entity name or assign number to each camera
                     frame_label = (image_entity.replace("camera.", "") + " frame " + str(frame_counter)
-                                   if include_filename else "camera " + str(camera_number) + " frame " + str(frame_counter))
+                                   if include_filename else "Camera " + str(camera_number) + " frame " + str(frame_counter))
                     frames.update(
                         {frame_label: {"frame_data": frame_data, "ssim_score": score}})
 

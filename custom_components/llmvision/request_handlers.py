@@ -97,9 +97,6 @@ class RequestHandler:
         entry_id = call.provider
         provider = get_provider(self.hass, entry_id)
         model = call.model if call.model != "None" else default_model(provider)
-        _LOGGER.info(f"Provider: {provider}")
-        _LOGGER.info(f"Model Default: {model}")
-        _LOGGER.info(f"Model: {call.model} tyle: {type(call.model)}")
 
         if provider == 'OpenAI':
             api_key = self.hass.data.get(DOMAIN).get(
