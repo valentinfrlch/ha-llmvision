@@ -52,14 +52,6 @@ blueprint:
         number:
           min: 1
           max: 60
-    max_frames:
-      name: Max Frames
-      description: How many frames to analyze. Picks frames with the most movement.
-      default: 3
-      selector:
-        number:
-          min: 1
-          max: 60
     tap_navigate:
       name: Tap Navigate
       description: Relativ path to navigate to when pressing notification (e.g. /lovelace/cameras)
@@ -81,6 +73,14 @@ blueprint:
       selector:
         config_entry:
           integration: llmvision
+    max_frames:
+      name: Max Frames
+      description: How many frames to analyze. Picks frames with the most movement.
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 60
     model:
       name: Model
       description: Model to use for the video_analyzer service
