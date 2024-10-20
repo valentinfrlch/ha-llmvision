@@ -13,7 +13,7 @@ blueprint:
     frigate_url:
       name: Frigate URL
       description: Frigate's base url to fetch preview
-      default: "http://localhost:5005"
+      default: "http://localhost:8971"
       selector:
         text:
           multiline: false

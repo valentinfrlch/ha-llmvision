@@ -1,5 +1,6 @@
 blueprint:
-  name: Camera Motion Summary (LLM Vision)
+  name: Camera Motion Summary (LLM Vision v1.2.1)
+  author: valentinfrlch
   description: Summarizes camera motion events and sends a notification to your phone
   domain: automation
   input:
@@ -20,6 +21,12 @@ blueprint:
       name: Trigger State
       description: The state the camera has to be in to trigger the automation
       default: recording
+      selector:
+        text:
+          multiline: false
+    tap_navigate:
+      name: Tap Navigate
+      description: Relativ path to navigate to when pressing notification (e.g. /lovelace/cameras)
       selector:
         text:
           multiline: false
@@ -113,9 +120,14 @@ blueprint:
 
 variables:
   cooldown: !input cooldown
+  label: "{{ trigger.payload_json.after.label|capitalize }}"
+  camera: '{{ trigger.entity_id.replace("camera.", "").replace("_", " ")|capitalize }}'
+  video_preview: "{{base_url}}/api/events/{{trigger.payload_json['after']['id']}}/clip.mp4"
+  image_preview: "{{base_url}}/api/events/{{trigger.payload_json['after']['id']}}/snapshot.jpg"
   tag: "{{trigger.entity_id + int(as_timestamp(now()))|string}}"
   group: "{{trigger.entity_id}}"
 
+mode: single
 trigger:
   platform: state
   entity_id: !input camera_entities
@@ -133,8 +145,8 @@ action:
     type: notify
     device_id: !input notify_device
     title:  "Motion detected"
-    message: '{{ trigger.entity_id.replace("camera.", "").replace("_", " ")|capitalize }}'
-    data:      
+    message: '{{camera}}'
+    data:
       image: "{{'/api/camera_proxy/' + trigger.entity_id}}"
       tag: "{{tag}}"
       group: "{{group}}"
@@ -160,11 +172,13 @@ action:
     domain: mobile_app
     type: notify
     device_id: !input notify_device
-    title: '{{ trigger.entity_id.replace("camera.", "").replace("_", " ")|capitalize }} detected motion'
+    title: '{{ trigger.entity_id.replace("camera.", "").replace("_", " ")|capitalize }}'
     message: "{{ response.response_text }}"
     data:
       tag: "{{tag}}"
       group: "{{group}}"
       image: "{{'/api/camera_proxy/' + trigger.entity_id}}"
+      url: !input tap_navigate #iOS
+      clickAction: !input tap_navigate #Android
       push:
         interruption-level: passive
