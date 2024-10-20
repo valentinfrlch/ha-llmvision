@@ -1,0 +1,266 @@
+blueprint:
+  name: AI Event Summaries (LLM Vision v1.2.1)
+  author: valentinfrlch
+  description: >
+    AI-powered security event summaries for frigate or camera entities. 
+    Sends a notification with a preview to your phone that is updated dynamically when the AI summary is available. 
+    This ensures you get relevant updates immediately.
+  domain: automation
+  input:
+    mode:
+      name: Mode
+      description: Select the mode to use
+      selector:
+        select:
+          options:
+            - 'Frigate'
+            - 'Camera'
+    notify_device:
+      name: Notify Device
+      description: The device to send the notification to
+      selector:
+        device:
+          integration: mobile_app
+    frigate_url:
+      name: Frigate URL
+      description: (Frigate) Frigate's base url to fetch preview
+      default: "http://localhost:8971"
+      selector:
+        text:
+          multiline: false
+    camera_entities:
+      name: Camera Entities
+      description: (Camera) List of camera entities to monitor
+      default: ['']
+      selector:
+        entity:
+          multiple: true
+          filter:
+            domain: camera
+    trigger_state:
+      name: Trigger State
+      description: (Camera) State to trigger on (for Camera mode)
+      default: 'recording'
+      selector:
+        text:
+          multiline: false
+    duration:
+      name: Duration
+      description: (Camera) How long to record for (in seconds)
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 60
+    max_frames:
+      name: Max Frames
+      description: How many frames to analyze. Picks frames with the most movement.
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 60
+    tap_navigate:
+      name: Tap Navigate
+      description: Relativ path to navigate to when pressing notification (e.g. /lovelace/cameras)
+      default: "/lovelace/0"
+      selector:
+        text:
+          multiline: false
+    cooldown:
+      name: Cooldown
+      description: Time in minutes to wait before running again.
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 60
+    provider:
+      name: Provider
+      description: Configuration to use for the video_analyzer service. See docs for additional information.
+      selector:
+        config_entry:
+          integration: llmvision
+    model:
+      name: Model
+      description: Model to use for the video_analyzer service
+      default: "gpt-4o-mini"
+      selector:
+        text:
+          multiline: false
+    message:
+      name: Prompt
+      description: Model prompt for the video_analyzer service
+      default: "Summarize briefly what's happening in the camera feed (one sentence max). Don't describe the scene! If there is a person, describe what they're doing. If nothing is happening, say so."
+      selector:
+        text:
+          multiline: true
+    target_width:
+      name: Target Width
+      description: Width in pixels to downscale (uses less tokens)
+      default: 1280
+      selector:
+        number:
+          min: 512
+          max: 1920
+    detail:
+      name: Detail
+      description: Detail parameter (OpenAI only)
+      default: 'low'
+      selector:
+        select:
+          options:
+            - 'high'
+            - 'low'
+    max_tokens:
+      name: Maximum Tokens
+      description: Maximum number of tokens to generate
+      default: 50
+      selector:
+        number:
+          min: 1
+          max: 100
+    temperature:
+      name: Temperature
+      description: Randomness. Lower is more accurate, higher is more creative
+      default: 0.1
+      selector:
+        number:
+          min: 0.1
+          max: 1.0
+          step: 0.1
+
+variables:
+  base_url: !input frigate_url
+  cooldown: !input cooldown
+  mode: !input mode
+  tag: >
+    {% if mode == 'Frigate' %}
+      {{trigger.payload_json['after']['camera'] + int(as_timestamp(now()))|string}}
+    {% else %}
+      {{trigger.entity_id + int(as_timestamp(now()))|string}}
+    {% endif %}
+  group: >
+    {% if mode == 'Frigate' %}
+      {{trigger.payload_json['after']['camera']}}
+    {% else %}
+      {{trigger.entity_id}}
+    {% endif %}
+  label: >
+    {% if mode == 'Frigate' %}
+      {{trigger.payload_json['after']['label']|capitalize}} seen
+    {% else %}
+      Motion detected
+    {% endif %}
+  camera: >
+    {% if mode == 'Frigate' %}
+      {{trigger.payload_json['after']['camera'].replace('_', ' ')|capitalize}}
+    {% else %}
+      {{trigger.entity_id.replace("camera.", "").replace("_", " ")|capitalize}}
+    {% endif %}
+  video: >
+    {% if mode == 'Frigate' %}
+      {{base_url}}/api/events/{{trigger.payload_json['after']['id']}}/clip.mp4
+    {% else %}
+      ''
+    {% endif %}
+  image: >
+    {% if mode == 'Frigate' %}
+      ''
+    {% else %}
+      {{'/api/camera_proxy/' + trigger.entity_id}}
+    {% endif %}
+
+trigger:
+  - platform: mqtt
+    topic: "frigate/events"
+    id: frigate_trigger
+  - platform: 'state'
+    entity_id: !input camera_entities
+    to: !input trigger_state
+    id: 'camera_trigger'
+
+condition:
+  - condition: template
+    value_template: >
+      {% if mode == 'Frigate' %}
+        {{ trigger.payload_json["type"] == "end" and (state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) }}
+      {% else %}
+        {{ state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
+      {% endif %}
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ base_url is not none and base_url != '' }}"
+        sequence:
+          - alias: "Send instant notification without summary"
+            domain: mobile_app
+            type: notify
+            device_id: !input notify_device
+            title: "{{ label }}"
+            message: "{{camera}}"
+            data:
+              video: "{{video}}"
+              image: "{{image}}"
+              entity_id: "{{trigger.entity_id if mode=='Camera' else ''}}"
+              url: !input tap_navigate #iOS
+              clickAction: !input tap_navigate #Android
+              tag: "{{tag}}"
+              group: "{{group}}"
+
+  - alias: "Analyze event"
+    choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ mode == 'Frigate' }}"
+        sequence:
+          - service: llmvision.video_analyzer
+            data:
+              event_id: '{{trigger.payload_json["after"]["id"]}}'
+              provider: !input provider
+              model: !input model
+              message: !input message
+              include_filename: true
+              max_frames: !input max_frames
+              target_width: !input target_width
+              detail: !input detail
+              max_tokens: !input max_tokens
+              temperature: !input temperature
+            response_variable: response
+      - conditions:
+          - condition: template
+            value_template: "{{ mode == 'Camera' }}"
+        sequence:
+          - service: llmvision.stream_analyzer
+            data:
+              image_entity: !input camera_entities
+              duration: !input duration
+              provider: !input provider
+              model: !input model
+              message: !input message
+              include_filename: true
+              max_frames: !input max_frames
+              target_width: !input target_width
+              detail: !input detail
+              max_tokens: !input max_tokens
+              temperature: !input temperature
+            response_variable: response
+
+  - alias: "Send notification with summary"
+    domain: mobile_app
+    type: notify
+    device_id: !input notify_device
+    title: "{{label}}"
+    message: "{{ response.response_text }}"
+    data:
+      tag: "{{tag}}"
+      group: "{{group}}"
+      image: "{{image}}"
+      video: "{{video}}"
+      entity_id: "{{trigger.entity_id if mode=='Camera' else ''}}"
+      url: !input tap_navigate #iOS
+      clickAction: !input tap_navigate #Android
+      push:
+        interruption-level: passive
