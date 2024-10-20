@@ -94,7 +94,7 @@ blueprint:
     detail:
       name: Detail
       description: Detail parameter (OpenAI only)
-      default: 'high'
+      default: 'low'
       selector:
         select:
           options:
