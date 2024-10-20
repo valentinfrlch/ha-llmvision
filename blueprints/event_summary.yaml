@@ -1,10 +1,9 @@
 blueprint:
-  name: AI Event Summaries (LLM Vision v1.2.1)
+  name: AI Event Summary (LLM Vision v1.2.1)
   author: valentinfrlch
   description: >
     AI-powered security event summaries for frigate or camera entities. 
-    Sends a notification with a preview to your phone that is updated dynamically when the AI summary is available. 
-    This ensures you get relevant updates immediately.
+    Sends a notification with a preview to your phone that is updated dynamically when the AI summary is available.
   domain: automation
   input:
     mode:
@@ -31,7 +30,7 @@ blueprint:
     camera_entities:
       name: Camera Entities
       description: (Camera) List of camera entities to monitor
-      default: ['']
+      default: []
       selector:
         entity:
           multiple: true
