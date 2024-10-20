@@ -14,6 +14,12 @@ blueprint:
           options:
             - 'Frigate'
             - 'Camera'
+    important:
+      name: Important
+      description: "Use AI to notify only on important events. Use with caution: AI can make mistakes."
+      default: false
+      selector:
+        boolean:
     notify_device:
       name: Notify Device
       description: The device to send the notification to
@@ -43,14 +49,6 @@ blueprint:
       selector:
         text:
           multiline: false
-    duration:
-      name: Duration
-      description: (Camera) How long to record for (in seconds)
-      default: 5
-      selector:
-        number:
-          min: 1
-          max: 60
     tap_navigate:
       name: Tap Navigate
       description: Relativ path to navigate to when pressing notification (e.g. /lovelace/cameras)
@@ -76,6 +74,14 @@ blueprint:
       name: Max Frames
       description: How many frames to analyze. Picks frames with the most movement.
       default: 3
+      selector:
+        number:
+          min: 1
+          max: 60
+    duration:
+      name: Duration
+      description: (Camera) How long to record for (in seconds)
+      default: 5
       selector:
         number:
           min: 1
@@ -130,6 +136,7 @@ blueprint:
           step: 0.1
 
 variables:
+  important: !input important
   base_url: !input frigate_url
   cooldown: !input cooldown
   mode: !input mode
@@ -169,6 +176,10 @@ variables:
     {% else %}
       {{'/api/camera_proxy/' + trigger.entity_id}}
     {% endif %}
+  importance_prompt: >
+    Your job is to decide whether a camera recording is important (so the user gets a notification) or not. 
+    Reply with 'yes' if the user should be notified or 'no' otherwise. 
+    Reply with these replies exactly.
 
 trigger:
   - platform: mqtt
@@ -189,6 +200,56 @@ condition:
       {% endif %}
 
 action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ important }}"
+        sequence:
+          - alias: "Decide Important"
+            choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ mode == 'Frigate'}}"
+                sequence:
+                  - service: llmvision.image_analyzer
+                    data:
+                      image_entity: "{{trigger.payload_json['after']['camera']}}"
+                      provider: !input provider
+                      model: !input model
+                      message: "{{importance_prompt}}"
+                      include_filename: true
+                      target_width: 1280
+                      detail: low
+                      max_tokens: 5
+                      temperature: 0.1
+                    response_variable: importance
+              - conditions:
+                  - condition: template
+                    value_template: "{{ mode == 'Camera' }}"
+                sequence:
+                  - service: llmvision.image_analyzer
+                    data:
+                      image_entity: !input camera_entities
+                      provider: !input provider
+                      model: !input model
+                      message: "{{importance_prompt}}"
+                      include_filename: true
+                      target_width: 1280
+                      detail: low
+                      max_tokens: 5
+                      temperature: 0.1
+                    response_variable: importance
+    
+  # Cancel automation if event not deemed important
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ importance is defined and importance.response_text == 'no' }}"
+        sequence:
+          - stop: "Event is not important"
+
+
+
   - choose:
       - conditions:
           - condition: template

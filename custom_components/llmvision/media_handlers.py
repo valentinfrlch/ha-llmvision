@@ -133,7 +133,7 @@ class MediaProcessor:
         import time
         import asyncio
 
-        interval = 2
+        interval = 1 if duration < 3 else 2 if duration < 10 else 4 if duration < 30 else 6 if duration < 60 else 10
         camera_frames = {}
 
         # Record on a separate thread for each camera
