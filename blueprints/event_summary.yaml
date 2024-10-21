@@ -229,7 +229,7 @@ action:
                 sequence:
                   - service: llmvision.image_analyzer
                     data:
-                      image_entity: !input camera_entities
+                      image_entity: "{{[trigger.entity_id]}}"
                       provider: !input provider
                       model: !input model
                       message: "{{importance_prompt}}"
@@ -295,7 +295,7 @@ action:
         sequence:
           - service: llmvision.stream_analyzer
             data:
-              image_entity: !input camera_entities
+              image_entity: "{{[trigger.entity_id]}}"
               duration: !input duration
               provider: !input provider
               model: !input model
