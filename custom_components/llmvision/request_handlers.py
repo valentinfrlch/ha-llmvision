@@ -39,7 +39,7 @@ def sanitize_data(data):
         return {key: sanitize_data(value) for key, value in data.items()}
     elif isinstance(data, list):
         return [sanitize_data(item) for item in data]
-    elif isinstance(data, str) and len(data) > 200:
+    elif isinstance(data, str) and len(data) > 400 and data.count(' ') < 50:
         return '<long_string>'
     else:
         return data
