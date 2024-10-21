@@ -415,20 +415,29 @@ class RequestHandler:
             _LOGGER.info(f"Response data: {response_data}")
             return response_data
 
-    async def _fetch(self, url):
+    async def _fetch(self, url, max_retries=1, retry_delay=1):
+        import asyncio
         """Fetch image from url and return image data"""
-        _LOGGER.info(f"Fetching {url}")
-        try:
-            response = await self.session.get(url)
-        except Exception as e:
-            raise ServiceValidationError(f"Fetch failed: {e}")
-
-        if response.status != 200:
-            raise ServiceValidationError(
-                f"Fetch failed with status code {response.status}")
-
-        data = await response.read()
-        return data
+        retries = 0
+        while retries < max_retries:
+            _LOGGER.info(
+                f"Fetching {url} (attempt {retries + 1}/{max_retries})")
+            try:
+                response = await self.session.get(url)
+                if response.status != 200:
+                    _LOGGER.warning(f"Couldn't fetch frame (status code: {response.status})")
+                    retries += 1
+                    await asyncio.sleep(retry_delay)
+                    continue
+                data = await response.read()
+                return data
+            except Exception as e:
+                _LOGGER.error(f"Fetch failed: {e}")
+                retries += 1
+                await asyncio.sleep(retry_delay)
+        
+        _LOGGER.error(f"Failed to fetch {url} after {max_retries} retries")
+        return None
 
     def _validate_call(self, provider, api_key, base64_images, ip_address=None, port=None):
         """Validate the service call data"""

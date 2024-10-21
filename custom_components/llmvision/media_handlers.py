@@ -76,7 +76,6 @@ class MediaProcessor:
             img = await self.hass.loop.run_in_executor(None, Image.open, image_path)
             with img:
                 # Check if the image is a GIF and convert if necessary
-                _LOGGER.debug(f"Image format: {img.format}")
                 img = self._convert_to_rgb(img)
                 # calculate new height based on aspect ratio
                 width, height = img.size
@@ -134,6 +133,7 @@ class MediaProcessor:
         import asyncio
 
         interval = 1 if duration < 3 else 2 if duration < 10 else 4 if duration < 30 else 6 if duration < 60 else 10
+        duration += 1 # add 1 second in case the first fetch fails
         camera_frames = {}
 
         # Record on a separate thread for each camera
@@ -144,10 +144,15 @@ class MediaProcessor:
             previous_frame = None
             while time.time() - start < duration:
                 base_url = get_url(self.hass)
+                # fetched every cycle to ensure latest access token
                 frame_url = base_url + \
                     self.hass.states.get(image_entity).attributes.get(
                         'entity_picture')
                 frame_data = await self.client._fetch(frame_url)
+                
+                # Skip frame when fetch failed
+                if not frame_data:
+                    continue
 
                 img = Image.open(io.BytesIO(frame_data))
                 current_frame_gray = np.array(img.convert('L'))
@@ -212,6 +217,10 @@ class MediaProcessor:
                         self.hass.states.get(image_entity).attributes.get(
                             'entity_picture')
                     image_data = await self.client._fetch(image_url)
+                    
+                    # Skip frame when fetch failed
+                    if not image_data:
+                        continue
 
                     # If entity snapshot requested, use entity name as 'filename'
                     self.client.add_frame(
@@ -256,6 +265,11 @@ class MediaProcessor:
                     base_url = get_url(self.hass)
                     frigate_url = base_url + "/api/frigate/notifications/" + event_id + "/clip.mp4"
                     clip_data = await self.client._fetch(frigate_url)
+                    
+                    # Skip frame when fetch failed
+                    if not clip_data:
+                        continue
+
                     # create tmp dir to store video clips
                     os.makedirs(tmp_clips_dir, exist_ok=True)
                     _LOGGER.info(f"Created {tmp_clips_dir}")
