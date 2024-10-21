@@ -213,14 +213,14 @@ action:
                 sequence:
                   - service: llmvision.image_analyzer
                     data:
-                      image_entity: "{{trigger.payload_json['after']['camera']}}"
+                      image_entity: "{{ ['camera.' + trigger.payload_json['after']['camera']|lower] }}"
                       provider: !input provider
                       model: !input model
                       message: "{{importance_prompt}}"
                       include_filename: true
                       target_width: 1280
                       detail: low
-                      max_tokens: 5
+                      max_tokens: 1
                       temperature: 0.1
                     response_variable: importance
               - conditions:
@@ -236,7 +236,7 @@ action:
                       include_filename: true
                       target_width: 1280
                       detail: low
-                      max_tokens: 5
+                      max_tokens: 1
                       temperature: 0.1
                     response_variable: importance
     
@@ -264,7 +264,7 @@ action:
             data:
               video: "{{video}}"
               image: "{{image}}"
-              entity_id: "{{trigger.entity_id if mode=='Camera' else ''}}"
+              entity_id: "{{trigger.entity_id | default('') if mode=='Camera' else ''}}"
               url: !input tap_navigate #iOS
               clickAction: !input tap_navigate #Android
               tag: "{{tag}}"
@@ -278,7 +278,7 @@ action:
         sequence:
           - service: llmvision.video_analyzer
             data:
-              event_id: '{{trigger.payload_json["after"]["id"]}}'
+              event_id: "{{ trigger.payload_json['after']['id'] }}"
               provider: !input provider
               model: !input model
               message: !input message
@@ -319,7 +319,7 @@ action:
       group: "{{group}}"
       image: "{{image}}"
       video: "{{video}}"
-      entity_id: "{{trigger.entity_id if mode=='Camera' else ''}}"
+      entity_id: "{{trigger.entity_id | default('') if mode=='Camera' else ''}}"
       url: !input tap_navigate #iOS
       clickAction: !input tap_navigate #Android
       push:
