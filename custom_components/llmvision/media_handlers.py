@@ -159,7 +159,7 @@ class MediaProcessor:
                     f"Fetched {image_entity} in {fetch_duration:.2f} seconds")
 
                 preprocessing_start_time = time.time()
-                img = Image.open(io.BytesIO(frame_data))
+                img = await self.hass.loop.run_in_executor(None, Image.open, io.BytesIO(frame_data))
                 current_frame_gray = np.array(img.convert('L'))
 
                 if previous_frame is not None:
