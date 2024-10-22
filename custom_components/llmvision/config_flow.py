@@ -241,10 +241,8 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self.init_info = user_input
             provider = user_input["provider"]
-            _LOGGER.debug(f"Selected provider: {provider}")
             validator = Validator(self.hass, user_input)
             configured_providers = validator.get_configured_providers()
-            _LOGGER.debug(f"Configured providers: {configured_providers}")
             return await self.handle_provider(provider, configured_providers)
 
         return self.async_show_form(

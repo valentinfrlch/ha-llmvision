@@ -3,7 +3,7 @@
 </p>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
-<img src=https://img.shields.io/badge/version-1.2.0-blue>
+<img src=https://img.shields.io/badge/version-1.2.1-blue>
 <a href="https://github.com/valentinfrlch/ha-llmvision/issues">
 <img src="https://img.shields.io/maintenance/yes/2024.svg">
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-llmvision?color=0088ff"/>

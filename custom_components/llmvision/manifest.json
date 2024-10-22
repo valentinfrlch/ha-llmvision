@@ -6,5 +6,5 @@
     "documentation": "https://github.com/valentinfrlch/ha-llmvision",
     "iot_class": "cloud_polling",
     "issue_tracker": "https://github.com/valentinfrlch/ha-llmvision/issues",
-    "version": "1.2.0"
+    "version": "1.2.1"
 }

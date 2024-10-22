@@ -1,6 +1,7 @@
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import logging
+import asyncio
 import inspect
 from .const import (
     DOMAIN,
@@ -38,7 +39,7 @@ def sanitize_data(data):
         return {key: sanitize_data(value) for key, value in data.items()}
     elif isinstance(data, list):
         return [sanitize_data(item) for item in data]
-    elif isinstance(data, str) and len(data) > 200:
+    elif isinstance(data, str) and len(data) > 400 and data.count(' ') < 50:
         return '<long_string>'
     else:
         return data
@@ -46,7 +47,6 @@ def sanitize_data(data):
 
 def get_provider(hass, provider_uid):
     """Translate the UID of the config entry into the provider name."""
-    _LOGGER.info(f"llmvision storage: {hass.data[DOMAIN]}")
     if DOMAIN not in hass.data:
         return None
 
@@ -98,9 +98,6 @@ class RequestHandler:
         entry_id = call.provider
         provider = get_provider(self.hass, entry_id)
         model = call.model if call.model != "None" else default_model(provider)
-        _LOGGER.info(f"Provider: {provider}")
-        _LOGGER.info(f"Model Default: {model}")
-        _LOGGER.info(f"Model: {call.model} tyle: {type(call.model)}")
 
         if provider == 'OpenAI':
             api_key = self.hass.data.get(DOMAIN).get(
@@ -374,7 +371,7 @@ class RequestHandler:
             "messages": [],
             "stream": False,
             "options": {
-                "max_tokens": self.max_tokens,
+                "num_predict": self.max_tokens,
                 "temperature": self.temperature
             }
         }
@@ -419,20 +416,27 @@ class RequestHandler:
             _LOGGER.info(f"Response data: {response_data}")
             return response_data
 
-    async def _fetch(self, url):
+    async def _fetch(self, url, max_retries=2, retry_delay=1):
         """Fetch image from url and return image data"""
-        _LOGGER.info(f"Fetching {url}")
-        try:
-            response = await self.session.get(url)
-        except Exception as e:
-            raise ServiceValidationError(f"Fetch failed: {e}")
-
-        if response.status != 200:
-            raise ServiceValidationError(
-                f"Fetch failed with status code {response.status}")
-
-        data = await response.read()
-        return data
+        retries = 0
+        while retries < max_retries:
+            _LOGGER.info(
+                f"Fetching {url} (attempt {retries + 1}/{max_retries})")
+            try:
+                response = await self.session.get(url)
+                if response.status != 200:
+                    _LOGGER.warning(f"Couldn't fetch frame (status code: {response.status})")
+                    retries += 1
+                    await asyncio.sleep(retry_delay)
+                    continue
+                data = await response.read()
+                return data
+            except Exception as e:
+                _LOGGER.error(f"Fetch failed: {e}")
+                retries += 1
+                await asyncio.sleep(retry_delay)
+        _LOGGER.warning(f"Failed to fetch {url} after {max_retries} retries")
+        return None
 
     def _validate_call(self, provider, api_key, base64_images, ip_address=None, port=None):
         """Validate the service call data"""

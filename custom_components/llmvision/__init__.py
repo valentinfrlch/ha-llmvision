@@ -24,6 +24,7 @@ from .const import (
     EVENT_ID,
     INTERVAL,
     DURATION,
+    MAX_FRAMES,
     TEMPERATURE,
     DETAIL,
     INCLUDE_FILENAME
@@ -127,9 +128,10 @@ class ServiceCallData:
             "\n") if data_call.data.get(VIDEO_FILE) else None
         self.event_id = data_call.data.get(EVENT_ID, "").split(
             "\n") if data_call.data.get(EVENT_ID) else None
-        self.interval = int(data_call.data.get(INTERVAL, 3))
+        self.interval = int(data_call.data.get(INTERVAL, 2))
         self.duration = int(data_call.data.get(DURATION, 10))
-        self.target_width = data_call.data.get(TARGET_WIDTH, 1280)
+        self.max_frames = int(data_call.data.get(MAX_FRAMES, 3))
+        self.target_width = data_call.data.get(TARGET_WIDTH, 3840)
         self.temperature = float(data_call.data.get(TEMPERATURE, 0.3))
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 100))
         self.detail = str(data_call.data.get(DETAIL, "auto"))
@@ -177,7 +179,7 @@ def setup(hass, config):
         processor = MediaProcessor(hass, client)
         client = await processor.add_videos(video_paths=call.video_paths,
                                             event_ids=call.event_id,
-                                            interval=call.interval,
+                                            max_frames=call.max_frames,
                                             target_width=call.target_width,
                                             include_filename=call.include_filename
                                             )
@@ -196,7 +198,7 @@ def setup(hass, config):
         processor = MediaProcessor(hass, client)
         client = await processor.add_streams(image_entities=call.image_entities,
                                              duration=call.duration,
-                                             interval=call.interval,
+                                             max_frames=call.max_frames,
                                              target_width=call.target_width,
                                              include_filename=call.include_filename
                                              )

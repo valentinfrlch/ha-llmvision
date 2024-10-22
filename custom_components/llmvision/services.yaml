@@ -64,7 +64,8 @@ image_analyzer:
       name: Detail
       required: false
       description: "Detail parameter. Leave empty for 'auto'"
-      default: 'high'
+      default: 'low'
+      example: 'low'
       selector:
         select:
           options:
@@ -137,14 +138,25 @@ video_analyzer:
           multiline: true
     interval:
       name: Interval
-      description: Analyze frames every <interval> seconds
-      required: true
+      description: "DEPRECATED: Use max_frames. Analyze frames every <interval> seconds."
+      required: false
       example: 3
       default: 3
       selector:
         number:
           min: 1
           max: 60
+    max_frames:
+      name: Max Frames
+      description: How many frames to analyze. Picks frames with the most movement.
+      required: false
+      example: 3
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 10
+          step: 1
     include_filename:
       name: Include Filename
       required: true
@@ -167,7 +179,8 @@ video_analyzer:
       name: Detail
       required: false
       description: "Detail parameter, leave empty for 'auto'"
-      default: 'high'
+      default: 'low'
+      example: 'low'
       selector:
         select:
           options:
@@ -233,8 +246,8 @@ stream_analyzer:
           multiple: true
     interval:
       name: Interval
-      description: Analyze frames every <interval> seconds
-      required: true
+      description: "DEPRECATED: Use max_frames. Analyze frames every <interval> seconds."
+      required: false
       example: 2
       default: 2
       selector:
@@ -249,8 +262,19 @@ stream_analyzer:
       default: 5
       selector:
         number:
-          min: 0
+          min: 1
           max: 60
+    max_frames:
+      name: Max Frames
+      description: How many frames to analyze. Picks frames with the most movement.
+      required: false
+      example: 3
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 10
+          step: 1
     include_filename:
       name: Include camera name
       required: true
@@ -273,7 +297,8 @@ stream_analyzer:
       name: Detail
       required: false
       description: "Detail parameter, leave empty for 'auto'"
-      default: 'high'
+      default: 'low'
+      example: 'low'
       selector:
         select:
           options:
