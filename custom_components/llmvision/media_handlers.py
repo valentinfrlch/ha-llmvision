@@ -155,8 +155,9 @@ class MediaProcessor:
                     continue
 
                 fetch_duration = time.time() - fetch_start_time
-                _LOGGER.info(f"Fetched {image_entity} in {fetch_duration:.2f} seconds")
-                
+                _LOGGER.info(
+                    f"Fetched {image_entity} in {fetch_duration:.2f} seconds")
+
                 preprocessing_start_time = time.time()
                 img = Image.open(io.BytesIO(frame_data))
                 current_frame_gray = np.array(img.convert('L'))
@@ -183,14 +184,17 @@ class MediaProcessor:
                     previous_frame = current_frame_gray
 
                 preprocessing_duration = time.time() - preprocessing_start_time
-                _LOGGER.info(f"Preprocessing took: {preprocessing_duration:.2f} seconds")
+                _LOGGER.info(
+                    f"Preprocessing took: {preprocessing_duration:.2f} seconds")
 
-                adjusted_interval = max(0, interval - fetch_duration - preprocessing_duration)
+                adjusted_interval = max(
+                    0, interval - fetch_duration - preprocessing_duration)
 
                 if iteration_time == 0:
                     iteration_time = time.time() - start
-                    _LOGGER.info(f"First iteration took: {iteration_time:.2f} seconds, interval adjusted to: {adjusted_interval}")
-                
+                    _LOGGER.info(
+                        f"First iteration took: {iteration_time:.2f} seconds, interval adjusted to: {adjusted_interval}")
+
                 await asyncio.sleep(adjusted_interval)
 
             camera_frames.update({image_entity: frames})
@@ -314,7 +318,7 @@ class MediaProcessor:
                         else:
                             _LOGGER.error(
                                 f"Failed to create temp directory {tmp_frames_dir}")
-                            
+
                         interval = 2
 
                         # Extract frames from video every interval seconds
@@ -337,12 +341,13 @@ class MediaProcessor:
                                 tmp_frames_dir, frame_file)
 
                             # Remove transparency for compatibility
-                            with Image.open(frame_path) as img:
-                                if img.mode == 'RGBA':
+                            img = await self.hass.loop.run_in_executor(None, Image.open, frame_path)
+
+                            if img.mode == 'RGBA':
                                     img = img.convert('RGB')
                                     img.save(frame_path)
 
-                                current_frame_gray = np.array(img.convert('L'))
+                            current_frame_gray = np.array(img.convert('L'))
 
                             # Calculate similarity score
                             if previous_frame is not None:
