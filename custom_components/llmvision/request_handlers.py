@@ -371,7 +371,7 @@ class RequestHandler:
             "messages": [],
             "stream": False,
             "options": {
-                "max_tokens": self.max_tokens,
+                "num_predict": self.max_tokens,
                 "temperature": self.temperature
             }
         }
