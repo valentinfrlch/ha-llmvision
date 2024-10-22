@@ -45,6 +45,13 @@
 - Analyzes frigate events
 - Images can be downscaled for faster processing
 
+## Blueprint
+With the easy to use blueprint, you'll get important notifications intelligently summarized by AI from either frigate or cameras in Home Assistant. LLM Vision needs to be installed to use the blueprint.
+<br>
+<img src="https://github.com/user-attachments/assets/8174c3cd-6314-4bfd-9fbe-d66316f93923" width="400" />
+<br>
+[Learn more](https://llm-vision.gitbook.io/examples/examples/automations#ai-event-notifications)
+
 ## Resources
 Check the docs for detailed instructions on how to set up LLM Vision and each of the supported providers, get inspiration from examples or join the discussion on the Home Assistant Community.
 
