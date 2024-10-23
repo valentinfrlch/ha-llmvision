@@ -29,7 +29,7 @@ blueprint:
     frigate_url:
       name: Frigate URL
       description: (Frigate) Frigate's base url to fetch preview
-      default: "http://localhost:8971"
+      default: "http://localhost:5000"
       selector:
         text:
           multiline: false
@@ -42,16 +42,25 @@ blueprint:
           multiple: true
           filter:
             domain: camera
+    motion_sensors:
+      name: Motion Sensor
+      description: (Camera) Set if your cameras don't change state. Use the same order used for camera entities.
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            domain: binary_sensor
     trigger_state:
       name: Trigger State
-      description: (Camera) State to trigger on (for Camera mode)
+      description: (Camera) Trigger the automation when your cameras change to this state.
       default: 'recording'
       selector:
         text:
           multiline: false
     tap_navigate:
       name: Tap Navigate
-      description: Relativ path to navigate to when pressing notification (e.g. /lovelace/cameras)
+      description: Path to navigate to when tapping notification (e.g. /lovelace/cameras)
       default: "/lovelace/0"
       selector:
         text:
@@ -107,7 +116,7 @@ blueprint:
       selector:
         number:
           min: 512
-          max: 1920
+          max: 3840
     detail:
       name: Detail
       description: Detail parameter (OpenAI only)
@@ -120,7 +129,7 @@ blueprint:
     max_tokens:
       name: Maximum Tokens
       description: Maximum number of tokens to generate
-      default: 50
+      default: 20
       selector:
         number:
           min: 1
@@ -140,33 +149,46 @@ variables:
   base_url: !input frigate_url
   cooldown: !input cooldown
   mode: !input mode
+  camera_entities_list: !input camera_entities
+  motion_sensors_list: !input motion_sensors
+  camera_entity: >
+    {% if mode == 'Camera' %}
+      {% if motion_sensors_list %}
+        {% set index = motion_sensors_list.index(trigger.entity_id) %}
+        {{ camera_entities_list[index] }}
+      {% else %}
+        {{ trigger.entity_id }}
+      {% endif %}
+    {% else %}
+      {{ trigger.payload_json['after']['camera'] }}
+    {% endif %}
   tag: >
     {% if mode == 'Frigate' %}
-      {{trigger.payload_json['after']['camera'] + int(as_timestamp(now()))|string}}
+      {{ trigger.payload_json['after']['camera'] + int(as_timestamp(now()))|string }}
     {% else %}
-      {{trigger.entity_id + int(as_timestamp(now()))|string}}
+      {{ camera_entity + int(as_timestamp(now()))|string }}
     {% endif %}
   group: >
     {% if mode == 'Frigate' %}
-      {{trigger.payload_json['after']['camera']}}
+      {{ trigger.payload_json['after']['camera'] }}
     {% else %}
-      {{trigger.entity_id}}
+      {{ camera_entity }}
     {% endif %}
   label: >
     {% if mode == 'Frigate' %}
-      {{trigger.payload_json['after']['label']|capitalize}} seen
+      {{ trigger.payload_json['after']['label']|capitalize }} seen
     {% else %}
       Motion detected
     {% endif %}
   camera: >
     {% if mode == 'Frigate' %}
-      {{trigger.payload_json['after']['camera'].replace('_', ' ')|capitalize}}
+      {{ trigger.payload_json['after']['camera'].replace('_', ' ')|capitalize }}
     {% else %}
-      {{trigger.entity_id.replace("camera.", "").replace("_", " ")|capitalize}}
+      {{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize }}
     {% endif %}
   video: >
     {% if mode == 'Frigate' %}
-      {{base_url}}/api/events/{{trigger.payload_json['after']['id']}}/clip.mp4
+      {{ base_url }}/api/events/{{ trigger.payload_json['after']['id'] }}/clip.mp4
     {% else %}
       ''
     {% endif %}
@@ -174,7 +196,7 @@ variables:
     {% if mode == 'Frigate' %}
       ''
     {% else %}
-      {{'/api/camera_proxy/' + trigger.entity_id}}
+      {{ '/api/camera_proxy/' + camera_entity }}
     {% endif %}
   importance_prompt: >
     Your job is to decide whether a camera recording is important (so the user gets a notification) or not. 
@@ -189,6 +211,10 @@ trigger:
     entity_id: !input camera_entities
     to: !input trigger_state
     id: 'camera_trigger'
+  - platform: 'state'
+    entity_id: !input motion_sensors
+    to: 'on'
+    id: 'motion_sensor_trigger'
 
 condition:
   - condition: template
@@ -229,7 +255,7 @@ action:
                 sequence:
                   - service: llmvision.image_analyzer
                     data:
-                      image_entity: "{{[trigger.entity_id]}}"
+                      image_entity: "{{[camera_entity]}}"
                       provider: !input provider
                       model: !input model
                       message: "{{importance_prompt}}"
@@ -248,8 +274,6 @@ action:
         sequence:
           - stop: "Event is not important"
 
-
-
   - choose:
       - conditions:
           - condition: template
@@ -264,7 +288,7 @@ action:
             data:
               video: "{{video}}"
               image: "{{image}}"
-              entity_id: "{{trigger.entity_id | default('') if mode=='Camera' else ''}}"
+              entity_id: "{{camera_entity if mode=='Camera' else ''}}"
               url: !input tap_navigate #iOS
               clickAction: !input tap_navigate #Android
               tag: "{{tag}}"
@@ -295,7 +319,7 @@ action:
         sequence:
           - service: llmvision.stream_analyzer
             data:
-              image_entity: "{{[trigger.entity_id]}}"
+              image_entity: "{{[camera_entity]}}"
               duration: !input duration
               provider: !input provider
               model: !input model
@@ -319,7 +343,7 @@ action:
       group: "{{group}}"
       image: "{{image}}"
       video: "{{video}}"
-      entity_id: "{{trigger.entity_id | default('') if mode=='Camera' else ''}}"
+      entity_id: "{{camera_entity if mode=='Camera' else ''}}"
       url: !input tap_navigate #iOS
       clickAction: !input tap_navigate #Android
       push:
