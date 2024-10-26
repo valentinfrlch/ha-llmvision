@@ -18,11 +18,12 @@ CONF_CUSTOM_OPENAI_ENDPOINT = 'custom_openai_endpoint'
 CONF_CUSTOM_OPENAI_API_KEY = 'custom_openai_api_key'
 
 # service call constants
+MESSAGE = 'message'
+REMEMBER = 'remember'
 PROVIDER = 'provider'
 MAXTOKENS = 'max_tokens'
 TARGET_WIDTH = 'target_width'
 MODEL = 'model'
-MESSAGE = 'message'
 IMAGE_FILE = 'image_file'
 IMAGE_ENTITY = 'image_entity'
 VIDEO_FILE = 'video_file'

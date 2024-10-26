@@ -25,6 +25,14 @@ image_analyzer:
       selector:
         text:
           multiline: true
+    remember:
+      name: Remember
+      required: false
+      description: 'Remember this event so you can ask about it later'
+      example: true
+      default: true
+      selector:
+        boolean:
     image_file:
       name: Image File
       required: false
@@ -120,6 +128,14 @@ video_analyzer:
       selector:
         text:
           multiline: true
+    remember:
+      name: Remember
+      required: false
+      description: 'Remember this event so you can ask about it later'
+      example: true
+      default: true
+      selector:
+        boolean:
     video_file:
       name: Video File
       required: false
@@ -235,6 +251,14 @@ stream_analyzer:
       selector:
         text:
           multiline: true
+    remember:
+      name: Remember
+      required: false
+      description: 'Remember this event so you can ask about it later'
+      example: true
+      default: true
+      selector:
+        boolean:
     image_entity:
       name: Camera Entity
       required: true

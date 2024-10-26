@@ -13,11 +13,12 @@ from .const import (
     CONF_OLLAMA_HTTPS,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_API_KEY,
+    MESSAGE,
+    REMEMBER,
     MODEL,
     PROVIDER,
     MAXTOKENS,
     TARGET_WIDTH,
-    MESSAGE,
     IMAGE_FILE,
     IMAGE_ENTITY,
     VIDEO_FILE,
@@ -29,6 +30,7 @@ from .const import (
     DETAIL,
     INCLUDE_FILENAME
 )
+from .calendar import SemanticIndex
 from homeassistant.config_entries import ConfigEntry
 from .request_handlers import RequestHandler
 from .media_handlers import MediaProcessor
@@ -39,7 +41,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry):
-    """Save config entry to hass.data with the same unique identifier as the config entry"""
+    """Save config entry to hass.data"""
     # Use the entry_id from the config entry as the UID
     entry_uid = entry.entry_id
 
@@ -84,6 +86,14 @@ async def async_setup_entry(hass, entry):
     # Store the filtered entry data under the entry_id
     hass.data[DOMAIN][entry_uid] = filtered_entry_data
 
+    # check if the entry is the calendar entry (filtered_entry_data is empty)
+    if not filtered_entry_data:
+        # Create the calendar entity
+        calendar = SemanticIndex(entry.title)
+        # forward the calendar entity to the platform
+        await hass.config_entries.async_forward_entry_setup(entry, "calendar")
+
+
     return True
 
 
@@ -103,7 +113,9 @@ async def async_remove_entry(hass, entry):
     return True
 
 
-async def async_unload_entry(hass, entry) -> bool: return True
+async def async_unload_entry(hass, entry) -> bool:
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, "calendar")
+    return unload_ok
 
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
@@ -121,6 +133,7 @@ class ServiceCallData:
         self.model = str(data_call.data.get(
             MODEL))
         self.message = str(data_call.data.get(MESSAGE)[0:2000])
+        self.remember = data_call.data.get(REMEMBER, False)
         self.image_paths = data_call.data.get(IMAGE_FILE, "").split(
             "\n") if data_call.data.get(IMAGE_FILE) else None
         self.image_entities = data_call.data.get(IMAGE_ENTITY)

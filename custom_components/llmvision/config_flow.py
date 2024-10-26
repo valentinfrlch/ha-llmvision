@@ -210,6 +210,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="already_configured")
 
         provider_steps = {
+            "Event Calendar": self.async_step_semantic_index,
             "OpenAI": self.async_step_openai,
             "Anthropic": self.async_step_anthropic,
             "Google": self.async_step_google,
@@ -228,9 +229,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required("provider", default="OpenAI"): selector({
+            vol.Required("provider", default="Event Calendar"): selector({
                 "select": {
-                    "options": ["OpenAI", "Anthropic", "Google", "Groq", "Ollama", "LocalAI", "Custom OpenAI"],
+                    "options": ["Event Calendar", "OpenAI", "Anthropic", "Google", "Groq", "Ollama", "LocalAI", "Custom OpenAI"],
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -441,4 +442,21 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="custom_openai",
             data_schema=data_schema,
+        )
+
+    async def async_step_semantic_index(self, user_input=None):
+        if user_input is not None:
+            try:
+                # add the mode to user_input
+                user_input["provider"] = self.init_info["provider"]
+                return self.async_create_entry(title="LLM Vision Event Calendar", data=user_input)
+            except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
+                return self.async_show_form(
+                    step_id="semantic_index",
+                    errors={"base": "handshake_failed"}
+                )
+
+        return self.async_show_form(
+            step_id="semantic_index",
         )
