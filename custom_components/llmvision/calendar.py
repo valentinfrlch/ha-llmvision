@@ -6,6 +6,7 @@ from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
 import logging
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -13,10 +14,10 @@ _LOGGER = logging.getLogger(__name__)
 class SemanticIndex(CalendarEntity):
     """Representation of a Calendar."""
 
-    def __init__(self, name: str):
+    def __init__(self, config_entry: ConfigEntry):
         """Initialize the calendar."""
-        self._attr_name = name
-        self._attr_unique_id = str(uuid.uuid4())
+        self._attr_name = config_entry.title
+        self._attr_unique_id = config_entry.entry_id
         self._events = []
         self._current_event = None
 
@@ -101,11 +102,12 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the calendar platform."""
-    async_add_entities([SemanticIndex("LLM Vision Events")])
+
+    calendar_entity = SemanticIndex(config_entry)
+    async_add_entities([calendar_entity])
 
 
 async def async_remove(self):
     """Handle removal of the entity."""
-    # Perform any necessary cleanup here
     _LOGGER.info(f"Removing calendar entity: {self._attr_name}")
     await super().async_remove()

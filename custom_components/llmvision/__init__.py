@@ -30,7 +30,6 @@ from .const import (
     DETAIL,
     INCLUDE_FILENAME
 )
-from .calendar import SemanticIndex
 from homeassistant.config_entries import ConfigEntry
 from .request_handlers import RequestHandler
 from .media_handlers import MediaProcessor
@@ -88,11 +87,8 @@ async def async_setup_entry(hass, entry):
 
     # check if the entry is the calendar entry (filtered_entry_data is empty)
     if not filtered_entry_data:
-        # Create the calendar entity
-        calendar = SemanticIndex(entry.title)
         # forward the calendar entity to the platform
         await hass.config_entries.async_forward_entry_setup(entry, "calendar")
-
 
     return True
 
