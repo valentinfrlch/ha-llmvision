@@ -1,7 +1,8 @@
 import datetime
 import uuid
+import os, json
 from homeassistant.util import dt as dt_util
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant
 from homeassistant.components.calendar import (
     CalendarEntity,
     CalendarEvent,
@@ -28,13 +29,16 @@ class SemanticIndex(CalendarEntity):
         self.hass = hass
         self._attr_name = config_entry.title
         self._attr_unique_id = config_entry.entry_id
-        self._events = hass.data[DOMAIN].get("events", [])
+        self._events = []
         self._current_event = None
         self._attr_supported_features = (
             CalendarEntityFeature.CREATE_EVENT | CalendarEntityFeature.DELETE_EVENT
         )
-        _LOGGER.info(f"events in backend: {self.hass.data[DOMAIN].get('events', [])}")
-        _LOGGER.info(f"events loaded: {self._events}")
+        # Path to the JSON file where events are stored
+        self._file_path = os.path.join(
+            self.hass.config.path("custom_components/llmvision"), "events.json"
+        )
+        self.hass.loop.create_task(self.async_update())
 
     def _ensure_datetime(self, dt):
         """Ensure the input is a datetime.datetime object."""
@@ -105,7 +109,7 @@ class SemanticIndex(CalendarEntity):
         )
 
         self._events.append(event)
-        await self.async_update()
+        await self._save_events()
 
     async def async_delete_event(
         self,
@@ -115,12 +119,51 @@ class SemanticIndex(CalendarEntity):
     ) -> None:
         """Delete an event on the calendar."""
         self._events = [event for event in self._events if event.uid != uid]
-        await self.async_update()
+        await self._save_events()
 
+    
     async def async_update(self) -> None:
-        self.hass.data[DOMAIN]["events"] = self._events
-        self.async_write_ha_state()
-        _LOGGER.info(f"events: {self.hass.data[DOMAIN].get('events', [])}")
+        """Load events from the JSON file."""
+        def read_from_file():
+            if os.path.exists(self._file_path):
+                with open(self._file_path, 'r') as file:
+                    return json.load(file)
+            return []
+    
+        events_data = await self.hass.loop.run_in_executor(None, read_from_file)
+        self._events = [
+            CalendarEvent(
+                uid=event["uid"],
+                summary=event["summary"],
+                start=dt_util.as_local(dt_util.parse_datetime(event["start"])),
+                end=dt_util.as_local(dt_util.parse_datetime(event["end"])),
+                description=event.get("description"),
+                location=event.get("location"),
+            )
+            for event in events_data
+        ]
+        _LOGGER.info(f"events: {self._events}")
+    
+    async def _save_events(self) -> None:
+        """Save events to the JSON file."""
+        events_data = [
+            {
+                "uid": event.uid,
+                "summary": event.summary,
+                "start": dt_util.as_local(self._ensure_datetime(event.start)).isoformat(),
+                "end": dt_util.as_local(self._ensure_datetime(event.end)).isoformat(),
+                "description": event.description,
+                "location": event.location,
+            }
+            for event in self._events
+        ]
+    
+        def write_to_file():
+            with open(self._file_path, 'w') as file:
+                json.dump(events_data, file, indent=4)
+    
+        await self.hass.loop.run_in_executor(None, write_to_file)
+        
 
 
 async def async_setup_entry(
@@ -128,7 +171,6 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the calendar platform."""
 
     calendar_entity = SemanticIndex(hass, config_entry)
     async_add_entities([calendar_entity])
