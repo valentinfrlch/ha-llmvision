@@ -30,10 +30,14 @@ from .const import (
     DETAIL,
     INCLUDE_FILENAME
 )
+from .calendar import SemanticIndex
+from datetime import timedelta
+from homeassistant.util import dt as dt_util
 from homeassistant.config_entries import ConfigEntry
 from .request_handlers import RequestHandler
 from .media_handlers import MediaProcessor
 from homeassistant.core import SupportsResponse
+from homeassistant.exceptions import ServiceValidationError
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -121,6 +125,51 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
         return False
 
 
+async def _remember(hass, call, start, response):
+    if call.remember:
+        # Find semantic index config
+        config_entry = None
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            _LOGGER.info(f"Entry: {entry.data}")
+            if entry.data["provider"] == "Event Calendar":  # Check if the config entry is empty
+                config_entry = entry
+                break
+
+        if config_entry is None:
+            raise ServiceValidationError(
+                f"Semantic index config not found")
+
+        semantic_index = SemanticIndex(hass, config_entry)
+        # Define a mapping of keywords to labels
+        keyword_to_label = {
+            "person": "Person",
+            "car": "Car",
+            "bike": "Bike",
+            "bus": "Bus",
+            "truck": "Truck",
+            "motorcycle": "Motorcycle",
+            "bicycle": "Bicycle",
+            "dog": "Dog",
+            "cat": "Cat",
+        }
+
+        # Default label
+        label = "Nothing"
+
+        # Check each keyword in the response text and update the label accordingly
+        for keyword, mapped_label in keyword_to_label.items():
+            if keyword in response["response_text"].lower():
+                label = mapped_label
+                break
+        await semantic_index.remember(
+            start=start,
+            end=dt_util.now() + timedelta(minutes=1),
+            label=label + " seen",
+            camera_name=call.image_entities[0],
+            summary=response["response_text"]
+        )
+
+
 class ServiceCallData:
     """Store service call data and set default values"""
 
@@ -153,6 +202,7 @@ class ServiceCallData:
 def setup(hass, config):
     async def image_analyzer(data_call):
         """Handle the service call to analyze an image with LLM Vision"""
+        start = dt_util.now()
 
         # Initialize call object with service call data
         call = ServiceCallData(data_call).get_service_call_data()
@@ -174,10 +224,12 @@ def setup(hass, config):
 
         # Validate configuration, input data and make the call
         response = await client.make_request(call)
+        await _remember(hass, call, start, response)
         return response
 
     async def video_analyzer(data_call):
         """Handle the service call to analyze a video (future implementation)"""
+        start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
         call.message = "The attached images are frames from a video. " + call.message
         client = RequestHandler(hass,
@@ -193,10 +245,12 @@ def setup(hass, config):
                                             include_filename=call.include_filename
                                             )
         response = await client.make_request(call)
+        await _remember(hass, call, start, response)
         return response
 
     async def stream_analyzer(data_call):
         """Handle the service call to analyze a stream (future implementation)"""
+        start_time = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
         call.message = "The attached images are frames from a live camera feed. " + call.message
         client = RequestHandler(hass,
@@ -211,7 +265,9 @@ def setup(hass, config):
                                              target_width=call.target_width,
                                              include_filename=call.include_filename
                                              )
+
         response = await client.make_request(call)
+        await _remember(hass, call, start_time, call.image_entities[0], response)
         return response
 
     # Register services

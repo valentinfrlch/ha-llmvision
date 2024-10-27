@@ -13,7 +13,6 @@ from homeassistant.components.calendar import (
     EVENT_START,
     EVENT_SUMMARY,
 )
-from .const import DOMAIN
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
 import logging
@@ -163,7 +162,18 @@ class SemanticIndex(CalendarEntity):
                 json.dump(events_data, file, indent=4)
     
         await self.hass.loop.run_in_executor(None, write_to_file)
-        
+
+
+
+    async def remember(self, start, end, label, camera_name, summary):
+        """Remember the event."""
+        await self.async_create_event(
+            dtstart=start,
+            dtend=end,
+            summary=label,
+            location=camera_name,
+            description=summary,
+        )
 
 
 async def async_setup_entry(

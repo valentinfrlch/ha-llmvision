@@ -30,7 +30,7 @@ image_analyzer:
       required: false
       description: 'Remember this event so you can ask about it later'
       example: true
-      default: true
+      default: false
       selector:
         boolean:
     image_file:
@@ -133,7 +133,7 @@ video_analyzer:
       required: false
       description: 'Remember this event so you can ask about it later'
       example: true
-      default: true
+      default: false
       selector:
         boolean:
     video_file:
@@ -256,7 +256,7 @@ stream_analyzer:
       required: false
       description: 'Remember this event so you can ask about it later'
       example: true
-      default: true
+      default: false
       selector:
         boolean:
     image_entity:
