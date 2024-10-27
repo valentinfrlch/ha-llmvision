@@ -1,5 +1,5 @@
 blueprint:
-  name: AI Event Summary (LLM Vision v1.2.1)
+  name: AI Event Summary (LLM Vision v1.3)
   author: valentinfrlch
   description: >
     AI-powered security event summaries for frigate or camera entities. 
@@ -20,6 +20,12 @@ blueprint:
       default: false
       selector:
         boolean:
+    remember:
+      name: Remember
+      description: Remember this event so you can ask about it later. Event Calendar needs to be configured. If 'important' is set to true, only important events will be remembered.
+      default: false
+      selector:
+        boolean:
     notify_device:
       name: Notify Device
       description: The device to send the notification to
@@ -28,14 +34,14 @@ blueprint:
           integration: mobile_app
     frigate_url:
       name: Frigate URL
-      description: (Frigate) Frigate's base url to fetch preview
+      description: (Frigate mode) Frigate's base url to fetch preview
       default: "http://localhost:5000"
       selector:
         text:
           multiline: false
     camera_entities:
       name: Camera Entities
-      description: (Camera) List of camera entities to monitor
+      description: (Camera and Frigate mode) List of camera entities to monitor
       default: []
       selector:
         entity:
@@ -44,7 +50,7 @@ blueprint:
             domain: camera
     motion_sensors:
       name: Motion Sensor
-      description: (Camera) Set if your cameras don't change state. Use the same order used for camera entities.
+      description: (Camera mode) Set if your cameras don't change state. Use the same order used for camera entities.
       default: []
       selector:
         entity:
@@ -53,7 +59,7 @@ blueprint:
             domain: binary_sensor
     trigger_state:
       name: Trigger State
-      description: (Camera) Trigger the automation when your cameras change to this state.
+      description: (Camera mode) Trigger the automation when your cameras change to this state.
       default: 'recording'
       selector:
         text:
@@ -81,7 +87,7 @@ blueprint:
           integration: llmvision
     max_frames:
       name: Max Frames
-      description: How many frames to analyze. Picks frames with the most movement.
+      description: (Camera and Frigate mode) How many frames to analyze. Picks frames with the most movement.
       default: 3
       selector:
         number:
@@ -89,7 +95,7 @@ blueprint:
           max: 60
     duration:
       name: Duration
-      description: (Camera) How long to record for (in seconds)
+      description: (Camera mode) How long to record for (in seconds)
       default: 5
       selector:
         number:
@@ -220,10 +226,11 @@ condition:
   - condition: template
     value_template: >
       {% if mode == 'Frigate' %}
-        {{ trigger.payload_json["type"] == "end" and (state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) }}
+        {{ trigger.payload_json["type"] == "end" and (state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list }}
       {% else %}
         {{ state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
       {% endif %}
+
 
 action:
   - choose:
@@ -270,7 +277,7 @@ action:
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ importance is defined and importance.response_text == 'no' }}"
+            value_template: "{{ importance is defined and importance.response_text|lower == 'no' }}"
         sequence:
           - stop: "Event is not important"
 
@@ -306,6 +313,7 @@ action:
               provider: !input provider
               model: !input model
               message: !input message
+              remember: !input remember
               include_filename: true
               max_frames: !input max_frames
               target_width: !input target_width

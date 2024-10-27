@@ -1,6 +1,8 @@
 import datetime
 import uuid
-import os, json
+import os
+import json
+from .const import CONF_RETENTION_TIME
 from homeassistant.util import dt as dt_util
 from homeassistant.core import HomeAssistant
 from homeassistant.components.calendar import (
@@ -29,10 +31,9 @@ class SemanticIndex(CalendarEntity):
         self._attr_name = config_entry.title
         self._attr_unique_id = config_entry.entry_id
         self._events = []
+        self._retention_time = config_entry.options.get(CONF_RETENTION_TIME, 7)
         self._current_event = None
-        self._attr_supported_features = (
-            CalendarEntityFeature.CREATE_EVENT | CalendarEntityFeature.DELETE_EVENT
-        )
+        self._attr_supported_features = (CalendarEntityFeature.DELETE_EVENT)
         # Path to the JSON file where events are stored
         self._file_path = os.path.join(
             self.hass.config.path("custom_components/llmvision"), "events.json"
@@ -83,6 +84,7 @@ class SemanticIndex(CalendarEntity):
 
     async def async_create_event(self, **kwargs: any) -> None:
         """Add a new event to calendar."""
+        await self.async_update()
         dtstart = kwargs[EVENT_START]
         dtend = kwargs[EVENT_END]
         start: datetime.datetime
@@ -117,10 +119,10 @@ class SemanticIndex(CalendarEntity):
         recurrence_range: str | None = None,
     ) -> None:
         """Delete an event on the calendar."""
+        await self.async_update()
         self._events = [event for event in self._events if event.uid != uid]
         await self._save_events()
 
-    
     async def async_update(self) -> None:
         """Load events from the JSON file."""
         def read_from_file():
@@ -128,7 +130,7 @@ class SemanticIndex(CalendarEntity):
                 with open(self._file_path, 'r') as file:
                     return json.load(file)
             return []
-    
+
         events_data = await self.hass.loop.run_in_executor(None, read_from_file)
         self._events = [
             CalendarEvent(
@@ -142,9 +144,13 @@ class SemanticIndex(CalendarEntity):
             for event in events_data
         ]
         _LOGGER.info(f"events: {self._events}")
-    
+
     async def _save_events(self) -> None:
         """Save events to the JSON file."""
+        # Delete events outside of retention time window
+        now = datetime.datetime.now()
+        cutoff_date = now - datetime.timedelta(days=self._retention_time)
+
         events_data = [
             {
                 "uid": event.uid,
@@ -155,15 +161,14 @@ class SemanticIndex(CalendarEntity):
                 "location": event.location,
             }
             for event in self._events
+            if dt_util.as_local(self._ensure_datetime(event.end)) >= self._ensure_datetime(cutoff_date)
         ]
-    
+
         def write_to_file():
             with open(self._file_path, 'w') as file:
                 json.dump(events_data, file, indent=4)
-    
+
         await self.hass.loop.run_in_executor(None, write_to_file)
-
-
 
     async def remember(self, start, end, label, camera_name, summary):
         """Remember the event."""

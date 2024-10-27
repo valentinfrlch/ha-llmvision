@@ -72,7 +72,7 @@ def get_provider(hass, provider_uid):
     return None
 
 
-default_model = lambda provider: {
+def default_model(provider): return {
     "OpenAI": "gpt-4o-mini",
     "Anthropic": "claude-3-5-sonnet-20240620",
     "Google": "gemini-1.5-flash-latest",
@@ -97,6 +97,7 @@ class RequestHandler:
     async def make_request(self, call):
         entry_id = call.provider
         provider = get_provider(self.hass, entry_id)
+        _LOGGER.info(f"Provider from call: {provider}")
         model = call.model if call.model != "None" else default_model(provider)
 
         if provider == 'OpenAI':
@@ -175,6 +176,8 @@ class RequestHandler:
                                 api_key=api_key,
                                 base64_images=self.base64_images)
             response_text = await self.openai(model=model, api_key=api_key, endpoint=endpoint)
+        else:
+            raise ServiceValidationError("invalid_provider")
         return {"response_text": response_text}
 
     def add_frame(self, base64_image, filename):
@@ -425,7 +428,8 @@ class RequestHandler:
             try:
                 response = await self.session.get(url)
                 if response.status != 200:
-                    _LOGGER.warning(f"Couldn't fetch frame (status code: {response.status})")
+                    _LOGGER.warning(
+                        f"Couldn't fetch frame (status code: {response.status})")
                     retries += 1
                     await asyncio.sleep(retry_delay)
                     continue
@@ -468,7 +472,8 @@ class RequestHandler:
         elif provider == 'Custom OpenAI':
             pass
         else:
-            raise ServiceValidationError("invalid_provider")
+            raise ServiceValidationError(
+                "Invalid provider selected. The event calendar cannot be used for analysis.")
         # Check media input
         if base64_images == []:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)

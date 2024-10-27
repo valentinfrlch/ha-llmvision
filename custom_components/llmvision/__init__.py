@@ -28,7 +28,8 @@ from .const import (
     MAX_FRAMES,
     TEMPERATURE,
     DETAIL,
-    INCLUDE_FILENAME
+    INCLUDE_FILENAME,
+    CONF_RETENTION_TIME,
 )
 from .calendar import SemanticIndex
 from datetime import timedelta
@@ -61,6 +62,7 @@ async def async_setup_entry(hass, entry):
     ollama_https = entry.data.get(CONF_OLLAMA_HTTPS)
     custom_openai_endpoint = entry.data.get(CONF_CUSTOM_OPENAI_ENDPOINT)
     custom_openai_api_key = entry.data.get(CONF_CUSTOM_OPENAI_API_KEY)
+    retention_time = entry.data.get(CONF_RETENTION_TIME)
 
     # Ensure DOMAIN exists in hass.data
     if DOMAIN not in hass.data:
@@ -79,7 +81,8 @@ async def async_setup_entry(hass, entry):
         CONF_OLLAMA_PORT: ollama_port,
         CONF_OLLAMA_HTTPS: ollama_https,
         CONF_CUSTOM_OPENAI_ENDPOINT: custom_openai_endpoint,
-        CONF_CUSTOM_OPENAI_API_KEY: custom_openai_api_key
+        CONF_CUSTOM_OPENAI_API_KEY: custom_openai_api_key,
+        CONF_RETENTION_TIME: retention_time
     }
 
     # Filter out None values
@@ -89,8 +92,8 @@ async def async_setup_entry(hass, entry):
     # Store the filtered entry data under the entry_id
     hass.data[DOMAIN][entry_uid] = filtered_entry_data
 
-    # check if the entry is the calendar entry (filtered_entry_data is empty)
-    if not filtered_entry_data:
+    # check if the entry is the calendar entry (has entry rentention_time)
+    if filtered_entry_data.get(CONF_RETENTION_TIME):
         # forward the calendar entity to the platform
         await hass.config_entries.async_forward_entry_setup(entry, "calendar")
 
@@ -131,7 +134,8 @@ async def _remember(hass, call, start, response):
         config_entry = None
         for entry in hass.config_entries.async_entries(DOMAIN):
             _LOGGER.info(f"Entry: {entry.data}")
-            if entry.data["provider"] == "Event Calendar":  # Check if the config entry is empty
+            # Check if the config entry is empty
+            if entry.data["provider"] == "Event Calendar":
                 config_entry = entry
                 break
 
@@ -161,11 +165,25 @@ async def _remember(hass, call, start, response):
             if keyword in response["response_text"].lower():
                 label = mapped_label
                 break
+
+        if call.image_entities and len(call.image_entities) > 0:
+            camera_name = call.image_entities[0]
+        elif call.video_paths and len(call.video_paths) > 0:
+            camera_name = call.video_paths[0].split(
+                "/")[-1].replace(".mp4", "")
+        elif call.event_id and len(call.event_id) > 0:
+            camera_name = call.event_id[0]
+        elif call.image_paths and len(call.image_paths) > 0:
+            camera_name = call.image_paths[0].split(
+                "/")[-1].replace(".jpg", "")
+        else:
+            camera_name = "Unknown"
+
         await semantic_index.remember(
             start=start,
             end=dt_util.now() + timedelta(minutes=1),
             label=label + " seen",
-            camera_name=call.image_entities[0],
+            camera_name=camera_name,
             summary=response["response_text"]
         )
 
@@ -250,7 +268,7 @@ def setup(hass, config):
 
     async def stream_analyzer(data_call):
         """Handle the service call to analyze a stream (future implementation)"""
-        start_time = dt_util.now()
+        start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
         call.message = "The attached images are frames from a live camera feed. " + call.message
         client = RequestHandler(hass,
@@ -267,7 +285,7 @@ def setup(hass, config):
                                              )
 
         response = await client.make_request(call)
-        await _remember(hass, call, start_time, call.image_entities[0], response)
+        await _remember(hass, call, start, response)
         return response
 
     # Register services

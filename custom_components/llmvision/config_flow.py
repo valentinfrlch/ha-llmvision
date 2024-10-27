@@ -18,6 +18,7 @@ from .const import (
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     VERSION_ANTHROPIC,
+    CONF_RETENTION_TIME,
 )
 import voluptuous as vol
 import logging
@@ -176,6 +177,12 @@ class Validator:
             _LOGGER.error("Could not connect to Groq server.")
             raise ServiceValidationError("handshake_failed")
 
+    async def semantic_index(self):
+        # check if semantic_index is already configured
+        for uid in self.hass.data[DOMAIN]:
+            if 'retention_time' in self.hass.data[DOMAIN][uid]:
+                return False
+
     def get_configured_providers(self):
         providers = []
         try:
@@ -204,11 +211,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 2
 
-    async def handle_provider(self, provider, configured_providers):
-        if provider in configured_providers:
-            _LOGGER.error(f"{provider} already configured.")
-            return self.async_abort(reason="already_configured")
-
+    async def handle_provider(self, provider):
         provider_steps = {
             "Event Calendar": self.async_step_semantic_index,
             "OpenAI": self.async_step_openai,
@@ -242,9 +245,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self.init_info = user_input
             provider = user_input["provider"]
-            validator = Validator(self.hass, user_input)
-            configured_providers = validator.get_configured_providers()
-            return await self.handle_provider(provider, configured_providers)
+            return await self.handle_provider(provider)
 
         return self.async_show_form(
             step_id="user",
@@ -445,18 +446,26 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_semantic_index(self, user_input=None):
+        data_schema = vol.Schema({
+            vol.Required(CONF_RETENTION_TIME, default=7): int,
+        })
         if user_input is not None:
+            user_input["provider"] = self.init_info["provider"]
+            validator = Validator(self.hass, user_input)
             try:
+                if not await validator.semantic_index():
+                    return self.async_abort(reason="already_configured")
                 # add the mode to user_input
-                user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="LLM Vision Event Calendar", data=user_input)
+                return self.async_create_entry(title="LLM Vision Events", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
                     step_id="semantic_index",
+                    data_schema=data_schema,
                     errors={"base": "handshake_failed"}
                 )
 
         return self.async_show_form(
             step_id="semantic_index",
+            data_schema=data_schema,
         )

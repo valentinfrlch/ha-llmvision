@@ -16,6 +16,7 @@ CONF_OLLAMA_PORT = 'ollama_port'
 CONF_OLLAMA_HTTPS = 'ollama_https'
 CONF_CUSTOM_OPENAI_ENDPOINT = 'custom_openai_endpoint'
 CONF_CUSTOM_OPENAI_API_KEY = 'custom_openai_api_key'
+CONF_RETENTION_TIME = 'retention_time'
 
 # service call constants
 MESSAGE = 'message'
