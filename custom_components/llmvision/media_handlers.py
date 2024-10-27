@@ -3,7 +3,7 @@ import io
 import os
 import shutil
 import logging
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 import numpy as np
 from homeassistant.helpers.network import get_url
 from homeassistant.exceptions import ServiceValidationError
@@ -287,8 +287,8 @@ class MediaProcessor:
                     clip_data = await self.client._fetch(frigate_url)
 
                     if not clip_data:
-                            raise ServiceValidationError(
-                                f"Failed to fetch frigate clip {event_id}")
+                        raise ServiceValidationError(
+                            f"Failed to fetch frigate clip {event_id}")
 
                     # create tmp dir to store video clips
                     os.makedirs(tmp_clips_dir, exist_ok=True)
@@ -339,30 +339,35 @@ class MediaProcessor:
                             _LOGGER.debug(f"Adding frame {frame_file}")
                             frame_path = os.path.join(
                                 tmp_frames_dir, frame_file)
+                            try:
+                                # Remove transparency for compatibility
+                                img = await self.hass.loop.run_in_executor(None, Image.open, frame_path)
 
-                            # Remove transparency for compatibility
-                            img = await self.hass.loop.run_in_executor(None, Image.open, frame_path)
-
-                            if img.mode == 'RGBA':
+                                if img.mode == 'RGBA':
                                     img = img.convert('RGB')
                                     img.save(frame_path)
 
-                            current_frame_gray = np.array(img.convert('L'))
+                                current_frame_gray = np.array(img.convert('L'))
 
-                            # Calculate similarity score
-                            if previous_frame is not None:
-                                score = self._similarity_score(
-                                    previous_frame, current_frame_gray)
+                                # Calculate similarity score
+                                if previous_frame is not None:
+                                    score = self._similarity_score(
+                                        previous_frame, current_frame_gray)
 
-                                frames.update({frame_path: score})
-                                frame_counter += 1
-                                previous_frame = current_frame_gray
-                            else:
-                                # Initialize previous_frame with the first frame
-                                previous_frame = current_frame_gray
+                                    frames.update({frame_path: score})
+                                    frame_counter += 1
+                                    previous_frame = current_frame_gray
+                                else:
+                                    # Initialize previous_frame with the first frame
+                                    previous_frame = current_frame_gray
+                            except UnidentifiedImageError:
+                                _LOGGER.error(
+                                    f"Cannot identify image file {frame_path}")
+                                continue
 
                         # get the max_frames many frames with the lowest ssim scores
-                        sorted_frames = sorted(frames.items(), key=lambda x: x[1])[:max_frames]
+                        sorted_frames = sorted(frames.items(), key=lambda x: x[1])[
+                            :max_frames]
 
                         # Add frames to client
                         for frame_path, _ in sorted_frames:
