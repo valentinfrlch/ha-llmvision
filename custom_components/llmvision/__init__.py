@@ -143,12 +143,15 @@ async def _remember(hass, call, start, response):
 
         if config_entry is None:
             raise ServiceValidationError(
-                f"Semantic index config not found")
+                f"'Event Calendar' config not found")
 
         semantic_index = SemanticIndex(hass, config_entry)
         # Define a mapping of keywords to labels
         keyword_to_label = {
             "person": "Person",
+            "individual": "Person",
+            "courier": "Courier",
+            "package": "Package",
             "car": "Car",
             "bike": "Bike",
             "bus": "Bus",
@@ -173,13 +176,10 @@ async def _remember(hass, call, start, response):
         elif call.video_paths and len(call.video_paths) > 0:
             camera_name = call.video_paths[0].split(
                 "/")[-1].replace(".mp4", "")
-        elif call.event_id and len(call.event_id) > 0:
-            camera_name = call.event_id[0]
-        elif call.image_paths and len(call.image_paths) > 0:
-            camera_name = call.image_paths[0].split(
-                "/")[-1].replace(".jpg", "")
         else:
             camera_name = "Unknown"
+        
+        camera_name = camera_name.replace("camera.", "").replace("image.", "")
 
         await semantic_index.remember(
             start=start,

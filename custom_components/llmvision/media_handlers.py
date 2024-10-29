@@ -3,6 +3,8 @@ import io
 import os
 import shutil
 import logging
+import time
+import asyncio
 from PIL import Image, UnidentifiedImageError
 import numpy as np
 from homeassistant.helpers.network import get_url
@@ -141,8 +143,6 @@ class MediaProcessor:
             duration (float): Duration in seconds to record
             target_width (int): Target width for the images in pixels
         """
-        import time
-        import asyncio
 
         interval = 1 if duration < 3 else 2 if duration < 10 else 4 if duration < 30 else 6 if duration < 60 else 10
         camera_frames = {}

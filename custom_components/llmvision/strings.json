@@ -2,8 +2,8 @@
     "config": {
         "step": {
             "user": {
-                "title": "Choose Provider",
-                "description": "Select the provider you want to use."
+                "title": "LLM Vision Setup",
+                "description": "Select what you want to set up"
             },
             "localai": {
                 "title": "Connect to your LocalAI server",

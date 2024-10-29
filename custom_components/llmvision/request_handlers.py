@@ -19,6 +19,10 @@ from .const import (
     CONF_CUSTOM_OPENAI_API_KEY,
     VERSION_ANTHROPIC,
     ENDPOINT_OPENAI,
+    ENDPOINT_ANTHROPIC,
+    ENDPOINT_GOOGLE,
+    ENDPOINT_LOCALAI,
+    ENDPOINT_OLLAMA,
     ENDPOINT_GROQ,
     ERROR_OPENAI_NOT_CONFIGURED,
     ERROR_ANTHROPIC_NOT_CONFIGURED,
@@ -46,7 +50,7 @@ def sanitize_data(data):
 
 
 def get_provider(hass, provider_uid):
-    """Translate the UID of the config entry into the provider name."""
+    """Translate UID of the config entry into provider name"""
     if DOMAIN not in hass.data:
         return None
 
@@ -84,6 +88,7 @@ def default_model(provider): return {
 
 
 class RequestHandler:
+    """class to handle requests to AI providers"""
     def __init__(self, hass, message, max_tokens, temperature, detail):
         self.session = async_get_clientsession(hass)
         self.hass = hass
@@ -95,6 +100,7 @@ class RequestHandler:
         self.filenames = []
 
     async def make_request(self, call):
+        """Forward request to providers"""
         entry_id = call.provider
         provider = get_provider(self.hass, entry_id)
         _LOGGER.info(f"Provider from call: {provider}")
@@ -218,7 +224,6 @@ class RequestHandler:
         return response_text
 
     async def anthropic(self, model, api_key):
-        from .const import ENDPOINT_ANTHROPIC
         # Set headers and payload
         headers = {'content-type': 'application/json',
                    'x-api-key': api_key,
@@ -261,7 +266,6 @@ class RequestHandler:
         return response_text
 
     async def google(self, model, api_key):
-        from .const import ENDPOINT_GOOGLE
         # Set headers and payload
         headers = {'content-type': 'application/json'}
         data = {"contents": [
@@ -339,7 +343,6 @@ class RequestHandler:
         return response_text
 
     async def localai(self, model, ip_address, port, https):
-        from .const import ENDPOINT_LOCALAI
         data = {"model": model,
                 "messages": [{"role": "user", "content": [
                 ]}],
@@ -368,7 +371,6 @@ class RequestHandler:
         return response_text
 
     async def ollama(self, model, ip_address, port, https):
-        from .const import ENDPOINT_OLLAMA
         data = {
             "model": model,
             "messages": [],

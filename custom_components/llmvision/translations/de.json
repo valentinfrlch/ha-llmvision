@@ -2,8 +2,8 @@
     "config": {
         "step": {
             "user": {
-                "title": "Anbieter auswählen",
-                "description": "Wähle den Anbieter den du konfigurieren möchtest."
+                "title": "LLM Visio Konfiguration",
+                "description": "Wähle was du konfigurieren möchtest."
             },
             "localai": {
                 "title": "LocalAI konfigurieren",
