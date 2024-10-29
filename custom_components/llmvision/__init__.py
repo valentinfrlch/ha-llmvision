@@ -96,7 +96,7 @@ async def async_setup_entry(hass, entry):
     # check if the entry is the calendar entry (has entry rentention_time)
     if filtered_entry_data.get(CONF_RETENTION_TIME):
         # forward the calendar entity to the platform
-        await hass.config_entries.async_forward_entry_setup(entry, "calendar")
+        await hass.config_entries.async_forward_entry_setups(entry, ["calendar"])
 
     return True
 
