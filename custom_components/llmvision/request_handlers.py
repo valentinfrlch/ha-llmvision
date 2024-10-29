@@ -74,7 +74,7 @@ def get_provider(hass, provider_uid):
 
 def default_model(provider): return {
     "OpenAI": "gpt-4o-mini",
-    "Anthropic": "claude-3-5-sonnet-20240620",
+    "Anthropic": "claude-3-5-sonnet-latest",
     "Google": "gemini-1.5-flash-latest",
     "Groq": "llava-v1.5-7b-4096-preview",
     "LocalAI": "gpt-4-vision-preview",
