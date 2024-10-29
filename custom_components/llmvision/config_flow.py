@@ -177,11 +177,12 @@ class Validator:
             _LOGGER.error("Could not connect to Groq server.")
             raise ServiceValidationError("handshake_failed")
 
-    async def semantic_index(self):
+    async def semantic_index(self) -> bool:
         # check if semantic_index is already configured
         for uid in self.hass.data[DOMAIN]:
             if 'retention_time' in self.hass.data[DOMAIN][uid]:
                 return False
+        return True
 
     def get_configured_providers(self):
         providers = []

@@ -94,7 +94,7 @@ async def async_setup_entry(hass, entry):
     hass.data[DOMAIN][entry_uid] = filtered_entry_data
 
     # check if the entry is the calendar entry (has entry rentention_time)
-    if filtered_entry_data.get(CONF_RETENTION_TIME):
+    if filtered_entry_data.get(CONF_RETENTION_TIME) is not None:
         # forward the calendar entity to the platform
         await hass.config_entries.async_forward_entry_setups(entry, ["calendar"])
 
@@ -109,6 +109,7 @@ async def async_remove_entry(hass, entry):
     if entry_uid in hass.data[DOMAIN]:
         # Remove the entry from hass.data
         _LOGGER.info(f"Removing {entry.title} from hass.data")
+        async_unload_entry(hass, entry)
         hass.data[DOMAIN].pop(entry_uid)
     else:
         _LOGGER.warning(

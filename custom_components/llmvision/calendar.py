@@ -2,7 +2,7 @@ import datetime
 import uuid
 import os
 import json
-from .const import CONF_RETENTION_TIME
+from .const import DOMAIN, CONF_RETENTION_TIME
 from homeassistant.util import dt as dt_util
 from homeassistant.core import HomeAssistant
 from homeassistant.components.calendar import (
@@ -31,7 +31,8 @@ class SemanticIndex(CalendarEntity):
         self._attr_name = config_entry.title
         self._attr_unique_id = config_entry.entry_id
         self._events = []
-        self._retention_time = config_entry.options.get(CONF_RETENTION_TIME, 7)
+        self._retention_time = self.hass.data.get(DOMAIN).get(
+            self._attr_unique_id).get(CONF_RETENTION_TIME)
         self._current_event = None
         self._attr_supported_features = (CalendarEntityFeature.DELETE_EVENT)
         # Path to the JSON file where events are stored
@@ -150,6 +151,7 @@ class SemanticIndex(CalendarEntity):
         # Delete events outside of retention time window
         now = datetime.datetime.now()
         cutoff_date = now - datetime.timedelta(days=self._retention_time)
+        _LOGGER.info(f"Deleting events before {cutoff_date}")
 
         events_data = [
             {
@@ -161,7 +163,7 @@ class SemanticIndex(CalendarEntity):
                 "location": event.location,
             }
             for event in self._events
-            if dt_util.as_local(self._ensure_datetime(event.end)) >= self._ensure_datetime(cutoff_date)
+            if dt_util.as_local(self._ensure_datetime(event.end)) >= self._ensure_datetime(cutoff_date) or self._retention_time == 0
         ]
 
         def write_to_file():
