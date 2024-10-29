@@ -32,13 +32,6 @@ blueprint:
       selector:
         device:
           integration: mobile_app
-    frigate_url:
-      name: Frigate URL
-      description: (Frigate mode) Frigate's base url to fetch preview
-      default: "http://localhost:5000"
-      selector:
-        text:
-          multiline: false
     camera_entities:
       name: Camera Entities
       description: (Camera and Frigate mode) List of camera entities to monitor
@@ -48,6 +41,15 @@ blueprint:
           multiple: true
           filter:
             domain: camera
+    preview_mode:
+      name: Preview Mode
+      description: (Camera mode) Choose between a live preview or a snapshot of the event
+      default: 'Live Preview'
+      selector:
+        select:
+          options:
+            - 'Live Preview'
+            - 'Snapshot'
     motion_sensors:
       name: Motion Sensor
       description: (Camera mode) Set if your cameras don't change state. Use the same order used for camera entities.
@@ -152,9 +154,9 @@ blueprint:
 
 variables:
   important: !input important
-  base_url: !input frigate_url
   cooldown: !input cooldown
   mode: !input mode
+  preview_mode: !input preview_mode
   camera_entities_list: !input camera_entities
   motion_sensors_list: !input motion_sensors
   camera_entity: >
@@ -194,7 +196,7 @@ variables:
     {% endif %}
   video: >
     {% if mode == 'Frigate' %}
-      {{ base_url }}/api/events/{{ trigger.payload_json['after']['id'] }}/clip.mp4
+      /api/frigate/notifications/{{ trigger.payload_json['after']['id'] }}/clip.mp4
     {% else %}
       ''
     {% endif %}
@@ -202,7 +204,11 @@ variables:
     {% if mode == 'Frigate' %}
       ''
     {% else %}
-      {{ '/api/camera_proxy/' + camera_entity }}
+      {% if preview_mode == 'Live Preview' %}
+        {{ '/api/camera_proxy/' + camera_entity }}
+      {% else %}
+        /www/llmvision/{{camera_entity}}_0.jpg
+      {% endif %}
     {% endif %}
   importance_prompt: >
     Your job is to decide whether a camera recording is important (so the user gets a notification) or not. 
@@ -284,7 +290,7 @@ action:
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ base_url is not none and base_url != '' }}"
+            value_template: "{{ image != '' or video != '' }}"
         sequence:
           - alias: "Send instant notification without summary"
             domain: mobile_app
@@ -332,12 +338,14 @@ action:
               provider: !input provider
               model: !input model
               message: !input message
+              remember: !input remember
               include_filename: true
               max_frames: !input max_frames
               target_width: !input target_width
               detail: !input detail
               max_tokens: !input max_tokens
               temperature: !input temperature
+              expose_images: "{{true if preview_mode == 'Snapshot'}}"
             response_variable: response
 
   - alias: "Send notification with summary"

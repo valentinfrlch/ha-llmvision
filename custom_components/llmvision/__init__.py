@@ -13,6 +13,7 @@ from .const import (
     CONF_OLLAMA_HTTPS,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_API_KEY,
+    CONF_RETENTION_TIME,
     MESSAGE,
     REMEMBER,
     MODEL,
@@ -29,7 +30,7 @@ from .const import (
     TEMPERATURE,
     DETAIL,
     INCLUDE_FILENAME,
-    CONF_RETENTION_TIME,
+    EXPOSE_IMAGES,
 )
 from .calendar import SemanticIndex
 from datetime import timedelta
@@ -212,6 +213,7 @@ class ServiceCallData:
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 100))
         self.detail = str(data_call.data.get(DETAIL, "auto"))
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
+        self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
 
     def get_service_call_data(self):
         return self
@@ -237,7 +239,8 @@ def setup(hass, config):
         client = await processor.add_images(image_entities=call.image_entities,
                                             image_paths=call.image_paths,
                                             target_width=call.target_width,
-                                            include_filename=call.include_filename
+                                            include_filename=call.include_filename,
+                                            expose_images=call.expose_images
                                             )
 
         # Validate configuration, input data and make the call
@@ -260,7 +263,8 @@ def setup(hass, config):
                                             event_ids=call.event_id,
                                             max_frames=call.max_frames,
                                             target_width=call.target_width,
-                                            include_filename=call.include_filename
+                                            include_filename=call.include_filename,
+                                            expose_images=call.expose_images
                                             )
         response = await client.make_request(call)
         await _remember(hass, call, start, response)
@@ -281,7 +285,8 @@ def setup(hass, config):
                                              duration=call.duration,
                                              max_frames=call.max_frames,
                                              target_width=call.target_width,
-                                             include_filename=call.include_filename
+                                             include_filename=call.include_filename,
+                                             expose_images=call.expose_images
                                              )
 
         response = await client.make_request(call)

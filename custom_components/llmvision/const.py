@@ -35,6 +35,7 @@ MAX_FRAMES = 'max_frames'
 DETAIL = 'detail'
 TEMPERATURE = 'temperature'
 INCLUDE_FILENAME = 'include_filename'
+EXPOSE_IMAGES = 'expose_images'
 
 # Error messages
 ERROR_OPENAI_NOT_CONFIGURED = "OpenAI is not configured"

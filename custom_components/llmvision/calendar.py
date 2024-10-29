@@ -143,7 +143,7 @@ class SemanticIndex(CalendarEntity):
             )
             for event in events_data
         ]
-        _LOGGER.info(f"events: {self._events}")
+        # _LOGGER.info(f"events: {self._events}")
 
     async def _save_events(self) -> None:
         """Save events to the JSON file."""
@@ -193,5 +193,5 @@ async def async_setup_entry(
 
 async def async_remove(self):
     """Handle removal of the entity."""
-    _LOGGER.info(f"Removing calendar entity: {self._attr_name}")
+    # _LOGGER.info(f"Removing calendar entity: {self._attr_name}")
     await super().async_remove()
