@@ -89,6 +89,7 @@ def default_model(provider): return {
 
 class RequestHandler:
     """class to handle requests to AI providers"""
+
     def __init__(self, hass, message, max_tokens, temperature, detail):
         self.session = async_get_clientsession(hass)
         self.hass = hass
@@ -175,9 +176,8 @@ class RequestHandler:
             api_key = self.hass.data.get(DOMAIN).get(
                 entry_id).get(
                 CONF_CUSTOM_OPENAI_API_KEY, "")
-            endpoint = self.hass.data.get(DOMAIN).get(
-                entry_id).get(
-                CONF_CUSTOM_OPENAI_ENDPOINT)
+            endpoint = self.hass.data.get(DOMAIN).get(entry_id).get(
+                CONF_CUSTOM_OPENAI_ENDPOINT) + "/v1/chat/completions"
             self._validate_call(provider=provider,
                                 api_key=api_key,
                                 base64_images=self.base64_images)

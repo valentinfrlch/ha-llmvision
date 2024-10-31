@@ -143,9 +143,10 @@ class Validator:
                 self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT])
             protocol = url.scheme
             base_url = url.hostname
+            path = url.path if url.path else ""
             port = ":" + str(url.port) if url.port else ""
 
-            endpoint = "/v1/models"
+            endpoint = path + "/v1/models"
             header = {'Content-type': 'application/json',
                       'Authorization': 'Bearer ' + self.user_input[CONF_CUSTOM_OPENAI_API_KEY]} if CONF_CUSTOM_OPENAI_API_KEY in self.user_input else {}
         except Exception as e:
