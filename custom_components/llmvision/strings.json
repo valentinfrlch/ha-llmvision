@@ -2,8 +2,8 @@
     "config": {
         "step": {
             "user": {
-                "title": "Choose Provider",
-                "description": "Select the provider you want to use."
+                "title": "LLM Vision Setup",
+                "description": "Select what you want to set up"
             },
             "localai": {
                 "title": "Connect to your LocalAI server",
@@ -58,6 +58,13 @@
                     "custom_openai_endpoint": "Custom Endpoint",
                     "custom_openai_api_key": "Your API key"
                 }
+            },
+            "semantic_index": {
+                "title": "Remember Events",
+                "description": "Set how many days events will be remembered for. Events will automatically be deleted after this time. Events are stored locally and can be deleted manually in the calendar view. (0 disables auto delete)",
+                "data": {
+                    "retention_time": "Auto delete events after (days)"
+                }
             }
         },
         "error": {
@@ -66,7 +73,6 @@
             "invalid_provider": "Invalid provider selected"
         },
         "abort": {
-            "already_configured": "This provider is already configured. Delete the existing configuration to reconfigure",
             "unknown_provider": "Unknown provider"
         }
     }

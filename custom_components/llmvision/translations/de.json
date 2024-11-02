@@ -2,8 +2,8 @@
     "config": {
         "step": {
             "user": {
-                "title": "Anbieter auswählen",
-                "description": "Wähle den Anbieter den du konfigurieren möchtest."
+                "title": "LLM Visio Konfiguration",
+                "description": "Wähle was du konfigurieren möchtest."
             },
             "localai": {
                 "title": "LocalAI konfigurieren",
@@ -49,6 +49,13 @@
                     "custom_openai_endpoint": "Custom Endpoint",
                     "custom_openai_api_key": "Dein API-key"
                 }
+            },
+            "semantic_index": {
+                "title": "Events erinnern",
+                "description": "Konfiguriere wie viele Tage Events gespeichert werden, danach werden sie automatisch gelöscht. Events werden nur lokal gespeichert und können in der Kalenderansicht gelöscht werden. (0 deaktiviert auto delete)",
+                "data": {
+                    "retention_time": "Automatisch löschen nach (in Tagen)"
+                }
             }
         },
         "error": {
@@ -57,7 +64,6 @@
             "invalid_provider": "Ungültiger Provider ausgewählt"
         },
         "abort": {
-            "already_configured": "Anbieter ist bereits konfiguriert. Lösche die vorhandene Konfiguration, um eine neue hinzuzufügen.",
             "unknown_provider": "Unbekannter Anbieter"
         }
     }

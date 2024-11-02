@@ -16,13 +16,15 @@ CONF_OLLAMA_PORT = 'ollama_port'
 CONF_OLLAMA_HTTPS = 'ollama_https'
 CONF_CUSTOM_OPENAI_ENDPOINT = 'custom_openai_endpoint'
 CONF_CUSTOM_OPENAI_API_KEY = 'custom_openai_api_key'
+CONF_RETENTION_TIME = 'retention_time'
 
 # service call constants
+MESSAGE = 'message'
+REMEMBER = 'remember'
 PROVIDER = 'provider'
 MAXTOKENS = 'max_tokens'
 TARGET_WIDTH = 'target_width'
 MODEL = 'model'
-MESSAGE = 'message'
 IMAGE_FILE = 'image_file'
 IMAGE_ENTITY = 'image_entity'
 VIDEO_FILE = 'video_file'
@@ -33,6 +35,7 @@ MAX_FRAMES = 'max_frames'
 DETAIL = 'detail'
 TEMPERATURE = 'temperature'
 INCLUDE_FILENAME = 'include_filename'
+EXPOSE_IMAGES = 'expose_images'
 
 # Error messages
 ERROR_OPENAI_NOT_CONFIGURED = "OpenAI is not configured"

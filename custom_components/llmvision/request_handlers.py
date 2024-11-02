@@ -19,6 +19,10 @@ from .const import (
     CONF_CUSTOM_OPENAI_API_KEY,
     VERSION_ANTHROPIC,
     ENDPOINT_OPENAI,
+    ENDPOINT_ANTHROPIC,
+    ENDPOINT_GOOGLE,
+    ENDPOINT_LOCALAI,
+    ENDPOINT_OLLAMA,
     ENDPOINT_GROQ,
     ERROR_OPENAI_NOT_CONFIGURED,
     ERROR_ANTHROPIC_NOT_CONFIGURED,
@@ -46,7 +50,7 @@ def sanitize_data(data):
 
 
 def get_provider(hass, provider_uid):
-    """Translate the UID of the config entry into the provider name."""
+    """Translate UID of the config entry into provider name"""
     if DOMAIN not in hass.data:
         return None
 
@@ -72,9 +76,9 @@ def get_provider(hass, provider_uid):
     return None
 
 
-default_model = lambda provider: {
+def default_model(provider): return {
     "OpenAI": "gpt-4o-mini",
-    "Anthropic": "claude-3-5-sonnet-20240620",
+    "Anthropic": "claude-3-5-sonnet-latest",
     "Google": "gemini-1.5-flash-latest",
     "Groq": "llava-v1.5-7b-4096-preview",
     "LocalAI": "gpt-4-vision-preview",
@@ -84,6 +88,8 @@ default_model = lambda provider: {
 
 
 class RequestHandler:
+    """class to handle requests to AI providers"""
+
     def __init__(self, hass, message, max_tokens, temperature, detail):
         self.session = async_get_clientsession(hass)
         self.hass = hass
@@ -95,8 +101,10 @@ class RequestHandler:
         self.filenames = []
 
     async def make_request(self, call):
+        """Forward request to providers"""
         entry_id = call.provider
         provider = get_provider(self.hass, entry_id)
+        _LOGGER.info(f"Provider from call: {provider}")
         model = call.model if call.model != "None" else default_model(provider)
 
         if provider == 'OpenAI':
@@ -168,13 +176,14 @@ class RequestHandler:
             api_key = self.hass.data.get(DOMAIN).get(
                 entry_id).get(
                 CONF_CUSTOM_OPENAI_API_KEY, "")
-            endpoint = self.hass.data.get(DOMAIN).get(
-                entry_id).get(
-                CONF_CUSTOM_OPENAI_ENDPOINT)
+            endpoint = self.hass.data.get(DOMAIN).get(entry_id).get(
+                CONF_CUSTOM_OPENAI_ENDPOINT) + "/v1/chat/completions"
             self._validate_call(provider=provider,
                                 api_key=api_key,
                                 base64_images=self.base64_images)
             response_text = await self.openai(model=model, api_key=api_key, endpoint=endpoint)
+        else:
+            raise ServiceValidationError("invalid_provider")
         return {"response_text": response_text}
 
     def add_frame(self, base64_image, filename):
@@ -215,7 +224,6 @@ class RequestHandler:
         return response_text
 
     async def anthropic(self, model, api_key):
-        from .const import ENDPOINT_ANTHROPIC
         # Set headers and payload
         headers = {'content-type': 'application/json',
                    'x-api-key': api_key,
@@ -258,7 +266,6 @@ class RequestHandler:
         return response_text
 
     async def google(self, model, api_key):
-        from .const import ENDPOINT_GOOGLE
         # Set headers and payload
         headers = {'content-type': 'application/json'}
         data = {"contents": [
@@ -336,7 +343,6 @@ class RequestHandler:
         return response_text
 
     async def localai(self, model, ip_address, port, https):
-        from .const import ENDPOINT_LOCALAI
         data = {"model": model,
                 "messages": [{"role": "user", "content": [
                 ]}],
@@ -365,7 +371,6 @@ class RequestHandler:
         return response_text
 
     async def ollama(self, model, ip_address, port, https):
-        from .const import ENDPOINT_OLLAMA
         data = {
             "model": model,
             "messages": [],
@@ -425,7 +430,8 @@ class RequestHandler:
             try:
                 response = await self.session.get(url)
                 if response.status != 200:
-                    _LOGGER.warning(f"Couldn't fetch frame (status code: {response.status})")
+                    _LOGGER.warning(
+                        f"Couldn't fetch frame (status code: {response.status})")
                     retries += 1
                     await asyncio.sleep(retry_delay)
                     continue
@@ -468,7 +474,8 @@ class RequestHandler:
         elif provider == 'Custom OpenAI':
             pass
         else:
-            raise ServiceValidationError("invalid_provider")
+            raise ServiceValidationError(
+                "Invalid provider selected. The event calendar cannot be used for analysis.")
         # Check media input
         if base64_images == []:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)

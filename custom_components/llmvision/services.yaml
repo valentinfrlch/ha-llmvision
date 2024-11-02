@@ -25,6 +25,14 @@ image_analyzer:
       selector:
         text:
           multiline: true
+    remember:
+      name: Remember
+      required: false
+      description: 'Remember this event so you can ask about it later'
+      example: true
+      default: false
+      selector:
+        boolean:
     image_file:
       name: Image File
       required: false
@@ -92,6 +100,14 @@ image_analyzer:
           min: 0.1
           max: 1.0
           step: 0.1
+    expose_images:
+      name: Expose Images
+      description: (Experimental) Expose analyzed frames after processing. This will save analyzed frames in /www/llmvision so they can be used for notifications. (Only works for entity input, include camera name should be enabled). Existing files will be overwritten.
+      required: false
+      example: false
+      default: false
+      selector:
+        boolean:
 
 video_analyzer:
   name: Video Analyzer
@@ -120,6 +136,14 @@ video_analyzer:
       selector:
         text:
           multiline: true
+    remember:
+      name: Remember
+      required: false
+      description: 'Remember this event so you can ask about it later'
+      example: true
+      default: false
+      selector:
+        boolean:
     video_file:
       name: Video File
       required: false
@@ -136,16 +160,6 @@ video_analyzer:
       selector:
         text:
           multiline: true
-    interval:
-      name: Interval
-      description: "DEPRECATED: Use max_frames. Analyze frames every <interval> seconds."
-      required: false
-      example: 3
-      default: 3
-      selector:
-        number:
-          min: 1
-          max: 60
     max_frames:
       name: Max Frames
       description: How many frames to analyze. Picks frames with the most movement.
@@ -207,6 +221,14 @@ video_analyzer:
           min: 0.0
           max: 1.0
           step: 0.1
+    expose_images:
+      name: Expose Images
+      description: (Experimental) Expose analyzed frames after processing. This will save analyzed frames in /www/llmvision so they can be used for notifications. (Only works for entity input, include camera name should be enabled). Existing files will be overwritten.
+      required: false
+      example: false
+      default: false
+      selector:
+        boolean:
 
 stream_analyzer:
   name: Stream Analyzer
@@ -235,6 +257,14 @@ stream_analyzer:
       selector:
         text:
           multiline: true
+    remember:
+      name: Remember
+      required: false
+      description: 'Remember this event so you can ask about it later'
+      example: true
+      default: false
+      selector:
+        boolean:
     image_entity:
       name: Camera Entity
       required: true
@@ -244,16 +274,6 @@ stream_analyzer:
         entity:
           domain: ["camera"]
           multiple: true
-    interval:
-      name: Interval
-      description: "DEPRECATED: Use max_frames. Analyze frames every <interval> seconds."
-      required: false
-      example: 2
-      default: 2
-      selector:
-        number:
-          min: 1
-          max: 10
     duration:
       name: Recording Duration
       required: true
@@ -325,3 +345,11 @@ stream_analyzer:
           min: 0.1
           max: 1.0
           step: 0.1
+    expose_images:
+      name: Expose Images
+      description: (Experimental) Expose analyzed frames after processing. This will save analyzed frames in /www/llmvision so they can be used for notifications. (Only works for entity input, include camera name should be enabled). Existing files will be overwritten.
+      required: false
+      example: false
+      default: false
+      selector:
+        boolean:
