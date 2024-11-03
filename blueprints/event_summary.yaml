@@ -280,10 +280,10 @@ action:
                     value_template: "{{ mode == 'Frigate'}}"
                 sequence:
                   - delay:
-                    hours: 0
-                    minutes: 0
-                    seconds: 5
-                    milliseconds: 0
+                      hours: 0
+                      minutes: 0
+                      seconds: 5
+                      milliseconds: 0
                   - service: llmvision.image_analyzer
                     data:
                       image_entity: "{{ ['camera.' + trigger.payload_json['after']['camera']|lower] }}"
@@ -348,10 +348,10 @@ action:
             value_template: "{{ mode == 'Frigate' }}"
         sequence:
           - delay:
-            hours: 0
-            minutes: 0
-            seconds: 5
-            milliseconds: 0
+              hours: 0
+              minutes: 0
+              seconds: 5
+              milliseconds: 0
           - service: llmvision.video_analyzer
             data:
               event_id: "{{ trigger.payload_json['after']['id'] }}"
