@@ -279,11 +279,6 @@ action:
                   - condition: template
                     value_template: "{{ mode == 'Frigate'}}"
                 sequence:
-                  - delay:
-                      hours: 0
-                      minutes: 0
-                      seconds: 5
-                      milliseconds: 0
                   - service: llmvision.image_analyzer
                     data:
                       image_entity: "{{ ['camera.' + trigger.payload_json['after']['camera']|lower] }}"
@@ -347,11 +342,7 @@ action:
           - condition: template
             value_template: "{{ mode == 'Frigate' }}"
         sequence:
-          - delay:
-              hours: 0
-              minutes: 0
-              seconds: 5
-              milliseconds: 0
+          - delay: "00:00:05"
           - service: llmvision.video_analyzer
             data:
               event_id: "{{ trigger.payload_json['after']['id'] }}"
@@ -370,6 +361,7 @@ action:
           - condition: template
             value_template: "{{ mode == 'Camera' }}"
         sequence:
+          - delay: "00:00:05"
           - service: llmvision.stream_analyzer
             data:
               image_entity: "{{[camera_entity]}}"
