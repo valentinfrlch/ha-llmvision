@@ -42,9 +42,9 @@ blueprint:
           filter:
             domain: camera
     labels:
-      name: Object Filter (Frigate mode only)
+      name: Object Filter
       description: |
-        Specify objects you wish to be notified about. Enter or select one object at a time.
+        (Frigate mode only) Specify objects you wish to be notified about. Enter or select one object at a time.
       default: ""
       selector:
         select:
