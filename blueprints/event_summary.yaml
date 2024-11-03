@@ -176,6 +176,7 @@ variables:
   camera_entities_list: !input camera_entities
   motion_sensors_list: !input motion_sensors
   input_labels: !input labels
+  input_message: !input message
   frigate_labels: "{{ input_labels | list | lower }}"
   camera_entity: >
     {% if mode == 'Camera' %}
@@ -236,6 +237,12 @@ variables:
     Your job is to decide whether a camera recording is important (so the user gets a notification) or not. 
     Reply with 'yes' if the user should be notified or 'no' otherwise. 
     Reply with these replies exactly.
+  message_prompt: >
+    {% if trigger.payload_json['after']['sub_label'] %}
+      {{input_message}} The name of the person is {{ trigger.payload_json['after']['sub_label'][0] }}. Use that name in your summary.
+    {% else %}
+      {{input_message}}
+    {% endif %}
 
 trigger:
   - platform: mqtt
@@ -359,7 +366,7 @@ action:
               duration: !input duration
               provider: !input provider
               model: !input model
-              message: !input message
+              message: "{{message_prompt}}"
               remember: !input remember
               include_filename: true
               max_frames: !input max_frames
