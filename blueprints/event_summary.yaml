@@ -1,6 +1,6 @@
 blueprint:
-  name: AI Event Summary (LLM Vision v1.3)
-  author: valentinfrlch
+  name: AI Event Summary - bullitt168 fork from valentinfrlch
+  author: bullitt168
   description: >
     AI-powered security event summaries for frigate or camera entities. 
     Sends a notification with a preview to your phone that is updated dynamically when the AI summary is available.
@@ -41,6 +41,22 @@ blueprint:
           multiple: true
           filter:
             domain: camera
+    labels:
+      name: Object Filter
+      description: |
+        (Frigate mode only) Specify objects you wish to be notified about. Enter or select one object at a time.
+      default: ""
+      selector:
+        select:
+          options:
+            - person
+            - dog
+            - cat
+            - car
+            - package
+            - bird
+          multiple: true
+          custom_value: true
     preview_mode:
       name: Preview Mode
       description: (Camera mode only) Choose between a live preview or a snapshot of the event
@@ -159,6 +175,9 @@ variables:
   preview_mode: !input preview_mode
   camera_entities_list: !input camera_entities
   motion_sensors_list: !input motion_sensors
+  input_labels: !input labels
+  input_message: !input message
+  frigate_labels: "{{ input_labels | list | lower }}"
   camera_entity: >
     {% if mode == 'Camera' %}
       {% if motion_sensors_list %}
@@ -184,9 +203,13 @@ variables:
     {% endif %}
   label: >
     {% if mode == 'Frigate' %}
-      {{ trigger.payload_json['after']['label']|capitalize }} seen
+      {% if trigger.payload_json['after']['sub_label'] %}
+        {{trigger.payload_json['after']['sub_label'][0]|capitalize}} bei {{trigger.payload_json['after']['camera']}} erkannt
+      {% else %}
+        {{ trigger.payload_json['after']['label']|capitalize }} bei {{trigger.payload_json['after']['camera']}} erkannt
+      {% endif %}
     {% else %}
-      Motion detected
+      Bewegung bei {{trigger.payload_json['after']['camera']}} erkannt
     {% endif %}
   camera: >
     {% if mode == 'Frigate' %}
@@ -214,6 +237,12 @@ variables:
     Your job is to decide whether a camera recording is important (so the user gets a notification) or not. 
     Reply with 'yes' if the user should be notified or 'no' otherwise. 
     Reply with these replies exactly.
+  message_prompt: >
+    {% if trigger.payload_json['after']['sub_label'] %}
+      {{input_message}} The name of the person is {{ trigger.payload_json['after']['sub_label'][0] }}. Use that name in your summary.
+    {% else %}
+      {{input_message}}
+    {% endif %}
 
 trigger:
   - platform: mqtt
@@ -232,7 +261,7 @@ condition:
   - condition: template
     value_template: >
       {% if mode == 'Frigate' %}
-        {{ trigger.payload_json["type"] == "end" and (state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list }}
+        {{ trigger.payload_json["type"] == "end" and (state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list and (not frigate_labels|length or trigger.payload_json['after']['label'] in frigate_labels) }}
       {% else %}
         {{ state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
       {% endif %}
@@ -313,12 +342,13 @@ action:
           - condition: template
             value_template: "{{ mode == 'Frigate' }}"
         sequence:
+          - delay: "00:00:05"
           - service: llmvision.video_analyzer
             data:
               event_id: "{{ trigger.payload_json['after']['id'] }}"
               provider: !input provider
               model: !input model
-              message: !input message
+              message: "{{message_prompt}}"
               remember: !input remember
               include_filename: true
               max_frames: !input max_frames
@@ -331,13 +361,14 @@ action:
           - condition: template
             value_template: "{{ mode == 'Camera' }}"
         sequence:
+          - delay: "00:00:05"
           - service: llmvision.stream_analyzer
             data:
               image_entity: "{{[camera_entity]}}"
               duration: !input duration
               provider: !input provider
               model: !input model
-              message: !input message
+              message: "{{message_prompt}}"
               remember: !input remember
               include_filename: true
               max_frames: !input max_frames
