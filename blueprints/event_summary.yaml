@@ -41,6 +41,22 @@ blueprint:
           multiple: true
           filter:
             domain: camera
+    labels:
+      name: Object Filter (Frigate mode only)
+      description: |
+        Specify objects you wish to be notified about. Enter or select one object at a time.
+      default: ""
+      selector:
+        select:
+          options:
+            - person
+            - dog
+            - cat
+            - car
+            - package
+            - bird
+          multiple: true
+          custom_value: true
     preview_mode:
       name: Preview Mode
       description: (Camera mode only) Choose between a live preview or a snapshot of the event
@@ -159,6 +175,8 @@ variables:
   preview_mode: !input preview_mode
   camera_entities_list: !input camera_entities
   motion_sensors_list: !input motion_sensors
+  input_labels: !input labels
+  frigate_labels: "{{ input_labels | list | lower }}"
   camera_entity: >
     {% if mode == 'Camera' %}
       {% if motion_sensors_list %}
@@ -232,7 +250,7 @@ condition:
   - condition: template
     value_template: >
       {% if mode == 'Frigate' %}
-        {{ trigger.payload_json["type"] == "end" and (state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list }}
+        {{ trigger.payload_json["type"] == "end" and (state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list and (not frigate_labels|length or trigger.payload_json['after']['label'] in frigate_labels) }}
       {% else %}
         {{ state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
       {% endif %}
