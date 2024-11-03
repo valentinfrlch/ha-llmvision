@@ -204,12 +204,12 @@ variables:
   label: >
     {% if mode == 'Frigate' %}
       {% if trigger.payload_json['after']['sub_label'] %}
-        {{trigger.payload_json['after']['sub_label'][0]|capitalize}} seen
+        {{trigger.payload_json['after']['sub_label'][0]|capitalize}} bei {{trigger.payload_json['after']['camera']}} erkannt
       {% else %}
-        {{ trigger.payload_json['after']['label']|capitalize }} seen
+        {{ trigger.payload_json['after']['label']|capitalize }} bei {{trigger.payload_json['after']['camera']}} erkannt
       {% endif %}
     {% else %}
-      Motion detected
+      Bewegung bei {{trigger.payload_json['after']['camera']}} erkannt
     {% endif %}
   camera: >
     {% if mode == 'Frigate' %}
