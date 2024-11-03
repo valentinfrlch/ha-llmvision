@@ -57,14 +57,6 @@ blueprint:
             - bird
           multiple: true
           custom_value: true
-    update_sub_label:
-      name: Update Sub Label (Advanced)
-      description: |
-        Update the title and/or message with the matched face name and trigger a notification update. 
-        Requires face detection in Frigate to be configured.
-      default: false
-      selector:
-        boolean:
     preview_mode:
       name: Preview Mode
       description: (Camera mode only) Choose between a live preview or a snapshot of the event
@@ -185,7 +177,6 @@ variables:
   motion_sensors_list: !input motion_sensors
   input_labels: !input labels
   frigate_labels: "{{ input_labels | list | lower }}"
-  update_sub_label: !input update_sub_label
   camera_entity: >
     {% if mode == 'Camera' %}
       {% if motion_sensors_list %}
@@ -211,13 +202,7 @@ variables:
     {% endif %}
   label: >
     {% if mode == 'Frigate' %}
-      {% if event['after']['sub_label'] and update_sub_label %} 
-        {{event['after']['sub_label'][0]|capitalize}} seen
-      {% elif trigger.payload_json['after']['label'] %}      
-        {{ trigger.payload_json['after']['label']|capitalize}} seen
-      {% else %}
-        Motion detected
-      {% endif %}
+      {{ trigger.payload_json['after']['label']|capitalize }} seen
     {% else %}
       Motion detected
     {% endif %}
