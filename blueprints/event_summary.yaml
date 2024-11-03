@@ -212,9 +212,9 @@ variables:
   label: >
     {% if mode == 'Frigate' %}
       {% if event['after']['sub_label'] and update_sub_label %} 
-        {{event['after']['sub_label'][0]|capitalize}} seen
+        {{event['after']['sub_label']|capitalize}} seen
       {% elif trigger.payload_json['after']['label'] %}      
-        {{ trigger.payload_json['after']['label'][0]|capitalize}} seen
+        {{ trigger.payload_json['after']['label']|capitalize}} seen
       {% else %}
         Motion detected
       {% endif %}
