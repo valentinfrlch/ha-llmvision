@@ -202,7 +202,11 @@ variables:
     {% endif %}
   label: >
     {% if mode == 'Frigate' %}
-      {{ trigger.payload_json['after']['label']|capitalize }} seen
+      {% if trigger.payload_json['after']['sub_label'] %}
+        {{trigger.payload_json['after']['sub_label'][0]|capitalize}} seen
+      {% else %}
+        {{ trigger.payload_json['after']['label']|capitalize }} seen
+      {% endif %}
     {% else %}
       Motion detected
     {% endif %}
