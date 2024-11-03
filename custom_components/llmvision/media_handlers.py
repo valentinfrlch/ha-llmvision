@@ -434,3 +434,14 @@ class MediaProcessor:
                 expose_images=expose_images
             )
         return self.client
+
+    async def add_visual_data(self, image_entities, image_paths, target_width, include_filename):
+        """Wrapper for add_images for visual data"""
+        await self.add_images(
+            image_entities=image_entities,
+            image_paths=image_paths,
+            target_width=target_width,
+            include_filename=include_filename,
+            expose_images=False
+        )
+        return self.client

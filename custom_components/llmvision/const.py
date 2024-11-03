@@ -36,6 +36,7 @@ DETAIL = 'detail'
 TEMPERATURE = 'temperature'
 INCLUDE_FILENAME = 'include_filename'
 EXPOSE_IMAGES = 'expose_images'
+SENSOR_ENTITY = 'sensor_entity'
 
 # Error messages
 ERROR_OPENAI_NOT_CONFIGURED = "OpenAI is not configured"

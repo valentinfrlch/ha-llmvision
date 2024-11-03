@@ -31,6 +31,7 @@ from .const import (
     DETAIL,
     INCLUDE_FILENAME,
     EXPOSE_IMAGES,
+    SENSOR_ENTITY,
 )
 from .calendar import SemanticIndex
 from datetime import timedelta
@@ -178,7 +179,7 @@ async def _remember(hass, call, start, response):
                 "/")[-1].replace(".mp4", "")
         else:
             camera_name = "Unknown"
-        
+
         camera_name = camera_name.replace("camera.", "").replace("image.", "")
 
         await semantic_index.remember(
@@ -188,6 +189,16 @@ async def _remember(hass, call, start, response):
             camera_name=camera_name,
             summary=response["response_text"]
         )
+
+
+async def _update_sensor(hass, sensor_entity, new_value):
+    """Update the value of a sensor entity."""
+    if sensor_entity:
+        _LOGGER.info(
+            f"Updating sensor {sensor_entity} with new value: {new_value}")
+        hass.states.async_set(sensor_entity, new_value)
+    else:
+        _LOGGER.warning("No sensor entity provided to update")
 
 
 class ServiceCallData:
@@ -215,6 +226,7 @@ class ServiceCallData:
         self.detail = str(data_call.data.get(DETAIL, "auto"))
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
+        self.sensor_entity = data_call.data.get(SENSOR_ENTITY)
 
     def get_service_call_data(self):
         return self
@@ -272,7 +284,7 @@ def setup(hass, config):
         return response
 
     async def stream_analyzer(data_call):
-        """Handle the service call to analyze a stream (future implementation)"""
+        """Handle the service call to analyze a stream"""
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
         call.message = "The attached images are frames from a live camera feed. " + call.message
@@ -294,6 +306,27 @@ def setup(hass, config):
         await _remember(hass, call, start, response)
         return response
 
+    async def data_analyzer(data_call):
+        """Handle the service call to analyze visual data"""
+        start = dt_util.now()
+        call = ServiceCallData(data_call).get_service_call_data()
+        client = RequestHandler(hass,
+                                message=call.message,
+                                max_tokens=call.max_tokens,
+                                temperature=call.temperature,
+                                detail=call.detail)
+        processor = MediaProcessor(hass, client)
+        client = await processor.add_visual_data(image_entities=call.image_entities,
+                                                 image_paths=call.image_paths,
+                                                 target_width=call.target_width,
+                                                 include_filename=call.include_filename
+                                                 )
+        response = await client.make_request(call)
+        # udpate sensor in data_call.data.get("sensor_entity")
+        sensor_entity = data_call.data.get("sensor_entity")
+        await _update_sensor(hass, sensor_entity, response["response_text"])
+        return response
+
     # Register services
     hass.services.register(
         DOMAIN, "image_analyzer", image_analyzer,
@@ -305,6 +338,10 @@ def setup(hass, config):
     )
     hass.services.register(
         DOMAIN, "stream_analyzer", stream_analyzer,
+        supports_response=SupportsResponse.ONLY
+    )
+    hass.services.register(
+        DOMAIN, "data_analyzer", data_analyzer,
         supports_response=SupportsResponse.ONLY
     )
 
