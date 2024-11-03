@@ -80,7 +80,8 @@ logger:
 > [!NOTE]
 > These are planned features and ideas. They are subject to change and may not be implemented in the order listed or at all.
 
-1. **HACS**: Include in HACS default
+1. **New Service**: `data_analyzer` to read data from charts and update a sensor
+3. **HACS**: Include in HACS default repository
 
 For features added in previous versions, check the changelogs in the release notes.
 
