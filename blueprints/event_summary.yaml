@@ -61,8 +61,8 @@ blueprint:
       name: Update Sub Label (Advanced)
       description: |
         Update the title and/or message with the matched face name and trigger a notification update. 
-        Requires face detection to be configured (Advanced). Requires Title and/or Message to contain 'A Person' or 'A {{ label }}'
-      default: true
+        Requires face detection in Frigate to be configured.
+      default: false
       selector:
         boolean:
     preview_mode:
