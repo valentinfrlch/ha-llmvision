@@ -1,6 +1,6 @@
 blueprint:
-  name: AI Event Summary (LLM Vision v1.3)
-  author: valentinfrlch
+  name: AI Event Summary - bullitt168 fork from valentinfrlch
+  author: bullitt168
   description: >
     AI-powered security event summaries for frigate or camera entities. 
     Sends a notification with a preview to your phone that is updated dynamically when the AI summary is available.
