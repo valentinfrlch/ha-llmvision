@@ -1,5 +1,5 @@
 blueprint:
-  name: AI Event Summary (LLM Vision v1.3)
+  name: AI Event Summary (LLM Vision v1.3.1)
   author: valentinfrlch
   description: >
     AI-powered security event summaries for frigate or camera entities. 
@@ -32,6 +32,7 @@ blueprint:
       selector:
         device:
           integration: mobile_app
+          multiple: true
     camera_entities:
       name: Camera Entities
       description: (Camera and Frigate mode) List of camera entities to monitor
@@ -232,7 +233,7 @@ condition:
   - condition: template
     value_template: >
       {% if mode == 'Frigate' %}
-        {{ trigger.payload_json["type"] == "end" and (state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list }}
+        {{ trigger.payload_json["after"]["has_snapshot"] == true and (state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list }}
       {% else %}
         {{ state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
       {% endif %}
@@ -287,25 +288,28 @@ action:
         sequence:
           - stop: "Event is not important"
 
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: "{{ image != '' or video != '' }}"
-        sequence:
-          - alias: "Send instant notification without summary"
-            domain: mobile_app
-            type: notify
-            device_id: !input notify_device
-            title: "{{ label }}"
-            message: "{{camera}}"
-            data:
-              video: "{{video}}"
-              image: "{{image}}"
-              entity_id: "{{camera_entity if mode=='Camera' else ''}}"
-              url: !input tap_navigate #iOS
-              clickAction: !input tap_navigate #Android
-              tag: "{{tag}}"
-              group: "{{group}}"
+- choose:
+    - conditions:
+        - condition: template
+          value_template: "{{ image != '' or video != '' }}"
+      sequence:
+        - alias: "Send instant notification without summary"
+          repeat:
+            for_each: !input notify_device
+            sequence:
+              - domain: mobile_app
+                type: notify
+                device_id: "{{ repeat.item }}"
+                title: "{{ label }}"
+                message: "{{camera}}"
+                data:
+                  video: "{{video}}"
+                  image: "{{image}}"
+                  entity_id: "{{camera_entity if mode=='Camera' else ''}}"
+                  url: !input tap_navigate #iOS
+                  clickAction: !input tap_navigate #Android
+                  tag: "{{tag}}"
+                  group: "{{group}}"
 
   - alias: "Analyze event"
     choose:
@@ -348,19 +352,22 @@ action:
               expose_images: "{{true if preview_mode == 'Snapshot'}}"
             response_variable: response
 
-  - alias: "Send notification with summary"
-    domain: mobile_app
-    type: notify
-    device_id: !input notify_device
-    title: "{{label}}"
-    message: "{{ response.response_text }}"
-    data:
-      tag: "{{tag}}"
-      group: "{{group}}"
-      image: "{{image}}"
-      video: "{{video}}"
-      entity_id: "{{camera_entity if mode=='Camera' else ''}}"
-      url: !input tap_navigate #iOS
-      clickAction: !input tap_navigate #Android
-      push:
-        interruption-level: passive
+- alias: "Send notification with summary"
+  repeat:
+    for_each: !input notify_device
+    sequence:
+      - domain: mobile_app
+        type: notify
+        device_id: "{{ repeat.item }}"
+        title: "{{label}}"
+        message: "{{ response.response_text }}"
+        data:
+          tag: "{{tag}}"
+          group: "{{group}}"
+          image: "{{image}}"
+          video: "{{video}}"
+          entity_id: "{{camera_entity if mode=='Camera' else ''}}"
+          url: !input tap_navigate #iOS
+          clickAction: !input tap_navigate #Android
+          push:
+            interruption-level: passive

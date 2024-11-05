@@ -377,7 +377,8 @@ data_analyzer:
       name: Prompt
       required: true
       description: 'Model prompt'
-      example: "Describe the image"
+      example: "Read the latest value from the image and return only the value as an integer."
+      default: "Read the latest value from the image and return only the value as an integer."
       selector:
         text:
           multiline: true
@@ -387,6 +388,7 @@ data_analyzer:
       required: true
       selector:
         entity:
+        multiple: false
           filter:
             domain: ["sensor","input_datetime", "input_number", "input_text"]
     image_file:

@@ -366,7 +366,7 @@ class MediaProcessor:
 
                                 if img.mode == 'RGBA':
                                     img = img.convert('RGB')
-                                    img.save(frame_path)
+                                    await self.hass.loop.run_in_executor(None, img.save, frame_path)
 
                                 current_frame_gray = np.array(img.convert('L'))
 
