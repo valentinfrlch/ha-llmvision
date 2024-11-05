@@ -32,7 +32,7 @@ class MediaProcessor:
 
     async def _save_clip(self, clip_data=None, clip_path=None, image_data=None, image_path=None):
         # Ensure dir exists
-        os.makedirs("/config/www/llmvision", exist_ok=True)
+        await self.hass.loop.run_in_executor(None, os.makedirs, "/config/www/llmvision", exists_ok=True)
 
         def _run_save_clips(clip_data, clip_path, image_data, image_path):
             _LOGGER.info(f"[save_clip] clip: {clip_path}, image: {image_path}")
@@ -312,7 +312,7 @@ class MediaProcessor:
                             f"Failed to fetch frigate clip {event_id}")
 
                     # create tmp dir to store video clips
-                    os.makedirs(tmp_clips_dir, exist_ok=True)
+                    await self.hass.loop.run_in_executor(None, os.makedirs, tmp_clips_dir, exists_ok=True)
                     _LOGGER.info(f"Created {tmp_clips_dir}")
                     # save clip to file with event_id as filename
                     clip_path = os.path.join(
@@ -333,7 +333,7 @@ class MediaProcessor:
                     video_path = video_path.strip()
                     if os.path.exists(video_path):
                         # create tmp dir to store extracted frames
-                        os.makedirs(tmp_frames_dir, exist_ok=True)
+                        await self.hass.loop.run_in_executor(None, os.makedirs, tmp_frames_dir, exists_ok=True)
                         if os.path.exists(tmp_frames_dir):
                             _LOGGER.debug(f"Created {tmp_frames_dir}")
                         else:
@@ -361,9 +361,9 @@ class MediaProcessor:
                             frame_path = os.path.join(
                                 tmp_frames_dir, frame_file)
                             try:
-                                # Remove transparency for compatibility
+                                # open image in hass.loop
                                 img = await self.hass.loop.run_in_executor(None, Image.open, frame_path)
-
+                                # Remove transparency for compatibility
                                 if img.mode == 'RGBA':
                                     img = img.convert('RGB')
                                     await self.hass.loop.run_in_executor(None, img.save, frame_path)
