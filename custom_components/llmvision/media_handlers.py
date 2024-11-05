@@ -5,6 +5,7 @@ import shutil
 import logging
 import time
 import asyncio
+from functools import partial
 from PIL import Image, UnidentifiedImageError
 import numpy as np
 from homeassistant.helpers.network import get_url
@@ -32,7 +33,7 @@ class MediaProcessor:
 
     async def _save_clip(self, clip_data=None, clip_path=None, image_data=None, image_path=None):
         # Ensure dir exists
-        await self.hass.loop.run_in_executor(None, os.makedirs, "/config/www/llmvision", exists_ok=True)
+        await self.hass.loop.run_in_executor(None, partial(os.makedirs, "/config/www/llmvision", exist_ok=True))
 
         def _run_save_clips(clip_data, clip_path, image_data, image_path):
             _LOGGER.info(f"[save_clip] clip: {clip_path}, image: {image_path}")
@@ -312,7 +313,7 @@ class MediaProcessor:
                             f"Failed to fetch frigate clip {event_id}")
 
                     # create tmp dir to store video clips
-                    await self.hass.loop.run_in_executor(None, os.makedirs, tmp_clips_dir, exists_ok=True)
+                    await self.hass.loop.run_in_executor(None, partial(os.makedirs, tmp_clips_dir, exist_ok=True))
                     _LOGGER.info(f"Created {tmp_clips_dir}")
                     # save clip to file with event_id as filename
                     clip_path = os.path.join(
@@ -333,7 +334,7 @@ class MediaProcessor:
                     video_path = video_path.strip()
                     if os.path.exists(video_path):
                         # create tmp dir to store extracted frames
-                        await self.hass.loop.run_in_executor(None, os.makedirs, tmp_frames_dir, exists_ok=True)
+                        await self.hass.loop.run_in_executor(None, partial(os.makedirs, tmp_frames_dir, exist_ok=True))
                         if os.path.exists(tmp_frames_dir):
                             _LOGGER.debug(f"Created {tmp_frames_dir}")
                         else:
