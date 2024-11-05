@@ -388,9 +388,9 @@ data_analyzer:
       required: true
       selector:
         entity:
-        multiple: false
-        filter:
-          domain: ["sensor","input_datetime", "input_number", "input_text"]
+          multiple: false
+          filter:
+            domain: ["sensor","input_datetime", "input_number", "input_text"]
     image_file:
       name: Image File
       required: false
