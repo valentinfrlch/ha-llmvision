@@ -359,8 +359,7 @@ class MediaProcessor:
 
                         for frame_file in await self.hass.loop.run_in_executor(None, os.listdir, tmp_frames_dir):
                             _LOGGER.debug(f"Adding frame {frame_file}")
-                            frame_path = os.path.join(
-                                tmp_frames_dir, frame_file)
+                            frame_path = os.path.join(tmp_frames_dir, frame_file)
                             try:
                                 # open image in hass.loop
                                 img = await self.hass.loop.run_in_executor(None, Image.open, frame_path)
@@ -368,13 +367,12 @@ class MediaProcessor:
                                 if img.mode == 'RGBA':
                                     img = img.convert('RGB')
                                     await self.hass.loop.run_in_executor(None, img.save, frame_path)
-
+                        
                                 current_frame_gray = np.array(img.convert('L'))
-
+                        
                                 # Calculate similarity score
                                 if previous_frame is not None:
-                                    score = self._similarity_score(
-                                        previous_frame, current_frame_gray)
+                                    score = self._similarity_score(previous_frame, current_frame_gray)
                                     frames.append((frame_path, score))
                                     frame_counter += 1
                                     previous_frame = current_frame_gray
@@ -382,14 +380,16 @@ class MediaProcessor:
                                     # Initialize previous_frame with the first frame
                                     previous_frame = current_frame_gray
                             except UnidentifiedImageError:
-                                _LOGGER.error(
-                                    f"Cannot identify image file {frame_path}")
+                                _LOGGER.error(f"Cannot identify image file {frame_path}")
                                 continue
-
+                        
                         # Keep only max_frames frames with lowest SSIM scores
-                        sorted_frames = sorted(frames, key=lambda x: x[1])[
-                            :max_frames]
-
+                        sorted_frames = sorted(frames, key=lambda x: x[1])[:max_frames]
+                        
+                        # Ensure at least one frame is present
+                        if not sorted_frames and frames:
+                            sorted_frames.append(frames[0])
+                        
                         # Add frames to client
                         counter = 1
                         for frame_path, _ in sorted_frames:
@@ -398,8 +398,7 @@ class MediaProcessor:
                                 await self._save_clip(image_path="/config/www/llmvision/" + frame_path.split("/")[-1], image_data=resized_image)
                             self.client.add_frame(
                                 base64_image=resized_image,
-                                filename=video_path.split('/')[-1].split('.')[-2] + " (frame " + str(
-                                    counter) + ")" if include_filename else "Video frame " + str(counter)
+                                filename=video_path.split('/')[-1].split('.')[-2] + " (frame " + str(counter) + ")" if include_filename else "Video frame " + str(counter)
                             )
                             counter += 1
 
