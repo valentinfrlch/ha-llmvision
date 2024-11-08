@@ -383,7 +383,7 @@ class MediaProcessor:
                                 _LOGGER.error(f"Cannot identify image file {frame_path}")
                                 continue
                         
-                        # Keep only max_frames frames with lowest SSIM scores
+                        # Keep only max_frames many frames with lowest SSIM scores
                         sorted_frames = sorted(frames, key=lambda x: x[1])[:max_frames]
                         
                         # Ensure at least one frame is present
