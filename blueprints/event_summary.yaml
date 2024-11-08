@@ -178,7 +178,7 @@ variables:
   motion_sensors_list: !input motion_sensors
   camera_entity: >
     {% if mode == 'Camera' %}
-      {% if motion_sensors_list %}
+      {% if motion_sensors_list and not "camera" in trigger.entity_id %}
         {% set index = motion_sensors_list.index(trigger.entity_id) %}
         {{ camera_entities_list[index] }}
       {% else %}
@@ -274,7 +274,7 @@ action:
                       include_filename: true
                       target_width: 1280
                       detail: low
-                      max_tokens: 1
+                      max_tokens: 3
                       temperature: 0.1
                     response_variable: importance
               - conditions:
@@ -290,7 +290,7 @@ action:
                       include_filename: true
                       target_width: 1280
                       detail: low
-                      max_tokens: 1
+                      max_tokens: 3
                       temperature: 0.1
                     response_variable: importance
     
