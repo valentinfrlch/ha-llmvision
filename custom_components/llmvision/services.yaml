@@ -390,7 +390,7 @@ data_analyzer:
         entity:
           multiple: false
           filter:
-            domain: ["number", "input_number", "input_text", "input_boolean", "input_select", "select"]
+            domain: ["number", "input_number", "text", "input_text", "input_boolean", "select", "input_select"]
     image_file:
       name: Image File
       required: false
@@ -450,7 +450,7 @@ data_analyzer:
     temperature:
       name: Temperature
       required: true
-      description: 'Randomness. Lower is more accurate, higher is more creative. 0.1 is recommended for greatest accuracy.'
+      description: 'Randomness. Lower is more accurate, higher is more creative. 0.1 is recommended for best accuracy.'
       example: 0.1
       default: 0.1
       selector:
