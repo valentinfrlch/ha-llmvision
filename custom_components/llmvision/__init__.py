@@ -196,9 +196,12 @@ async def _remember(hass, call, start, response):
 async def _update_sensor(hass, sensor_entity, new_value):
     """Update the value of a sensor entity."""
     if sensor_entity:
-        _LOGGER.info(
-            f"Updating sensor {sensor_entity} with new value: {new_value}")
-        hass.states.async_set(sensor_entity, new_value)
+        _LOGGER.info(f"Updating sensor {sensor_entity} with new value: {new_value}")
+        try:
+            hass.states.async_set(sensor_entity, new_value)
+        except Exception as e:
+            _LOGGER.error(f"Failed to update sensor {sensor_entity}: {e}")
+            raise
     else:
         _LOGGER.warning("No sensor entity provided to update")
 
@@ -310,10 +313,38 @@ def setup(hass, config):
 
     async def data_analyzer(data_call):
         """Handle the service call to analyze visual data"""
+        def is_number(s):
+            """Helper function to check if string can be parsed as number"""
+            try:
+                float(s)
+                return True
+            except ValueError:
+                return False
+            
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
+        sensor_entity = data_call.data.get("sensor_entity")
+        _LOGGER.info(f"Sensor entity: {sensor_entity}")
+        
+        # get current value to determine data type
+        state = hass.states.get(sensor_entity).state
+        _LOGGER.info(f"Current state: {state}")
+        if state == "unavailable":
+            raise ServiceValidationError("Sensor entity is unavailable")
+        if state == "on" or state == "off":
+            data_type = "'on' or 'off' (lowercase)"
+        elif is_number(state):
+            data_type = "number"
+        else:
+            if "options" in hass.states.get(sensor_entity).attributes:
+                data_type = "one of these options: " + ", ".join([f"'{option}'" for option in hass.states.get(sensor_entity).attributes["options"]])
+            else:
+                data_type = "string"
+
+        message = f"Your job is to extract data from images. Return a {data_type} only. No additional text or other options allowed!. If unsure, choose the option that best matches. Follow these instructions: " + call.message
+        _LOGGER.info(f"Message: {message}")
         client = RequestHandler(hass,
-                                message=call.message,
+                                message=message,
                                 max_tokens=call.max_tokens,
                                 temperature=call.temperature,
                                 detail=call.detail)
@@ -324,8 +355,8 @@ def setup(hass, config):
                                                  include_filename=call.include_filename
                                                  )
         response = await client.make_request(call)
+        _LOGGER.info(f"Response: {response}")
         # udpate sensor in data_call.data.get("sensor_entity")
-        sensor_entity = data_call.data.get("sensor_entity")
         await _update_sensor(hass, sensor_entity, response["response_text"])
         return response
 
@@ -344,7 +375,6 @@ def setup(hass, config):
     )
     hass.services.register(
         DOMAIN, "data_analyzer", data_analyzer,
-        supports_response=SupportsResponse.ONLY
     )
 
     return True

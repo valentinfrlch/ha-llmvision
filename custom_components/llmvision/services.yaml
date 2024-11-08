@@ -355,8 +355,8 @@ stream_analyzer:
         boolean:
 
 data_analyzer:
-  name: Visual Data Analyzer
-  description: Analyze charts and other visual data with AI
+  name: Data Analyzer
+  description: Update sensors with data extracted from images (Beta)
   fields:
     provider:
       name: Provider
@@ -376,9 +376,9 @@ data_analyzer:
     message:
       name: Prompt
       required: true
-      description: 'Model prompt'
-      example: "Read the latest value from the image and return only the value as an integer."
-      default: "Read the latest value from the image and return only the value as an integer."
+      description: 'Describe what should be extracted from the image. Data types and available options will be recognized automatically based the provided sensor.'
+      example: "How many cars are parked?"
+      default: "How many cars are parked?"
       selector:
         text:
           multiline: true
@@ -390,7 +390,7 @@ data_analyzer:
         entity:
           multiple: false
           filter:
-            domain: ["sensor","input_datetime", "input_number", "input_text"]
+            domain: ["number", "input_number", "input_text", "input_boolean", "input_select", "select"]
     image_file:
       name: Image File
       required: false
@@ -398,7 +398,7 @@ data_analyzer:
       example: "/config/www/tmp/front_door.jpg"
       selector:
         text:
-          multiline: false
+          multiline: true
     image_entity:
       name: Image Entity
       required: false
@@ -407,7 +407,7 @@ data_analyzer:
       selector:
         entity:
           domain: ["image", "camera"]
-          multiple: false
+          multiple: true
     include_filename:
       name: Include Filename
       required: true
