@@ -150,7 +150,10 @@ async def _remember(hass, call, start, response):
         # Define a mapping of keywords to labels
         keyword_to_label = {
             "person": "Person",
+            "man": "Person",
+            "woman": "Person",
             "individual": "Person",
+            "delivery": "Delivery",
             "courier": "Courier",
             "package": "Package",
             "car": "Car",
@@ -166,7 +169,7 @@ async def _remember(hass, call, start, response):
         }
 
         # Default label
-        label = "Nothing"
+        label = "Unknown object"
 
         # Check each keyword in the response text and update the label accordingly
         for keyword, mapped_label in keyword_to_label.items():

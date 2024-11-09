@@ -151,7 +151,9 @@ class SemanticIndex(CalendarEntity):
         # Delete events outside of retention time window
         now = datetime.datetime.now()
         cutoff_date = now - datetime.timedelta(days=self._retention_time)
-        _LOGGER.info(f"Deleting events before {cutoff_date}")
+        
+        if self._retention_time != 0:
+            _LOGGER.info(f"Deleting events before {cutoff_date}")
 
         events_data = [
             {
