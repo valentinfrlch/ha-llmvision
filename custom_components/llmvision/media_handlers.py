@@ -5,6 +5,7 @@ import shutil
 import logging
 import time
 import asyncio
+from functools import partial
 from PIL import Image, UnidentifiedImageError
 import numpy as np
 from homeassistant.helpers.network import get_url
@@ -32,7 +33,7 @@ class MediaProcessor:
 
     async def _save_clip(self, clip_data=None, clip_path=None, image_data=None, image_path=None):
         # Ensure dir exists
-        os.makedirs("/config/www/llmvision", exist_ok=True)
+        await self.hass.loop.run_in_executor(None, partial(os.makedirs, "/config/www/llmvision", exist_ok=True))
 
         def _run_save_clips(clip_data, clip_path, image_data, image_path):
             _LOGGER.info(f"[save_clip] clip: {clip_path}, image: {image_path}")
@@ -312,7 +313,7 @@ class MediaProcessor:
                             f"Failed to fetch frigate clip {event_id}")
 
                     # create tmp dir to store video clips
-                    os.makedirs(tmp_clips_dir, exist_ok=True)
+                    await self.hass.loop.run_in_executor(None, partial(os.makedirs, tmp_clips_dir, exist_ok=True))
                     _LOGGER.info(f"Created {tmp_clips_dir}")
                     # save clip to file with event_id as filename
                     clip_path = os.path.join(
@@ -333,7 +334,7 @@ class MediaProcessor:
                     video_path = video_path.strip()
                     if os.path.exists(video_path):
                         # create tmp dir to store extracted frames
-                        os.makedirs(tmp_frames_dir, exist_ok=True)
+                        await self.hass.loop.run_in_executor(None, partial(os.makedirs, tmp_frames_dir, exist_ok=True))
                         if os.path.exists(tmp_frames_dir):
                             _LOGGER.debug(f"Created {tmp_frames_dir}")
                         else:
@@ -358,22 +359,20 @@ class MediaProcessor:
 
                         for frame_file in await self.hass.loop.run_in_executor(None, os.listdir, tmp_frames_dir):
                             _LOGGER.debug(f"Adding frame {frame_file}")
-                            frame_path = os.path.join(
-                                tmp_frames_dir, frame_file)
+                            frame_path = os.path.join(tmp_frames_dir, frame_file)
                             try:
-                                # Remove transparency for compatibility
+                                # open image in hass.loop
                                 img = await self.hass.loop.run_in_executor(None, Image.open, frame_path)
-
+                                # Remove transparency for compatibility
                                 if img.mode == 'RGBA':
                                     img = img.convert('RGB')
-                                    img.save(frame_path)
-
+                                    await self.hass.loop.run_in_executor(None, img.save, frame_path)
+                        
                                 current_frame_gray = np.array(img.convert('L'))
-
+                        
                                 # Calculate similarity score
                                 if previous_frame is not None:
-                                    score = self._similarity_score(
-                                        previous_frame, current_frame_gray)
+                                    score = self._similarity_score(previous_frame, current_frame_gray)
                                     frames.append((frame_path, score))
                                     frame_counter += 1
                                     previous_frame = current_frame_gray
@@ -381,14 +380,16 @@ class MediaProcessor:
                                     # Initialize previous_frame with the first frame
                                     previous_frame = current_frame_gray
                             except UnidentifiedImageError:
-                                _LOGGER.error(
-                                    f"Cannot identify image file {frame_path}")
+                                _LOGGER.error(f"Cannot identify image file {frame_path}")
                                 continue
-
-                        # Keep only max_frames frames with lowest SSIM scores
-                        sorted_frames = sorted(frames, key=lambda x: x[1])[
-                            :max_frames]
-
+                        
+                        # Keep only max_frames many frames with lowest SSIM scores
+                        sorted_frames = sorted(frames, key=lambda x: x[1])[:max_frames]
+                        
+                        # Ensure at least one frame is present
+                        if not sorted_frames and frames:
+                            sorted_frames.append(frames[0])
+                        
                         # Add frames to client
                         counter = 1
                         for frame_path, _ in sorted_frames:
@@ -397,8 +398,7 @@ class MediaProcessor:
                                 await self._save_clip(image_path="/config/www/llmvision/" + frame_path.split("/")[-1], image_data=resized_image)
                             self.client.add_frame(
                                 base64_image=resized_image,
-                                filename=video_path.split('/')[-1].split('.')[-2] + " (frame " + str(
-                                    counter) + ")" if include_filename else "Video frame " + str(counter)
+                                filename=video_path.split('/')[-1].split('.')[-2] + " (frame " + str(counter) + ")" if include_filename else "Video frame " + str(counter)
                             )
                             counter += 1
 
@@ -433,4 +433,15 @@ class MediaProcessor:
                 include_filename=include_filename,
                 expose_images=expose_images
             )
+        return self.client
+
+    async def add_visual_data(self, image_entities, image_paths, target_width, include_filename):
+        """Wrapper for add_images for visual data"""
+        await self.add_images(
+            image_entities=image_entities,
+            image_paths=image_paths,
+            target_width=target_width,
+            include_filename=include_filename,
+            expose_images=False
+        )
         return self.client

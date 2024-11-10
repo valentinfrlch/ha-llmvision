@@ -2,6 +2,7 @@
     "services": {
         "image_analyzer": "mdi:image-search",
         "video_analyzer": "mdi:movie-search",
-        "stream_analyzer": "mdi:video-wireless"
+        "stream_analyzer": "mdi:video-wireless",
+        "data_analyzer": "mdi:database-search"
     }
 }
