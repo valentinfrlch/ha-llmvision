@@ -37,7 +37,7 @@ from .calendar import SemanticIndex
 from datetime import timedelta
 from homeassistant.util import dt as dt_util
 from homeassistant.config_entries import ConfigEntry
-from .request_handlers import RequestHandler
+from .providers import RequestHandler
 from .media_handlers import MediaProcessor
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
@@ -265,7 +265,7 @@ def setup(hass, config):
                                             )
 
         # Validate configuration, input data and make the call
-        response = await client.make_request(call)
+        response = await client.forward_request(call)
         await _remember(hass, call, start, response)
         return response
 
@@ -287,7 +287,7 @@ def setup(hass, config):
                                             include_filename=call.include_filename,
                                             expose_images=call.expose_images
                                             )
-        response = await client.make_request(call)
+        response = await client.forward_request(call)
         await _remember(hass, call, start, response)
         return response
 
@@ -310,7 +310,7 @@ def setup(hass, config):
                                              expose_images=call.expose_images
                                              )
 
-        response = await client.make_request(call)
+        response = await client.forward_request(call)
         await _remember(hass, call, start, response)
         return response
 
@@ -357,7 +357,7 @@ def setup(hass, config):
                                                  target_width=call.target_width,
                                                  include_filename=call.include_filename
                                                  )
-        response = await client.make_request(call)
+        response = await client.forward_request(call)
         _LOGGER.info(f"Response: {response}")
         # udpate sensor in data_call.data.get("sensor_entity")
         await _update_sensor(hass, sensor_entity, response["response_text"])
