@@ -40,11 +40,9 @@
 
 ## Features
 - Compatible with OpenAI, Anthropic Claude, Google Gemini, Groq, [LocalAI](https://github.com/mudler/LocalAI), [Ollama](https://ollama.com/) and custom OpenAI compatible APIs
-- Analyzes images and video files
-- Analyzes live camera feeds and frigate events
-- Remembers Frigate events and camera motion events
+- Analyzes images and video files, live camera feeds and Frigate events
+- Remembers Frigate events and camera motion events so you can ask about them later
 - Seamlessly updates sensors based on image input
-- Images can be downscaled for faster processing
 
 ## Blueprint
 With the easy to use blueprint, you'll get important notifications intelligently summarized by AI from either Frigate or cameras in Home Assistant. LLM Vision can also remember events, so you can ask about them later. LLM Vision needs to be installed to use the blueprint.
