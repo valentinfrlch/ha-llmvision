@@ -3,7 +3,7 @@
 </p>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
-<img src=https://img.shields.io/badge/version-1.3.0-blue>
+<img src=https://img.shields.io/badge/version-1.3.1-blue>
 <a href="https://github.com/valentinfrlch/ha-llmvision/issues">
 <img src="https://img.shields.io/maintenance/yes/2024.svg">
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-llmvision?color=0088ff"/>
@@ -43,18 +43,18 @@
 - Analyzes images and video files
 - Analyzes live camera feeds and frigate events
 - Remembers Frigate events and camera motion events
+- Seamlessly updates sensors based on image input
 - Images can be downscaled for faster processing
 
 ## Blueprint
-With the easy to use blueprint, you'll get important notifications intelligently summarized by AI from either frigate or cameras in Home Assistant. LLM Vision can also remember events, so you can ask about them later. LLM Vision needs to be installed to use the blueprint.
+With the easy to use blueprint, you'll get important notifications intelligently summarized by AI from either Frigate or cameras in Home Assistant. LLM Vision can also remember events, so you can ask about them later. LLM Vision needs to be installed to use the blueprint.
 <br>
 <p float="left">
     <img src="https://github.com/user-attachments/assets/621dacc0-7f9b-4c7a-b490-94286dd19e86" width="400" />
     <img src="https://github.com/user-attachments/assets/8174c3cd-6314-4bfd-9fbe-d66316f93923" width="400" />
 </p>
 
-<br>
-[Learn more](https://llm-vision.gitbook.io/examples/examples/automations#ai-event-notifications)
+[Learn how to install the blueprint](https://llm-vision.gitbook.io/examples/examples/automations#ai-event-notifications)
 
 ## Resources
 Check the docs for detailed instructions on how to set up LLM Vision and each of the supported providers, get inspiration from examples or join the discussion on the Home Assistant Community.
@@ -84,8 +84,7 @@ logger:
 > [!NOTE]
 > These are planned features and ideas. They are subject to change and may not be implemented in the order listed or at all.
 
-1. **New Service**: `data_analyzer` to read data from charts and update a sensor
-3. **HACS**: Include in HACS default repository
+1. **HACS**: Include in HACS default repository
 
 For features added in previous versions, check the changelogs in the release notes.
 
