@@ -110,7 +110,7 @@ async def async_remove_entry(hass, entry):
     if entry_uid in hass.data[DOMAIN]:
         # Remove the entry from hass.data
         _LOGGER.info(f"Removing {entry.title} from hass.data")
-        async_unload_entry(hass, entry)
+        await async_unload_entry(hass, entry)
         hass.data[DOMAIN].pop(entry_uid)
     else:
         _LOGGER.warning(

@@ -85,7 +85,7 @@ def default_model(provider): return {
     "LocalAI": "gpt-4-vision-preview",
     "Ollama": "llava-phi3:latest",
     "Custom OpenAI": "gpt-4o-mini"
-}.get(provider, "gpt-4o-mini")  # Default value if provider is not found
+}.get(provider, "gpt-4o-mini")  # Default value
 
 
 class RequestHandler:
@@ -108,35 +108,39 @@ class RequestHandler:
         if provider == 'OpenAI':
             api_key = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_OPENAI_API_KEY)
+
             self._validate_call(
                 provider=provider, api_key=api_key, base64_images=self.base64_images)
             request = OpenAI(self.session, model, self.max_tokens, self.temperature,
                              self.message, self.base64_images, self.filenames, self.detail)
-            response_text = await request.vision_request(api_key, ENDPOINT_OPENAI)
+            response_text = await request.vision_request(api_key=api_key, endpoint=ENDPOINT_OPENAI)
         elif provider == 'Anthropic':
             api_key = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_ANTHROPIC_API_KEY)
+
             self._validate_call(
                 provider=provider, api_key=api_key, base64_images=self.base64_images)
             request = Anthropic(self.session, model, self.max_tokens, self.temperature,
                                 self.message, self.base64_images, self.filenames, self.detail)
-            response_text = await request.vision_request(api_key, ENDPOINT_ANTHROPIC)
+            response_text = await request.vision_request(api_key=api_key, endpoint=ENDPOINT_ANTHROPIC)
         elif provider == 'Google':
             api_key = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_GOOGLE_API_KEY)
+
             self._validate_call(
                 provider=provider, api_key=api_key, base64_images=self.base64_images)
             request = Google(self.session, model, self.max_tokens, self.temperature,
                              self.message, self.base64_images, self.filenames, self.detail)
-            response_text = await request.vision_request(api_key, ENDPOINT_GOOGLE)
+            response_text = await request.vision_request(api_key=api_key, endpoint=ENDPOINT_GOOGLE)
         elif provider == 'Groq':
             api_key = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_GROQ_API_KEY)
+
             self._validate_call(
                 provider=provider, api_key=api_key, base64_images=self.base64_images)
             request = Groq(self.session, model, self.max_tokens, self.temperature,
                            self.message, self.base64_images, self.filenames, self.detail)
-            response_text = await request.vision_request(api_key, ENDPOINT_GROQ)
+            response_text = await request.vision_request(api_key=api_key, endpoint=ENDPOINT_GROQ)
         elif provider == 'LocalAI':
             ip_address = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_LOCALAI_IP_ADDRESS)
@@ -144,11 +148,12 @@ class RequestHandler:
                 entry_id).get(CONF_LOCALAI_PORT)
             https = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_LOCALAI_HTTPS, False)
+
             self._validate_call(provider=provider, api_key=None,
                                 base64_images=self.base64_images, ip_address=ip_address, port=port)
             request = LocalAI(self.session, model, self.max_tokens, self.temperature,
                               self.message, self.base64_images, self.filenames, self.detail)
-            response_text = await request.vision_request(ip_address=ip_address, port=port, https=https)
+            response_text = await request.vision_request(endpoint=ENDPOINT_LOCALAI, ip_address=ip_address, port=port, https=https)
         elif provider == 'Ollama':
             ip_address = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_OLLAMA_IP_ADDRESS)
@@ -160,7 +165,7 @@ class RequestHandler:
                                 base64_images=self.base64_images, ip_address=ip_address, port=port)
             request = Ollama(self.session, model, self.max_tokens, self.temperature,
                              self.message, self.base64_images, self.filenames, self.detail)
-            response_text = await request.vision_request(ip_address=ip_address, port=port, https=https)
+            response_text = await request.vision_request(endpoint=ENDPOINT_OLLAMA, ip_address=ip_address, port=port, https=https)
         elif provider == 'Custom OpenAI':
             api_key = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_CUSTOM_OPENAI_API_KEY, "")
@@ -249,26 +254,26 @@ class Provider(ABC):
         self.detail = detail
 
     @abstractmethod
-    async def vision_request(self, api_key, endpoint):
+    async def _make_request(self, **kwargs) -> str:
         pass
 
-    @abstractmethod
-    async def text_request(self, api_key, endpoint):
-        pass
-
-    async def vision_request(self, api_key: str, endpoint: str, **kwargs) -> str:
+    async def vision_request(self, **kwargs) -> str:
         data = self._prepare_vision_data()
-        return await self._make_request(api_key, endpoint, data, **kwargs)
+        kwargs["data"] = data
+        _LOGGER.info(f"kwargs: {kwargs.items()}")
+        return await self._make_request(**kwargs)
 
-    async def text_request(self, api_key: str, endpoint: str, **kwargs) -> str:
+    async def text_request(self, **kwargs) -> str:
         data = self._prepare_text_data()
-        return await self._make_request(api_key, endpoint, data, **kwargs)
+        kwargs["data"] = data
+        return await self._make_request(**kwargs)
 
     async def _post(self, url, headers, data):
         """Post data to url and return response data"""
         _LOGGER.info(f"Request data: {sanitize_data(data)}")
 
         try:
+            _LOGGER.info(f"Posting to {url} with headers {headers}")
             response = await self.session.post(url, headers=headers, json=data)
         except Exception as e:
             raise ServiceValidationError(f"Request failed: {e}")
@@ -329,10 +334,18 @@ class Provider(ABC):
 
 
 class OpenAI(Provider):
+    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames, detail):
+        super().__init__(session, model, max_tokens, temperature,
+                         message, base64_images, filenames, detail)
+
     def _generate_headers(self, api_key: str) -> dict:
         return {'Content-type': 'application/json', 'Authorization': 'Bearer ' + api_key}
 
-    async def _make_request(self, api_key: str, endpoint: str, data: dict) -> str:
+    async def _make_request(self, **kwargs) -> str:
+        api_key = kwargs.get("api_key")
+        endpoint = kwargs.get("endpoint")
+        data = kwargs.get("data")
+
         headers = self._generate_headers(api_key)
         response = await self._post(url=endpoint, headers=headers, data=data)
         response_text = response.get(
@@ -363,6 +376,10 @@ class OpenAI(Provider):
 
 
 class Anthropic(Provider):
+    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames, detail):
+        super().__init__(session, model, max_tokens, temperature,
+                         message, base64_images, filenames, detail)
+
     def _generate_headers(self, api_key: str) -> dict:
         return {
             'content-type': 'application/json',
@@ -370,7 +387,11 @@ class Anthropic(Provider):
             'anthropic-version': VERSION_ANTHROPIC
         }
 
-    async def _make_request(self, api_key: str, endpoint: str, data: dict) -> str:
+    async def _make_request(self, **kwargs) -> str:
+        api_key = kwargs.get("api_key")
+        endpoint = kwargs.get("endpoint")
+        data = kwargs.get("data")
+
         headers = self._generate_headers(api_key)
         response = await self._post(url=endpoint, headers=headers, data=data)
         response_text = response.get("content")[0].get("text")
@@ -404,10 +425,18 @@ class Anthropic(Provider):
 
 
 class Google(Provider):
+    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames, detail):
+        super().__init__(session, model, max_tokens, temperature,
+                         message, base64_images, filenames, detail)
+
     def _generate_headers(self) -> dict:
         return {'content-type': 'application/json'}
 
-    async def _make_request(self, api_key: str, endpoint: str, data: dict) -> str:
+    async def _make_request(self, **kwargs) -> str:
+        api_key = kwargs.get("api_key")
+        endpoint = kwargs.get("endpoint")
+        data = kwargs.get("data")
+
         headers = self._generate_headers()
         response = await self._post(url=endpoint.format(model=self.model, api_key=api_key), headers=headers, data=data)
         response_text = response.get("candidates")[0].get(
@@ -434,10 +463,18 @@ class Google(Provider):
 
 
 class Groq(Provider):
+    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames, detail):
+        super().__init__(session, model, max_tokens, temperature,
+                         message, base64_images, filenames, detail)
+
     def _generate_headers(self, api_key: str) -> dict:
         return {'Content-type': 'application/json', 'Authorization': 'Bearer ' + api_key}
 
-    async def _make_request(self, api_key: str, endpoint: str, data: dict) -> str:
+    async def _make_request(self, **kwargs) -> str:
+        api_key = kwargs.get("api_key")
+        endpoint = kwargs.get("endpoint")
+        data = kwargs.get("data")
+
         headers = self._generate_headers(api_key)
         response = await self._post(url=endpoint, headers=headers, data=data)
         response_text = response.get(
@@ -476,7 +513,17 @@ class Groq(Provider):
 
 
 class LocalAI(Provider):
-    async def _make_request(self, api_key: str, endpoint: str, data: dict, ip_address: str, port: int, https: bool) -> str:
+    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames, detail):
+        super().__init__(session, model, max_tokens, temperature,
+                         message, base64_images, filenames, detail)
+
+    async def _make_request(self, **kwargs) -> str:
+        endpoint = kwargs.get("endpoint")
+        data = kwargs.get("data")
+        https = kwargs.get("https")
+        ip_address = kwargs.get("ip_address")
+        port = kwargs.get("port")
+
         headers = self._generate_headers()
         protocol = "https" if https else "http"
         response = await self._post(url=endpoint.format(ip_address=ip_address, port=port, protocol=protocol), headers=headers, data=data)
@@ -508,7 +555,19 @@ class LocalAI(Provider):
 
 
 class Ollama(Provider):
-    async def _make_request(self, api_key: str, endpoint: str, data: dict, ip_address: str, port: int, https: bool) -> str:
+    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames, detail):
+        super().__init__(session, model, max_tokens, temperature,
+                         message, base64_images, filenames, detail)
+
+    async def _make_request(self, **kwargs) -> str:
+        endpoint = kwargs.get("endpoint")
+        data = kwargs.get("data")
+        https = kwargs.get("https")
+        ip_address = kwargs.get("ip_address")
+        port = kwargs.get("port")
+
+        _LOGGER.info(f"endpoint: {endpoint} https: {https} ip_address: {ip_address} port: {port}")
+
         headers = {}
         protocol = "https" if https else "http"
         response = await self._post(url=endpoint.format(ip_address=ip_address, port=port, protocol=protocol), headers=headers, data=data)
