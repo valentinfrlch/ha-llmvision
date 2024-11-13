@@ -35,6 +35,7 @@ MAX_FRAMES = 'max_frames'
 TEMPERATURE = 'temperature'
 INCLUDE_FILENAME = 'include_filename'
 EXPOSE_IMAGES = 'expose_images'
+GENERATE_TITLE = 'generate_title'
 SENSOR_ENTITY = 'sensor_entity'
 
 # Error messages
