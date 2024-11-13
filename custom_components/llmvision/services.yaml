@@ -68,17 +68,6 @@ image_analyzer:
         number:
           min: 512
           max: 1920
-    detail:
-      name: Detail
-      required: false
-      description: "Detail parameter. Leave empty for 'auto'"
-      default: 'low'
-      example: 'low'
-      selector:
-        select:
-          options:
-            - 'high'
-            - 'low'
     max_tokens:
       name: Maximum Tokens
       description: 'Maximum number of tokens to generate'
@@ -189,17 +178,6 @@ video_analyzer:
         number:
           min: 512
           max: 1920
-    detail:
-      name: Detail
-      required: false
-      description: "Detail parameter, leave empty for 'auto'"
-      default: 'low'
-      example: 'low'
-      selector:
-        select:
-          options:
-            - 'high'
-            - 'low'
     max_tokens:
       name: Maximum Tokens
       description: 'Maximum number of tokens to generate'
@@ -313,17 +291,6 @@ stream_analyzer:
         number:
           min: 512
           max: 1920
-    detail:
-      name: Detail
-      required: false
-      description: "Detail parameter, leave empty for 'auto'"
-      default: 'low'
-      example: 'low'
-      selector:
-        select:
-          options:
-            - 'high'
-            - 'low'
     max_tokens:
       name: Maximum Tokens
       description: 'Maximum number of tokens to generate'
@@ -426,17 +393,6 @@ data_analyzer:
         number:
           min: 512
           max: 1920
-    detail:
-      name: Detail
-      required: false
-      description: "Detail parameter. Leave empty for 'auto'"
-      default: 'high'
-      example: 'high'
-      selector:
-        select:
-          options:
-            - 'high'
-            - 'low'
     max_tokens:
       name: Maximum Tokens
       description: 'Maximum number of tokens to generate. A low value is recommended since this will likely result in a number.'

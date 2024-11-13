@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import openai
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import logging
@@ -19,7 +20,6 @@ from .const import (
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_API_KEY,
     VERSION_ANTHROPIC,
-    ENDPOINT_OPENAI,
     ENDPOINT_ANTHROPIC,
     ENDPOINT_GOOGLE,
     ENDPOINT_LOCALAI,
@@ -89,13 +89,12 @@ def default_model(provider): return {
 
 
 class RequestHandler:
-    def __init__(self, hass, message, max_tokens, temperature, detail):
+    def __init__(self, hass, message, max_tokens, temperature):
         self.session = async_get_clientsession(hass)
         self.hass = hass
         self.message = message
         self.max_tokens = max_tokens
         self.temperature = temperature
-        self.detail = detail
         self.base64_images = []
         self.filenames = []
 
@@ -109,37 +108,29 @@ class RequestHandler:
             api_key = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_OPENAI_API_KEY)
 
-            self._validate_call(
-                provider=provider, api_key=api_key, base64_images=self.base64_images)
             request = OpenAI(self.session, model, self.max_tokens, self.temperature,
-                             self.message, self.base64_images, self.filenames, self.detail)
-            response_text = await request.vision_request(api_key=api_key, endpoint=ENDPOINT_OPENAI)
+                             self.message, self.base64_images, self.filenames)
+            response_text = await request.vision_request(api_key=api_key)
         elif provider == 'Anthropic':
             api_key = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_ANTHROPIC_API_KEY)
 
-            self._validate_call(
-                provider=provider, api_key=api_key, base64_images=self.base64_images)
             request = Anthropic(self.session, model, self.max_tokens, self.temperature,
-                                self.message, self.base64_images, self.filenames, self.detail)
+                                self.message, self.base64_images, self.filenames)
             response_text = await request.vision_request(api_key=api_key, endpoint=ENDPOINT_ANTHROPIC)
         elif provider == 'Google':
             api_key = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_GOOGLE_API_KEY)
 
-            self._validate_call(
-                provider=provider, api_key=api_key, base64_images=self.base64_images)
             request = Google(self.session, model, self.max_tokens, self.temperature,
-                             self.message, self.base64_images, self.filenames, self.detail)
+                             self.message, self.base64_images, self.filenames)
             response_text = await request.vision_request(api_key=api_key, endpoint=ENDPOINT_GOOGLE)
         elif provider == 'Groq':
             api_key = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_GROQ_API_KEY)
 
-            self._validate_call(
-                provider=provider, api_key=api_key, base64_images=self.base64_images)
             request = Groq(self.session, model, self.max_tokens, self.temperature,
-                           self.message, self.base64_images, self.filenames, self.detail)
+                           self.message, self.base64_images, self.filenames)
             response_text = await request.vision_request(api_key=api_key, endpoint=ENDPOINT_GROQ)
         elif provider == 'LocalAI':
             ip_address = self.hass.data.get(DOMAIN).get(
@@ -149,10 +140,8 @@ class RequestHandler:
             https = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_LOCALAI_HTTPS, False)
 
-            self._validate_call(provider=provider, api_key=None,
-                                base64_images=self.base64_images, ip_address=ip_address, port=port)
             request = LocalAI(self.session, model, self.max_tokens, self.temperature,
-                              self.message, self.base64_images, self.filenames, self.detail)
+                              self.message, self.base64_images, self.filenames)
             response_text = await request.vision_request(endpoint=ENDPOINT_LOCALAI, ip_address=ip_address, port=port, https=https)
         elif provider == 'Ollama':
             ip_address = self.hass.data.get(DOMAIN).get(
@@ -161,20 +150,18 @@ class RequestHandler:
                 entry_id).get(CONF_OLLAMA_PORT)
             https = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_OLLAMA_HTTPS, False)
-            self._validate_call(provider=provider, api_key=None,
-                                base64_images=self.base64_images, ip_address=ip_address, port=port)
+    
             request = Ollama(self.session, model, self.max_tokens, self.temperature,
-                             self.message, self.base64_images, self.filenames, self.detail)
+                             self.message, self.base64_images, self.filenames)
             response_text = await request.vision_request(endpoint=ENDPOINT_OLLAMA, ip_address=ip_address, port=port, https=https)
         elif provider == 'Custom OpenAI':
             api_key = self.hass.data.get(DOMAIN).get(
                 entry_id).get(CONF_CUSTOM_OPENAI_API_KEY, "")
             endpoint = self.hass.data.get(DOMAIN).get(entry_id).get(
                 CONF_CUSTOM_OPENAI_ENDPOINT) + "/v1/chat/completions"
-            self._validate_call(
-                provider=provider, api_key=api_key, base64_images=self.base64_images)
+      
             request = OpenAI(self.session, model, self.max_tokens, self.temperature,
-                             self.message, self.base64_images, self.filenames, self.detail)
+                             self.message, self.base64_images, self.filenames)
             response_text = await request.vision_request(api_key, endpoint)
         else:
             raise ServiceValidationError("invalid_provider")
@@ -183,42 +170,6 @@ class RequestHandler:
     def add_frame(self, base64_image, filename):
         self.base64_images.append(base64_image)
         self.filenames.append(filename)
-
-    def _validate_call(self, provider, api_key, base64_images, ip_address=None, port=None):
-        """Validate the service call data"""
-        # Checks for OpenAI
-        if provider == 'OpenAI':
-            if not api_key:
-                raise ServiceValidationError(ERROR_OPENAI_NOT_CONFIGURED)
-        # Checks for Anthropic
-        elif provider == 'Anthropic':
-            if not api_key:
-                raise ServiceValidationError(ERROR_ANTHROPIC_NOT_CONFIGURED)
-        elif provider == 'Google':
-            if not api_key:
-                raise ServiceValidationError(ERROR_GOOGLE_NOT_CONFIGURED)
-        # Checks for Groq
-        elif provider == 'Groq':
-            if not api_key:
-                raise ServiceValidationError(ERROR_GROQ_NOT_CONFIGURED)
-            if len(base64_images) > 1:
-                raise ServiceValidationError(ERROR_GROQ_MULTIPLE_IMAGES)
-        # Checks for LocalAI
-        elif provider == 'LocalAI':
-            if not ip_address or not port:
-                raise ServiceValidationError(ERROR_LOCALAI_NOT_CONFIGURED)
-        # Checks for Ollama
-        elif provider == 'Ollama':
-            if not ip_address or not port:
-                raise ServiceValidationError(ERROR_OLLAMA_NOT_CONFIGURED)
-        elif provider == 'Custom OpenAI':
-            pass
-        else:
-            raise ServiceValidationError(
-                "Invalid provider selected. The event calendar cannot be used for analysis.")
-        # Check media input
-        if base64_images == []:
-            raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
 
     async def _resolve_error(self, response, provider):
         """Translate response status to error message"""
@@ -243,7 +194,7 @@ class RequestHandler:
 
 
 class Provider(ABC):
-    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames, detail):
+    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames):
         self.session = session
         self.model = model
         self.max_tokens = max_tokens
@@ -251,24 +202,33 @@ class Provider(ABC):
         self.message = message
         self.base64_images = base64_images
         self.filenames = filenames
-        self.detail = detail
 
     @abstractmethod
     async def _make_request(self, **kwargs) -> str:
         pass
 
+    @abstractmethod
+    def validate(self) -> bool:
+        pass
+
+    def validate_images(self):
+        if not self.base64_images or len(self.base64_images) == 0:
+            raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
+
     async def vision_request(self, **kwargs) -> str:
-        data = self._prepare_vision_data()
-        kwargs["data"] = data
+        self.validate_images()
+        self.validate(**kwargs)
+        kwargs["data"] = self._prepare_vision_data()
         _LOGGER.info(f"kwargs: {kwargs.items()}")
         return await self._make_request(**kwargs)
 
     async def text_request(self, **kwargs) -> str:
-        data = self._prepare_text_data()
-        kwargs["data"] = data
+        self.validate_images()
+        self.validate(**kwargs)
+        kwargs["data"] = self._prepare_text_data()
         return await self._make_request(**kwargs)
 
-    async def _post(self, url, headers, data):
+    async def _post(self, url, headers, data) -> dict:
         """Post data to url and return response data"""
         _LOGGER.info(f"Request data: {sanitize_data(data)}")
 
@@ -287,27 +247,6 @@ class Provider(ABC):
             response_data = await response.json()
             _LOGGER.info(f"Response data: {response_data}")
             return response_data
-
-    async def _resolve_error(self, response, provider):
-        """Translate response status to error message"""
-        import json
-        full_response_text = await response.text()
-        _LOGGER.info(f"[INFO] Full Response: {full_response_text}")
-
-        try:
-            response_json = json.loads(full_response_text)
-            if provider == 'anthropic':
-                error_info = response_json.get('error', {})
-                error_message = f"{error_info.get('type', 'Unknown error')}: {error_info.get('message', 'Unknown error')}"
-            elif provider == 'ollama':
-                error_message = response_json.get('error', 'Unknown error')
-            else:
-                error_info = response_json.get('error', {})
-                error_message = error_info.get('message', 'Unknown error')
-        except json.JSONDecodeError:
-            error_message = 'Unknown error'
-
-        return error_message
 
     async def _fetch(self, url, max_retries=2, retry_delay=1):
         """Fetch image from url and return image data"""
@@ -330,55 +269,73 @@ class Provider(ABC):
                 retries += 1
                 await asyncio.sleep(retry_delay)
         _LOGGER.warning(f"Failed to fetch {url} after {max_retries} retries")
-        return None
+    
+    async def _resolve_error(self, response, provider) -> str:
+        """Translate response status to error message"""
+        import json
+        full_response_text = await response.text()
+        _LOGGER.info(f"[INFO] Full Response: {full_response_text}")
+
+        try:
+            response_json = json.loads(full_response_text)
+            if provider == 'anthropic':
+                error_info = response_json.get('error', {})
+                error_message = f"{error_info.get('type', 'Unknown error')}: {error_info.get('message', 'Unknown error')}"
+            elif provider == 'ollama':
+                error_message = response_json.get('error', 'Unknown error')
+            else:
+                error_info = response_json.get('error', {})
+                error_message = error_info.get('message', 'Unknown error')
+        except json.JSONDecodeError:
+            error_message = 'Unknown error'
+
+        return error_message
 
 
 class OpenAI(Provider):
-    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames, detail):
+    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames):
         super().__init__(session, model, max_tokens, temperature,
-                         message, base64_images, filenames, detail)
-
-    def _generate_headers(self, api_key: str) -> dict:
-        return {'Content-type': 'application/json', 'Authorization': 'Bearer ' + api_key}
+                         message, base64_images, filenames)
 
     async def _make_request(self, **kwargs) -> str:
-        api_key = kwargs.get("api_key")
-        endpoint = kwargs.get("endpoint")
-        data = kwargs.get("data")
+        openai.api_key = kwargs.get("api_key")
+        messages = kwargs.get("data")
+        if "endpoint" in kwargs:
+            openai.base_url = kwargs.get("endpoint")
 
-        headers = self._generate_headers(api_key)
-        response = await self._post(url=endpoint, headers=headers, data=data)
-        response_text = response.get(
-            "choices")[0].get("message").get("content")
+        response = openai.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+        )
+
+        response_text = response.choices[0].message.content
         return response_text
 
-    def _prepare_vision_data(self) -> dict:
-        data = {"model": self.model, "messages": [{"role": "user", "content": [
-        ]}], "max_tokens": self.max_tokens, "temperature": self.temperature}
+    def _prepare_vision_data(self) -> list:
+        messages = [{"role": "user", "content": []}]
         for image, filename in zip(self.base64_images, self.filenames):
             tag = ("Image " + str(self.base64_images.index(image) + 1)
                    ) if filename == "" else filename
-            data["messages"][0]["content"].append(
-                {"type": "text", "text": tag + ":"})
-            data["messages"][0]["content"].append({"type": "image_url", "image_url": {
-                                                  "url": f"data:image/jpeg;base64,{image}", "detail": self.detail}})
-        data["messages"][0]["content"].append(
-            {"type": "text", "text": self.message})
-        return data
+            messages[0]["content"].append({"type": "text", "text": tag + ":"})
+            messages[0]["content"].append({"type": "image_url", "image_url": {
+                                          "url": f"data:image/jpeg;base64,{image}"}})
+        messages[0]["content"].append({"type": "text", "text": self.message})
+        return messages
 
-    def _prepare_text_data(self) -> dict:
-        return {
-            "model": self.model,
-            "messages": [{"role": "user", "content": [{"type": "text", "text": self.message}]}],
-            "max_tokens": self.max_tokens,
-            "temperature": self.temperature
-        }
-
+    def _prepare_text_data(self) -> list:
+        return [{"role": "user", "content": [{"type": "text", "text": self.message}]}]
+    
+    def validate(self, **kwargs):
+        if not kwargs.get("api_key"):
+            raise ServiceValidationError(ERROR_OPENAI_NOT_CONFIGURED)
+        
 
 class Anthropic(Provider):
-    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames, detail):
+    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames):
         super().__init__(session, model, max_tokens, temperature,
-                         message, base64_images, filenames, detail)
+                         message, base64_images, filenames)
 
     def _generate_headers(self, api_key: str) -> dict:
         return {
@@ -423,11 +380,15 @@ class Anthropic(Provider):
             "temperature": self.temperature
         }
 
+    def validate(self, **kwargs):
+        if not kwargs.get("api_key"):
+            raise ServiceValidationError(ERROR_ANTHROPIC_NOT_CONFIGURED)
+
 
 class Google(Provider):
-    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames, detail):
+    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames):
         super().__init__(session, model, max_tokens, temperature,
-                         message, base64_images, filenames, detail)
+                         message, base64_images, filenames)
 
     def _generate_headers(self) -> dict:
         return {'content-type': 'application/json'}
@@ -460,12 +421,16 @@ class Google(Provider):
             "contents": [{"role": "user", "parts": [{"text": self.message + ":"}]}],
             "generationConfig": {"maxOutputTokens": self.max_tokens, "temperature": self.temperature}
         }
+    
+    def validate(self, **kwargs):
+        if not kwargs.get("api_key"):
+            raise ServiceValidationError(ERROR_GOOGLE_NOT_CONFIGURED)
 
 
 class Groq(Provider):
-    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames, detail):
+    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames):
         super().__init__(session, model, max_tokens, temperature,
-                         message, base64_images, filenames, detail)
+                         message, base64_images, filenames)
 
     def _generate_headers(self, api_key: str) -> dict:
         return {'Content-type': 'application/json', 'Authorization': 'Bearer ' + api_key}
@@ -510,12 +475,18 @@ class Groq(Provider):
             ],
             "model": self.model
         }
+    
+    def validate(self, **kwargs):
+        if not kwargs.get("api_key"):
+            raise ServiceValidationError(ERROR_GROQ_NOT_CONFIGURED)
+        if len(kwargs.get("base64_images")) > 1:
+            raise ServiceValidationError(ERROR_GROQ_MULTIPLE_IMAGES)
 
 
 class LocalAI(Provider):
-    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames, detail):
+    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames):
         super().__init__(session, model, max_tokens, temperature,
-                         message, base64_images, filenames, detail)
+                         message, base64_images, filenames)
 
     async def _make_request(self, **kwargs) -> str:
         endpoint = kwargs.get("endpoint")
@@ -552,12 +523,16 @@ class LocalAI(Provider):
             "max_tokens": self.max_tokens,
             "temperature": self.temperature
         }
+    
+    def validate(self, **kwargs):
+        if not kwargs.get("ip_address") or not kwargs.get("port"):
+            raise ServiceValidationError(ERROR_LOCALAI_NOT_CONFIGURED)
 
 
 class Ollama(Provider):
-    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames, detail):
+    def __init__(self, session, model, max_tokens, temperature, message, base64_images, filenames):
         super().__init__(session, model, max_tokens, temperature,
-                         message, base64_images, filenames, detail)
+                         message, base64_images, filenames)
 
     async def _make_request(self, **kwargs) -> str:
         endpoint = kwargs.get("endpoint")
@@ -594,3 +569,7 @@ class Ollama(Provider):
             "stream": False,
             "options": {"num_predict": self.max_tokens, "temperature": self.temperature}
         }
+
+    def validate(self, **kwargs):
+        if not kwargs.get("ip_address") or not kwargs.get("port"):
+            raise ServiceValidationError(ERROR_OLLAMA_NOT_CONFIGURED)

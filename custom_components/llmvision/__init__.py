@@ -28,7 +28,6 @@ from .const import (
     DURATION,
     MAX_FRAMES,
     TEMPERATURE,
-    DETAIL,
     INCLUDE_FILENAME,
     EXPOSE_IMAGES,
     SENSOR_ENTITY,
@@ -231,7 +230,6 @@ class ServiceCallData:
         self.target_width = data_call.data.get(TARGET_WIDTH, 3840)
         self.temperature = float(data_call.data.get(TEMPERATURE, 0.3))
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 100))
-        self.detail = str(data_call.data.get(DETAIL, "auto"))
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
         self.sensor_entity = data_call.data.get(SENSOR_ENTITY)
@@ -252,7 +250,7 @@ def setup(hass, config):
                                 message=call.message,
                                 max_tokens=call.max_tokens,
                                 temperature=call.temperature,
-                                detail=call.detail)
+                                )
 
         # Fetch and preprocess images
         processor = MediaProcessor(hass, client)
@@ -278,7 +276,7 @@ def setup(hass, config):
                                 message=call.message,
                                 max_tokens=call.max_tokens,
                                 temperature=call.temperature,
-                                detail=call.detail)
+                                )
         processor = MediaProcessor(hass, client)
         client = await processor.add_videos(video_paths=call.video_paths,
                                             event_ids=call.event_id,
@@ -300,7 +298,7 @@ def setup(hass, config):
                                 message=call.message,
                                 max_tokens=call.max_tokens,
                                 temperature=call.temperature,
-                                detail=call.detail)
+                                )
         processor = MediaProcessor(hass, client)
         client = await processor.add_streams(image_entities=call.image_entities,
                                              duration=call.duration,
@@ -350,7 +348,7 @@ def setup(hass, config):
                                 message=message,
                                 max_tokens=call.max_tokens,
                                 temperature=call.temperature,
-                                detail=call.detail)
+                                )
         processor = MediaProcessor(hass, client)
         client = await processor.add_visual_data(image_entities=call.image_entities,
                                                  image_paths=call.image_paths,
