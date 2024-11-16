@@ -247,7 +247,7 @@ condition:
   - condition: template
     value_template: >
       {% if mode == 'Frigate' %}
-        {{ trigger.payload_json["type"] == "end" and (state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list }}
+        {{ trigger.payload_json["type"] == "end" and trigger.payload_json["after"]["has_clip"] == true and (state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list }}
       {% else %}
         {{ state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
       {% endif %}
