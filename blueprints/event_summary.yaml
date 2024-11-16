@@ -15,6 +15,30 @@ blueprint:
           options:
             - 'Frigate'
             - 'Camera'
+    frigate_topic:
+      name: Frigate Topic
+      description: Select which Frigate MQTT topic to monitor
+      selector:
+        select:
+          options:
+            - label: "Frigate Events"
+              value: "frigate/events"
+            - label: "Frigate Reviews"
+              value: "frigate/reviews"
+      default: "frigate/events"
+    severity_filter:
+      name: Severity Filter
+      description: "(Reviews only) Filter events by severity level. Select 'Any' to receive all events."
+      selector:
+        select:
+          options:
+            - label: 'Any Severity'
+              value: 'any'
+            - label: 'Detection Only'
+              value: 'detection'
+            - label: 'Alert Only'
+              value: 'alert'
+      default: 'any'
     important:
       name: Important (Beta)
       description: >
@@ -171,6 +195,8 @@ variables:
   important: !input important
   cooldown: !input cooldown
   mode: !input mode
+  frigate_topic: !input frigate_topic
+  severity_filter: !input severity_filter
   preview_mode: !input preview_mode
   notify_devices: !input notify_device
   device_name_map: >
@@ -208,7 +234,16 @@ variables:
     {% endif %}
   label: >
     {% if mode == 'Frigate' %}
-      {{ trigger.payload_json['after']['label']|capitalize }} seen
+      {% if frigate_topic == 'frigate/events' %}
+        {{ trigger.payload_json['after']['label']|capitalize }} seen
+      {% else %}
+        {% set objects = trigger.payload_json['after']['data']['objects'] %}
+        {% if objects|length == 1 %}
+          {{ objects[0]|capitalize }} seen
+        {% else %}
+          {{ objects|map('capitalize')|join(' and ') }} seen
+        {% endif %}
+      {% endif %}
     {% else %}
       Motion detected
     {% endif %}
@@ -220,8 +255,13 @@ variables:
     {% endif %}
   video: >
     {% if mode == 'Frigate' %}
-      /api/frigate/notifications/{{ trigger.payload_json['after']['id'] }}/clip.mp4
-    {% else %} {% endif %}
+      {% if frigate_topic == 'frigate/events' %}
+        /api/frigate/notifications/{{ trigger.payload_json['after']['id'] }}/clip.mp4
+      {% else %}
+        /api/frigate/notifications/{{ trigger.payload_json['after']['data']['detections'][0] }}/clip.mp4
+      {% endif %}
+    {% else %} 
+    {% endif %}
   image: >
     {% if mode == 'Frigate' %}
       ''
@@ -235,7 +275,7 @@ variables:
 
 trigger:
   - platform: mqtt
-    topic: "frigate/events"
+    topic: !input frigate_topic
     id: frigate_trigger
   - platform: 'state'
     entity_id: !input camera_entities
@@ -250,9 +290,22 @@ condition:
   - condition: template
     value_template: >
       {% if mode == 'Frigate' %}
-        {{ trigger.payload_json["type"] == "end" and trigger.payload_json["after"]["has_clip"] == true and (state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list }}
+        {% if frigate_topic == 'frigate/events' %}
+          {{ trigger.payload_json["type"] == "end" and
+             trigger.payload_json["after"]["has_clip"] == true and
+             (state_attr(this.entity_id, 'last_triggered') is none or
+             (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) and
+             ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list }}
+        {% else %}
+          {{ trigger.payload_json["type"] == "end" and
+             (trigger.payload_json["after"]["severity"] == severity_filter or severity_filter == 'any') and
+             (state_attr(this.entity_id, 'last_triggered') is none or 
+             (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) and
+             ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list }}
+        {% endif %}
       {% else %}
-        {{ state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
+        {{ state_attr(this.entity_id, 'last_triggered') is none or 
+           (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
       {% endif %}
 
 
@@ -336,7 +389,12 @@ action:
         sequence:
           - action: llmvision.video_analyzer
             data:
-              event_id: "{{ trigger.payload_json['after']['id'] }}"
+              event_id: >
+                {% if frigate_topic == 'frigate/events' %}
+                  {{ trigger.payload_json['after']['id'] }}
+                {% else %}
+                  {{ trigger.payload_json['after']['data']['detections'][0] }}
+                {% endif %}
               provider: !input provider
               model: !input model
               message: !input message
