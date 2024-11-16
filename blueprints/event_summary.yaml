@@ -128,10 +128,7 @@ blueprint:
     importance_prompt:
       name: Importance Prompt
       description: Model prompt for the importance analyze action
-      default: >
-        Your job is to classify security events based on cctv footage. Your options: "passive" if an event seems unimportant, "time-sensitive" if important and "critical" for suspicious events.
-        Use "critical" only for possible burglaries and similar events. "time-sensitive" could be a courier at the front door or an event of similar importance.
-        Reply with these replies exactly.
+      default: 'Your job is to classify security events based on cctv footage. Your options: "passive" if an event seems unimportant, "time-sensitive" if important and "critical" for suspicious events. Use "critical" only for possible burglaries and similar events. "time-sensitive" could be a courier at the front door or an event of similar importance. Reply with these replies exactly.'
       selector:
         text:
           multiline: true
@@ -276,7 +273,7 @@ action:
                       image_entity: "{{ ['camera.' + trigger.payload_json['after']['camera']|lower] }}"
                       provider: !input provider
                       model: !input model
-                      message: "{{importance_prompt}}"
+                      message: !input importance_prompt
                       include_filename: true
                       target_width: 1280
                       detail: low
@@ -292,7 +289,7 @@ action:
                       image_entity: "{{[camera_entity]}}"
                       provider: !input provider
                       model: !input model
-                      message: "{{importance_prompt}}"
+                      message: !input importance_prompt
                       include_filename: true
                       target_width: 1280
                       detail: low
