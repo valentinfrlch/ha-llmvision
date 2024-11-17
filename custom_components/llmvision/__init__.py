@@ -2,6 +2,9 @@
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
+    CONF_AZURE_API_KEY,
+    CONF_AZURE_ENDPOINT,
+    CONF_AZURE_VERSION,
     CONF_ANTHROPIC_API_KEY,
     CONF_GOOGLE_API_KEY,
     CONF_GROQ_API_KEY,
@@ -34,13 +37,15 @@ from .const import (
     SENSOR_ENTITY,
 )
 from .calendar import SemanticIndex
+from .providers import Request
+from .media_handlers import MediaProcessor
+import os
 from datetime import timedelta
 from homeassistant.util import dt as dt_util
 from homeassistant.config_entries import ConfigEntry
-from .providers import Request
-from .media_handlers import MediaProcessor
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
+from functools import partial
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -53,6 +58,9 @@ async def async_setup_entry(hass, entry):
 
     # Get all entries from config flow
     openai_api_key = entry.data.get(CONF_OPENAI_API_KEY)
+    azure_api_key = entry.data.get(CONF_AZURE_API_KEY)
+    azure_endpoint = entry.data.get(CONF_AZURE_ENDPOINT)
+    azure_version = entry.data.get(CONF_AZURE_VERSION)
     anthropic_api_key = entry.data.get(CONF_ANTHROPIC_API_KEY)
     google_api_key = entry.data.get(CONF_GOOGLE_API_KEY)
     groq_api_key = entry.data.get(CONF_GROQ_API_KEY)
@@ -73,6 +81,9 @@ async def async_setup_entry(hass, entry):
     # Create a dictionary for the entry data
     entry_data = {
         CONF_OPENAI_API_KEY: openai_api_key,
+        CONF_AZURE_API_KEY: azure_api_key,
+        CONF_AZURE_ENDPOINT: azure_endpoint,
+        CONF_AZURE_VERSION: azure_version,
         CONF_ANTHROPIC_API_KEY: anthropic_api_key,
         CONF_GOOGLE_API_KEY: google_api_key,
         CONF_GROQ_API_KEY: groq_api_key,
@@ -96,6 +107,8 @@ async def async_setup_entry(hass, entry):
 
     # check if the entry is the calendar entry (has entry rentention_time)
     if filtered_entry_data.get(CONF_RETENTION_TIME) is not None:
+        # make sure 'llmvision' directory exists
+        await hass.loop.run_in_executor(None, partial(os.makedirs, "/llmvision", exist_ok=True))
         # forward the calendar entity to the platform
         await hass.config_entries.async_forward_entry_setups(entry, ["calendar"])
 
@@ -158,13 +171,13 @@ async def _remember(hass, call, start, response):
         else:
             camera_name = "Unknown"
 
-        camera_name = camera_name.replace("camera.", "").replace("image.", "")
+        camera_name = camera_name.replace("camera.", "").replace("image.", "").capitalize()
 
         await semantic_index.remember(
             start=start,
             end=dt_util.now() + timedelta(minutes=1),
-            label=title,
-            camera_name=camera_name,
+            label=title + " near " + camera_name if camera_name != "Unknown" else title,
+            camera_name=camera_name if camera_name != "Unknown" else "Image Input",
             summary=response["response_text"]
         )
 

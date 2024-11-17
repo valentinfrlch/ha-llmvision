@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, AsyncAzureOpenAI
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.httpx_client import get_async_client
@@ -9,6 +9,9 @@ import inspect
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
+    CONF_AZURE_API_KEY,
+    CONF_AZURE_ENDPOINT,
+    CONF_AZURE_VERSION,
     CONF_ANTHROPIC_API_KEY,
     CONF_GOOGLE_API_KEY,
     CONF_GROQ_API_KEY,
@@ -26,14 +29,9 @@ from .const import (
     ENDPOINT_LOCALAI,
     ENDPOINT_OLLAMA,
     ENDPOINT_GROQ,
-    ERROR_OPENAI_NOT_CONFIGURED,
-    ERROR_ANTHROPIC_NOT_CONFIGURED,
-    ERROR_GOOGLE_NOT_CONFIGURED,
-    ERROR_GROQ_NOT_CONFIGURED,
+    ERROR_NOT_CONFIGURED,
     ERROR_GROQ_MULTIPLE_IMAGES,
-    ERROR_LOCALAI_NOT_CONFIGURED,
-    ERROR_OLLAMA_NOT_CONFIGURED,
-    ERROR_NO_IMAGE_INPUT
+    ERROR_NO_IMAGE_INPUT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -62,6 +60,8 @@ def get_provider(hass, provider_uid):
 
     if CONF_OPENAI_API_KEY in entry_data:
         return "OpenAI"
+    elif CONF_AZURE_API_KEY in entry_data:
+        return "Azure"
     elif CONF_ANTHROPIC_API_KEY in entry_data:
         return "Anthropic"
     elif CONF_GOOGLE_API_KEY in entry_data:
@@ -104,9 +104,9 @@ class Request:
         provider = get_provider(self.hass, entry_id)
         _LOGGER.info(f"Provider from call: {provider}")
         model = call.model if call.model != "None" else default_model(provider)
-        gen_title_prompt = "Generate a title for this image. Follow the schema: '<object> seen'. Do not mention the time or where. Do not speculate."
+        gen_title_prompt = "Your job is to generate a title in the form '<object> seen' for texts. Do not mention the time, do not speculate. Generate a title for this text: {response}"
 
-        config = self.hass.data.get(DOMAIN).get(entry_id)
+        config = self.hass.data.get(DOMAIN).get(entry_id)      
 
         if provider == 'OpenAI':
             api_key = config.get(CONF_OPENAI_API_KEY)
@@ -115,8 +115,17 @@ class Request:
                              self.message, self.base64_images, self.filenames)
             response_text = await request.vision_request(api_key=api_key)
             if call.generate_title:
-                _LOGGER.info(f"Generating title with prompt: {gen_title_prompt}")
-                gen_title = await request.vision_request(api_key=api_key, prompt=gen_title_prompt)
+                gen_title = await request.text_request(api_key=api_key, prompt=gen_title_prompt.format(response=response_text))
+        if provider == 'Azure':
+            api_key = config.get(CONF_AZURE_API_KEY)
+            endpoint = config.get(CONF_AZURE_ENDPOINT)
+            version = config.get(CONF_AZURE_VERSION)
+
+            request = AzureOpenAI(self.hass, model, self.max_tokens, self.temperature,
+                             self.message, self.base64_images, self.filenames)
+            response_text = await request.vision_request(api_key=api_key, endpoint=endpoint, version=version)
+            if call.generate_title:
+                gen_title = await request.text_request(api_key=api_key, endpoint=endpoint, version=version, prompt=gen_title_prompt.format(response=response_text))
         elif provider == 'Anthropic':
             api_key = config.get(CONF_ANTHROPIC_API_KEY)
 
@@ -124,7 +133,7 @@ class Request:
                                 self.message, self.base64_images, self.filenames)
             response_text = await request.vision_request(api_key=api_key, endpoint=ENDPOINT_ANTHROPIC)
             if call.generate_title:
-                gen_title = await request.vision_request(api_key=api_key, prompt=gen_title_prompt)
+                gen_title = await request.text_request(api_key=api_key, prompt=gen_title_prompt.format(response=response_text))
         elif provider == 'Google':
             api_key = config.get(CONF_GOOGLE_API_KEY)
 
@@ -132,7 +141,7 @@ class Request:
                              self.message, self.base64_images, self.filenames)
             response_text = await request.vision_request(api_key=api_key, endpoint=ENDPOINT_GOOGLE)
             if call.generate_title:
-                gen_title = await request.vision_request(api_key=api_key, prompt=gen_title_prompt)
+                gen_title = await request.text_request(api_key=api_key, prompt=gen_title_prompt.format(response=response_text))
         elif provider == 'Groq':
             api_key = config.get(CONF_GROQ_API_KEY)
 
@@ -140,7 +149,7 @@ class Request:
                            self.message, self.base64_images, self.filenames)
             response_text = await request.vision_request(api_key=api_key, endpoint=ENDPOINT_GROQ)
             if call.generate_title:
-                gen_title = await request.vision_request(api_key=api_key, prompt=gen_title_prompt)
+                gen_title = await request.text_request(api_key=api_key, prompt=gen_title_prompt.format(response=response_text))
         elif provider == 'LocalAI':
             ip_address = config.get(CONF_LOCALAI_IP_ADDRESS)
             port = config.get(CONF_LOCALAI_PORT)
@@ -150,7 +159,7 @@ class Request:
                               self.message, self.base64_images, self.filenames)
             response_text = await request.vision_request(endpoint=ENDPOINT_LOCALAI, ip_address=ip_address, port=port, https=https)
             if call.generate_title:
-                gen_title = await request.vision_request(api_key=api_key, prompt=gen_title_prompt)
+                gen_title = await request.text_request(api_key=api_key, prompt=gen_title_prompt.format(response=response_text))
         elif provider == 'Ollama':
             ip_address = config.get(CONF_OLLAMA_IP_ADDRESS)
             port = config.get(CONF_OLLAMA_PORT)
@@ -160,7 +169,7 @@ class Request:
                              self.message, self.base64_images, self.filenames)
             response_text = await request.vision_request(endpoint=ENDPOINT_OLLAMA, ip_address=ip_address, port=port, https=https)
             if call.generate_title:
-                gen_title = await request.vision_request(api_key=api_key, prompt=gen_title_prompt)
+                gen_title = await request.text_request(api_key=api_key, prompt=gen_title_prompt.format(response=response_text))
         elif provider == 'Custom OpenAI':
             api_key = config.get(CONF_CUSTOM_OPENAI_API_KEY, "")
             endpoint = config.get(
@@ -170,11 +179,11 @@ class Request:
                              self.message, self.base64_images, self.filenames)
             response_text = await request.vision_request(api_key, endpoint)
             if call.generate_title:
-                gen_title = await request.vision_request(api_key=api_key, prompt=gen_title_prompt)
+                gen_title = await request.text_request(api_key=api_key, prompt=gen_title_prompt.format(response=response_text))
         else:
             raise ServiceValidationError("invalid_provider")
 
-        return {"title": gen_title.replace(".", "") if 'gen_title' in locals() else None, "response_text": response_text}
+        return {"title": gen_title.replace(".", "").replace("'", "") if 'gen_title' in locals() else None, "response_text": response_text}
 
     def add_frame(self, base64_image, filename):
         self.base64_images.append(base64_image)
@@ -229,14 +238,18 @@ class Provider(ABC):
         self.validate_images()
         self.validate(**kwargs)
         if "prompt" in kwargs:
-            _LOGGER.info(f"Prompt received: {kwargs.get('prompt')}")
             self.message = kwargs.get("prompt")
         kwargs["data"] = self._prepare_vision_data()
         return await self._make_request(**kwargs)
 
     async def text_request(self, **kwargs) -> str:
+        _LOGGER.info(f"Request received: {kwargs.get('prompt')}")
         self.validate_images()
         self.validate(**kwargs)
+        if "prompt" in kwargs:
+            self.message = kwargs.get("prompt")
+        self.temperature = 0.1
+        self.max_tokens = 3
         kwargs["data"] = self._prepare_text_data()
         return await self._make_request(**kwargs)
 
@@ -313,8 +326,8 @@ class OpenAI(Provider):
         client = AsyncOpenAI(
             api_key=kwargs.get("api_key"),
             http_client=get_async_client(self.hass),
-            )
-        
+        )
+
         messages = kwargs.get("data")
 
         response = await client.chat.completions.create(
@@ -343,7 +356,53 @@ class OpenAI(Provider):
 
     def validate(self, **kwargs):
         if not kwargs.get("api_key"):
-            raise ServiceValidationError(ERROR_OPENAI_NOT_CONFIGURED)
+            raise ServiceValidationError(
+                ERROR_NOT_CONFIGURED.format(provider="OpenAI"))
+
+
+class AzureOpenAI(Provider):
+    def __init__(self, hass, model, max_tokens, temperature, message, base64_images, filenames):
+        super().__init__(hass, model, max_tokens, temperature,
+                         message, base64_images, filenames)
+
+    async def _make_request(self, **kwargs) -> str:
+        client = AsyncAzureOpenAI(
+            api_key=kwargs.get("api_key"),
+            azure_endpoint=kwargs.get("endpoint"),
+            api_version=kwargs.get("version"),
+            http_client=get_async_client(self.hass),
+        )
+
+        messages = kwargs.get("data")
+
+        response = await client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+        )
+
+        response_text = response.choices[0].message.content
+        return response_text
+
+    def _prepare_vision_data(self) -> list:
+        messages = [{"role": "user", "content": []}]
+        for image, filename in zip(self.base64_images, self.filenames):
+            tag = ("Image " + str(self.base64_images.index(image) + 1)
+                   ) if filename == "" else filename
+            messages[0]["content"].append({"type": "text", "text": tag + ":"})
+            messages[0]["content"].append({"type": "image_url", "image_url": {
+                                          "url": f"data:image/jpeg;base64,{image}"}})
+        messages[0]["content"].append({"type": "text", "text": self.message})
+        return messages
+
+    def _prepare_text_data(self) -> list:
+        return [{"role": "user", "content": [{"type": "text", "text": self.message}]}]
+
+    def validate(self, **kwargs):
+        if not kwargs.get("api_key"):
+            raise ServiceValidationError(
+                ERROR_NOT_CONFIGURED.format(provider="Azure"))
 
 
 class Anthropic(Provider):
@@ -396,7 +455,8 @@ class Anthropic(Provider):
 
     def validate(self, **kwargs):
         if not kwargs.get("api_key"):
-            raise ServiceValidationError(ERROR_ANTHROPIC_NOT_CONFIGURED)
+            raise ServiceValidationError(
+                ERROR_NOT_CONFIGURED.format(provider="Anthropic"))
 
 
 class Google(Provider):
@@ -438,7 +498,8 @@ class Google(Provider):
 
     def validate(self, **kwargs):
         if not kwargs.get("api_key"):
-            raise ServiceValidationError(ERROR_GOOGLE_NOT_CONFIGURED)
+            raise ServiceValidationError(
+                ERROR_NOT_CONFIGURED.format(provider="Google"))
 
 
 class Groq(Provider):
@@ -492,7 +553,8 @@ class Groq(Provider):
 
     def validate(self, **kwargs):
         if not kwargs.get("api_key"):
-            raise ServiceValidationError(ERROR_GROQ_NOT_CONFIGURED)
+            raise ServiceValidationError(
+                ERROR_NOT_CONFIGURED.format(provider="Groq"))
         if len(kwargs.get("base64_images")) > 1:
             raise ServiceValidationError(ERROR_GROQ_MULTIPLE_IMAGES)
 
@@ -540,7 +602,8 @@ class LocalAI(Provider):
 
     def validate(self, **kwargs):
         if not kwargs.get("ip_address") or not kwargs.get("port"):
-            raise ServiceValidationError(ERROR_LOCALAI_NOT_CONFIGURED)
+            raise ServiceValidationError(
+                ERROR_NOT_CONFIGURED.format(provider="LocalAI"))
 
 
 class Ollama(Provider):
@@ -587,4 +650,5 @@ class Ollama(Provider):
 
     def validate(self, **kwargs):
         if not kwargs.get("ip_address") or not kwargs.get("port"):
-            raise ServiceValidationError(ERROR_OLLAMA_NOT_CONFIGURED)
+            raise ServiceValidationError(
+                ERROR_NOT_CONFIGURED.format(provider="OpenAI"))

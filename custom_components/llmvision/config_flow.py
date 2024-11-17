@@ -1,11 +1,16 @@
+from openai import AsyncOpenAI, AsyncAzureOpenAI
 from homeassistant import config_entries
 from homeassistant.helpers.selector import selector
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.httpx_client import get_async_client
 import urllib.parse
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
+    CONF_AZURE_API_KEY,
+    CONF_AZURE_ENDPOINT,
+    CONF_AZURE_VERSION,
     CONF_ANTHROPIC_API_KEY,
     CONF_GOOGLE_API_KEY,
     CONF_GROQ_API_KEY,
@@ -36,12 +41,42 @@ class Validator:
             _LOGGER.error("You need to provide a valid API key.")
             raise ServiceValidationError("empty_api_key")
         elif self.user_input["provider"] == "OpenAI":
-            header = {'Content-type': 'application/json',
-                      'Authorization': 'Bearer ' + api_key}
-            base_url = "api.openai.com"
-            endpoint = "/v1/models"
-            payload = {}
-            method = "GET"
+            # TODO: Implement OpenAI handshake with OpenAI SDK
+            client = AsyncOpenAI(
+                api_key=api_key,
+                http_client=get_async_client(self.hass),
+            )
+            try:
+                await client.models.list()
+                return True
+            except Exception as e:
+                _LOGGER.error(f"Could not connect to OpenAI: {e}")
+                return False
+        elif self.user_input["provider"] == "Custom OpenAI":
+            client = AsyncOpenAI(
+                api_key=api_key,
+                http_client=get_async_client(self.hass),
+                endpoint=self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT]
+            )
+            try:
+                await client.models.list()
+                return True
+            except Exception as e:
+                _LOGGER.error(f"Could not connect to Custom OpenAI: {e}")
+                return False
+        elif self.user_input["provider"] == "Azure":
+            client = AsyncAzureOpenAI(
+                api_key=api_key,
+                api_version="2024-10-01-preview",
+                azure_endpoint="https://llmvision-test.openai.azure.com/",
+                http_client=get_async_client(self.hass),
+            )
+            try:
+                await client.models.list()
+                return True
+            except Exception as e:
+                _LOGGER.error(f"Could not connect to Azure: {e}")
+                return False
         elif self.user_input["provider"] == "Anthropic":
             header = {
                 'x-api-key': api_key,
@@ -136,6 +171,12 @@ class Validator:
             _LOGGER.error("Could not connect to OpenAI server.")
             raise ServiceValidationError("handshake_failed")
 
+    async def azure(self):
+        self._validate_provider()
+        if not await self._validate_api_key(self.user_input[CONF_AZURE_API_KEY]):
+            _LOGGER.error("Could not connect to Azure server.")
+            raise ServiceValidationError("handshake_failed")
+
     async def custom_openai(self):
         self._validate_provider()
         try:
@@ -196,6 +237,8 @@ class Validator:
             providers.append("OpenAI")
         if CONF_ANTHROPIC_API_KEY in self.hass.data[DOMAIN]:
             providers.append("Anthropic")
+        if CONF_AZURE_API_KEY in self.hass.data[DOMAIN]:
+            providers.append("Azure")
         if CONF_GOOGLE_API_KEY in self.hass.data[DOMAIN]:
             providers.append("Google")
         if CONF_LOCALAI_IP_ADDRESS in self.hass.data[DOMAIN] and CONF_LOCALAI_PORT in self.hass.data[DOMAIN]:
@@ -215,14 +258,15 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def handle_provider(self, provider):
         provider_steps = {
-            "Event Calendar": self.async_step_semantic_index,
-            "OpenAI": self.async_step_openai,
             "Anthropic": self.async_step_anthropic,
+            "Azure": self.async_step_azure,
+            "Custom OpenAI": self.async_step_custom_openai,
+            "Event Calendar": self.async_step_semantic_index,
             "Google": self.async_step_google,
             "Groq": self.async_step_groq,
-            "Ollama": self.async_step_ollama,
             "LocalAI": self.async_step_localai,
-            "Custom OpenAI": self.async_step_custom_openai,
+            "Ollama": self.async_step_ollama,
+            "OpenAI": self.async_step_openai,
         }
 
         step_method = provider_steps.get(provider)
@@ -236,7 +280,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required("provider", default="Event Calendar"): selector({
                 "select": {
-                    "options": ["Event Calendar", "OpenAI", "Anthropic", "Google", "Groq", "Ollama", "LocalAI", "Custom OpenAI"],
+                    "options": ["Anthropic", "Azure", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "Custom OpenAI", "Event Calendar"],
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -335,6 +379,35 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="openai",
+            data_schema=data_schema,
+        )
+
+    async def async_step_azure(self, user_input=None):
+        data_schema = vol.Schema({
+            vol.Required(CONF_AZURE_API_KEY): str,
+            vol.Required(CONF_AZURE_ENDPOINT, default="https://domain.openai.azure.com/"): str,
+            vol.Required(CONF_AZURE_VERSION, default="2024-10-01-preview"): str,
+        })
+
+        if user_input is not None:
+            # save provider to user_input
+            user_input["provider"] = self.init_info["provider"]
+            validator = Validator(self.hass, user_input)
+            try:
+                await validator.azure()
+                # add the mode to user_input
+                user_input["provider"] = self.init_info["provider"]
+                return self.async_create_entry(title="Azure", data=user_input)
+            except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
+                return self.async_show_form(
+                    step_id="azure",
+                    data_schema=data_schema,
+                    errors={"base": "handshake_failed"}
+                )
+
+        return self.async_show_form(
+            step_id="azure",
             data_schema=data_schema,
         )
 

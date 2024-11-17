@@ -5,6 +5,9 @@ DOMAIN = "llmvision"
 
 # Configuration values from setup
 CONF_OPENAI_API_KEY = 'openai_api_key'
+CONF_AZURE_API_KEY = 'azure_api_key'
+CONF_AZURE_ENDPOINT = 'azure_endpoint'
+CONF_AZURE_VERSION = 'azure_version'
 CONF_ANTHROPIC_API_KEY = 'anthropic_api_key'
 CONF_GOOGLE_API_KEY = 'google_api_key'
 CONF_GROQ_API_KEY = 'groq_api_key'
@@ -39,14 +42,8 @@ GENERATE_TITLE = 'generate_title'
 SENSOR_ENTITY = 'sensor_entity'
 
 # Error messages
-ERROR_OPENAI_NOT_CONFIGURED = "OpenAI is not configured"
-ERROR_ANTHROPIC_NOT_CONFIGURED = "Anthropic is not configured"
-ERROR_GOOGLE_NOT_CONFIGURED = "Google is not configured"
-ERROR_GROQ_NOT_CONFIGURED = "Groq is not configured"
+ERROR_NOT_CONFIGURED = "{provider} is not configured"
 ERROR_GROQ_MULTIPLE_IMAGES = "Groq does not support videos or streams"
-ERROR_LOCALAI_NOT_CONFIGURED = "LocalAI is not configured"
-ERROR_OLLAMA_NOT_CONFIGURED = "Ollama is not configured"
-ERROR_CUSTOM_OPENAI_NOT_CONFIGURED = "Custom OpenAI provider is not configured"
 ERROR_NO_IMAGE_INPUT = "No image input provided"
 ERROR_HANDSHAKE_FAILED = "Connection could not be established"
 
