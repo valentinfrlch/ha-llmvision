@@ -83,6 +83,7 @@ logger:
 > These are planned features and ideas. They are subject to change and may not be implemented in the order listed or at all.
 
 1. **HACS**: Include in HACS default repository
+2. **Providers**: Support for Azure
 
 For features added in previous versions, check the changelogs in the release notes.
 
