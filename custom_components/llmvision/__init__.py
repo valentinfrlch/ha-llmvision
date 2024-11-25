@@ -2,6 +2,10 @@
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
+    CONF_AZURE_OPENAI_BASE_URL,
+    CONF_AZURE_OPENAI_DEPLOYMENT,
+    CONF_AZURE_OPENAI_API_VERSION,
+    CONF_AZURE_OPENAI_API_KEY,
     CONF_ANTHROPIC_API_KEY,
     CONF_GOOGLE_API_KEY,
     CONF_GROQ_API_KEY,
@@ -53,6 +57,10 @@ async def async_setup_entry(hass, entry):
 
     # Get all entries from config flow
     openai_api_key = entry.data.get(CONF_OPENAI_API_KEY)
+    azure_openai_base_url = entry.data.get(CONF_AZURE_OPENAI_BASE_URL)
+    azure_openai_api_key = entry.data.get(CONF_AZURE_OPENAI_API_KEY)
+    azure_openai_deployment = entry.data.get(CONF_AZURE_OPENAI_DEPLOYMENT)
+    azure_openai_api_version = entry.data.get(CONF_AZURE_OPENAI_API_VERSION)
     anthropic_api_key = entry.data.get(CONF_ANTHROPIC_API_KEY)
     google_api_key = entry.data.get(CONF_GOOGLE_API_KEY)
     groq_api_key = entry.data.get(CONF_GROQ_API_KEY)
@@ -73,6 +81,10 @@ async def async_setup_entry(hass, entry):
     # Create a dictionary for the entry data
     entry_data = {
         CONF_OPENAI_API_KEY: openai_api_key,
+        CONF_AZURE_OPENAI_BASE_URL: azure_openai_base_url,
+        CONF_AZURE_OPENAI_API_KEY: azure_openai_api_key,
+        CONF_AZURE_OPENAI_DEPLOYMENT: azure_openai_deployment,
+        CONF_AZURE_OPENAI_API_VERSION: azure_openai_api_version,
         CONF_ANTHROPIC_API_KEY: anthropic_api_key,
         CONF_GOOGLE_API_KEY: google_api_key,
         CONF_GROQ_API_KEY: groq_api_key,
@@ -218,13 +230,13 @@ class ServiceCallData:
             MODEL))
         self.message = str(data_call.data.get(MESSAGE)[0:2000])
         self.remember = data_call.data.get(REMEMBER, False)
-        self.image_paths = data_call.data.get(IMAGE_FILE, "").split(
-            "\n") if data_call.data.get(IMAGE_FILE) else None
+        self.image_paths = data_call.data.get(IMAGE_FILE, "").replace(
+            "\n",";").split(";") if data_call.data.get(IMAGE_FILE) else None
         self.image_entities = data_call.data.get(IMAGE_ENTITY)
-        self.video_paths = data_call.data.get(VIDEO_FILE, "").split(
-            "\n") if data_call.data.get(VIDEO_FILE) else None
-        self.event_id = data_call.data.get(EVENT_ID, "").split(
-            "\n") if data_call.data.get(EVENT_ID) else None
+        self.video_paths = data_call.data.get(VIDEO_FILE, "").replace(
+            "\n",";").split(";") if data_call.data.get(VIDEO_FILE) else None
+        self.event_id = data_call.data.get(EVENT_ID, "").replace(
+            "\n",";").split(";") if data_call.data.get(EVENT_ID) else None
         self.interval = int(data_call.data.get(INTERVAL, 2))
         self.duration = int(data_call.data.get(DURATION, 10))
         self.max_frames = int(data_call.data.get(MAX_FRAMES, 3))
