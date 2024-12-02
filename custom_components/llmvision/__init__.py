@@ -3,8 +3,9 @@ from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
     CONF_AZURE_API_KEY,
-    CONF_AZURE_ENDPOINT,
     CONF_AZURE_VERSION,
+    CONF_AZURE_BASE_URL,
+    CONF_AZURE_DEPLOYMENT,
     CONF_ANTHROPIC_API_KEY,
     CONF_GOOGLE_API_KEY,
     CONF_GROQ_API_KEY,
@@ -59,7 +60,8 @@ async def async_setup_entry(hass, entry):
     # Get all entries from config flow
     openai_api_key = entry.data.get(CONF_OPENAI_API_KEY)
     azure_api_key = entry.data.get(CONF_AZURE_API_KEY)
-    azure_endpoint = entry.data.get(CONF_AZURE_ENDPOINT)
+    azure_base_url = entry.data.get(CONF_AZURE_BASE_URL)
+    azure_deployment = entry.data.get(CONF_AZURE_DEPLOYMENT)
     azure_version = entry.data.get(CONF_AZURE_VERSION)
     anthropic_api_key = entry.data.get(CONF_ANTHROPIC_API_KEY)
     google_api_key = entry.data.get(CONF_GOOGLE_API_KEY)
@@ -82,7 +84,8 @@ async def async_setup_entry(hass, entry):
     entry_data = {
         CONF_OPENAI_API_KEY: openai_api_key,
         CONF_AZURE_API_KEY: azure_api_key,
-        CONF_AZURE_ENDPOINT: azure_endpoint,
+        CONF_AZURE_BASE_URL: azure_base_url,
+        CONF_AZURE_DEPLOYMENT: azure_deployment,
         CONF_AZURE_VERSION: azure_version,
         CONF_ANTHROPIC_API_KEY: anthropic_api_key,
         CONF_GOOGLE_API_KEY: google_api_key,
@@ -144,7 +147,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
         return False
 
 
-async def _remember(hass, call, start, response):
+async def _remember(hass, call, start, response) -> None:
     if call.remember:
         # Find semantic index config
         config_entry = None
@@ -182,7 +185,7 @@ async def _remember(hass, call, start, response):
         )
 
 
-async def _update_sensor(hass, sensor_entity, new_value):
+async def _update_sensor(hass, sensor_entity, new_value) -> None:
     """Update the value of a sensor entity."""
     if sensor_entity:
         _LOGGER.info(
@@ -222,6 +225,9 @@ class ServiceCallData:
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)
         self.sensor_entity = data_call.data.get(SENSOR_ENTITY)
+        # ------------ Added during call ------------
+        # self.base64_images : List[str] = []
+        # self.filenames : List[str] = []
 
     def get_service_call_data(self):
         return self

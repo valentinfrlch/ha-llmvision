@@ -135,6 +135,28 @@ class MediaProcessor:
                 base64_image = await self._encode_image(img)
 
         return base64_image
+    
+    async def _fetch(self, url, max_retries=2, retry_delay=1):
+        """Fetch image from url and return image data"""
+        retries = 0
+        while retries < max_retries:
+            _LOGGER.info(
+                f"Fetching {url} (attempt {retries + 1}/{max_retries})")
+            try:
+                response = await self.session.get(url)
+                if response.status != 200:
+                    _LOGGER.warning(
+                        f"Couldn't fetch frame (status code: {response.status})")
+                    retries += 1
+                    await asyncio.sleep(retry_delay)
+                    continue
+                data = await response.read()
+                return data
+            except Exception as e:
+                _LOGGER.error(f"Fetch failed: {e}")
+                retries += 1
+                await asyncio.sleep(retry_delay)
+        _LOGGER.warning(f"Failed to fetch {url} after {max_retries} retries")
 
     async def record(self, image_entities, duration, max_frames, target_width, include_filename, expose_images):
         """Wrapper for client.add_frame with integrated recorder
@@ -162,7 +184,7 @@ class MediaProcessor:
                 frame_url = base_url + \
                     self.hass.states.get(image_entity).attributes.get(
                         'entity_picture')
-                frame_data = await self.client._fetch(frame_url)
+                frame_data = await self._fetch(frame_url)
 
                 # Skip frame if fetch failed
                 if not frame_data:
@@ -251,7 +273,7 @@ class MediaProcessor:
                     image_url = base_url + \
                         self.hass.states.get(image_entity).attributes.get(
                             'entity_picture')
-                    image_data = await self.client._fetch(image_url)
+                    image_data = await self._fetch(image_url)
 
                     # Skip frame if fetch failed
                     if not image_data:
@@ -306,7 +328,7 @@ class MediaProcessor:
                 try:
                     base_url = get_url(self.hass)
                     frigate_url = base_url + "/api/frigate/notifications/" + event_id + "/clip.mp4"
-                    clip_data = await self.client._fetch(frigate_url)
+                    clip_data = await self._fetch(frigate_url)
 
                     if not clip_data:
                         raise ServiceValidationError(

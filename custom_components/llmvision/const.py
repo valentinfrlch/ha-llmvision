@@ -6,7 +6,8 @@ DOMAIN = "llmvision"
 # Configuration values from setup
 CONF_OPENAI_API_KEY = 'openai_api_key'
 CONF_AZURE_API_KEY = 'azure_api_key'
-CONF_AZURE_ENDPOINT = 'azure_endpoint'
+CONF_AZURE_BASE_URL = 'azure_base_url'
+CONF_AZURE_DEPLOYMENT = 'azure_deployment'
 CONF_AZURE_VERSION = 'azure_version'
 CONF_ANTHROPIC_API_KEY = 'anthropic_api_key'
 CONF_GOOGLE_API_KEY = 'google_api_key'
@@ -58,3 +59,4 @@ ENDPOINT_GOOGLE = "https://generativelanguage.googleapis.com/v1beta/models/{mode
 ENDPOINT_GROQ = "https://api.groq.com/openai/v1/chat/completions"
 ENDPOINT_LOCALAI = "{protocol}://{ip_address}:{port}/v1/chat/completions"
 ENDPOINT_OLLAMA = "{protocol}://{ip_address}:{port}/api/chat"
+ENDPOINT_AZURE = "https://{base_url}/openai/deployments/{deployment}/chat/completions?api-version={api_version}"
