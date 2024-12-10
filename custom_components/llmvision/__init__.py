@@ -31,6 +31,7 @@ from .const import (
     DETAIL,
     INCLUDE_FILENAME,
     EXPOSE_IMAGES,
+    EXPOSE_IMAGES_PERSIST,
     SENSOR_ENTITY,
 )
 from .calendar import SemanticIndex
@@ -234,6 +235,7 @@ class ServiceCallData:
         self.detail = str(data_call.data.get(DETAIL, "auto"))
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
+        self.expose_images_persist = data_call.data.get(EXPOSE_IMAGES_PERSIST, False)
         self.sensor_entity = data_call.data.get(SENSOR_ENTITY)
 
     def get_service_call_data(self):
@@ -285,7 +287,8 @@ def setup(hass, config):
                                             max_frames=call.max_frames,
                                             target_width=call.target_width,
                                             include_filename=call.include_filename,
-                                            expose_images=call.expose_images
+                                            expose_images=call.expose_images,
+                                            expose_images_persist=call.expose_images_persist
                                             )
         response = await client.make_request(call)
         await _remember(hass, call, start, response)

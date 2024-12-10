@@ -294,13 +294,14 @@ class MediaProcessor:
                     raise ServiceValidationError(f"Error: {e}")
         return self.client
 
-    async def add_videos(self, video_paths, event_ids, max_frames, target_width, include_filename, expose_images):
+    async def add_videos(self, video_paths, event_ids, max_frames, target_width, include_filename, expose_images, expose_images_persist):
         """Wrapper for client.add_frame for videos"""
         tmp_clips_dir = f"/config/custom_components/{DOMAIN}/tmp_clips"
         tmp_frames_dir = f"/config/custom_components/{DOMAIN}/tmp_frames"
 
         if not video_paths:
             video_paths = []
+            processed_event_ids = []
         if event_ids:
             for event_id in event_ids:
                 try:
@@ -323,14 +324,17 @@ class MediaProcessor:
                         f"Saved frigate clip to {clip_path} (temporarily)")
                     # append to video_paths
                     video_paths.append(clip_path)
+                    processed_event_ids.append(event_id)
 
                 except AttributeError as e:
                     raise ServiceValidationError(
                         f"Failed to fetch frigate clip {event_id}: {e}")
         if video_paths:
             _LOGGER.debug(f"Processing videos: {video_paths}")
+            video_count = 0
             for video_path in video_paths:
                 try:
+                    current_event_id = processed_event_ids[video_count]
                     video_path = video_path.strip()
                     if os.path.exists(video_path):
                         # create tmp dir to store extracted frames
@@ -395,7 +399,10 @@ class MediaProcessor:
                         for frame_path, _ in sorted_frames:
                             resized_image = await self.resize_image(image_path=frame_path, target_width=target_width)
                             if expose_images:
-                                await self._save_clip(image_path="/config/www/llmvision/" + frame_path.split("/")[-1], image_data=resized_image)
+                                persist_filename = f"/config/www/llmvision/" + frame_path.split("/")[-1]
+                                if expose_images_persist:
+                                    persist_filename = f"/config/www/llmvision/{current_event_id}-" + frame_path.split("/")[-1]
+                                await self._save_clip(image_data=resized_image, image_path=persist_filename)
                             self.client.add_frame(
                                 base64_image=resized_image,
                                 filename=video_path.split('/')[-1].split('.')[-2] + " (frame " + str(counter) + ")" if include_filename else "Video frame " + str(counter)
