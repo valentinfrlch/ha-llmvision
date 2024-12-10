@@ -24,6 +24,8 @@ from .const import (
     IMAGE_ENTITY,
     VIDEO_FILE,
     EVENT_ID,
+    FRIGATE_RETRY_ATTEMPTS,
+    FRIGATE_RETRY_SECONDS,
     INTERVAL,
     DURATION,
     MAX_FRAMES,
@@ -227,6 +229,9 @@ class ServiceCallData:
         self.event_id = data_call.data.get(EVENT_ID, "").split(
             "\n") if data_call.data.get(EVENT_ID) else None
         self.interval = int(data_call.data.get(INTERVAL, 2))
+        self.frigate_retry_attempts = int(data_call.data.get(FRIGATE_RETRY_ATTEMPTS, 2))
+        self.frigate_retry_seconds = int(data_call.data.get(FRIGATE_RETRY_SECONDS, 1))
+        self.interval = int(data_call.data.get(INTERVAL, 2))
         self.duration = int(data_call.data.get(DURATION, 10))
         self.max_frames = int(data_call.data.get(MAX_FRAMES, 3))
         self.target_width = data_call.data.get(TARGET_WIDTH, 3840)
@@ -288,7 +293,9 @@ def setup(hass, config):
                                             target_width=call.target_width,
                                             include_filename=call.include_filename,
                                             expose_images=call.expose_images,
-                                            expose_images_persist=call.expose_images_persist
+                                            expose_images_persist=call.expose_images_persist,
+                                            frigate_retry_attempts=call.frigate_retry_attempts,
+                                            frigate_retry_seconds=call.frigate_retry_seconds
                                             )
         response = await client.make_request(call)
         await _remember(hass, call, start, response)
