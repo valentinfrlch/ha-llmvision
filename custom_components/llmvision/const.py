@@ -5,6 +5,10 @@ DOMAIN = "llmvision"
 
 # Configuration values from setup
 CONF_OPENAI_API_KEY = 'openai_api_key'
+CONF_AZURE_OPENAI_BASE_URL = 'azure_openai_base_url'
+CONF_AZURE_OPENAI_DEPLOYMENT = 'azure_openai_deployment'
+CONF_AZURE_OPENAI_API_VERSION = 'azure_openai_api_version'
+CONF_AZURE_OPENAI_API_KEY = 'azure_openai_api_key'
 CONF_ANTHROPIC_API_KEY = 'anthropic_api_key'
 CONF_GOOGLE_API_KEY = 'google_api_key'
 CONF_GROQ_API_KEY = 'groq_api_key'
@@ -40,6 +44,7 @@ SENSOR_ENTITY = 'sensor_entity'
 
 # Error messages
 ERROR_OPENAI_NOT_CONFIGURED = "OpenAI is not configured"
+ERROR_AZURE_OPENAI_NOT_CONFIGURED = "Azure OpenAI is not configured"
 ERROR_ANTHROPIC_NOT_CONFIGURED = "Anthropic is not configured"
 ERROR_GOOGLE_NOT_CONFIGURED = "Google is not configured"
 ERROR_GROQ_NOT_CONFIGURED = "Groq is not configured"
