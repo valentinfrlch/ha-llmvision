@@ -160,6 +160,30 @@ video_analyzer:
       selector:
         text:
           multiline: true
+    frigate_retry_attempts:
+      name: Frigate Retry Attempts
+      description: How many times to retry fetching the video clip from Frigate.  Clips are not always available from Frigate as soon as the event has ended.  
+          Slower machines or longer clips may need additional attempts.  Increase this if you see errors fetching the clips from Frigate in your automation traces.
+      required: false
+      example: 2
+      default: 2
+      selector:
+        number:
+          min: 1
+          max: 10
+          step: 1
+    frigate_retry_seconds:
+      name: Frigate Retry Seconds
+      description: How long to wait between retries to fetch the video clip from Frigate.  Clips are not always available from Frigate as soon as the event has ended.  
+          Slower machines or longer clips may need additional attempts.  Increase this if you see errors fetching the clips from Frigate in your automation traces.
+      required: false
+      example: 1
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 10
+          step: 1
     max_frames:
       name: Max Frames
       description: How many frames to analyze. Picks frames with the most movement.
