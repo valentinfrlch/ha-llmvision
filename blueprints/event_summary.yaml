@@ -230,6 +230,10 @@ variables:
     Use "critical" only for possible burglaries and similar events. "time-sensitive" could be a courier at the front door or an event of similar importance.
     Reply with these replies exactly.
 
+max_exceeded: silent
+
+mode: single
+
 trigger:
   - platform: mqtt
     topic: "frigate/events"
@@ -247,9 +251,7 @@ condition:
   - condition: template
     value_template: >
       {% if mode == 'Frigate' %}
-        {{ trigger.payload_json["type"] == "end" and (state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list }}
-      {% else %}
-        {{ state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
+        {{ trigger.payload_json["type"] == "end" and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list }}
       {% endif %}
 
 
@@ -389,3 +391,5 @@ action:
                         tag: "{{tag}}"
                         group: "{{group}}"
                         interruption-level: passive
+
+- delay: 00:{{cooldown|int}}:00
