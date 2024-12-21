@@ -49,6 +49,17 @@ blueprint:
           multiple: true
           filter:
             domain: camera
+    object_type:
+      name: Included Object Type(s)
+      description: >-
+        (Frigate mode only)
+
+        Only run if frigate labels the object as one of these. (person, dog, bird, etc)
+      default: []
+      selector:
+        text:
+          multiline: false
+          multiple: true
     trigger_state:
       name: Trigger State
       description: (Camera mode only) Trigger the automation when your cameras change to this state.
@@ -175,6 +186,7 @@ variables:
     {% endfor %}
     {{ ns.device_names }}
   camera_entities_list: !input camera_entities
+  object_types_list: !input object_type
   motion_sensors_list: !input motion_sensors
   camera_entity: >
     {% if mode == 'Camera' %}
@@ -251,7 +263,10 @@ condition:
   - condition: template
     value_template: >
       {% if mode == 'Frigate' %}
-        {{ trigger.payload_json["type"] == "end" and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list }}
+        {{ trigger.payload_json["type"] == "end"
+           and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list
+           and ((object_types_list|length) == 0 or ((trigger.payload_json['after']['label']|lower) in object_types_list))
+        }}
       {% endif %}
 
 
