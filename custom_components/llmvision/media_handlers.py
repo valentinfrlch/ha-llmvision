@@ -294,7 +294,7 @@ class MediaProcessor:
                     raise ServiceValidationError(f"Error: {e}")
         return self.client
 
-    async def add_videos(self, video_paths, event_ids, max_frames, target_width, include_filename, expose_images):
+    async def add_videos(self, video_paths, event_ids, max_frames, target_width, include_filename, expose_images, frigate_retry_attempts, frigate_retry_seconds):
         """Wrapper for client.add_frame for videos"""
         tmp_clips_dir = f"/config/custom_components/{DOMAIN}/tmp_clips"
         tmp_frames_dir = f"/config/custom_components/{DOMAIN}/tmp_frames"
@@ -306,8 +306,8 @@ class MediaProcessor:
                 try:
                     base_url = get_url(self.hass)
                     frigate_url = base_url + "/api/frigate/notifications/" + event_id + "/clip.mp4"
-                    clip_data = await self.client._fetch(frigate_url)
-
+                    clip_data = await self.client._fetch(frigate_url, max_retries=frigate_retry_attempts, retry_delay=frigate_retry_seconds)
+                    
                     if not clip_data:
                         raise ServiceValidationError(
                             f"Failed to fetch frigate clip {event_id}")
