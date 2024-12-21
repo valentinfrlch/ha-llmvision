@@ -347,8 +347,9 @@ class MediaProcessor:
                         ffmpeg_cmd = [
                             "ffmpeg",
                             "-i", video_path,
-                            "-vf", f"fps=1/{interval},select='eq(n\\,0)+not(mod(n\\,{interval}))'", os.path.join(
-                                tmp_frames_dir, "frame%04d.jpg")
+                            "-vf", f"fps=fps='source_fps',select='eq(n\\,0)+not(mod(n\\,{interval}))'", 
+                            "-fps_mode", "passthrough",
+                            os.path.join(tmp_frames_dir, "frame%04d.jpg")
                         ]
                         # Run ffmpeg command
                         await self.hass.loop.run_in_executor(None, os.system, " ".join(ffmpeg_cmd))
