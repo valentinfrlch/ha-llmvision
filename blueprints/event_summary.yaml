@@ -2,7 +2,7 @@ blueprint:
   name: AI Event Summary (LLM Vision v1.3.1)
   author: valentinfrlch
   description: >
-    AI-powered security event summaries for frigate or camera entities. 
+    AI-powered security event summaries for frigate or camera entities.
     Sends a notification with a preview to your phone that is updated dynamically when the AI summary is available.
   domain: automation
   source_url: https://github.com/valentinfrlch/ha-llmvision/blob/main/blueprints/event_summary.yaml
@@ -42,7 +42,10 @@ blueprint:
             integration: mobile_app
     camera_entities:
       name: Camera Entities
-      description: (Camera and Frigate mode) List of camera entities to monitor
+      description: >-
+        (Camera and Frigate mode)
+
+        List of camera entities to monitor
       default: []
       selector:
         entity:
@@ -51,14 +54,20 @@ blueprint:
             domain: camera
     trigger_state:
       name: Trigger State
-      description: (Camera mode only) Trigger the automation when your cameras change to this state.
+      description: >-
+        (Camera mode only)
+
+        Trigger the automation when your cameras change to this state.
       default: 'recording'
       selector:
         text:
           multiline: false
     motion_sensors:
       name: Motion Sensor
-      description: (Camera mode only) Set if your cameras don't change state. Use the same order used for camera entities.
+      description: >-
+        (Camera mode only)
+
+        Set if your cameras don't change state. Use the same order used for camera entities.
       default: []
       selector:
         entity:
@@ -67,7 +76,10 @@ blueprint:
             domain: binary_sensor
     preview_mode:
       name: Preview Mode
-      description: (Camera mode only) Choose between a live preview or a snapshot of the event
+      description: >-
+        (Camera mode only)
+
+        Choose between a live preview or a snapshot of the event
       default: 'Live Preview'
       selector:
         select:
@@ -84,14 +96,21 @@ blueprint:
           max: 60
     tap_navigate:
       name: Tap Navigate
-      description: Path to navigate to when notification is opened (e.g. /lovelace/cameras)
+      description: >-
+        Path to navigate to when notification is opened (e.g. /lovelace/cameras).
+
+        To have use the same input which was sent to the ai engine, use
+          `{{video if video != '''' else image}}`
       default: "/lovelace/0"
       selector:
         text:
           multiline: false
     duration:
       name: Duration
-      description: (Camera mode only) How long to record before analyzing (in seconds)
+      description: >-
+        (Camera mode only)
+
+        How long to record before analyzing (in seconds)
       default: 5
       selector:
         number:
@@ -99,7 +118,10 @@ blueprint:
           max: 60
     max_frames:
       name: Max Frames
-      description: (Camera and Frigate mode) How many frames to analyze. Picks frames with the most movement.
+      description: >-
+        (Camera and Frigate mode)
+
+        How many frames to analyze. Picks frames with the most movement.
       default: 3
       selector:
         number:
@@ -293,7 +315,7 @@ action:
                       max_tokens: 3
                       temperature: 0.1
                     response_variable: importance
-    
+
   # Cancel automation if event not deemed important
   - choose:
       - conditions:
@@ -365,7 +387,7 @@ action:
               temperature: !input temperature
               expose_images: "{{true if preview_mode == 'Snapshot'}}"
             response_variable: response
-            
+
 
   - choose:
         - conditions:
