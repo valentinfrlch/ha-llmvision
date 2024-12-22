@@ -365,7 +365,7 @@ def setup(hass, config):
                                                  )
         response = await client.make_request(call)
         _LOGGER.info(f"Response: {response}")
-        # udpate sensor in data_call.data.get("sensor_entity")
+        # update sensor in data_call.data.get("sensor_entity")
         await _update_sensor(hass, sensor_entity, response["response_text"])
         return response
 
