@@ -174,7 +174,8 @@ async def _remember(hass, call, start, response) -> None:
         else:
             camera_name = "Unknown"
 
-        camera_name = camera_name.replace("camera.", "").replace("image.", "").capitalize()
+        camera_name = camera_name.replace(
+            "camera.", "").replace("image.", "").capitalize()
 
         await semantic_index.remember(
             start=start,
@@ -185,13 +186,37 @@ async def _remember(hass, call, start, response) -> None:
         )
 
 
-async def _update_sensor(hass, sensor_entity, new_value) -> None:
+async def _update_sensor(hass, sensor_entity: str, new_value: str | int, type: str) -> None:
     """Update the value of a sensor entity."""
-    if sensor_entity:
+    # Attempt to parse the response
+    if type == "boolean" and new_value.lower() not in ["on", "off"]:
+        if new_value.lower() in ["true", "false"]:
+            new_value = "on" if new_value.lower() == "true" else "off"
+        elif new_value.split(" ")[0].replace(",", "").lower() == "yes":
+            new_value = "on"
+        elif new_value.split(" ")[0].replace(",", "").lower() == "no":
+            new_value = "off"
+        else:
+            raise ServiceValidationError(
+                "Response could not be parsed. Please check your prompt.")
+    elif type == "number":
+        try:
+            new_value = float(new_value)
+        except ValueError:
+            raise ServiceValidationError(
+                "Response could not be parsed. Please check your prompt.")
+    elif type == "option":
+        options = hass.states.get(sensor_entity).attributes["options"]
+        if new_value not in options:
+            raise ServiceValidationError(
+                "Response could not be parsed. Please check your prompt.")
+    # Set the value
+    if new_value:
         _LOGGER.info(
             f"Updating sensor {sensor_entity} with new value: {new_value}")
         try:
-            hass.states.async_set(sensor_entity, new_value)
+            current_attributes = hass.states.get(sensor_entity).attributes.copy()
+            hass.states.async_set(sensor_entity, new_value, current_attributes)
         except Exception as e:
             _LOGGER.error(f"Failed to update sensor {sensor_entity}: {e}")
             raise
@@ -309,40 +334,33 @@ def setup(hass, config):
 
     async def data_analyzer(data_call):
         """Handle the service call to analyze visual data"""
-        def is_number(s):
-            """Helper function to check if string can be parsed as number"""
-            try:
-                float(s)
-                return True
-            except ValueError:
-                return False
-
-        start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
         sensor_entity = data_call.data.get("sensor_entity")
         _LOGGER.info(f"Sensor entity: {sensor_entity}")
 
         # get current value to determine data type
         state = hass.states.get(sensor_entity).state
+        sensor_type = sensor_entity.split(".")[0]
         _LOGGER.info(f"Current state: {state}")
         if state == "unavailable":
             raise ServiceValidationError("Sensor entity is unavailable")
-        if state == "on" or state == "off":
-            data_type = "'on' or 'off' (lowercase)"
-        elif is_number(state):
-            data_type = "number"
+        if sensor_type == "input_boolean" or sensor_type == "binary_sensor" or sensor_type == "switch" or sensor_type == "boolean":
+            data_type = "one of: ['on', 'off']"
+            type = "boolean"
+        elif sensor_type == "input_number" or sensor_type == "number" or sensor_type == "sensor":
+            data_type = "a number"
+            type = "number"
+        elif sensor_type == "input_select":
+            options = hass.states.get(sensor_entity).attributes["options"]
+            data_type = "one of these options: " + \
+                ", ".join([f"'{option}'" for option in options])
+            type = "option"
         else:
-            if "options" in hass.states.get(sensor_entity).attributes:
-                data_type = "one of these options: " + \
-                    ", ".join([f"'{option}'" for option in hass.states.get(
-                        sensor_entity).attributes["options"]])
-            else:
-                data_type = "string"
+            raise ServiceValidationError("Unsupported sensor entity type")
 
-        message = f"Your job is to extract data from images. Return a {data_type} only. No additional text or other options allowed!. If unsure, choose the option that best matches. Follow these instructions: " + call.message
-        _LOGGER.info(f"Message: {message}")
+        call.message = f"Your job is to extract data from images. You can only respond with {data_type}. You must respond with one of the options! If unsure, choose the option that best matches. Answer the following question with the options provided: " + call.message
         request = Request(hass,
-                          message=message,
+                          message=call.message,
                           max_tokens=call.max_tokens,
                           temperature=call.temperature,
                           )
@@ -355,7 +373,7 @@ def setup(hass, config):
         response = await request.call(call)
         _LOGGER.info(f"Response: {response}")
         # udpate sensor in data_call.data.get("sensor_entity")
-        await _update_sensor(hass, sensor_entity, response["response_text"])
+        await _update_sensor(hass, sensor_entity, response["response_text"], type)
         return response
 
     # Register services

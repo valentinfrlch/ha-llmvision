@@ -5,6 +5,7 @@ import shutil
 import logging
 import time
 import asyncio
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from functools import partial
 from PIL import Image, UnidentifiedImageError
 import numpy as np
@@ -19,6 +20,7 @@ _LOGGER = logging.getLogger(__name__)
 class MediaProcessor:
     def __init__(self, hass, client):
         self.hass = hass
+        self.session = async_get_clientsession(self.hass)
         self.client = client
         self.base64_images = []
         self.filenames = []

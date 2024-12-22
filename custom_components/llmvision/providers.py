@@ -87,13 +87,13 @@ class Request:
 
         return None
 
-    def validate(self, call):
+    def validate(self, call) -> None | ServiceValidationError:
         """Validate call data"""
         # Check image input
         if not call.base64_images:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
         # Check if single image is provided for Groq
-        if len(call.base64_images) > 1 and self.get_provider(call.provider) == 'Groq':
+        if len(call.base64_images) > 1 and self.get_provider(self.hass, call.provider) == 'Groq':
             raise ServiceValidationError(ERROR_GROQ_MULTIPLE_IMAGES)
         # Check provider is configured
         if not call.provider:
@@ -105,13 +105,25 @@ class Request:
         "Azure": "gpt-4o-mini",
         "Custom OpenAI": "gpt-4o-mini",
         "Google": "gemini-1.5-flash-latest",
-        "Groq": "llava-v1.5-7b-4096-preview",
+        "Groq": "llama-3.2-11b-vision-preview	",
         "LocalAI": "gpt-4-vision-preview",
-        "Ollama": "llava-phi3:latest",
+        "Ollama": "minicpm-v",
         "OpenAI": "gpt-4o-mini"
     }.get(provider, "gpt-4o-mini")  # Default value
 
     async def call(self, call):
+        """
+        Forwards a request to the specified provider and optionally generates a title.
+
+        Args:
+            call (object): The call object containing request details.
+
+        Raises:
+            ServiceValidationError: If the provider is invalid.
+
+        Returns:
+            dict: A dictionary containing the generated title (if any) and the response text.
+        """
         entry_id = call.provider
         config = self.hass.data.get(DOMAIN).get(entry_id)
 
@@ -120,6 +132,8 @@ class Request:
             provider)
         call.base64_images = self.base64_images
         call.filenames = self.filenames
+
+        self.validate(call)
 
         gen_title_prompt = "Your job is to generate a title in the form '<object> seen' for texts. Do not mention the time, do not speculate. Generate a title for this text: {response}"
 
@@ -249,6 +263,14 @@ class Request:
 
 
 class Provider(ABC):
+    """
+    Abstract base class for providers
+
+    Args:
+        hass (object): Home Assistant instance
+        api_key (str, optional): API key for the provider, defaults to ""
+        endpoint (dict, optional): Endpoint configuration for the provider
+    """
     def __init__(self,
                  hass,
                  api_key="",
@@ -337,6 +359,7 @@ class Provider(ABC):
 class OpenAI(Provider):
     def __init__(self, hass, api_key="", endpoint={'base_url': ENDPOINT_OPENAI}):
         super().__init__(hass, api_key, endpoint=endpoint)
+        self.default_model = "gpt-4o-mini"
 
     def _generate_headers(self) -> dict:
         return {'Content-type': 'application/json',
@@ -344,9 +367,7 @@ class OpenAI(Provider):
 
     async def _make_request(self, data) -> str:
         headers = self._generate_headers()
-
         response = await self._post(url=self.endpoint.get('base_url'), headers=headers, data=data)
-
         response_text = response.get(
             "choices")[0].get("message").get("content")
         return response_text
@@ -394,6 +415,7 @@ class OpenAI(Provider):
 class AzureOpenAI(Provider):
     def __init__(self, hass, api_key="", endpoint={'base_url': "", 'deployment': "", 'api_version': ""}):
         super().__init__(hass, api_key, endpoint)
+        self.default_model = "gpt-4o-mini"
 
     def _generate_headers(self) -> dict:
         return {'Content-type': 'application/json',
@@ -407,9 +429,7 @@ class AzureOpenAI(Provider):
             api_version=self.endpoint.get("api_version")
         )
 
-        response = await self._post(
-            url=endpoint, headers=headers, data=data)
-
+        response = await self._post(url=endpoint, headers=headers, data=data)
         response_text = response.get(
             "choices")[0].get("message").get("content")
         return response_text
@@ -459,6 +479,7 @@ class AzureOpenAI(Provider):
 class Anthropic(Provider):
     def __init__(self, hass, api_key=""):
         super().__init__(hass, api_key)
+        self.default_model = "claude-3-5-sonnet-latest"
 
     def _generate_headers(self) -> dict:
         return {
@@ -468,8 +489,6 @@ class Anthropic(Provider):
         }
 
     async def _make_request(self, data) -> str:
-        api_key = self.api_key
-
         headers = self._generate_headers()
         response = await self._post(url=ENDPOINT_ANTHROPIC, headers=headers, data=data)
         response_text = response.get("content")[0].get("text")
@@ -490,7 +509,7 @@ class Anthropic(Provider):
             data["messages"][0]["content"].append({"type": "image", "source": {
                                                   "type": "base64", "media_type": "image/jpeg", "data": f"{image}"}})
         data["messages"][0]["content"].append(
-            {"type": "text", "text": self.message})
+            {"type": "text", "text": call.message})
         return data
 
     def _prepare_text_data(self, call) -> dict:
@@ -520,6 +539,7 @@ class Anthropic(Provider):
 class Google(Provider):
     def __init__(self, hass, api_key="", endpoint={'base_url': ENDPOINT_GOOGLE, 'model': "gemini-1.5-flash-latest"}):
         super().__init__(hass, api_key, endpoint)
+        self.default_model = "gemini-1.5-flash-latest"
 
     def _generate_headers(self) -> dict:
         return {'content-type': 'application/json'}
@@ -567,13 +587,12 @@ class Google(Provider):
 class Groq(Provider):
     def __init__(self, hass, api_key=""):
         super().__init__(hass, api_key)
+        self.default_model = "llama-3.2-11b-vision-preview"
 
     def _generate_headers(self) -> dict:
         return {'Content-type': 'application/json', 'Authorization': 'Bearer ' + self.api_key}
 
     async def _make_request(self, data) -> str:
-        api_key = self.api_key
-
         headers = self._generate_headers()
         response = await self._post(url=ENDPOINT_GROQ, headers=headers, data=data)
         response_text = response.get(
@@ -615,11 +634,11 @@ class Groq(Provider):
             raise ServiceValidationError("empty_api_key")
         headers = self._generate_headers()
         data = {
-            "contents": [{
-                "parts": [
-                    {"text": "Hello"}
-                ]}
-            ]
+            "model": "llama3-8b-8192",
+            "messages": [{
+                "role": "user",
+                "content": "Hi"
+            }]
         }
         await self._post(url=ENDPOINT_GROQ, headers=headers, data=data)
 
@@ -627,6 +646,7 @@ class Groq(Provider):
 class LocalAI(Provider):
     def __init__(self, hass, api_key="", endpoint={'ip_address': "", 'port': "", 'https': False}):
         super().__init__(hass, api_key, endpoint)
+        self.default_model = "gpt-4-vision-preview"
 
     async def _make_request(self, data) -> str:
         endpoint = ENDPOINT_LOCALAI.format(
@@ -682,21 +702,18 @@ class LocalAI(Provider):
 class Ollama(Provider):
     def __init__(self, hass, api_key="", endpoint={'ip_address': "0.0.0.0", 'port': "11434", 'https': False}):
         super().__init__(hass, api_key, endpoint)
+        self.default_model = "minicpm-v"
 
     async def _make_request(self, data) -> str:
         https = self.endpoint.get("https")
         ip_address = self.endpoint.get("ip_address")
         port = self.endpoint.get("port")
         protocol = "https" if https else "http"
-
         endpoint = ENDPOINT_OLLAMA.format(
             ip_address=ip_address,
             port=port,
             protocol=protocol
         )
-
-        _LOGGER.info(
-            f"endpoint: {endpoint} https: {https} ip_address: {ip_address} port: {port}")
 
         response = await self._post(url=endpoint, headers={}, data=data)
         response_text = response.get("message").get("content")
@@ -732,8 +749,11 @@ class Ollama(Provider):
         protocol = "https" if self.endpoint.get("https") else "http"
 
         try:
-            response = await session.get(f"{protocol}://{ip_address}:{port}/api/tags")
+            _LOGGER.info(f"Checking connection to {protocol}://{ip_address}:{port}")
+            response = await session.get(f"{protocol}://{ip_address}:{port}/api/tags", headers={})
+            _LOGGER.info(f"Response: {response}")
             if response.status != 200:
                 raise ServiceValidationError('handshake_failed')
-        except Exception:
+        except Exception as e:
+            _LOGGER.error(f"Error: {e}")
             raise ServiceValidationError('handshake_failed')
