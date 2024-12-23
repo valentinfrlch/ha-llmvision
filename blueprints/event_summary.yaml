@@ -289,6 +289,8 @@ condition:
            and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list
            and ((object_types_list|length) == 0 or ((trigger.payload_json['after']['label']|lower) in object_types_list))
         }}
+      {%else%}
+        true
       {% endif %}
 
 
