@@ -23,6 +23,7 @@ from .const import (
     CONF_CUSTOM_OPENAI_API_KEY,
     VERSION_ANTHROPIC,
     ENDPOINT_OPENAI,
+    ENDPOINT_AZURE,
     ENDPOINT_ANTHROPIC,
     ENDPOINT_GOOGLE,
     ENDPOINT_LOCALAI,
@@ -99,18 +100,6 @@ class Request:
         if not call.provider:
             raise ServiceValidationError(ERROR_NOT_CONFIGURED)
 
-    @staticmethod
-    def default_model(provider): return {
-        "Anthropic": "claude-3-5-sonnet-latest",
-        "Azure": "gpt-4o-mini",
-        "Custom OpenAI": "gpt-4o-mini",
-        "Google": "gemini-1.5-flash-latest",
-        "Groq": "llama-3.2-11b-vision-preview	",
-        "LocalAI": "gpt-4-vision-preview",
-        "Ollama": "minicpm-v",
-        "OpenAI": "gpt-4o-mini"
-    }.get(provider, "gpt-4o-mini")  # Default value
-
     async def call(self, call):
         """
         Forwards a request to the specified provider and optionally generates a title.
@@ -128,8 +117,6 @@ class Request:
         config = self.hass.data.get(DOMAIN).get(entry_id)
 
         provider = Request.get_provider(self.hass, entry_id)
-        call.model = call.model if call.model and call.model != 'None' else Request.default_model(
-            provider)
         call.base64_images = self.base64_images
         call.filenames = self.filenames
 
@@ -139,102 +126,87 @@ class Request:
 
         if provider == 'OpenAI':
             api_key = config.get(CONF_OPENAI_API_KEY)
-
-            openai = OpenAI(hass=self.hass, api_key=api_key)
-            response_text = await openai.vision_request(call)
-            if call.generate_title:
-                call.message = gen_title_prompt.format(response=response_text)
-                gen_title = await openai.title_request(call)
+            provider_instance = OpenAI(hass=self.hass, api_key=api_key)
 
         elif provider == 'Azure':
             api_key = config.get(CONF_AZURE_API_KEY)
-            base_url = config.get(CONF_AZURE_BASE_URL)
+            endpoint = config.get(CONF_AZURE_BASE_URL)
             deployment = config.get(CONF_AZURE_DEPLOYMENT)
             version = config.get(CONF_AZURE_VERSION)
 
-            azure = AzureOpenAI(self.hass,
-                                api_key=api_key,
-                                endpoint={
-                                    'base_url': base_url,
-                                    'deployment': deployment,
-                                    'api_version': version
-                                })
-            response_text = await azure.vision_request(call)
-            if call.generate_title:
-                call.message = gen_title_prompt.format(response=response_text)
-                gen_title = await azure.title_request(call)
+            provider_instance = AzureOpenAI(self.hass,
+                                            api_key=api_key,
+                                            endpoint={
+                                                'base_url': ENDPOINT_AZURE,
+                                                'endpoint': endpoint,
+                                                'deployment': deployment,
+                                                'api_version': version
+                                            })
 
         elif provider == 'Anthropic':
             api_key = config.get(CONF_ANTHROPIC_API_KEY)
 
-            anthropic = Anthropic(self.hass, api_key=api_key)
-            response_text = await anthropic.vision_request(call)
-            if call.generate_title:
-                call.message = gen_title_prompt.format(response=response_text)
-                gen_title = await anthropic.title_request(call)
+            provider_instance = Anthropic(self.hass, api_key=api_key)
 
         elif provider == 'Google':
             api_key = config.get(CONF_GOOGLE_API_KEY)
 
-            google = Google(self.hass, api_key=api_key, endpoint={
+            provider_instance = Google(self.hass, api_key=api_key, endpoint={
                 'base_url': ENDPOINT_GOOGLE, 'model': call.model
             })
-            response_text = await google.vision_request(call)
-            if call.generate_title:
-                call.message = gen_title_prompt.format(response=response_text)
-                gen_title = await google.title_request(call)
 
         elif provider == 'Groq':
             api_key = config.get(CONF_GROQ_API_KEY)
 
-            groq = Groq(self.hass, api_key=api_key)
-            response_text = await groq.vision_request(call)
-            if call.generate_title:
-                gen_title = await groq.title_request(call)
+            provider_instance = Groq(self.hass, api_key=api_key)
 
         elif provider == 'LocalAI':
             ip_address = config.get(CONF_LOCALAI_IP_ADDRESS)
             port = config.get(CONF_LOCALAI_PORT)
             https = config.get(CONF_LOCALAI_HTTPS, False)
 
-            localai = LocalAI(self.hass, endpoint={
+            provider_instance = LocalAI(self.hass, endpoint={
                 'ip_address': ip_address,
                 'port': port,
                 'https': https
             })
-            response_text = await localai.vision_request(call)
-            if call.generate_title:
-                call.message = gen_title_prompt.format(response=response_text)
-                gen_title = await localai.title_request(call)
+
         elif provider == 'Ollama':
             ip_address = config.get(CONF_OLLAMA_IP_ADDRESS)
             port = config.get(CONF_OLLAMA_PORT)
             https = config.get(CONF_OLLAMA_HTTPS, False)
 
-            ollama = Ollama(self.hass, endpoint={
+            provider_instance = Ollama(self.hass, endpoint={
                 'ip_address': ip_address,
                 'port': port,
                 'https': https
             })
-            response_text = await ollama.vision_request(call)
+            response_text = await provider_instance.vision_request(call)
             if call.generate_title:
                 call.message = gen_title_prompt.format(response=response_text)
-                gen_title = await ollama.title_request(call)
+                gen_title = await provider_instance.title_request(call)
+
         elif provider == 'Custom OpenAI':
             api_key = config.get(CONF_CUSTOM_OPENAI_API_KEY, "")
             endpoint = config.get(
                 CONF_CUSTOM_OPENAI_ENDPOINT) + "/v1/chat/completions"
-
-            custom_openai = OpenAI(
+            provider_instance = OpenAI(
                 self.hass, api_key=api_key, endpoint=endpoint)
-            response_text = await custom_openai.vision_request(api_key, endpoint)
-            if call.generate_title:
-                call.message = gen_title_prompt.format(response=response_text)
-                gen_title = await custom_openai.title_request(api_key=api_key, prompt=gen_title_prompt.format(response=response_text))
+
         else:
             raise ServiceValidationError("invalid_provider")
 
-        return {"title": gen_title.replace(".", "").replace("'", "") if 'gen_title' in locals() else None, "response_text": response_text}
+        # Make call to provider
+        call.model = call.model if call.model and call.model != 'None' else provider_instance.default_model
+        response_text = await provider_instance.vision_request(call)
+
+        if call.generate_title:
+            call.message = gen_title_prompt.format(response=response_text)
+            gen_title = await provider_instance.title_request(call)
+
+            return {"title": gen_title.replace(".", "").replace("'", ""), "response_text": response_text}
+        else:
+            return {"response_text": response_text}
 
     def add_frame(self, base64_image, filename):
         self.base64_images.append(base64_image)
@@ -271,6 +243,7 @@ class Provider(ABC):
         api_key (str, optional): API key for the provider, defaults to ""
         endpoint (dict, optional): Endpoint configuration for the provider
     """
+
     def __init__(self,
                  hass,
                  api_key="",
@@ -413,7 +386,7 @@ class OpenAI(Provider):
 
 
 class AzureOpenAI(Provider):
-    def __init__(self, hass, api_key="", endpoint={'base_url': "", 'deployment': "", 'api_version': ""}):
+    def __init__(self, hass, api_key="", endpoint={'base_url': ENDPOINT_AZURE, 'endpoint': "", 'deployment': "", 'api_version': ""}):
         super().__init__(hass, api_key, endpoint)
         self.default_model = "gpt-4o-mini"
 
@@ -423,8 +396,8 @@ class AzureOpenAI(Provider):
 
     async def _make_request(self, data) -> str:
         headers = self._generate_headers()
-        endpoint = self.endpoint.get("endpoint").format(
-            base_url=self.endpoint.get("base_url"),
+        endpoint = self.endpoint.get("base_url").format(
+            base_url=self.endpoint.get("endpoint"),
             deployment=self.endpoint.get("deployment"),
             api_version=self.endpoint.get("api_version")
         )
@@ -449,7 +422,7 @@ class AzureOpenAI(Provider):
                 "url": f"data:image/jpeg;base64,{image}"}})
         payload["messages"][0]["content"].append(
             {"type": "text", "text": call.message})
-        return payload["messages"]
+        return payload
 
     def _prepare_text_data(self, call) -> list:
         return {"messages": [{"role": "user", "content": [{"type": "text", "text": call.message}]}],
@@ -462,8 +435,8 @@ class AzureOpenAI(Provider):
         if not self.api_key:
             raise ServiceValidationError("empty_api_key")
 
-        endpoint = self.endpoint.get("endpoint").format(
-            base_url=self.endpoint.get("base_url"),
+        endpoint = self.endpoint.get("base_url").format(
+            base_url=self.endpoint.get("endpoint"),
             deployment=self.endpoint.get("deployment"),
             api_version=self.endpoint.get("api_version")
         )
@@ -749,7 +722,8 @@ class Ollama(Provider):
         protocol = "https" if self.endpoint.get("https") else "http"
 
         try:
-            _LOGGER.info(f"Checking connection to {protocol}://{ip_address}:{port}")
+            _LOGGER.info(
+                f"Checking connection to {protocol}://{ip_address}:{port}")
             response = await session.get(f"{protocol}://{ip_address}:{port}/api/tags", headers={})
             _LOGGER.info(f"Response: {response}")
             if response.status != 200:

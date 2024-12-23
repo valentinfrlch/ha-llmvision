@@ -17,6 +17,7 @@ from .const import (
     CONF_AZURE_BASE_URL,
     CONF_AZURE_DEPLOYMENT,
     CONF_AZURE_VERSION,
+    ENDPOINT_AZURE,
     CONF_ANTHROPIC_API_KEY,
     CONF_GOOGLE_API_KEY,
     CONF_GROQ_API_KEY,
@@ -188,7 +189,8 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input["provider"] = self.init_info["provider"]
             try:
                 azure = AzureOpenAI(self.hass, api_key=user_input[CONF_AZURE_API_KEY], endpoint={
-                    'base_url': user_input[CONF_AZURE_BASE_URL],
+                    'base_url': ENDPOINT_AZURE,
+                    'endpoint': user_input[CONF_AZURE_BASE_URL],
                     'deployment': user_input[CONF_AZURE_DEPLOYMENT],
                     'api_version': user_input[CONF_AZURE_VERSION]
                 })
