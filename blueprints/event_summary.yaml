@@ -429,4 +429,4 @@ action:
                         group: "{{group}}"
                         interruption-level: passive
 
-- delay: '00:{{cooldown|int}}:00'
+  - delay: '00:{{cooldown|int}}:00'
