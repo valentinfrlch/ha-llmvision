@@ -2,7 +2,7 @@ blueprint:
   name: AI Event Summary (LLM Vision v1.3.1)
   author: valentinfrlch
   description: >
-    AI-powered security event summaries for frigate or camera entities. 
+    AI-powered security event summaries for frigate or camera entities.
     Sends a notification with a preview to your phone that is updated dynamically when the AI summary is available.
   domain: automation
   source_url: https://github.com/valentinfrlch/ha-llmvision/blob/main/blueprints/event_summary.yaml
@@ -42,23 +42,43 @@ blueprint:
             integration: mobile_app
     camera_entities:
       name: Camera Entities
-      description: (Camera and Frigate mode) List of camera entities to monitor
+      description: >-
+        (Camera and Frigate mode)
+
+        List of camera entities to monitor
       default: []
       selector:
         entity:
           multiple: true
           filter:
             domain: camera
+    object_type:
+      name: Included Object Type(s)
+      description: >-
+        (Frigate mode only)
+
+        Only run if frigate labels the object as one of these. (person, dog, bird, etc)
+      default: []
+      selector:
+        text:
+          multiline: false
+          multiple: true
     trigger_state:
       name: Trigger State
-      description: (Camera mode only) Trigger the automation when your cameras change to this state.
+      description: >-
+        (Camera mode only)
+
+        Trigger the automation when your cameras change to this state.
       default: 'recording'
       selector:
         text:
           multiline: false
     motion_sensors:
       name: Motion Sensor
-      description: (Camera mode only) Set if your cameras don't change state. Use the same order used for camera entities.
+      description: >-
+        (Camera mode only)
+
+        Set if your cameras don't change state. Use the same order used for camera entities.
       default: []
       selector:
         entity:
@@ -67,7 +87,10 @@ blueprint:
             domain: binary_sensor
     preview_mode:
       name: Preview Mode
-      description: (Camera mode only) Choose between a live preview or a snapshot of the event
+      description: >-
+        (Camera mode only)
+
+        Choose between a live preview or a snapshot of the event
       default: 'Live Preview'
       selector:
         select:
@@ -84,14 +107,21 @@ blueprint:
           max: 60
     tap_navigate:
       name: Tap Navigate
-      description: Path to navigate to when notification is opened (e.g. /lovelace/cameras)
+      description: >-
+        Path to navigate to when notification is opened (e.g. /lovelace/cameras).
+
+        To have use the same input which was sent to the ai engine, use
+          `{{video if video != '''' else image}}`
       default: "/lovelace/0"
       selector:
         text:
           multiline: false
     duration:
       name: Duration
-      description: (Camera mode only) How long to record before analyzing (in seconds)
+      description: >-
+        (Camera mode only)
+
+        How long to record before analyzing (in seconds)
       default: 5
       selector:
         number:
@@ -99,7 +129,10 @@ blueprint:
           max: 60
     max_frames:
       name: Max Frames
-      description: (Camera and Frigate mode) How many frames to analyze. Picks frames with the most movement.
+      description: >-
+        (Camera and Frigate mode)
+
+        How many frames to analyze. Picks frames with the most movement.
       default: 3
       selector:
         number:
@@ -170,11 +203,12 @@ variables:
     {% set ns = namespace(device_names=[]) %}
     {% for device_id in notify_devices %}
       {% set device_name = device_attr(device_id, "name") %}
-      {% set sanitized_name = "mobile_app_" + device_name | lower | regex_replace("[^a-z0-9_\- ]", "") | replace(" ", "_") | replace("-", "_") %}
+      {% set sanitized_name = "mobile_app_" + device_name | lower | regex_replace("[' -]", "_") | regex_replace("[^a-z0-9_]", "")  %}
       {% set ns.device_names = ns.device_names + [sanitized_name] %}
     {% endfor %}
     {{ ns.device_names }}
   camera_entities_list: !input camera_entities
+  object_types_list: !input object_type
   motion_sensors_list: !input motion_sensors
   camera_entity: >
     {% if mode == 'Camera' %}
@@ -230,6 +264,10 @@ variables:
     Use "critical" only for possible burglaries and similar events. "time-sensitive" could be a courier at the front door or an event of similar importance.
     Reply with these replies exactly.
 
+max_exceeded: silent
+
+mode: single
+
 trigger:
   - platform: mqtt
     topic: "frigate/events"
@@ -247,9 +285,12 @@ condition:
   - condition: template
     value_template: >
       {% if mode == 'Frigate' %}
-        {{ trigger.payload_json["type"] == "end" and (state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown) and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list }}
-      {% else %}
-        {{ state_attr(this.entity_id, 'last_triggered') is none or (now() - state_attr(this.entity_id, 'last_triggered')).total_seconds() / 60 > cooldown }}
+        {{ trigger.payload_json["type"] == "end"
+           and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list
+           and ((object_types_list|length) == 0 or ((trigger.payload_json['after']['label']|lower) in object_types_list))
+        }}
+      {%else%}
+        true
       {% endif %}
 
 
@@ -293,7 +334,7 @@ action:
                       max_tokens: 3
                       temperature: 0.1
                     response_variable: importance
-    
+
   # Cancel automation if event not deemed important
   - choose:
       - conditions:
@@ -365,7 +406,7 @@ action:
               temperature: !input temperature
               expose_images: "{{true if preview_mode == 'Snapshot'}}"
             response_variable: response
-            
+
 
   - choose:
         - conditions:
@@ -389,3 +430,5 @@ action:
                         tag: "{{tag}}"
                         group: "{{group}}"
                         interruption-level: passive
+
+  - delay: '00:{{cooldown|int}}:00'
