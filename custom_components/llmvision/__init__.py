@@ -152,7 +152,6 @@ async def _remember(hass, call, start, response) -> None:
         # Find semantic index config
         config_entry = None
         for entry in hass.config_entries.async_entries(DOMAIN):
-            _LOGGER.info(f"Entry: {entry.data}")
             # Check if the config entry is empty
             if entry.data["provider"] == "Event Calendar":
                 config_entry = entry
@@ -372,7 +371,7 @@ def setup(hass, config):
                                                   )
         response = await request.call(call)
         _LOGGER.info(f"Response: {response}")
-        # udpate sensor in data_call.data.get("sensor_entity")
+        # update sensor in data_call.data.get("sensor_entity")
         await _update_sensor(hass, sensor_entity, response["response_text"], type)
         return response
 

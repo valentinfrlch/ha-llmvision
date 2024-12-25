@@ -292,7 +292,7 @@ class Provider(ABC):
         _LOGGER.info(f"Request data: {Request.sanitize_data(data)}")
 
         try:
-            _LOGGER.info(f"Posting to {url} with headers {headers}")
+            _LOGGER.info(f"Posting to {url}")
             response = await self.session.post(url, headers=headers, json=data)
         except Exception as e:
             raise ServiceValidationError(f"Request failed: {e}")
@@ -628,7 +628,7 @@ class LocalAI(Provider):
             port=self.endpoint.get("port")
         )
 
-        headers = self._generate_headers()
+        headers = {}
         response = await self._post(url=endpoint, headers=headers, data=data)
         response_text = response.get(
             "choices")[0].get("message").get("content")
