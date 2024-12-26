@@ -28,6 +28,8 @@ from .const import (
     IMAGE_ENTITY,
     VIDEO_FILE,
     EVENT_ID,
+    FRIGATE_RETRY_ATTEMPTS,
+    FRIGATE_RETRY_SECONDS,
     INTERVAL,
     DURATION,
     MAX_FRAMES,
@@ -241,6 +243,8 @@ class ServiceCallData:
             "\n") if data_call.data.get(EVENT_ID) else None
         self.interval = int(data_call.data.get(INTERVAL, 2))
         self.duration = int(data_call.data.get(DURATION, 10))
+        self.frigate_retry_attempts = int(data_call.data.get(FRIGATE_RETRY_ATTEMPTS, 2))
+        self.frigate_retry_seconds = int(data_call.data.get(FRIGATE_RETRY_SECONDS, 1))
         self.max_frames = int(data_call.data.get(MAX_FRAMES, 3))
         self.target_width = data_call.data.get(TARGET_WIDTH, 3840)
         self.temperature = float(data_call.data.get(TEMPERATURE, 0.3))
@@ -291,6 +295,7 @@ def setup(hass, config):
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
         call.message = "The attached images are frames from a video. " + call.message
+        
         request = Request(hass,
                           message=call.message,
                           max_tokens=call.max_tokens,
@@ -302,9 +307,12 @@ def setup(hass, config):
                                              max_frames=call.max_frames,
                                              target_width=call.target_width,
                                              include_filename=call.include_filename,
-                                             expose_images=call.expose_images
+                                             expose_images=call.expose_images,
+                                             frigate_retry_attempts=call.frigate_retry_attempts,
+                                             frigate_retry_seconds=call.frigate_retry_seconds
                                              )
         response = await request.call(call)
+
         await _remember(hass, call, start, response)
         return response
 
