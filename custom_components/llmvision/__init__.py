@@ -2,6 +2,10 @@
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
+    CONF_AZURE_API_KEY,
+    CONF_AZURE_VERSION,
+    CONF_AZURE_BASE_URL,
+    CONF_AZURE_DEPLOYMENT,
     CONF_ANTHROPIC_API_KEY,
     CONF_GOOGLE_API_KEY,
     CONF_GROQ_API_KEY,
@@ -30,19 +34,21 @@ from .const import (
     DURATION,
     MAX_FRAMES,
     TEMPERATURE,
-    DETAIL,
     INCLUDE_FILENAME,
     EXPOSE_IMAGES,
+    GENERATE_TITLE,
     SENSOR_ENTITY,
 )
 from .calendar import SemanticIndex
+from .providers import Request
+from .media_handlers import MediaProcessor
+import os
 from datetime import timedelta
 from homeassistant.util import dt as dt_util
 from homeassistant.config_entries import ConfigEntry
-from .request_handlers import RequestHandler
-from .media_handlers import MediaProcessor
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
+from functools import partial
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -55,6 +61,10 @@ async def async_setup_entry(hass, entry):
 
     # Get all entries from config flow
     openai_api_key = entry.data.get(CONF_OPENAI_API_KEY)
+    azure_api_key = entry.data.get(CONF_AZURE_API_KEY)
+    azure_base_url = entry.data.get(CONF_AZURE_BASE_URL)
+    azure_deployment = entry.data.get(CONF_AZURE_DEPLOYMENT)
+    azure_version = entry.data.get(CONF_AZURE_VERSION)
     anthropic_api_key = entry.data.get(CONF_ANTHROPIC_API_KEY)
     google_api_key = entry.data.get(CONF_GOOGLE_API_KEY)
     groq_api_key = entry.data.get(CONF_GROQ_API_KEY)
@@ -75,6 +85,10 @@ async def async_setup_entry(hass, entry):
     # Create a dictionary for the entry data
     entry_data = {
         CONF_OPENAI_API_KEY: openai_api_key,
+        CONF_AZURE_API_KEY: azure_api_key,
+        CONF_AZURE_BASE_URL: azure_base_url,
+        CONF_AZURE_DEPLOYMENT: azure_deployment,
+        CONF_AZURE_VERSION: azure_version,
         CONF_ANTHROPIC_API_KEY: anthropic_api_key,
         CONF_GOOGLE_API_KEY: google_api_key,
         CONF_GROQ_API_KEY: groq_api_key,
@@ -98,6 +112,8 @@ async def async_setup_entry(hass, entry):
 
     # check if the entry is the calendar entry (has entry rentention_time)
     if filtered_entry_data.get(CONF_RETENTION_TIME) is not None:
+        # make sure 'llmvision' directory exists
+        await hass.loop.run_in_executor(None, partial(os.makedirs, "/llmvision", exist_ok=True))
         # forward the calendar entity to the platform
         await hass.config_entries.async_forward_entry_setups(entry, ["calendar"])
 
@@ -112,7 +128,7 @@ async def async_remove_entry(hass, entry):
     if entry_uid in hass.data[DOMAIN]:
         # Remove the entry from hass.data
         _LOGGER.info(f"Removing {entry.title} from hass.data")
-        async_unload_entry(hass, entry)
+        await async_unload_entry(hass, entry)
         hass.data[DOMAIN].pop(entry_uid)
     else:
         _LOGGER.warning(
@@ -133,12 +149,11 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
         return False
 
 
-async def _remember(hass, call, start, response):
+async def _remember(hass, call, start, response) -> None:
     if call.remember:
         # Find semantic index config
         config_entry = None
         for entry in hass.config_entries.async_entries(DOMAIN):
-            _LOGGER.info(f"Entry: {entry.data}")
             # Check if the config entry is empty
             if entry.data["provider"] == "Event Calendar":
                 config_entry = entry
@@ -149,35 +164,8 @@ async def _remember(hass, call, start, response):
                 f"'Event Calendar' config not found")
 
         semantic_index = SemanticIndex(hass, config_entry)
-        # Define a mapping of keywords to labels
-        keyword_to_label = {
-            "person": "Person",
-            "man": "Person",
-            "woman": "Person",
-            "individual": "Person",
-            "delivery": "Delivery",
-            "courier": "Courier",
-            "package": "Package",
-            "car": "Car",
-            "vehicle": "Car",
-            "bike": "Bike",
-            "bicycle": "Bike",
-            "bus": "Bus",
-            "truck": "Truck",
-            "motorcycle": "Motorcycle",
-            "bicycle": "Bicycle",
-            "dog": "Dog",
-            "cat": "Cat",
-        }
 
-        # Default label
-        label = "Unknown object"
-
-        # Check each keyword in the response text and update the label accordingly
-        for keyword, mapped_label in keyword_to_label.items():
-            if keyword in response["response_text"].lower():
-                label = mapped_label
-                break
+        title = response.get("title", "Unknown object seen")
 
         if call.image_entities and len(call.image_entities) > 0:
             camera_name = call.image_entities[0]
@@ -187,23 +175,49 @@ async def _remember(hass, call, start, response):
         else:
             camera_name = "Unknown"
 
-        camera_name = camera_name.replace("camera.", "").replace("image.", "")
+        camera_name = camera_name.replace(
+            "camera.", "").replace("image.", "").capitalize()
 
         await semantic_index.remember(
             start=start,
             end=dt_util.now() + timedelta(minutes=1),
-            label=label + " seen",
-            camera_name=camera_name,
+            label=title + " near " + camera_name if camera_name != "Unknown" else title,
+            camera_name=camera_name if camera_name != "Unknown" else "Image Input",
             summary=response["response_text"]
         )
 
 
-async def _update_sensor(hass, sensor_entity, new_value):
+async def _update_sensor(hass, sensor_entity: str, new_value: str | int, type: str) -> None:
     """Update the value of a sensor entity."""
-    if sensor_entity:
-        _LOGGER.info(f"Updating sensor {sensor_entity} with new value: {new_value}")
+    # Attempt to parse the response
+    if type == "boolean" and new_value.lower() not in ["on", "off"]:
+        if new_value.lower() in ["true", "false"]:
+            new_value = "on" if new_value.lower() == "true" else "off"
+        elif new_value.split(" ")[0].replace(",", "").lower() == "yes":
+            new_value = "on"
+        elif new_value.split(" ")[0].replace(",", "").lower() == "no":
+            new_value = "off"
+        else:
+            raise ServiceValidationError(
+                "Response could not be parsed. Please check your prompt.")
+    elif type == "number":
         try:
-            hass.states.async_set(sensor_entity, new_value)
+            new_value = float(new_value)
+        except ValueError:
+            raise ServiceValidationError(
+                "Response could not be parsed. Please check your prompt.")
+    elif type == "option":
+        options = hass.states.get(sensor_entity).attributes["options"]
+        if new_value not in options:
+            raise ServiceValidationError(
+                "Response could not be parsed. Please check your prompt.")
+    # Set the value
+    if new_value:
+        _LOGGER.info(
+            f"Updating sensor {sensor_entity} with new value: {new_value}")
+        try:
+            current_attributes = hass.states.get(sensor_entity).attributes.copy()
+            hass.states.async_set(sensor_entity, new_value, current_attributes)
         except Exception as e:
             _LOGGER.error(f"Failed to update sensor {sensor_entity}: {e}")
             raise
@@ -235,10 +249,13 @@ class ServiceCallData:
         self.target_width = data_call.data.get(TARGET_WIDTH, 3840)
         self.temperature = float(data_call.data.get(TEMPERATURE, 0.3))
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 100))
-        self.detail = str(data_call.data.get(DETAIL, "auto"))
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
+        self.generate_title = data_call.data.get(GENERATE_TITLE, False)
         self.sensor_entity = data_call.data.get(SENSOR_ENTITY)
+        # ------------ Added during call ------------
+        # self.base64_images : List[str] = []
+        # self.filenames : List[str] = []
 
     def get_service_call_data(self):
         return self
@@ -252,24 +269,24 @@ def setup(hass, config):
         # Initialize call object with service call data
         call = ServiceCallData(data_call).get_service_call_data()
         # Initialize the RequestHandler client
-        client = RequestHandler(hass,
-                                message=call.message,
-                                max_tokens=call.max_tokens,
-                                temperature=call.temperature,
-                                detail=call.detail)
+        request = Request(hass=hass,
+                          message=call.message,
+                          max_tokens=call.max_tokens,
+                          temperature=call.temperature,
+                          )
 
         # Fetch and preprocess images
-        processor = MediaProcessor(hass, client)
+        processor = MediaProcessor(hass, request)
         # Send images to RequestHandler client
-        client = await processor.add_images(image_entities=call.image_entities,
-                                            image_paths=call.image_paths,
-                                            target_width=call.target_width,
-                                            include_filename=call.include_filename,
-                                            expose_images=call.expose_images
-                                            )
+        request = await processor.add_images(image_entities=call.image_entities,
+                                             image_paths=call.image_paths,
+                                             target_width=call.target_width,
+                                             include_filename=call.include_filename,
+                                             expose_images=call.expose_images
+                                             )
 
         # Validate configuration, input data and make the call
-        response = await client.make_request(call)
+        response = await request.call(call)
         await _remember(hass, call, start, response)
         return response
 
@@ -278,22 +295,24 @@ def setup(hass, config):
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
         call.message = "The attached images are frames from a video. " + call.message
-        client = RequestHandler(hass,
-                                message=call.message,
-                                max_tokens=call.max_tokens,
-                                temperature=call.temperature,
-                                detail=call.detail)
-        processor = MediaProcessor(hass, client)
-        client = await processor.add_videos(video_paths=call.video_paths,
-                                            event_ids=call.event_id,
-                                            max_frames=call.max_frames,
-                                            target_width=call.target_width,
-                                            include_filename=call.include_filename,
-                                            expose_images=call.expose_images,
-                                            frigate_retry_attempts=call.frigate_retry_attempts,
-                                            frigate_retry_seconds=call.frigate_retry_seconds
-                                            )
-        response = await client.make_request(call)
+        
+        request = Request(hass,
+                          message=call.message,
+                          max_tokens=call.max_tokens,
+                          temperature=call.temperature,
+                          )
+        processor = MediaProcessor(hass, request)
+        request = await processor.add_videos(video_paths=call.video_paths,
+                                             event_ids=call.event_id,
+                                             max_frames=call.max_frames,
+                                             target_width=call.target_width,
+                                             include_filename=call.include_filename,
+                                             expose_images=call.expose_images,
+                                             frigate_retry_attempts=call.frigate_retry_attempts,
+                                             frigate_retry_seconds=call.frigate_retry_seconds
+                                             )
+        response = await request.call(call)
+
         await _remember(hass, call, start, response)
         return response
 
@@ -302,71 +321,66 @@ def setup(hass, config):
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
         call.message = "The attached images are frames from a live camera feed. " + call.message
-        client = RequestHandler(hass,
-                                message=call.message,
-                                max_tokens=call.max_tokens,
-                                temperature=call.temperature,
-                                detail=call.detail)
-        processor = MediaProcessor(hass, client)
-        client = await processor.add_streams(image_entities=call.image_entities,
-                                             duration=call.duration,
-                                             max_frames=call.max_frames,
-                                             target_width=call.target_width,
-                                             include_filename=call.include_filename,
-                                             expose_images=call.expose_images
-                                             )
+        request = Request(hass,
+                          message=call.message,
+                          max_tokens=call.max_tokens,
+                          temperature=call.temperature,
+                          )
+        processor = MediaProcessor(hass, request)
+        request = await processor.add_streams(image_entities=call.image_entities,
+                                              duration=call.duration,
+                                              max_frames=call.max_frames,
+                                              target_width=call.target_width,
+                                              include_filename=call.include_filename,
+                                              expose_images=call.expose_images
+                                              )
 
-        response = await client.make_request(call)
+        response = await request.call(call)
         await _remember(hass, call, start, response)
         return response
 
     async def data_analyzer(data_call):
         """Handle the service call to analyze visual data"""
-        def is_number(s):
-            """Helper function to check if string can be parsed as number"""
-            try:
-                float(s)
-                return True
-            except ValueError:
-                return False
-            
-        start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
         sensor_entity = data_call.data.get("sensor_entity")
         _LOGGER.info(f"Sensor entity: {sensor_entity}")
-        
+
         # get current value to determine data type
         state = hass.states.get(sensor_entity).state
+        sensor_type = sensor_entity.split(".")[0]
         _LOGGER.info(f"Current state: {state}")
         if state == "unavailable":
             raise ServiceValidationError("Sensor entity is unavailable")
-        if state == "on" or state == "off":
-            data_type = "'on' or 'off' (lowercase)"
-        elif is_number(state):
-            data_type = "number"
+        if sensor_type == "input_boolean" or sensor_type == "binary_sensor" or sensor_type == "switch" or sensor_type == "boolean":
+            data_type = "one of: ['on', 'off']"
+            type = "boolean"
+        elif sensor_type == "input_number" or sensor_type == "number" or sensor_type == "sensor":
+            data_type = "a number"
+            type = "number"
+        elif sensor_type == "input_select":
+            options = hass.states.get(sensor_entity).attributes["options"]
+            data_type = "one of these options: " + \
+                ", ".join([f"'{option}'" for option in options])
+            type = "option"
         else:
-            if "options" in hass.states.get(sensor_entity).attributes:
-                data_type = "one of these options: " + ", ".join([f"'{option}'" for option in hass.states.get(sensor_entity).attributes["options"]])
-            else:
-                data_type = "string"
+            raise ServiceValidationError("Unsupported sensor entity type")
 
-        message = f"Your job is to extract data from images. Return a {data_type} only. No additional text or other options allowed!. If unsure, choose the option that best matches. Follow these instructions: " + call.message
-        _LOGGER.info(f"Message: {message}")
-        client = RequestHandler(hass,
-                                message=message,
-                                max_tokens=call.max_tokens,
-                                temperature=call.temperature,
-                                detail=call.detail)
-        processor = MediaProcessor(hass, client)
-        client = await processor.add_visual_data(image_entities=call.image_entities,
-                                                 image_paths=call.image_paths,
-                                                 target_width=call.target_width,
-                                                 include_filename=call.include_filename
-                                                 )
-        response = await client.make_request(call)
+        call.message = f"Your job is to extract data from images. You can only respond with {data_type}. You must respond with one of the options! If unsure, choose the option that best matches. Answer the following question with the options provided: " + call.message
+        request = Request(hass,
+                          message=call.message,
+                          max_tokens=call.max_tokens,
+                          temperature=call.temperature,
+                          )
+        processor = MediaProcessor(hass, request)
+        request = await processor.add_visual_data(image_entities=call.image_entities,
+                                                  image_paths=call.image_paths,
+                                                  target_width=call.target_width,
+                                                  include_filename=call.include_filename
+                                                  )
+        response = await request.call(call)
         _LOGGER.info(f"Response: {response}")
-        # udpate sensor in data_call.data.get("sensor_entity")
-        await _update_sensor(hass, sensor_entity, response["response_text"])
+        # update sensor in data_call.data.get("sensor_entity")
+        await _update_sensor(hass, sensor_entity, response["response_text"], type)
         return response
 
     # Register services

@@ -1,11 +1,23 @@
 from homeassistant import config_entries
 from homeassistant.helpers.selector import selector
 from homeassistant.exceptions import ServiceValidationError
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-import urllib.parse
+from .providers import (
+    OpenAI,
+    AzureOpenAI,
+    Anthropic,
+    Google,
+    Groq,
+    LocalAI,
+    Ollama,
+)
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
+    CONF_AZURE_API_KEY,
+    CONF_AZURE_BASE_URL,
+    CONF_AZURE_DEPLOYMENT,
+    CONF_AZURE_VERSION,
+    ENDPOINT_AZURE,
     CONF_ANTHROPIC_API_KEY,
     CONF_GOOGLE_API_KEY,
     CONF_GROQ_API_KEY,
@@ -17,7 +29,6 @@ from .const import (
     CONF_OLLAMA_HTTPS,
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_ENDPOINT,
-    VERSION_ANTHROPIC,
     CONF_RETENTION_TIME,
 )
 import voluptuous as vol
@@ -26,203 +37,21 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 
-class Validator:
-    def __init__(self, hass, user_input):
-        self.hass = hass
-        self.user_input = user_input
-
-    async def _validate_api_key(self, api_key):
-        if not api_key or api_key == "":
-            _LOGGER.error("You need to provide a valid API key.")
-            raise ServiceValidationError("empty_api_key")
-        elif self.user_input["provider"] == "OpenAI":
-            header = {'Content-type': 'application/json',
-                      'Authorization': 'Bearer ' + api_key}
-            base_url = "api.openai.com"
-            endpoint = "/v1/models"
-            payload = {}
-            method = "GET"
-        elif self.user_input["provider"] == "Anthropic":
-            header = {
-                'x-api-key': api_key,
-                'content-type': 'application/json',
-                'anthropic-version': VERSION_ANTHROPIC
-            }
-            payload = {
-                "model": "claude-3-haiku-20240307",
-                "messages": [
-                    {"role": "user", "content": "Hello, world"}
-                ],
-                "max_tokens": 50,
-                "temperature": 0.5
-            }
-            base_url = "api.anthropic.com"
-            endpoint = "/v1/messages"
-            method = "POST"
-        elif self.user_input["provider"] == "Google":
-            header = {"content-type": "application/json"}
-            base_url = "generativelanguage.googleapis.com"
-            endpoint = f"/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
-            payload = {
-                "contents": [{
-                    "parts": [
-                        {"text": "Hello"}
-                    ]}
-                ]
-            }
-            method = "POST"
-        elif self.user_input["provider"] == "Groq":
-            header = {
-                'Authorization': 'Bearer ' + api_key,
-                'Content-Type': 'application/json'
-            }
-            base_url = "api.groq.com"
-            endpoint = "/openai/v1/chat/completions"
-            payload = {"messages": [
-                {"role": "user", "content": "Hello"}], "model": "gemma-7b-it"}
-            method = "POST"
-
-        return await self._handshake(base_url=base_url, endpoint=endpoint, protocol="https", header=header, payload=payload, expected_status=200, method=method)
-
-    def _validate_provider(self):
-        if not self.user_input["provider"]:
-            raise ServiceValidationError("empty_mode")
-
-    async def _handshake(self, base_url, endpoint, protocol="http", port="", header={}, payload={}, expected_status=200, method="GET"):
-        _LOGGER.debug(
-            f"Connecting to {protocol}://{base_url}{port}{endpoint}")
-        session = async_get_clientsession(self.hass)
-        url = f'{protocol}://{base_url}{port}{endpoint}'
-        try:
-            if method == "GET":
-                response = await session.get(url, headers=header)
-            elif method == "POST":
-                response = await session.post(url, headers=header, json=payload)
-            if response.status == expected_status:
-                return True
-            else:
-                _LOGGER.error(
-                    f"Handshake failed with status: {response.status}")
-                return False
-        except Exception as e:
-            _LOGGER.error(f"Could not connect to {url}: {e}")
-            return False
-
-    async def localai(self):
-        self._validate_provider()
-        if not self.user_input[CONF_LOCALAI_IP_ADDRESS]:
-            raise ServiceValidationError("empty_ip_address")
-        if not self.user_input[CONF_LOCALAI_PORT]:
-            raise ServiceValidationError("empty_port")
-        protocol = "https" if self.user_input[CONF_LOCALAI_HTTPS] else "http"
-        if not await self._handshake(base_url=self.user_input[CONF_LOCALAI_IP_ADDRESS], port=":"+str(self.user_input[CONF_LOCALAI_PORT]), protocol=protocol, endpoint="/readyz"):
-            _LOGGER.error("Could not connect to LocalAI server.")
-            raise ServiceValidationError("handshake_failed")
-
-    async def ollama(self):
-        self._validate_provider()
-        if not self.user_input[CONF_OLLAMA_IP_ADDRESS]:
-            raise ServiceValidationError("empty_ip_address")
-        if not self.user_input[CONF_OLLAMA_PORT]:
-            raise ServiceValidationError("empty_port")
-        protocol = "https" if self.user_input[CONF_OLLAMA_HTTPS] else "http"
-        if not await self._handshake(base_url=self.user_input[CONF_OLLAMA_IP_ADDRESS], port=":"+str(self.user_input[CONF_OLLAMA_PORT]), protocol=protocol, endpoint="/api/tags"):
-            _LOGGER.error("Could not connect to Ollama server.")
-            raise ServiceValidationError("handshake_failed")
-
-    async def openai(self):
-        self._validate_provider()
-        if not await self._validate_api_key(self.user_input[CONF_OPENAI_API_KEY]):
-            _LOGGER.error("Could not connect to OpenAI server.")
-            raise ServiceValidationError("handshake_failed")
-
-    async def custom_openai(self):
-        self._validate_provider()
-        try:
-            url = urllib.parse.urlparse(
-                self.user_input[CONF_CUSTOM_OPENAI_ENDPOINT])
-            protocol = url.scheme
-            base_url = url.hostname
-            path = url.path if url.path else ""
-            port = ":" + str(url.port) if url.port else ""
-
-            endpoint = path + "/v1/models"
-            header = {'Content-type': 'application/json',
-                      'Authorization': 'Bearer ' + self.user_input[CONF_CUSTOM_OPENAI_API_KEY]} if CONF_CUSTOM_OPENAI_API_KEY in self.user_input else {}
-        except Exception as e:
-            _LOGGER.error(f"Could not parse endpoint: {e}")
-            raise ServiceValidationError("endpoint_parse_failed")
-
-        _LOGGER.debug(
-            f"Connecting to: [protocol: {protocol}, base_url: {base_url}, port: {port}, endpoint: {endpoint}]")
-
-        if not await self._handshake(base_url=base_url, port=port, protocol=protocol, endpoint=endpoint, header=header):
-            _LOGGER.error("Could not connect to Custom OpenAI server.")
-            raise ServiceValidationError("handshake_failed")
-
-    async def anthropic(self):
-        self._validate_provider()
-        if not await self._validate_api_key(self.user_input[CONF_ANTHROPIC_API_KEY]):
-            _LOGGER.error("Could not connect to Anthropic server.")
-            raise ServiceValidationError("handshake_failed")
-
-    async def google(self):
-        self._validate_provider()
-        if not await self._validate_api_key(self.user_input[CONF_GOOGLE_API_KEY]):
-            _LOGGER.error("Could not connect to Google server.")
-            raise ServiceValidationError("handshake_failed")
-
-    async def groq(self):
-        self._validate_provider()
-        if not await self._validate_api_key(self.user_input[CONF_GROQ_API_KEY]):
-            _LOGGER.error("Could not connect to Groq server.")
-            raise ServiceValidationError("handshake_failed")
-
-    async def semantic_index(self) -> bool:
-        # check if semantic_index is already configured
-        for uid in self.hass.data[DOMAIN]:
-            if 'retention_time' in self.hass.data[DOMAIN][uid]:
-                return False
-        return True
-
-    def get_configured_providers(self):
-        providers = []
-        try:
-            if self.hass.data[DOMAIN] is None:
-                return providers
-        except KeyError:
-            return providers
-        if CONF_OPENAI_API_KEY in self.hass.data[DOMAIN]:
-            providers.append("OpenAI")
-        if CONF_ANTHROPIC_API_KEY in self.hass.data[DOMAIN]:
-            providers.append("Anthropic")
-        if CONF_GOOGLE_API_KEY in self.hass.data[DOMAIN]:
-            providers.append("Google")
-        if CONF_LOCALAI_IP_ADDRESS in self.hass.data[DOMAIN] and CONF_LOCALAI_PORT in self.hass.data[DOMAIN]:
-            providers.append("LocalAI")
-        if CONF_OLLAMA_IP_ADDRESS in self.hass.data[DOMAIN] and CONF_OLLAMA_PORT in self.hass.data[DOMAIN]:
-            providers.append("Ollama")
-        if CONF_CUSTOM_OPENAI_ENDPOINT in self.hass.data[DOMAIN]:
-            providers.append("Custom OpenAI")
-        if CONF_GROQ_API_KEY in self.hass.data[DOMAIN]:
-            providers.append("Groq")
-        return providers
-
-
 class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 2
 
     async def handle_provider(self, provider):
         provider_steps = {
-            "Event Calendar": self.async_step_semantic_index,
-            "OpenAI": self.async_step_openai,
             "Anthropic": self.async_step_anthropic,
+            "Azure": self.async_step_azure,
+            "Custom OpenAI": self.async_step_custom_openai,
+            "Event Calendar": self.async_step_semantic_index,
             "Google": self.async_step_google,
             "Groq": self.async_step_groq,
-            "Ollama": self.async_step_ollama,
             "LocalAI": self.async_step_localai,
-            "Custom OpenAI": self.async_step_custom_openai,
+            "Ollama": self.async_step_ollama,
+            "OpenAI": self.async_step_openai,
         }
 
         step_method = provider_steps.get(provider)
@@ -236,7 +65,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required("provider", default="Event Calendar"): selector({
                 "select": {
-                    "options": ["Event Calendar", "OpenAI", "Anthropic", "Google", "Groq", "Ollama", "LocalAI", "Custom OpenAI"],
+                    "options": ["Anthropic", "Azure", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "Custom OpenAI", "Event Calendar"],
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -265,9 +94,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
-            validator = Validator(self.hass, user_input)
             try:
-                await validator.localai()
+                localai = LocalAI(self.hass, endpoint={
+                    'ip_address': user_input[CONF_LOCALAI_IP_ADDRESS],
+                    'port': user_input[CONF_LOCALAI_PORT],
+                    'https': user_input[CONF_LOCALAI_HTTPS]
+                })
+                await localai.validate()
                 # add the mode to user_input
                 return self.async_create_entry(title=f"LocalAI ({user_input[CONF_LOCALAI_IP_ADDRESS]})", data=user_input)
             except ServiceValidationError as e:
@@ -293,9 +126,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
-            validator = Validator(self.hass, user_input)
             try:
-                await validator.ollama()
+                ollama = Ollama(self.hass, endpoint={
+                    'ip_address': user_input[CONF_OLLAMA_IP_ADDRESS],
+                    'port': user_input[CONF_OLLAMA_PORT],
+                    'https': user_input[CONF_OLLAMA_HTTPS]
+                })
+                await ollama.validate()
                 # add the mode to user_input
                 return self.async_create_entry(title=f"Ollama ({user_input[CONF_OLLAMA_IP_ADDRESS]})", data=user_input)
             except ServiceValidationError as e:
@@ -319,9 +156,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
-            validator = Validator(self.hass, user_input)
             try:
-                await validator.openai()
+                openai = OpenAI(
+                    self.hass, api_key=user_input[CONF_OPENAI_API_KEY])
+                await openai.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
                 return self.async_create_entry(title="OpenAI", data=user_input)
@@ -338,6 +176,41 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=data_schema,
         )
 
+    async def async_step_azure(self, user_input=None):
+        data_schema = vol.Schema({
+            vol.Required(CONF_AZURE_API_KEY): str,
+            vol.Required(CONF_AZURE_BASE_URL, default="https://domain.openai.azure.com/"): str,
+            vol.Required(CONF_AZURE_DEPLOYMENT, default="deployment"): str,
+            vol.Required(CONF_AZURE_VERSION, default="2024-10-01-preview"): str,
+        })
+
+        if user_input is not None:
+            # save provider to user_input
+            user_input["provider"] = self.init_info["provider"]
+            try:
+                azure = AzureOpenAI(self.hass, api_key=user_input[CONF_AZURE_API_KEY], endpoint={
+                    'base_url': ENDPOINT_AZURE,
+                    'endpoint': user_input[CONF_AZURE_BASE_URL],
+                    'deployment': user_input[CONF_AZURE_DEPLOYMENT],
+                    'api_version': user_input[CONF_AZURE_VERSION]
+                })
+                await azure.validate()
+                # add the mode to user_input
+                user_input["provider"] = self.init_info["provider"]
+                return self.async_create_entry(title="Azure", data=user_input)
+            except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
+                return self.async_show_form(
+                    step_id="azure",
+                    data_schema=data_schema,
+                    errors={"base": "handshake_failed"}
+                )
+
+        return self.async_show_form(
+            step_id="azure",
+            data_schema=data_schema,
+        )
+
     async def async_step_anthropic(self, user_input=None):
         data_schema = vol.Schema({
             vol.Required(CONF_ANTHROPIC_API_KEY): str,
@@ -346,9 +219,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
-            validator = Validator(self.hass, user_input)
             try:
-                await validator.anthropic()
+                anthropic = Anthropic(
+                    self.hass, api_key=user_input[CONF_ANTHROPIC_API_KEY])
+                await anthropic.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
                 return self.async_create_entry(title="Anthropic Claude", data=user_input)
@@ -373,9 +247,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
-            validator = Validator(self.hass, user_input)
             try:
-                await validator.google()
+                google = Google(
+                    self.hass, api_key=user_input[CONF_GOOGLE_API_KEY])
+                await google.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
                 return self.async_create_entry(title="Google Gemini", data=user_input)
@@ -400,9 +275,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
-            validator = Validator(self.hass, user_input)
             try:
-                await validator.groq()
+                groq = Groq(self.hass, api_key=user_input[CONF_GROQ_API_KEY])
+                await groq.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
                 return self.async_create_entry(title="Groq", data=user_input)
@@ -428,9 +303,11 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
-            validator = Validator(self.hass, user_input)
             try:
-                await validator.custom_openai()
+                custom_openai = OpenAI(self.hass, api_key=user_input[CONF_CUSTOM_OPENAI_API_KEY], endpoint={
+                    'base_url': user_input[CONF_CUSTOM_OPENAI_ENDPOINT]
+                })
+                await custom_openai.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
                 return self.async_create_entry(title="Custom OpenAI compatible Provider", data=user_input)
@@ -453,19 +330,12 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         })
         if user_input is not None:
             user_input["provider"] = self.init_info["provider"]
-            validator = Validator(self.hass, user_input)
-            try:
-                if not await validator.semantic_index():
-                    return self.async_abort(reason="already_configured")
+
+            for uid in self.hass.data[DOMAIN]:
+                if 'retention_time' in self.hass.data[DOMAIN][uid]:
+                    self.async_abort(reason="already_configured")
                 # add the mode to user_input
-                return self.async_create_entry(title="LLM Vision Events", data=user_input)
-            except ServiceValidationError as e:
-                _LOGGER.error(f"Validation failed: {e}")
-                return self.async_show_form(
-                    step_id="semantic_index",
-                    data_schema=data_schema,
-                    errors={"base": "handshake_failed"}
-                )
+            return self.async_create_entry(title="LLM Vision Events", data=user_input)
 
         return self.async_show_form(
             step_id="semantic_index",
