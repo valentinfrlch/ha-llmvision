@@ -36,6 +36,7 @@ from .const import (
     TEMPERATURE,
     INCLUDE_FILENAME,
     EXPOSE_IMAGES,
+    EXPOSE_IMAGES_PERSIST,
     GENERATE_TITLE,
     SENSOR_ENTITY,
 )
@@ -251,6 +252,7 @@ class ServiceCallData:
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 100))
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
+        self.expose_images_persist = data_call.data.get(EXPOSE_IMAGES_PERSIST, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)
         self.sensor_entity = data_call.data.get(SENSOR_ENTITY)
         # ------------ Added during call ------------
@@ -308,11 +310,11 @@ def setup(hass, config):
                                              target_width=call.target_width,
                                              include_filename=call.include_filename,
                                              expose_images=call.expose_images,
+                                             expose_images_persist=call.expose_images_persist,
                                              frigate_retry_attempts=call.frigate_retry_attempts,
                                              frigate_retry_seconds=call.frigate_retry_seconds
                                              )
         response = await request.call(call)
-
         await _remember(hass, call, start, response)
         return response
 
