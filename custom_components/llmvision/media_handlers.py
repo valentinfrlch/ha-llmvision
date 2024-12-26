@@ -1,6 +1,7 @@
 import base64
 import io
 import os
+import uuid
 import shutil
 import logging
 import time
@@ -322,10 +323,10 @@ class MediaProcessor:
         """Wrapper for client.add_frame for videos"""
         tmp_clips_dir = f"/config/custom_components/{DOMAIN}/tmp_clips"
         tmp_frames_dir = f"/config/custom_components/{DOMAIN}/tmp_frames"
+        processed_event_ids = []
 
         if not video_paths:
             video_paths = []
-            processed_event_ids = []
         if event_ids:
             for event_id in event_ids:
                 try:
@@ -356,10 +357,10 @@ class MediaProcessor:
                         f"Failed to fetch frigate clip {event_id}: {e}")
         if video_paths:
             _LOGGER.debug(f"Processing videos: {video_paths}")
-            video_count = 0
             for video_path in video_paths:
                 try:
-                    current_event_id = processed_event_ids[video_count]
+                    current_event_id = str(uuid.uuid4())
+                    processed_event_ids.append(current_event_id)
                     video_path = video_path.strip()
                     if os.path.exists(video_path):
                         # create tmp dir to store extracted frames
@@ -421,8 +422,7 @@ class MediaProcessor:
                             sorted_frames.append(frames[0])
                         
                         # Add frames to client
-                        counter = 1
-                        for frame_path, _ in sorted_frames:
+                        for counter, frame_path, _ in enumerate(sorted_frames, start=1):
                             resized_image = await self.resize_image(image_path=frame_path, target_width=target_width)
                             if expose_images:
                                 persist_filename = f"/config/www/llmvision/" + frame_path.split("/")[-1]
@@ -433,7 +433,6 @@ class MediaProcessor:
                                 base64_image=resized_image,
                                 filename=video_path.split('/')[-1].split('.')[-2] + " (frame " + str(counter) + ")" if include_filename else "Video frame " + str(counter)
                             )
-                            counter += 1
 
                     else:
                         raise ServiceValidationError(
