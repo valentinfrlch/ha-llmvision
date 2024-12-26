@@ -68,17 +68,6 @@ image_analyzer:
         number:
           min: 512
           max: 1920
-    detail:
-      name: Detail
-      required: false
-      description: "Detail parameter. Leave empty for 'auto'"
-      default: 'low'
-      example: 'low'
-      selector:
-        select:
-          options:
-            - 'high'
-            - 'low'
     max_tokens:
       name: Maximum Tokens
       description: 'Maximum number of tokens to generate'
@@ -100,6 +89,13 @@ image_analyzer:
           min: 0.1
           max: 1.0
           step: 0.1
+    generate_title:
+      name: Generate Title
+      required: false
+      description: Generate a title. (Used for notifications)
+      default: false
+      selector:
+        boolean:
     expose_images:
       name: Expose Images
       description: (Experimental) Expose analyzed frames after processing. This will save analyzed frames in /www/llmvision so they can be used for notifications. (Only works for entity input, include camera name should be enabled). Existing files will be overwritten.
@@ -213,17 +209,6 @@ video_analyzer:
         number:
           min: 512
           max: 1920
-    detail:
-      name: Detail
-      required: false
-      description: "Detail parameter, leave empty for 'auto'"
-      default: 'low'
-      example: 'low'
-      selector:
-        select:
-          options:
-            - 'high'
-            - 'low'
     max_tokens:
       name: Maximum Tokens
       description: 'Maximum number of tokens to generate'
@@ -346,17 +331,6 @@ stream_analyzer:
         number:
           min: 512
           max: 1920
-    detail:
-      name: Detail
-      required: false
-      description: "Detail parameter, leave empty for 'auto'"
-      default: 'low'
-      example: 'low'
-      selector:
-        select:
-          options:
-            - 'high'
-            - 'low'
     max_tokens:
       name: Maximum Tokens
       description: 'Maximum number of tokens to generate'
@@ -459,17 +433,6 @@ data_analyzer:
         number:
           min: 512
           max: 1920
-    detail:
-      name: Detail
-      required: false
-      description: "Detail parameter. Leave empty for 'auto'"
-      default: 'high'
-      example: 'high'
-      selector:
-        select:
-          options:
-            - 'high'
-            - 'low'
     max_tokens:
       name: Maximum Tokens
       description: 'Maximum number of tokens to generate. A low value is recommended since this will likely result in a number.'

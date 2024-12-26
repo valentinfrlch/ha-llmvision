@@ -28,6 +28,16 @@
                     "api_key": "Dein API-key"
                 }
             },
+            "azure": {
+                "title": "Azure konfigurieren",
+                "description": "Gib einen gültigen Azure API-key, die Base URL, den Namen des Deployments und die API-Version an.\nDie Base URL muss dieses Format haben: `https://domain.openai.azure.com/` (einschliesslich des abschliessenden '/')",
+                "data": {
+                    "azure_api_key": "Dein API key",
+                    "azure_base_url": "Base URL",
+                    "azure_deployment": "Deployment",
+                    "azure_version": "API Version"
+                }
+            },
             "anthropic": {
                 "title": "Anthropic Claude konfigurieren",
                 "description": "Gib einen gültigen Anthropic API-key ein.",
