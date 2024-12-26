@@ -43,7 +43,7 @@ from .const import (
 from .calendar import SemanticIndex
 from .providers import Request
 from .media_handlers import MediaProcessor
-import os
+import os, re
 from datetime import timedelta
 from homeassistant.util import dt as dt_util
 from homeassistant.config_entries import ConfigEntry
@@ -162,28 +162,40 @@ async def _remember(hass, call, start, response) -> None:
 
         if config_entry is None:
             raise ServiceValidationError(
-                f"'Event Calendar' config not found")
+                f"Config entry not found. Please create the 'Event Calendar' config entry first.")
 
         semantic_index = SemanticIndex(hass, config_entry)
 
-        title = response.get("title", "Unknown object seen")
+        if "title" in response:
+            title = response.get("title", "Unknown object seen")
+            if call.image_entities and len(call.image_entities) > 0:
+                camera_name = call.image_entities[0]
+            elif call.video_paths and len(call.video_paths) > 0:
+                camera_name = call.video_paths[0].split(
+                    "/")[-1].replace(".mp4", "")
+            else:
+                camera_name = "File Input"
 
-        if call.image_entities and len(call.image_entities) > 0:
-            camera_name = call.image_entities[0]
-        elif call.video_paths and len(call.video_paths) > 0:
-            camera_name = call.video_paths[0].split(
-                "/")[-1].replace(".mp4", "")
-        else:
-            camera_name = "Unknown"
+        if "title" not in response:
+            if call.image_entities and len(call.image_entities) > 0:
+                camera_name = call.image_entities[0]
+                title = "Motion detected near " + camera_name
+            elif call.video_paths and len(call.video_paths) > 0:
+                camera_name = call.video_paths[0].split(
+                    "/")[-1].replace(".mp4", "")
+                title = "Motion detected in " + camera_name
+            else:
+                camera_name = "File Input"
+                title = "Motion detected"
 
-        camera_name = camera_name.replace(
-            "camera.", "").replace("image.", "").capitalize()
+        if "response_text" not in response:
+            raise ValueError("response_text is missing in the response")
 
         await semantic_index.remember(
             start=start,
             end=dt_util.now() + timedelta(minutes=1),
-            label=title + " near " + camera_name if camera_name != "Unknown" else title,
-            camera_name=camera_name if camera_name != "Unknown" else "Image Input",
+            label=title,
+            camera_name=camera_name,
             summary=response["response_text"]
         )
 
@@ -192,11 +204,12 @@ async def _update_sensor(hass, sensor_entity: str, new_value: str | int, type: s
     """Update the value of a sensor entity."""
     # Attempt to parse the response
     if type == "boolean" and new_value.lower() not in ["on", "off"]:
-        if new_value.lower() in ["true", "false"]:
-            new_value = "on" if new_value.lower() == "true" else "off"
-        elif new_value.split(" ")[0].replace(",", "").lower() == "yes":
+        new_value_lower = new_value.lower()
+        if new_value_lower in ["true", "false"]:
+            new_value = "on" if new_value_lower == "true" else "off"
+        elif re.match(r"^\s*yes\s*[,]*", new_value_lower):
             new_value = "on"
-        elif new_value.split(" ")[0].replace(",", "").lower() == "no":
+        elif re.match(r"^\s*no\s*[,]*", new_value_lower):
             new_value = "off"
         else:
             raise ServiceValidationError(
@@ -217,7 +230,8 @@ async def _update_sensor(hass, sensor_entity: str, new_value: str | int, type: s
         _LOGGER.info(
             f"Updating sensor {sensor_entity} with new value: {new_value}")
         try:
-            current_attributes = hass.states.get(sensor_entity).attributes.copy()
+            current_attributes = hass.states.get(
+                sensor_entity).attributes.copy()
             hass.states.async_set(sensor_entity, new_value, current_attributes)
         except Exception as e:
             _LOGGER.error(f"Failed to update sensor {sensor_entity}: {e}")
@@ -244,15 +258,18 @@ class ServiceCallData:
             "\n") if data_call.data.get(EVENT_ID) else None
         self.interval = int(data_call.data.get(INTERVAL, 2))
         self.duration = int(data_call.data.get(DURATION, 10))
-        self.frigate_retry_attempts = int(data_call.data.get(FRIGATE_RETRY_ATTEMPTS, 2))
-        self.frigate_retry_seconds = int(data_call.data.get(FRIGATE_RETRY_SECONDS, 1))
+        self.frigate_retry_attempts = int(
+            data_call.data.get(FRIGATE_RETRY_ATTEMPTS, 2))
+        self.frigate_retry_seconds = int(
+            data_call.data.get(FRIGATE_RETRY_SECONDS, 1))
         self.max_frames = int(data_call.data.get(MAX_FRAMES, 3))
         self.target_width = data_call.data.get(TARGET_WIDTH, 3840)
         self.temperature = float(data_call.data.get(TEMPERATURE, 0.3))
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 100))
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
-        self.expose_images_persist = data_call.data.get(EXPOSE_IMAGES_PERSIST, False)
+        self.expose_images_persist = data_call.data.get(
+            EXPOSE_IMAGES_PERSIST, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)
         self.sensor_entity = data_call.data.get(SENSOR_ENTITY)
         # ------------ Added during call ------------
@@ -297,7 +314,7 @@ def setup(hass, config):
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
         call.message = "The attached images are frames from a video. " + call.message
-        
+
         request = Request(hass,
                           message=call.message,
                           max_tokens=call.max_tokens,

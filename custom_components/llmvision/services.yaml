@@ -92,13 +92,22 @@ image_analyzer:
     generate_title:
       name: Generate Title
       required: false
-      description: Generate a title. (Used for notifications)
+      description: Generate a title. (Used for notifications and remembered events)
       default: false
       selector:
         boolean:
     expose_images:
       name: Expose Images
       description: (Experimental) Expose analyzed frames after processing. This will save analyzed frames in /www/llmvision so they can be used for notifications. (Only works for entity input, include camera name should be enabled). Existing files will be overwritten.
+      required: false
+      example: false
+      default: false
+      selector:
+        boolean:
+    expose_images_persist:
+      name: Persist Exposed Images
+      description: (Experimental) Normally exposed images are re-written with each new event. Setting this to true will include the Frigate eventID, if available, as part of the filename. If there is no 
+          Frigate eventID, a uid will be used instead.
       required: false
       example: false
       default: false
@@ -158,8 +167,8 @@ video_analyzer:
           multiline: true
     frigate_retry_attempts:
       name: Frigate Retry Attempts
-      description: How many times to retry fetching the video clip from Frigate.  Clips are not always available from Frigate as soon as the event has ended.  
-          Slower machines or longer clips may need additional attempts.  Increase this if you see errors fetching the clips from Frigate in your automation traces.
+      description: How many times to retry fetching the video clip from Frigate. Clips are not always available from Frigate as soon as the event has ended.  
+          Slower machines or longer clips may need additional attempts. Increase this if you see errors fetching the clips from Frigate in your automation traces.
       required: false
       example: 2
       default: 2
@@ -170,8 +179,8 @@ video_analyzer:
           step: 1
     frigate_retry_seconds:
       name: Frigate Retry Seconds
-      description: How long to wait between retries to fetch the video clip from Frigate.  Clips are not always available from Frigate as soon as the event has ended.  
-          Slower machines or longer clips may need additional attempts.  Increase this if you see errors fetching the clips from Frigate in your automation traces.
+      description: How long to wait between retries to fetch the video clip from Frigate. Clips are not always available from Frigate as soon as the event has ended.  
+          Slower machines or longer clips may need additional attempts. Increase this if you see errors fetching the clips from Frigate in your automation traces.
       required: false
       example: 1
       default: 1
@@ -230,6 +239,13 @@ video_analyzer:
           min: 0.0
           max: 1.0
           step: 0.1
+    generate_title:
+      name: Generate Title
+      required: false
+      description: Generate a title. (Used for notifications and remembered events)
+      default: false
+      selector:
+        boolean:
     expose_images:
       name: Expose Images
       description: (Experimental) Expose analyzed frames after processing. This will save analyzed frames in /www/llmvision so they can be used for notifications. (Only works for entity input, include camera name should be enabled). Existing files will be overwritten.
@@ -240,8 +256,8 @@ video_analyzer:
         boolean:
     expose_images_persist:
       name: Persist Exposed Images
-      description: Normally exposed images are re-written with each new event.  Setting this to true will include the Frigate eventID, if available, as part of the filename.  If there is no 
-          Frigate eventID, a guid will be used instead.
+      description: (Experimental) Normally exposed images are re-written with each new event. Setting this to true will include the Frigate eventID, if available, as part of the filename. If there is no 
+          Frigate eventID, a uid will be used instead.
       required: false
       example: false
       default: false
@@ -352,6 +368,13 @@ stream_analyzer:
           min: 0.1
           max: 1.0
           step: 0.1
+    generate_title:
+      name: Generate Title
+      required: false
+      description: Generate a title. (Used for notifications and remembered events)
+      default: false
+      selector:
+        boolean:
     expose_images:
       name: Expose Images
       description: (Experimental) Expose analyzed frames after processing. This will save analyzed frames in /www/llmvision so they can be used for notifications. (Only works for entity input, include camera name should be enabled). Existing files will be overwritten.

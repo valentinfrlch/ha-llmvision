@@ -39,6 +39,8 @@ class SemanticIndex(CalendarEntity):
         self._file_path = os.path.join(
             self.hass.config.path("llmvision"), "events.json"
         )
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(self._file_path), exist_ok=True)
         self.hass.loop.create_task(self.async_update())
         
     def _ensure_datetime(self, dt):

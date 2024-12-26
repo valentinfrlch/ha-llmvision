@@ -3,6 +3,7 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import logging
 import inspect
+import re
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
@@ -145,19 +146,15 @@ class Request:
 
         elif provider == 'Anthropic':
             api_key = config.get(CONF_ANTHROPIC_API_KEY)
-
             provider_instance = Anthropic(self.hass, api_key=api_key)
 
         elif provider == 'Google':
             api_key = config.get(CONF_GOOGLE_API_KEY)
-
-            provider_instance = Google(self.hass, api_key=api_key, endpoint={
-                'base_url': ENDPOINT_GOOGLE, 'model': call.model
-            })
+            model = call.model if call.model and call.model != "None" else "gemini-1.5-flash-latest"
+            provider_instance = Google(self.hass, api_key=api_key, endpoint={'base_url': ENDPOINT_GOOGLE, 'model': model})
 
         elif provider == 'Groq':
             api_key = config.get(CONF_GROQ_API_KEY)
-
             provider_instance = Groq(self.hass, api_key=api_key)
 
         elif provider == 'LocalAI':
@@ -204,7 +201,7 @@ class Request:
             call.message = gen_title_prompt.format(response=response_text)
             gen_title = await provider_instance.title_request(call)
 
-            return {"title": gen_title.replace(".", "").replace("'", ""), "response_text": response_text}
+            return {"title": re.sub(r'[^a-zA-Z0-9\s]', '', gen_title), "response_text": response_text}
         else:
             return {"response_text": response_text}
 
@@ -283,7 +280,7 @@ class Provider(ABC):
 
     async def title_request(self, call) -> str:
         call.temperature = 0.1
-        call.max_tokens = 3
+        call.max_tokens = 5
         data = self._prepare_text_data(call)
         return await self._make_request(data)
 

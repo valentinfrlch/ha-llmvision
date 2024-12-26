@@ -422,7 +422,7 @@ class MediaProcessor:
                             sorted_frames.append(frames[0])
                         
                         # Add frames to client
-                        for counter, frame_path, _ in enumerate(sorted_frames, start=1):
+                        for counter, (frame_path, _) in enumerate(sorted_frames, start=1):
                             resized_image = await self.resize_image(image_path=frame_path, target_width=target_width)
                             if expose_images:
                                 persist_filename = f"/config/www/llmvision/" + frame_path.split("/")[-1]
