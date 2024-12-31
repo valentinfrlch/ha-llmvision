@@ -65,7 +65,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required("provider", default="Event Calendar"): selector({
                 "select": {
-                    "options": ["Anthropic", "Azure", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "Custom OpenAI", "Event Calendar"],
+                    "options": ["Anthropic", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "Custom OpenAI", "Event Calendar"], # Azure removed until fixed
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
