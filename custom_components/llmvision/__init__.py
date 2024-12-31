@@ -43,7 +43,8 @@ from .const import (
 from .calendar import SemanticIndex
 from .providers import Request
 from .media_handlers import MediaProcessor
-import os, re
+import os
+import re
 from datetime import timedelta
 from homeassistant.util import dt as dt_util
 from homeassistant.config_entries import ConfigEntry
@@ -200,44 +201,43 @@ async def _remember(hass, call, start, response) -> None:
         )
 
 
-async def _update_sensor(hass, sensor_entity: str, new_value: str | int, type: str) -> None:
+async def _update_sensor(hass, sensor_entity: str, value: str | int, type: str) -> None:
     """Update the value of a sensor entity."""
     # Attempt to parse the response
     if type == "boolean" and new_value.lower() not in ["on", "off"]:
-        new_value_lower = new_value.lower()
-        if new_value_lower in ["true", "false"]:
-            new_value = "on" if new_value_lower == "true" else "off"
-        elif re.match(r"^\s*yes\s*[,]*", new_value_lower):
+        value_lower = value.lower()
+        if value_lower in ["true", "false"]:
+            new_value = "on" if value_lower == "true" else "off"
+        elif re.match(r"^\s*yes\s*[,]*", value_lower):
             new_value = "on"
-        elif re.match(r"^\s*no\s*[,]*", new_value_lower):
+        elif re.match(r"^\s*no\s*[,]*", value_lower):
             new_value = "off"
         else:
             raise ServiceValidationError(
                 "Response could not be parsed. Please check your prompt.")
     elif type == "number":
         try:
-            new_value = float(new_value)
+            new_value = float(value)
         except ValueError:
             raise ServiceValidationError(
                 "Response could not be parsed. Please check your prompt.")
     elif type == "option":
         options = hass.states.get(sensor_entity).attributes["options"]
-        if new_value not in options:
+        if value not in options:
             raise ServiceValidationError(
                 "Response could not be parsed. Please check your prompt.")
-    # Set the value
-    if new_value:
-        _LOGGER.info(
-            f"Updating sensor {sensor_entity} with new value: {new_value}")
-        try:
-            current_attributes = hass.states.get(
-                sensor_entity).attributes.copy()
-            hass.states.async_set(sensor_entity, new_value, current_attributes)
-        except Exception as e:
-            _LOGGER.error(f"Failed to update sensor {sensor_entity}: {e}")
-            raise
-    else:
-        _LOGGER.warning("No sensor entity provided to update")
+        new_value = value
+   
+    # Update the value
+    _LOGGER.info(
+        f"Updating sensor {sensor_entity} with new value: {new_value}")
+    try:
+        current_attributes = hass.states.get(
+            sensor_entity).attributes.copy()
+        hass.states.async_set(sensor_entity, new_value, current_attributes)
+    except Exception as e:
+        _LOGGER.error(f"Failed to update sensor {sensor_entity}: {e}")
+        raise
 
 
 class ServiceCallData:
@@ -368,6 +368,7 @@ def setup(hass, config):
         state = hass.states.get(sensor_entity).state
         sensor_type = sensor_entity.split(".")[0]
         _LOGGER.info(f"Current state: {state}")
+        _LOGGER.info(f"Sensor type: {sensor_type}")
         if state == "unavailable":
             raise ServiceValidationError("Sensor entity is unavailable")
         if sensor_type == "input_boolean" or sensor_type == "binary_sensor" or sensor_type == "switch" or sensor_type == "boolean":
@@ -398,6 +399,7 @@ def setup(hass, config):
                                                   )
         response = await request.call(call)
         _LOGGER.info(f"Response: {response}")
+        _LOGGER.info(f"Sensor type: {type}")
         # update sensor in data_call.data.get("sensor_entity")
         await _update_sensor(hass, sensor_entity, response["response_text"], type)
         return response
