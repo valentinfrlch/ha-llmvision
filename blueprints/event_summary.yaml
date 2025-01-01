@@ -203,7 +203,7 @@ variables:
     {% set ns = namespace(device_names=[]) %}
     {% for device_id in notify_devices %}
       {% set device_name = device_attr(device_id, "name") %}
-      {% set sanitized_name = "mobile_app_" + device_name | lower | regex_replace("[' -]", "_") | regex_replace("[^a-z0-9_]", "")  %}
+      {% set sanitized_name = "mobile_app_" + device_name | slugify  %}
       {% set ns.device_names = ns.device_names + [sanitized_name] %}
     {% endfor %}
     {{ ns.device_names }}
