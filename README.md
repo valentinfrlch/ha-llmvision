@@ -3,9 +3,9 @@
 </p>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
-<img src=https://img.shields.io/badge/version-1.3.1-blue>
+<img src=https://img.shields.io/badge/version-1.3.5-blue>
 <a href="https://github.com/valentinfrlch/ha-llmvision/issues">
-<img src="https://img.shields.io/maintenance/yes/2024.svg">
+<img src="https://img.shields.io/maintenance/yes/2025.svg">
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-llmvision?color=0088ff"/>
     </a>
     <p align=center style="font-weight:bold">
@@ -24,14 +24,53 @@
     ·
     <a href="#how-to-report-a-bug-or-request-a-feature">🪲 How to report Bugs</a>
     ·
-    <a href="#support">☕ Support</a>
+    <a href="#support">☕ Support</a>    
   </p>
 
+<br>
+<div 
+        style="
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        "
+    >
+        <div 
+            style="
+                display: inline-block; 
+                padding: 7px 20px; 
+                border: 1px solid rgba(255, 255, 255, 0.2); 
+                border-radius: 20px; 
+                color: #fff; 
+                font-family: Arial, sans-serif; 
+                font-size: 14px; 
+                text-align: center; 
+                cursor: pointer; 
+                transition: background 0.3s ease, color 0.3s ease;
+            " 
+            onmouseover="this.style.border='2px solid rgba(255, 255, 255, 0.4)'" 
+            onmouseout="this.style.border='1px solid rgba(255, 255, 255, 0.2)'"
+        >
+            See all Features
+            <a 
+                href="#" 
+                style="
+                    text-decoration: none; 
+                    color: #8ab3ff; 
+                    margin-left: 5px;
+                " 
+                onmouseover="this.style.textDecoration='underline'" 
+                onmouseout="this.style.textDecoration='none'"
+            >
+                Visit Website →
+            </a>
+        </div>
+    </div>
 
 <br>
 <br>
 <p align="center">
-  <strong>LLM Vision</strong> is a Home Assistant integration to analyze images, videos,  
+  <strong>LLM Vision</strong> is a Home Assistant integration that can analyze images, videos,  
   live camera feeds and frigate events using the vision capabilities of multimodal LLMs.  
   Supported providers are OpenAI, Anthropic, Google Gemini, Groq, 
   <a href="https://github.com/mudler/LocalAI">LocalAI</a>, 
@@ -57,6 +96,7 @@ With the easy to use blueprint, you'll get important notifications intelligently
 ## Resources
 Check the docs for detailed instructions on how to set up LLM Vision and each of the supported providers, get inspiration from examples or join the discussion on the Home Assistant Community.
 
+<img alt="Static Badge" src="https://img.shields.io/badge/website-teal?style=for-the-badge&&logoColor=white&link=https%3A%2F%2Fvalentinfrlch.github.io%2Fllmvision%2F">
 <a href="https://llm-vision.gitbook.io/getting-started"><img src="https://img.shields.io/badge/Documentation-blue?style=for-the-badge&logo=gitbook&logoColor=white&color=18bcf2"/> </a><a href="https://llm-vision.gitbook.io/examples/"><img src="https://img.shields.io/badge/Examples-blue?style=for-the-badge&logo=gitbook&logoColor=black&color=39ffc2"/></a> </a><a href="https://community.home-assistant.io/t/llm-vision-let-home-assistant-see/729241"><img src="https://img.shields.io/badge/Community-blue?style=for-the-badge&logo=homeassistant&logoColor=white&color=03a9f4"/></a>
 
 

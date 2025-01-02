@@ -1,5 +1,5 @@
 blueprint:
-  name: AI Event Summary (LLM Vision v1.3.1)
+  name: AI Event Summary (LLM Vision v1.3.5)
   author: valentinfrlch
   description: >
     AI-powered security event summaries for frigate or camera entities.
@@ -379,6 +379,7 @@ action:
               model: !input model
               message: !input message
               remember: !input remember
+              generate_title: !input remember
               include_filename: true
               max_frames: !input max_frames
               target_width: !input target_width
@@ -398,6 +399,7 @@ action:
               model: !input model
               message: !input message
               remember: !input remember
+              generate_title: !input remember
               include_filename: true
               max_frames: !input max_frames
               target_width: !input target_width
