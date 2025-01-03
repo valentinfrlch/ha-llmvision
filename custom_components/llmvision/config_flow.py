@@ -29,6 +29,7 @@ from .const import (
     CONF_OLLAMA_HTTPS,
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_ENDPOINT,
+    CONF_CUSTOM_OPENAI_DEFAULT_MODEL,
     CONF_RETENTION_TIME,
 )
 import voluptuous as vol
@@ -296,17 +297,20 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_custom_openai(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_CUSTOM_OPENAI_ENDPOINT): str,
-            vol.Optional(CONF_CUSTOM_OPENAI_API_KEY): str,
+            vol.Required(CONF_CUSTOM_OPENAI_ENDPOINT, default="http://replace.with.your.host.com/v1/chat/completions"): str,
+            vol.Required(CONF_CUSTOM_OPENAI_DEFAULT_MODEL, default="gpt-4o-mini"): str,
+            vol.Required(CONF_CUSTOM_OPENAI_API_KEY): str,
         })
 
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
             try:
-                custom_openai = OpenAI(self.hass, api_key=user_input[CONF_CUSTOM_OPENAI_API_KEY], endpoint={
-                    'base_url': user_input[CONF_CUSTOM_OPENAI_ENDPOINT]
-                })
+                custom_openai = OpenAI(self.hass,
+                    api_key=user_input[CONF_CUSTOM_OPENAI_API_KEY],
+                    endpoint={'base_url': user_input[CONF_CUSTOM_OPENAI_ENDPOINT]},
+                    default_model=user_input[CONF_CUSTOM_OPENAI_DEFAULT_MODEL],
+                )
                 await custom_openai.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
