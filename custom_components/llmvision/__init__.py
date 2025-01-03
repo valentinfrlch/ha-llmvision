@@ -207,15 +207,15 @@ async def _update_sensor(hass, sensor_entity: str, value: str | int, type: str) 
     value = value.strip()
     if type == "boolean":
         if value.lower() in ["on", "off"]:
-            new_value = value.lower().title()
+            new_value = value
         else:
             value_lower = value.lower()
             if value_lower in ["true", "false"]:
-                new_value = "On" if value_lower == "true" else "Off"
+                new_value = "on" if value_lower == "true" else "off"
             elif re.match(r"^\s*yes\s*[,]*", value_lower):
-                new_value = "On"
+                new_value = "on"
             elif re.match(r"^\s*no\s*[,]*", value_lower):
-                new_value = "Off"
+                new_value = "off"
             else:
                 raise ServiceValidationError(
                     f"Response {value} could not be parsed. Please check your prompt.")
@@ -390,7 +390,7 @@ def setup(hass, config):
         if state == "unavailable":
             raise ServiceValidationError("Sensor entity is unavailable")
 
-        if sensor_type == "input_boolean" or sensor_type == "binary_sensor" or sensor_type == "switch" or sensor_type == "boolean":
+        if sensor_type == "input_boolean" or sensor_type == "boolean" or sensor_type == "binary_sensor" or sensor_type == "switch":
             data_type = "one of: ['on', 'off']"
             type = "boolean"
         elif sensor_type == "input_number" or sensor_type == "number" or sensor_type == "sensor":

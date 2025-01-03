@@ -3,7 +3,7 @@
 </p>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
-<img src=https://img.shields.io/badge/version-1.3.5-blue>
+<img src=https://img.shields.io/badge/version-1.3.6-blue>
 <a href="https://github.com/valentinfrlch/ha-llmvision/issues">
 <img src="https://img.shields.io/maintenance/yes/2025.svg">
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-llmvision?color=0088ff"/>
@@ -26,47 +26,9 @@
     ·
     <a href="#support">☕ Support</a>    
   </p>
-
-<br>
-<div 
-        style="
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-        "
-    >
-        <div 
-            style="
-                display: inline-block; 
-                padding: 7px 20px; 
-                border: 1px solid rgba(255, 255, 255, 0.2); 
-                border-radius: 20px; 
-                color: #fff; 
-                font-family: Arial, sans-serif; 
-                font-size: 14px; 
-                text-align: center; 
-                cursor: pointer; 
-                transition: background 0.3s ease, color 0.3s ease;
-            " 
-            onmouseover="this.style.border='2px solid rgba(255, 255, 255, 0.4)'" 
-            onmouseout="this.style.border='1px solid rgba(255, 255, 255, 0.2)'"
-        >
-            See all Features
-            <a 
-                href="#" 
-                style="
-                    text-decoration: none; 
-                    color: #8ab3ff; 
-                    margin-left: 5px;
-                " 
-                onmouseover="this.style.textDecoration='underline'" 
-                onmouseout="this.style.textDecoration='none'"
-            >
-                Visit Website →
-            </a>
-        </div>
-    </div>
-
+<p align="center">
+  <a href="https://valentinfrlch.github.io/llmvision/"> Visit Website →</a>
+    </p>
 <br>
 <br>
 <p align="center">
