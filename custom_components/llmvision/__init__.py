@@ -204,30 +204,47 @@ async def _remember(hass, call, start, response) -> None:
 async def _update_sensor(hass, sensor_entity: str, value: str | int, type: str) -> None:
     """Update the value of a sensor entity."""
     # Attempt to parse the response
-    if type == "boolean" and new_value.lower() not in ["on", "off"]:
-        value_lower = value.lower()
-        if value_lower in ["true", "false"]:
-            new_value = "on" if value_lower == "true" else "off"
-        elif re.match(r"^\s*yes\s*[,]*", value_lower):
-            new_value = "on"
-        elif re.match(r"^\s*no\s*[,]*", value_lower):
-            new_value = "off"
+    value = value.strip()
+    if type == "boolean":
+        if value.lower() in ["on", "off"]:
+            new_value = value.lower().title()
         else:
-            raise ServiceValidationError(
-                "Response could not be parsed. Please check your prompt.")
+            value_lower = value.lower()
+            if value_lower in ["true", "false"]:
+                new_value = "On" if value_lower == "true" else "Off"
+            elif re.match(r"^\s*yes\s*[,]*", value_lower):
+                new_value = "On"
+            elif re.match(r"^\s*no\s*[,]*", value_lower):
+                new_value = "Off"
+            else:
+                raise ServiceValidationError(
+                    f"Response {value} could not be parsed. Please check your prompt.")
+
     elif type == "number":
         try:
             new_value = float(value)
         except ValueError:
             raise ServiceValidationError(
-                "Response could not be parsed. Please check your prompt.")
+                f"Response {value} could not be parsed. Please check your prompt.")
+
     elif type == "option":
         options = hass.states.get(sensor_entity).attributes["options"]
         if value not in options:
-            raise ServiceValidationError(
-                "Response could not be parsed. Please check your prompt.")
+            # check if .title() is in options
+            if value.title() in options:
+                new_value = value.title()
+            else:
+                raise ServiceValidationError(
+                    f"Response {value} could not be parsed. Please check your prompt.")
+        else:
+            new_value = value
+
+    elif type == "text":
         new_value = value
-   
+
+    else:
+        raise ServiceValidationError("Unsupported sensor entity type")
+
     # Update the value
     _LOGGER.info(
         f"Updating sensor {sensor_entity} with new value: {new_value}")
@@ -369,19 +386,24 @@ def setup(hass, config):
         sensor_type = sensor_entity.split(".")[0]
         _LOGGER.info(f"Current state: {state}")
         _LOGGER.info(f"Sensor type: {sensor_type}")
+
         if state == "unavailable":
             raise ServiceValidationError("Sensor entity is unavailable")
+
         if sensor_type == "input_boolean" or sensor_type == "binary_sensor" or sensor_type == "switch" or sensor_type == "boolean":
             data_type = "one of: ['on', 'off']"
             type = "boolean"
         elif sensor_type == "input_number" or sensor_type == "number" or sensor_type == "sensor":
             data_type = "a number"
             type = "number"
-        elif sensor_type == "input_select":
+        elif sensor_type == "input_select" or sensor_type == "select":
             options = hass.states.get(sensor_entity).attributes["options"]
             data_type = "one of these options: " + \
                 ", ".join([f"'{option}'" for option in options])
             type = "option"
+        elif sensor_type == "input_text" or sensor_type == "text":
+            data_type = "text (string)"
+            type = "text"
         else:
             raise ServiceValidationError("Unsupported sensor entity type")
 
