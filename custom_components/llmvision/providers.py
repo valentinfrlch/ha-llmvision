@@ -22,6 +22,7 @@ from .const import (
     CONF_OLLAMA_HTTPS,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_API_KEY,
+    CONF_CUSTOM_OPENAI_DEFAULT_MODEL,
     VERSION_ANTHROPIC,
     ENDPOINT_OPENAI,
     ENDPOINT_AZURE,
@@ -184,11 +185,12 @@ class Request:
                 gen_title = await provider_instance.title_request(call)
 
         elif provider == 'Custom OpenAI':
-            api_key = config.get(CONF_CUSTOM_OPENAI_API_KEY, "")
+            api_key = config.get(CONF_CUSTOM_OPENAI_API_KEY)
             endpoint = config.get(
-                CONF_CUSTOM_OPENAI_ENDPOINT) + "/v1/chat/completions"
+                CONF_CUSTOM_OPENAI_ENDPOINT)
+            default_model=config.get(CONF_CUSTOM_OPENAI_DEFAULT_MODEL)
             provider_instance = OpenAI(
-                self.hass, api_key=api_key, endpoint=endpoint)
+                self.hass, api_key=api_key, endpoint={'base_url': endpoint}, default_model=default_model)
 
         else:
             raise ServiceValidationError("invalid_provider")
@@ -327,9 +329,9 @@ class Provider(ABC):
 
 
 class OpenAI(Provider):
-    def __init__(self, hass, api_key="", endpoint={'base_url': ENDPOINT_OPENAI}):
+    def __init__(self, hass, api_key="", endpoint={'base_url': ENDPOINT_OPENAI}, default_model="gpt-4o-mini"):
         super().__init__(hass, api_key, endpoint=endpoint)
-        self.default_model = "gpt-4o-mini"
+        self.default_model=default_model
 
     def _generate_headers(self) -> dict:
         return {'Content-type': 'application/json',
@@ -372,7 +374,7 @@ class OpenAI(Provider):
         if self.api_key:
             headers = self._generate_headers()
             data = {
-                "model": "gpt-4o-mini",
+                "model": self.default_model,
                 "messages": [{"role": "user", "content": [{"type": "text", "text": "Hi"}]}],
                 "max_tokens": 1,
                 "temperature": 0.5

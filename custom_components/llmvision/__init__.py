@@ -17,6 +17,7 @@ from .const import (
     CONF_OLLAMA_HTTPS,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_API_KEY,
+    CONF_CUSTOM_OPENAI_DEFAULT_MODEL,
     CONF_RETENTION_TIME,
     MESSAGE,
     REMEMBER,
@@ -78,6 +79,7 @@ async def async_setup_entry(hass, entry):
     ollama_https = entry.data.get(CONF_OLLAMA_HTTPS)
     custom_openai_endpoint = entry.data.get(CONF_CUSTOM_OPENAI_ENDPOINT)
     custom_openai_api_key = entry.data.get(CONF_CUSTOM_OPENAI_API_KEY)
+    custom_openai_default_model = entry.data.get(CONF_CUSTOM_OPENAI_DEFAULT_MODEL)
     retention_time = entry.data.get(CONF_RETENTION_TIME)
 
     # Ensure DOMAIN exists in hass.data
@@ -102,6 +104,7 @@ async def async_setup_entry(hass, entry):
         CONF_OLLAMA_HTTPS: ollama_https,
         CONF_CUSTOM_OPENAI_ENDPOINT: custom_openai_endpoint,
         CONF_CUSTOM_OPENAI_API_KEY: custom_openai_api_key,
+        CONF_CUSTOM_OPENAI_DEFAULT_MODEL: custom_openai_default_model,
         CONF_RETENTION_TIME: retention_time
     }
 
