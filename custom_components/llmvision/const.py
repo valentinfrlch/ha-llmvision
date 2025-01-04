@@ -22,6 +22,10 @@ CONF_CUSTOM_OPENAI_ENDPOINT = 'custom_openai_endpoint'
 CONF_CUSTOM_OPENAI_API_KEY = 'custom_openai_api_key'
 CONF_CUSTOM_OPENAI_DEFAULT_MODEL = 'custom_openai_default_model'
 CONF_RETENTION_TIME = 'retention_time'
+CONF_AWS_ACCESS_KEY_ID = 'aws_access_key_id'
+CONF_AWS_SECRET_ACCESS_KEY = 'aws_secret_access_key'
+CONF_AWS_REGION_NAME = 'aws_region_name'
+CONF_AWS_DEFAULT_MODEL = 'aws_default_model'
 
 # service call constants
 MESSAGE = 'message'

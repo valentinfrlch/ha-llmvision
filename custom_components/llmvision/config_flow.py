@@ -9,6 +9,7 @@ from .providers import (
     Groq,
     LocalAI,
     Ollama,
+    AWSBedrock
 )
 from .const import (
     DOMAIN,
@@ -31,6 +32,10 @@ from .const import (
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_DEFAULT_MODEL,
     CONF_RETENTION_TIME,
+    CONF_AWS_ACCESS_KEY_ID,
+    CONF_AWS_SECRET_ACCESS_KEY,
+    CONF_AWS_REGION_NAME,
+    CONF_AWS_DEFAULT_MODEL,
 )
 import voluptuous as vol
 import logging
@@ -45,6 +50,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def handle_provider(self, provider):
         provider_steps = {
             "Anthropic": self.async_step_anthropic,
+            "AWS Bedrock": self.async_step_aws_bedrock,
             "Azure": self.async_step_azure,
             "Custom OpenAI": self.async_step_custom_openai,
             "Event Calendar": self.async_step_semantic_index,
@@ -66,7 +72,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required("provider", default="Event Calendar"): selector({
                 "select": {
-                    "options": ["Anthropic", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "Custom OpenAI", "Event Calendar"], # Azure removed until fixed
+                    "options": ["Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "Custom OpenAI", "Event Calendar"], # Azure removed until fixed
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -343,5 +349,40 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="semantic_index",
+            data_schema=data_schema,
+        )
+
+    async def async_step_aws_bedrock(self, user_input=None):
+        data_schema = vol.Schema({
+            vol.Required(CONF_AWS_REGION_NAME, default="us-east-1"): str,
+            vol.Required(CONF_AWS_DEFAULT_MODEL, default="us.amazon.nova-pro-v1:0"): str,
+            vol.Required(CONF_AWS_ACCESS_KEY_ID): str,
+            vol.Required(CONF_AWS_SECRET_ACCESS_KEY): str,
+        })
+
+        if user_input is not None:
+            # save provider to user_input
+            user_input["provider"] = self.init_info["provider"]
+            try:
+                aws_bedrock = AWSBedrock(self.hass,
+                    aws_access_key_id=user_input[CONF_AWS_ACCESS_KEY_ID],
+                    aws_secret_access_key=user_input[CONF_AWS_SECRET_ACCESS_KEY],
+                    aws_region_name=user_input[CONF_AWS_REGION_NAME],
+                    model=user_input[CONF_AWS_DEFAULT_MODEL],
+                )
+                await aws_bedrock.validate()
+                # add the mode to user_input
+                user_input["provider"] = self.init_info["provider"]
+                return self.async_create_entry(title="AWS Bedrock Provider", data=user_input)
+            except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
+                return self.async_show_form(
+                    step_id="aws_bedrock",
+                    data_schema=data_schema,
+                    errors={"base": "handshake_failed"}
+                )
+
+        return self.async_show_form(
+            step_id="aws_bedrock",
             data_schema=data_schema,
         )

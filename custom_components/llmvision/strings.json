@@ -76,6 +76,16 @@
                 "data": {
                     "retention_time": "Auto delete events after (days)"
                 }
+            },
+            "aws_bedrock": {
+                "title": "Configure AWS Bedrock provider",
+                "description": "**Important**: This currently only supports the following models: Nova, Anthropic Claude",
+                "data": {
+                    "aws_access_key_id": "Your Access Key",
+                    "aws_secret_access_key": "Your Secret Key",
+                    "aws_region_name": "The region string",
+                    "aws_default_model": "The default model to use"
+                }
             }
         },
         "error": {

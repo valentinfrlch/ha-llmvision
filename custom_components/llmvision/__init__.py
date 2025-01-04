@@ -19,6 +19,10 @@ from .const import (
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_DEFAULT_MODEL,
     CONF_RETENTION_TIME,
+    CONF_AWS_ACCESS_KEY_ID,
+    CONF_AWS_SECRET_ACCESS_KEY,
+    CONF_AWS_REGION_NAME,
+    CONF_AWS_DEFAULT_MODEL,
     MESSAGE,
     REMEMBER,
     MODEL,
@@ -81,6 +85,10 @@ async def async_setup_entry(hass, entry):
     custom_openai_api_key = entry.data.get(CONF_CUSTOM_OPENAI_API_KEY)
     custom_openai_default_model = entry.data.get(CONF_CUSTOM_OPENAI_DEFAULT_MODEL)
     retention_time = entry.data.get(CONF_RETENTION_TIME)
+    aws_access_key_id = entry.data.get(CONF_AWS_ACCESS_KEY_ID)
+    aws_secret_access_key = entry.data.get(CONF_AWS_SECRET_ACCESS_KEY)
+    aws_region_name = entry.data.get(CONF_AWS_REGION_NAME)
+    aws_default_model = entry.data.get(CONF_AWS_DEFAULT_MODEL)
 
     # Ensure DOMAIN exists in hass.data
     if DOMAIN not in hass.data:
@@ -105,7 +113,11 @@ async def async_setup_entry(hass, entry):
         CONF_CUSTOM_OPENAI_ENDPOINT: custom_openai_endpoint,
         CONF_CUSTOM_OPENAI_API_KEY: custom_openai_api_key,
         CONF_CUSTOM_OPENAI_DEFAULT_MODEL: custom_openai_default_model,
-        CONF_RETENTION_TIME: retention_time
+        CONF_RETENTION_TIME: retention_time,
+        CONF_AWS_ACCESS_KEY_ID: aws_access_key_id,
+        CONF_AWS_SECRET_ACCESS_KEY: aws_secret_access_key,
+        CONF_AWS_REGION_NAME: aws_region_name,
+        CONF_AWS_DEFAULT_MODEL: aws_default_model,
     }
 
     # Filter out None values
