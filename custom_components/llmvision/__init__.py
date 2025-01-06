@@ -114,9 +114,7 @@ async def async_setup_entry(hass, entry):
 
     # check if the entry is the calendar entry (has entry rentention_time)
     if filtered_entry_data.get(CONF_RETENTION_TIME) is not None:
-        # make sure 'llmvision' directory exists
-        await hass.loop.run_in_executor(None, partial(os.makedirs, "/llmvision", exist_ok=True))
-        # forward the calendar entity to the platform
+        # forward the calendar entity to the platform for setup
         await hass.config_entries.async_forward_entry_setups(entry, ["calendar"])
 
     return True
