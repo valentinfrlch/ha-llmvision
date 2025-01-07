@@ -1,9 +1,9 @@
 ---
 name: Bug report
 about: Submit bug report
-title: "[Your error message here]"
+title: ''
 labels: bug
-assignees: valentinfrlch
+assignees: ''
 
 ---
 
