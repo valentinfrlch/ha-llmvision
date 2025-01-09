@@ -31,6 +31,14 @@ blueprint:
       default: false
       selector:
         boolean:
+    immediately_notify:
+      name: Immediately Notify
+      description: Send a notification immediately when motion is detected, before the
+        AI description is generated.  Once the AI description is generated, it should
+        replace the initial notification with the AI description.
+      default: true
+      selector:
+        boolean:
     notify_device:
       name: Notify Device
       description: The devices to send the notification to. Multiple devices may be used. Only works with Home Assistant mobile app.
@@ -40,6 +48,14 @@ blueprint:
           multiple: true
           filter:
             integration: mobile_app
+    notify_filter:
+      name: Notify Filter
+      description: Only notify when the AI generated description contains this text
+      default: ''
+      selector:
+        text:
+          multiline: false
+          multiple: false
     camera_entities:
       name: Camera Entities
       description: >-
@@ -199,6 +215,8 @@ variables:
   mode: !input mode
   preview_mode: !input preview_mode
   notify_devices: !input notify_device
+  initial_notify: !input immediately_notify
+  notify_filter_text: !input notify_filter
   device_name_map: >
     {% set ns = namespace(device_names=[]) %}
     {% for device_id in notify_devices %}
@@ -346,7 +364,7 @@ action:
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ image != '' or video != '' }}"
+            value_template: "{{ initial_notify and (image != '' or video != '') }}"
         sequence:
           - alias: "Send instant notification to notify devices"
             repeat:
@@ -413,7 +431,7 @@ action:
   - choose:
         - conditions:
             - condition: template
-              value_template: "{{ image != '' or video != '' }}"
+              value_template: "{{ ((notify_filter_text | length == 0) or notify_filter_text in response.response_text) and (image != '' or video != '') }}"
           sequence:
             - alias: "Send instant notification to notify devices"
               repeat:
