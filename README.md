@@ -34,13 +34,13 @@
 <p align="center">
   <strong>LLM Vision</strong> is a Home Assistant integration that can analyze images, videos,  
   live camera feeds and frigate events using the vision capabilities of multimodal LLMs.  
-  Supported providers are OpenAI, Anthropic, Google Gemini, Groq, 
+  Supported providers are OpenAI, Anthropic, Google Gemini, AWS Bedrock, Groq, 
   <a href="https://github.com/mudler/LocalAI">LocalAI</a>, 
   <a href="https://ollama.com/">Ollama</a> and any OpenAI compatible API.
 </p>
 
 ## Features
-- Compatible with OpenAI, Anthropic Claude, Google Gemini, Groq, [LocalAI](https://github.com/mudler/LocalAI), [Ollama](https://ollama.com/) and custom OpenAI compatible APIs
+- Compatible with OpenAI, Anthropic Claude, Google Gemini, AWS Bedrock (Nova & Anthropic Claude), Groq, [LocalAI](https://github.com/mudler/LocalAI), [Ollama](https://ollama.com/) and custom OpenAI compatible APIs
 - Analyzes images and video files, live camera feeds and Frigate events
 - Remembers Frigate events and camera motion events so you can ask about them later
 - Seamlessly updates sensors based on image input
