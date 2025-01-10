@@ -889,4 +889,4 @@ class AWSBedrock(Provider):
             "messages": [{"role": "user", "content": [{"text": "Hi"}]}],
             "inferenceConfig": {"max_new_tokens": 10, "temperature": 0.5}
         }
-        await self._post(model=self.default_model, data=data)
+        await self.invoke_bedrock(model=self.default_model, data=data)
