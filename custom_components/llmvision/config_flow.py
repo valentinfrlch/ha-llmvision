@@ -373,7 +373,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await aws_bedrock.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="AWS Bedrock Provider", data=user_input)
+                return self.async_create_entry(title="AWS Bedrock", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(

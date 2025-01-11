@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import boto3
-from botocore.exceptions import ClientError
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from functools import partial
