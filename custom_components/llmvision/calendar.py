@@ -195,9 +195,3 @@ async def async_setup_entry(
 
     calendar_entity = SemanticIndex(hass, config_entry)
     async_add_entities([calendar_entity])
-
-
-async def async_remove(self):
-    """Handle removal of the entity."""
-    # _LOGGER.info(f"Removing calendar entity: {self._attr_name}")
-    await super().async_remove()
