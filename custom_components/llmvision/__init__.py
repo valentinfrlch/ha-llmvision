@@ -151,7 +151,15 @@ async def async_remove_entry(hass, entry):
 
 
 async def async_unload_entry(hass, entry) -> bool:
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, "calendar")
+    _LOGGER.debug(f"Unloading {entry.title} from hass.data")
+
+    # check if the entry is the calendar entry (has entry rentention_time)
+    if entry.data.get(CONF_RETENTION_TIME) is not None:
+        # unload the calendar
+        unload_ok = await hass.config_entries.async_unload_platforms(entry, ["calendar"])
+    else:
+        unload_ok = True
+
     return unload_ok
 
 

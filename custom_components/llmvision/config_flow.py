@@ -98,6 +98,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_LOCALAI_HTTPS, default=False): bool,
         })
 
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            data_schema=self.add_suggested_values_to_schema(
+                data_schema, self.init_info
+            )
+
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
@@ -109,7 +116,15 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 })
                 await localai.validate()
                 # add the mode to user_input
-                return self.async_create_entry(title=f"LocalAI ({user_input[CONF_LOCALAI_IP_ADDRESS]})", data=user_input)
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    # we're reconfiguring an existing config
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    # New config entry
+                    return self.async_create_entry(title=f"LocalAI ({user_input[CONF_LOCALAI_IP_ADDRESS]})", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -130,6 +145,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_OLLAMA_HTTPS, default=False): bool,
         })
 
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            data_schema=self.add_suggested_values_to_schema(
+                data_schema, self.init_info
+            )
+
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
@@ -141,7 +163,15 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 })
                 await ollama.validate()
                 # add the mode to user_input
-                return self.async_create_entry(title=f"Ollama ({user_input[CONF_OLLAMA_IP_ADDRESS]})", data=user_input)
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    # we're reconfiguring an existing config
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    # New config entry
+                    return self.async_create_entry(title=f"Ollama ({user_input[CONF_OLLAMA_IP_ADDRESS]})", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -160,6 +190,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_OPENAI_API_KEY): str,
         })
 
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            data_schema=self.add_suggested_values_to_schema(
+                data_schema, self.init_info
+            )
+
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
@@ -169,7 +206,15 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await openai.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="OpenAI", data=user_input)
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    # we're reconfiguring an existing config
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    # New config entry
+                    return self.async_create_entry(title="OpenAI", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -191,6 +236,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_AZURE_VERSION, default="2024-10-01-preview"): str,
         })
 
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            data_schema=self.add_suggested_values_to_schema(
+                data_schema, self.init_info
+            )
+
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
@@ -204,7 +256,15 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await azure.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="Azure", data=user_input)
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    # we're reconfiguring an existing config
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    # New config entry
+                    return self.async_create_entry(title="Azure", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -223,6 +283,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_ANTHROPIC_API_KEY): str,
         })
 
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            data_schema=self.add_suggested_values_to_schema(
+                data_schema, self.init_info
+            )
+
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
@@ -232,7 +299,15 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await anthropic.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="Anthropic Claude", data=user_input)
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    # we're reconfiguring an existing config
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    # New config entry
+                    return self.async_create_entry(title="Anthropic Claude", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -251,6 +326,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_GOOGLE_API_KEY): str,
         })
 
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            data_schema=self.add_suggested_values_to_schema(
+                data_schema, self.init_info
+            )
+
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
@@ -260,7 +342,15 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await google.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="Google Gemini", data=user_input)
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    # we're reconfiguring an existing config
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    # New config entry
+                    return self.async_create_entry(title="Google Gemini", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -279,6 +369,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_GROQ_API_KEY): str,
         })
 
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            data_schema=self.add_suggested_values_to_schema(
+                data_schema, self.init_info
+            )
+
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
@@ -287,7 +384,15 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await groq.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="Groq", data=user_input)
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    # we're reconfiguring an existing config
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    # New config entry
+                    return self.async_create_entry(title="Groq", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -308,6 +413,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_CUSTOM_OPENAI_API_KEY): str,
         })
 
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            data_schema=self.add_suggested_values_to_schema(
+                data_schema, self.init_info
+            )
+
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
@@ -320,7 +432,15 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await custom_openai.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="Custom OpenAI compatible Provider", data=user_input)
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    # we're reconfiguring an existing config
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    # New config entry
+                    return self.async_create_entry(title="Custom OpenAI compatible Provider", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -338,6 +458,14 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required(CONF_RETENTION_TIME, default=7): int,
         })
+
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            data_schema=self.add_suggested_values_to_schema(
+                data_schema, self.init_info
+            )
+
         if user_input is not None:
             user_input["provider"] = self.init_info["provider"]
 
@@ -345,7 +473,15 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 if 'retention_time' in self.hass.data[DOMAIN][uid]:
                     self.async_abort(reason="already_configured")
                 # add the mode to user_input
-            return self.async_create_entry(title="LLM Vision Events", data=user_input)
+            if self.source == config_entries.SOURCE_RECONFIGURE:
+                # we're reconfiguring an existing config
+                return self.async_update_reload_and_abort(
+                    self._get_reconfigure_entry(),
+                    data_updates=user_input,
+                )
+            else:
+                # New config entry
+                return self.async_create_entry(title="LLM Vision Events", data=user_input)
 
         return self.async_show_form(
             step_id="semantic_index",
@@ -360,6 +496,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_AWS_SECRET_ACCESS_KEY): str,
         })
 
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            data_schema=self.add_suggested_values_to_schema(
+                data_schema, self.init_info
+            )
+
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
@@ -373,7 +516,15 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await aws_bedrock.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
-                return self.async_create_entry(title="AWS Bedrock", data=user_input)
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    # we're reconfiguring an existing config
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    # New config entry
+                    return self.async_create_entry(title="AWS Bedrock Provider", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -386,3 +537,8 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="aws_bedrock",
             data_schema=data_schema,
         )
+
+    async def async_step_reconfigure(self, user_input):
+        data = self._get_reconfigure_entry().data
+        provider = data["provider"]
+        return await self.handle_provider(provider)
