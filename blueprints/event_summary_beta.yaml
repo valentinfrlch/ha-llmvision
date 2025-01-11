@@ -1,0 +1,436 @@
+blueprint:
+  name: AI Event Summary (Beta)
+  author: valentinfrlch
+  description: >
+    AI-powered security event summaries for frigate or camera entities.
+    Sends a notification with a preview to your phone that is updated dynamically when the AI summary is available.
+  domain: automation
+  source_url: https://github.com/valentinfrlch/ha-llmvision/blob/main/blueprints/event_summary.yaml
+  input:
+    mode:
+      name: Mode
+      description: Select the mode to use
+      selector:
+        select:
+          options:
+            - 'Frigate'
+            - 'Camera'
+    important:
+      name: Important (Beta)
+      description: >
+        Use AI to classify events into 'critical', 'normal' and 'low'.
+        Notifications will only be sent when an event is classified as at least 'normal'.
+        For critical events, the notification will be delivered even if 'Do not disturb' is on.
+        Use with caution: AI can make mistakes.
+      default: false
+      selector:
+        boolean:
+    remember:
+      name: Remember
+      description: Remember this event so you can ask about it later. Event Calendar needs to be configured. If 'important' is set to true, only events classified as 'normal' or higher will be remembered.
+      default: false
+      selector:
+        boolean:
+    notify_device:
+      name: Notify Device
+      description: The devices to send the notification to. Multiple devices may be used. Only works with Home Assistant mobile app.
+      default: []
+      selector:
+        device:
+          multiple: true
+          filter:
+            integration: mobile_app
+    camera_entities:
+      name: Camera Entities
+      description: >-
+        (Camera and Frigate mode)
+
+        List of camera entities to monitor
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            domain: camera
+    object_type:
+      name: Included Object Type(s)
+      description: >-
+        (Frigate mode only)
+
+        Only run if frigate labels the object as one of these. (person, dog, bird, etc)
+      default: []
+      selector:
+        text:
+          multiline: false
+          multiple: true
+    trigger_state:
+      name: Trigger State
+      description: >-
+        (Camera mode only)
+
+        Trigger the automation when your cameras change to this state.
+      default: 'recording'
+      selector:
+        text:
+          multiline: false
+    motion_sensors:
+      name: Motion Sensor
+      description: >-
+        (Camera mode only)
+
+        Set if your cameras don't change state. Use the same order used for camera entities.
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            domain: binary_sensor
+    preview_mode:
+      name: Preview Mode
+      description: >-
+        (Camera mode only)
+
+        Choose between a live preview or a snapshot of the event
+      default: 'Live Preview'
+      selector:
+        select:
+          options:
+            - 'Live Preview'
+            - 'Snapshot'
+    cooldown:
+      name: Cooldown
+      description: Time in minutes to wait before running again. Recommended for busy areas.
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 60
+    tap_navigate:
+      name: Tap Navigate
+      description: >-
+        Path to navigate to when notification is opened (e.g. /lovelace/cameras).
+
+        To have use the same input which was sent to the ai engine, use
+          `{{video if video != '''' else image}}`
+      default: "/lovelace/0"
+      selector:
+        text:
+          multiline: false
+    duration:
+      name: Duration
+      description: >-
+        (Camera mode only)
+
+        How long to record before analyzing (in seconds)
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 60
+    max_frames:
+      name: Max Frames
+      description: >-
+        (Camera and Frigate mode)
+
+        How many frames to analyze. Picks frames with the most movement.
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 60
+    provider:
+      name: Provider
+      description: Provider to use for analysis. See docs for additional information.
+      selector:
+        config_entry:
+          integration: llmvision
+    model:
+      name: Model
+      description: Model to use for the video_analyzer action. Leave blank to automatically detect the best model.
+      default: "gpt-4o-mini"
+      selector:
+        text:
+          multiline: false
+    message:
+      name: Prompt
+      description: Model prompt for the video_analyzer action
+      default: "Summarize what's happening in the camera feed (one sentence max). Don't describe the scene! If there is a person, describe what they're doing and what they look like. If they look like a courier mention that! If nothing is happening, say so."
+      selector:
+        text:
+          multiline: true
+    target_width:
+      name: Target Width
+      description: Downscale images (uses less tokens and speeds up processing)
+      default: 1280
+      selector:
+        number:
+          min: 512
+          max: 3840
+    max_tokens:
+      name: Maximum Tokens
+      description: Maximum number of tokens to generate. Use this to control the length of the summaries.
+      default: 20
+      selector:
+        number:
+          min: 1
+          max: 100
+    detail:
+      name: Detail
+      description: Detail parameter (OpenAI only)
+      default: 'low'
+      selector:
+        select:
+          options:
+            - 'high'
+            - 'low'
+    temperature:
+      name: Temperature
+      description: Randomness. Lower is more accurate, higher is more creative.
+      default: 0.1
+      selector:
+        number:
+          min: 0.1
+          max: 1.0
+          step: 0.1
+
+variables:
+  important: !input important
+  cooldown: !input cooldown
+  mode: !input mode
+  preview_mode: !input preview_mode
+  notify_devices: !input notify_device
+  device_name_map: >
+    {% set ns = namespace(device_names=[]) %}
+    {% for device_id in notify_devices %}
+      {% set device_name = device_attr(device_id, "name") %}
+      {% set sanitized_name = "mobile_app_" + device_name | slugify  %}
+      {% set ns.device_names = ns.device_names + [sanitized_name] %}
+    {% endfor %}
+    {{ ns.device_names }}
+  camera_entities_list: !input camera_entities
+  object_types_list: !input object_type
+  motion_sensors_list: !input motion_sensors
+  camera_entity: >
+    {% if mode == 'Camera' %}
+      {% if motion_sensors_list and not "camera" in trigger.entity_id %}
+        {% set index = motion_sensors_list.index(trigger.entity_id) %}
+        {{ camera_entities_list[index] }}
+      {% else %}
+        {{ trigger.entity_id }}
+      {% endif %}
+    {% else %}
+      {{ trigger.payload_json['after']['camera'] }}
+    {% endif %}
+  tag: >
+    {% if mode == 'Frigate' %}
+      {{ trigger.payload_json['after']['camera'] + int(as_timestamp(now()))|string }}
+    {% else %}
+      {{ camera_entity + int(as_timestamp(now()))|string }}
+    {% endif %}
+  group: >
+    {% if mode == 'Frigate' %}
+      {{ trigger.payload_json['after']['camera'] }}
+    {% else %}
+      {{ camera_entity }}
+    {% endif %}
+  label: >
+    {% if mode == 'Frigate' %}
+      {{ trigger.payload_json['after']['label']|capitalize }} seen
+    {% else %}
+      Motion detected
+    {% endif %}
+  camera: >
+    {% if mode == 'Frigate' %}
+      {{ trigger.payload_json['after']['camera'].replace('_', ' ')|capitalize }}
+    {% else %}
+      {{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize }}
+    {% endif %}
+  video: >
+    {% if mode == 'Frigate' %}
+      /api/frigate/notifications/{{ trigger.payload_json['after']['id'] }}/clip.mp4
+    {% else %} {% endif %}
+  image: >
+    {% if mode == 'Frigate' %}
+      ''
+    {% else %}
+      {% if preview_mode == 'Live Preview' %}
+        {{ '/api/camera_proxy/' + camera_entity }}
+      {% else %}
+        /local/llmvision/{{camera_entity.replace("camera.", "")}}_0.jpg
+      {% endif %}
+    {% endif %}
+  importance_prompt: >
+    Your job is to classify security events based on cctv footage. Your options: "passive" if an event seems unimportant, "time-sensitive" if important and "critical" for suspicious events.
+    Use "critical" only for possible burglaries and similar events. "time-sensitive" could be a courier at the front door or an event of similar importance.
+    Reply with these replies exactly.
+
+max_exceeded: silent
+
+mode: single
+
+trigger:
+  - platform: mqtt
+    topic: "frigate/events"
+    id: frigate_trigger
+  - platform: 'state'
+    entity_id: !input camera_entities
+    to: !input trigger_state
+    id: 'camera_trigger'
+  - platform: 'state'
+    entity_id: !input motion_sensors
+    to: 'on'
+    id: 'motion_sensor_trigger'
+
+condition:
+  - condition: template
+    value_template: >
+      {% if mode == 'Frigate' %}
+        {{ trigger.payload_json["type"] == "end"
+           and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list
+           and ((object_types_list|length) == 0 or ((trigger.payload_json['after']['label']|lower) in object_types_list))
+        }}
+      {%else%}
+        true
+      {% endif %}
+
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ important }}"
+        sequence:
+          - alias: "Decide Important"
+            choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ mode == 'Frigate'}}"
+                sequence:
+                  - action: llmvision.image_analyzer
+                    data:
+                      image_entity: "{{ ['camera.' + trigger.payload_json['after']['camera']|lower] }}"
+                      provider: !input provider
+                      model: !input model
+                      message: "{{importance_prompt}}"
+                      include_filename: true
+                      target_width: 1280
+                      detail: low
+                      max_tokens: 3
+                      temperature: 0.1
+                    response_variable: importance
+              - conditions:
+                  - condition: template
+                    value_template: "{{ mode == 'Camera' }}"
+                sequence:
+                  - action: llmvision.image_analyzer
+                    data:
+                      image_entity: "{{[camera_entity]}}"
+                      provider: !input provider
+                      model: !input model
+                      message: "{{importance_prompt}}"
+                      include_filename: true
+                      target_width: 1280
+                      detail: low
+                      max_tokens: 3
+                      temperature: 0.1
+                    response_variable: importance
+
+  # Cancel automation if event not deemed important
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ importance is defined and importance.response_text|lower == 'passive' }}"
+        sequence:
+          - stop: "Event is not important"
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ image != '' or video != '' }}"
+        sequence:
+          - alias: "Send instant notification to notify devices"
+            repeat:
+              for_each: "{{device_name_map}}"
+              sequence:
+                - action: "notify.{{ repeat.item }}"
+                  data:
+                    title: "{{ label }}"
+                    message: "{{camera}}"
+                    data:
+                      video: "{{video if video != '' else None}}"
+                      image: "{{image if image != '' else None}}"
+                      entity_id: "{{camera_entity if mode=='Camera' and preview_mode=='Live Preview'}}"
+                      url: !input tap_navigate #iOS
+                      clickAction: !input tap_navigate #Android
+                      tag: "{{tag}}"
+                      group: "{{group}}"
+                      interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
+
+  - alias: "Analyze event"
+    choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ mode == 'Frigate' }}"
+        sequence:
+          - action: llmvision.video_analyzer
+            data:
+              event_id: "{{ trigger.payload_json['after']['id'] }}"
+              provider: !input provider
+              model: !input model
+              message: !input message
+              remember: !input remember
+              generate_title: !input remember
+              include_filename: true
+              max_frames: !input max_frames
+              target_width: !input target_width
+              detail: !input detail
+              max_tokens: !input max_tokens
+              temperature: !input temperature
+            response_variable: response
+      - conditions:
+          - condition: template
+            value_template: "{{ mode == 'Camera' }}"
+        sequence:
+          - action: llmvision.stream_analyzer
+            data:
+              image_entity: "{{[camera_entity]}}"
+              duration: !input duration
+              provider: !input provider
+              model: !input model
+              message: !input message
+              remember: !input remember
+              generate_title: !input remember
+              include_filename: true
+              max_frames: !input max_frames
+              target_width: !input target_width
+              detail: !input detail
+              max_tokens: !input max_tokens
+              temperature: !input temperature
+              expose_images: "{{true if preview_mode == 'Snapshot'}}"
+            response_variable: response
+
+
+  - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ image != '' or video != '' }}"
+          sequence:
+            - alias: "Send instant notification to notify devices"
+              repeat:
+                for_each: "{{device_name_map}}"
+                sequence:
+                  - action: "notify.{{ repeat.item }}"
+                    data:
+                      title: "{{ label }}"
+                      message: "{{response.response_text}}"
+                      data:
+                        video: "{{video if video != '' else None}}"
+                        image: "{{image if image != '' else None}}"
+                        entity_id: "{{camera_entity if mode=='Camera' and preview_mode=='Live Preview'}}"
+                        url: !input tap_navigate #iOS
+                        clickAction: !input tap_navigate #Android
+                        tag: "{{tag}}"
+                        group: "{{group}}"
+                        interruption-level: passive
+
+  - delay: '00:{{cooldown|int}}:00'

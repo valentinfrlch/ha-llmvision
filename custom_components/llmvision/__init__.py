@@ -48,14 +48,12 @@ from .const import (
 from .calendar import SemanticIndex
 from .providers import Request
 from .media_handlers import MediaProcessor
-import os
 import re
 from datetime import timedelta
 from homeassistant.util import dt as dt_util
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
-from functools import partial
 import logging
 
 _LOGGER = logging.getLogger(__name__)
