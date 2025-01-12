@@ -45,6 +45,11 @@
 - Remembers Frigate events and camera motion events so you can ask about them later
 - Seamlessly updates sensors based on image input
 
+![features](https://github.com/user-attachments/assets/5edd11d6-79b9-4736-9387-8d22405c53b8)
+See [website](https://valentinfrlch.github.io/llmvision) for more details.
+
+<br>
+
 ## Blueprint
 With the easy to use blueprint, you'll get important notifications intelligently summarized by AI from either Frigate or cameras in Home Assistant. LLM Vision can also remember events, so you can ask about them later. LLM Vision needs to be installed to use the blueprint.
 <br>
