@@ -27,7 +27,7 @@
     <a href="#support">☕ Support</a>    
   </p>
 <p align="center">
-  <a href="https://valentinfrlch.github.io/llmvision/"> Visit Website →</a>
+  <a href="https://llmvision.org"> Visit Website →</a>
     </p>
 <br>
 <br>
@@ -46,7 +46,7 @@
 - Seamlessly updates sensors based on image input
 
 ![features](https://github.com/user-attachments/assets/5edd11d6-79b9-4736-9387-8d22405c53b8)
-See [website](https://valentinfrlch.github.io/llmvision) for more details.
+See [website](https://llmvision.org) for more details.
 
 <br>
 
@@ -63,7 +63,7 @@ With the easy to use blueprint, you'll get important notifications intelligently
 ## Resources
 Check the docs for detailed instructions on how to set up LLM Vision and each of the supported providers, get inspiration from examples or join the discussion on the Home Assistant Community.
 
-<a href="https://valentinfrlch.github.io/llmvision/"><img alt="Static Badge" src="https://img.shields.io/badge/website-teal?style=for-the-badge&&logoColor=white&link=https%3A%2F%2Fvalentinfrlch.github.io%2Fllmvision%2F"></a>
+<a href="https://llmvision.org"><img alt="Static Badge" src="https://img.shields.io/badge/website-teal?style=for-the-badge&&logoColor=white&link=https%3A%2F%2Fvalentinfrlch.github.io%2Fllmvision%2F"></a>
 <a href="https://llm-vision.gitbook.io/getting-started"><img src="https://img.shields.io/badge/Documentation-blue?style=for-the-badge&logo=gitbook&logoColor=white&color=18bcf2"/> </a><a href="https://llm-vision.gitbook.io/examples/"><img src="https://img.shields.io/badge/Examples-blue?style=for-the-badge&logo=gitbook&logoColor=black&color=39ffc2"/></a> </a><a href="https://community.home-assistant.io/t/llm-vision-let-home-assistant-see/729241"><img src="https://img.shields.io/badge/Community-blue?style=for-the-badge&logo=homeassistant&logoColor=white&color=03a9f4"/></a>
 
 
