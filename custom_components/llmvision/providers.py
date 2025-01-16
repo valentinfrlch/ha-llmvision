@@ -359,9 +359,12 @@ class OpenAI(Provider):
 
     async def _make_request(self, data) -> str:
         headers = self._generate_headers()
-        response = await self._post(url=self.endpoint.get('base_url'), headers=headers, data=data)
-        response_text = response.get(
-            "choices")[0].get("message").get("content")
+        if isinstance(self.endpoint, dict):
+            url = self.endpoint.get('base_url')
+        else:
+            url = self.endpoint
+        response = await self._post(url=url, headers=headers, data=data)
+        response_text = response.get("choices")[0].get("message").get("content")
         return response_text
 
     def _prepare_vision_data(self, call) -> list:
