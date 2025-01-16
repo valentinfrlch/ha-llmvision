@@ -40,7 +40,7 @@
 </p>
 
 ## Features
-- Compatible with OpenAI, Anthropic Claude, Google Gemini, AWS Bedrock (Nova & Anthropic Claude), Groq, [LocalAI](https://github.com/mudler/LocalAI), [Ollama](https://ollama.com/) and custom OpenAI compatible APIs
+- Compatible with OpenAI, Anthropic Claude, Google Gemini, AWS Bedrock, Groq, [LocalAI](https://github.com/mudler/LocalAI), [Ollama](https://ollama.com/) and custom OpenAI compatible APIs
 - Analyzes images and video files, live camera feeds and Frigate events
 - Remembers Frigate events and camera motion events so you can ask about them later
 - Seamlessly updates sensors based on image input

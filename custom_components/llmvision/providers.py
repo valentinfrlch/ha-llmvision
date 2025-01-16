@@ -65,6 +65,8 @@ class Request:
             return [Request.sanitize_data(item) for item in data]
         elif isinstance(data, str) and len(data) > 400 and data.count(' ') < 50:
             return '<long_string>'
+        elif isinstance(data, bytes) and len(data) > 400:
+            return '<long_bytes>'
         else:
             return data
 
@@ -763,15 +765,7 @@ class AWSBedrock(Provider):
 
     async def _make_request(self, data) -> str:
         response = await self.invoke_bedrock(model=self.default_model, data=data)
-        # The response format depends on the model used
-        if self.default_model.find("amazon.nova") > -1:
-            response_text = response.get("output").get("message").get("content")[0].get("text")
-        elif self.default_model.find("anthropic.claude") > -1:
-            response_text = response.get("content")[0].get("text")
-        else:
-            _LOGGER.error(f"Found unknown model type `{self.default_model}` for AWS Bedrock call.")
-            raise ServiceValidationError("Unknown model type specified. Only Nova and Claude are currently supported.")
-
+        response_text = response.get("message").get("content")[0].get("text")
         return response_text
 
     async def invoke_bedrock(self, model, data) -> dict:
@@ -790,17 +784,13 @@ class AWSBedrock(Provider):
                 )
             )
 
-            accept = 'application/json'
-            contentType = 'application/json'
-
             # Invoke the model with the response stream
             response = await self.hass.async_add_executor_job(
                 partial(
-                    client.invoke_model,
+                    client.converse,
                     modelId=model,
-                    body=json.dumps(data),
-                    accept=accept,
-                    contentType=contentType
+                    messages=data.get("messages"),
+                    inferenceConfig=data.get("inferenceConfig")
             ))
             _LOGGER.debug(f"AWS Bedrock call Response: {response}")
 
@@ -813,11 +803,15 @@ class AWSBedrock(Provider):
             parsed_response = await self._resolve_error(response, provider)
             raise ServiceValidationError(parsed_response)
         else:
-            tokens_in = response.get("ResponseMetadata").get("HTTPHeaders").get("x-amzn-bedrock-input-token-count", "error")
-            tokens_out = response.get("ResponseMetadata").get("HTTPHeaders").get("x-amzn-bedrock-output-token-count", "error")
-            latency = response.get("ResponseMetadata").get("HTTPHeaders").get("x-amzn-bedrock-invocation-latency", "error")
-            _LOGGER.info(f"AWS Bedrock call latency: {latency} tokens_in: {tokens_in} tokens_out: {tokens_out}")
-            response_data = json.loads(response.get('body').read())
+            # get observability data
+            metrics = response.get("metrics")
+            latency = metrics.get("latencyMs")
+            token_usage = response.get("usage")
+            tokens_in = token_usage.get("inputTokens")
+            tokens_out = token_usage.get("outputTokens")
+            tokens_total = token_usage.get("totalTokens")
+            _LOGGER.info(f"AWS Bedrock call latency: {latency}ms inputTokens: {tokens_in} outputTokens: {tokens_out} totalTokens: {tokens_total}")
+            response_data = response.get("output")
             _LOGGER.debug(f"AWS Bedrock call response data: {response_data}")
             return response_data
 
@@ -825,67 +819,42 @@ class AWSBedrock(Provider):
     def _prepare_vision_data(self, call) -> list:
         _LOGGER.debug(f"Found model type `{call.model}` for AWS Bedrock call.")
         # We need to generate the correct format for the respective models
-        if call.model.find("amazon.nova") > -1:
-            data = {
-                    "messages": [{"role": "user", "content": []}],
-                    "inferenceConfig": {
-                        "max_new_tokens": call.max_tokens,
-                        "temperature": call.temperature
-                    }
-                }
-
-            for image, filename in zip(call.base64_images, call.filenames):
-                tag = ("Image " + str(call.base64_images.index(image) + 1)
-                    ) if filename == "" else filename
-                data["messages"][0]["content"].append(
-                    {"text": tag + ":"})
-                data["messages"][0]["content"].append({
-                    "image": {
-                        "format": "jpeg",
-                        "source": {"bytes": image}
-                        }
-                    })
-            data["messages"][0]["content"].append({"text": call.message})
-            return data
-
-        elif call.model.find("anthropic.claude") > -1:
-            # Use the Anthropic provider to generate the dict
-            data = Anthropic._prepare_vision_data(self, call)
-            # Some minor changes required by AWS
-            data["anthropic_version"]="bedrock-2023-05-31"
-            del data['model']
-            return data
-
-        else:
-            _LOGGER.error(f"Found unknown model type `{call.model}` for AWS Bedrock call.")
-            raise ServiceValidationError("Unknown model type specified. Only Nova and Claude are currently supported.")
-
-    def _prepare_text_data(self, call) -> list:
-        # We need to generate the correct format for the respective models
-        if call.model.find("amazon.nova") > -1:
-            return {
-                "messages": [{"role": "user", "content": [{"text": call.message}]}],
+        data = {
+                "messages": [{"role": "user", "content": []}],
                 "inferenceConfig": {
-                    "max_new_tokens": call.max_tokens,
+                    "maxTokens": call.max_tokens,
                     "temperature": call.temperature
                 }
             }
 
-        elif call.model.find("anthropic.claude") > -1:
-            # Use the Anthropic provider to generate the dict
-            data = Anthropic._prepare_text_data(self, call)
-            # Some minor changes required by AWS
-            data["anthropic_version"]="bedrock-2023-05-31"
-            del data['model']
-            return data
+        # Bedrock converse API wants the raw bytes of the image
+        import base64
+        for image, filename in zip(call.base64_images, call.filenames):
+            tag = ("Image " + str(call.base64_images.index(image) + 1)
+                ) if filename == "" else filename
+            data["messages"][0]["content"].append(
+                {"text": tag + ":"})
+            data["messages"][0]["content"].append({
+                "image": {
+                    "format": "jpeg",
+                    "source": {"bytes": base64.b64decode(image)}
+                    }
+                })
+        data["messages"][0]["content"].append({"text": call.message})
+        return data
 
-        else:
-            _LOGGER.error(f"Found unknown model type `{call.model}` for AWS Bedrock call.")
-            raise ServiceValidationError("Unknown model type specified. Only Nova and Claude are currently supported.")
+    def _prepare_text_data(self, call) -> list:
+        return {
+            "messages": [{"role": "user", "content": [{"text": call.message}]}],
+            "inferenceConfig": {
+                "maxTokens": call.max_tokens,
+                "temperature": call.temperature
+            }
+        }
 
     async def validate(self) -> None | ServiceValidationError:
         data = {
             "messages": [{"role": "user", "content": [{"text": "Hi"}]}],
-            "inferenceConfig": {"max_new_tokens": 10, "temperature": 0.5}
+            "inferenceConfig": {"maxTokens": 10, "temperature": 0.5}
         }
         await self.invoke_bedrock(model=self.default_model, data=data)
