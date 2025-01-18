@@ -265,13 +265,13 @@ variables:
     Reply with these replies exactly.
 
 max_exceeded: silent
-
 mode: single
 
 trigger:
   - platform: mqtt
     topic: "frigate/events"
     id: frigate_trigger
+    enabled: "{{mode == 'Frigate'}}"
   - platform: 'state'
     entity_id: !input camera_entities
     to: !input trigger_state
