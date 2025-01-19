@@ -52,6 +52,16 @@ blueprint:
           multiple: true
           filter:
             domain: camera
+    required_zones:
+      name: Required Zone(s)
+      description: >-
+        (Frigate mode only)
+        Only run if the Frigate event occurs within the specified zones (e.g., Driveway, Entry, etc.)
+      default: []
+      selector:
+        text:
+          multiline: false
+          multiple: true
     object_type:
       name: Included Object Type(s)
       description: >-
@@ -63,6 +73,15 @@ blueprint:
         text:
           multiline: false
           multiple: true
+    ignore_stationary:
+      name: Ignore Stationary Objects
+      description: >-
+        (Frigate mode only)
+
+        Does not alert if objects are detected as stationary by Frigate.
+      default: true
+      selector:
+        boolean:
     trigger_state:
       name: Trigger State
       description: >-
@@ -208,7 +227,9 @@ variables:
     {% endfor %}
     {{ ns.device_names }}
   camera_entities_list: !input camera_entities
+  required_zones_list: !input required_zones
   object_types_list: !input object_type
+  ignore_stationary: !input ignore_stationary
   motion_sensors_list: !input motion_sensors
   camera_entity: >
     {% if mode == 'Camera' %}
@@ -288,8 +309,10 @@ condition:
         {{ trigger.payload_json["type"] == "end"
            and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list
            and ((object_types_list|length) == 0 or ((trigger.payload_json['after']['label']|lower) in object_types_list))
+           and (not required_zones_list or ((set(trigger.payload_json['after']['current_zones']).intersection(required_zones_list))))
+           and not (ignore_stationary and trigger.payload_json['after']['stationary'])
         }}
-      {%else%}
+      {% else %}
         true
       {% endif %}
 
