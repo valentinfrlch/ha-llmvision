@@ -469,10 +469,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             user_input["provider"] = self.init_info["provider"]
 
-            for uid in self.hass.data[DOMAIN]:
-                if 'retention_time' in self.hass.data[DOMAIN][uid]:
-                    self.async_abort(reason="already_configured")
-                # add the mode to user_input
+            try:
+                for uid in self.hass.data[DOMAIN]:
+                    if 'retention_time' in self.hass.data[DOMAIN][uid]:
+                        self.async_abort(reason="already_configured")
+            except KeyError:
+                # no existing configuration, continue
+                pass
             if self.source == config_entries.SOURCE_RECONFIGURE:
                 # we're reconfiguring an existing config
                 return self.async_update_reload_and_abort(
