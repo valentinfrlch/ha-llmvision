@@ -49,6 +49,7 @@ EXPOSE_IMAGES = 'expose_images'
 EXPOSE_IMAGES_PERSIST = 'expose_images_persist'
 GENERATE_TITLE = 'generate_title'
 SENSOR_ENTITY = 'sensor_entity'
+IMAGE_DESCRIPTIONS = 'image_descriptions'
 
 # Error messages
 ERROR_NOT_CONFIGURED = "{provider} is not configured"

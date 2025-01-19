@@ -56,6 +56,7 @@ class Request:
         self.temperature = temperature
         self.base64_images = []
         self.filenames = []
+        self.descriptions = []
 
     @staticmethod
     def sanitize_data(data):
@@ -133,6 +134,7 @@ class Request:
         provider = Request.get_provider(self.hass, entry_id)
         call.base64_images = self.base64_images
         call.filenames = self.filenames
+        call.descriptions = self.descriptions
 
         self.validate(call)
 
@@ -224,9 +226,10 @@ class Request:
         else:
             return {"response_text": response_text}
 
-    def add_frame(self, base64_image, filename):
+    def add_frame(self, base64_image, filename, description=None):
         self.base64_images.append(base64_image)
         self.filenames.append(filename)
+        self.descriptions.append(description)
 
     async def _resolve_error(self, response, provider):
         """Translate response status to error message"""
@@ -369,9 +372,10 @@ class OpenAI(Provider):
                    "temperature": call.temperature
                    }
 
-        for image, filename in zip(call.base64_images, call.filenames):
+        for image, filename, description in zip(call.base64_images, call.filenames, call.descriptions):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename
+            tag += (f"\n{description}") if description is not None else ""
             payload["messages"][0]["content"].append(
                 {"type": "text", "text": tag + ":"})
             payload["messages"][0]["content"].append({"type": "image_url", "image_url": {
@@ -430,9 +434,10 @@ class AzureOpenAI(Provider):
                    "temperature": call.temperature,
                    "stream": False
                    }
-        for image, filename in zip(call.base64_images, call.filenames):
+        for image, filename, description in zip(call.base64_images, call.filenames, call.descriptions):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename
+            tag += (f"\n{description}") if description is not None else ""
             payload["messages"][0]["content"].append(
                 {"type": "text", "text": tag + ":"})
             payload["messages"][0]["content"].append({"type": "image_url", "image_url": {
@@ -491,9 +496,10 @@ class Anthropic(Provider):
             "max_tokens": call.max_tokens,
             "temperature": call.temperature
         }
-        for image, filename in zip(call.base64_images, call.filenames):
+        for image, filename, description in zip(call.base64_images, call.filenames, call.descriptions):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename
+            tag += (f"\n{description}") if description is not None else ""
             data["messages"][0]["content"].append(
                 {"type": "text", "text": tag + ":"})
             data["messages"][0]["content"].append({"type": "image", "source": {
@@ -547,9 +553,10 @@ class Google(Provider):
     def _prepare_vision_data(self, call) -> dict:
         data = {"contents": [], "generationConfig": {
             "maxOutputTokens": call.max_tokens, "temperature": call.temperature}}
-        for image, filename in zip(call.base64_images, call.filenames):
+        for image, filename, description in zip(call.base64_images, call.filenames, call.descriptions):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename
+            tag += (f"\n{description}") if description is not None else ""
             data["contents"].append({"role": "user", "parts": [
                                     {"text": tag + ":"}, {"inline_data": {"mime_type": "image/jpeg", "data": image}}]})
         data["contents"].append(
@@ -654,9 +661,10 @@ class LocalAI(Provider):
     def _prepare_vision_data(self, call) -> dict:
         data = {"model": call.model, "messages": [{"role": "user", "content": [
         ]}], "max_tokens": call.max_tokens, "temperature": call.temperature}
-        for image, filename in zip(call.base64_images, call.filenames):
+        for image, filename, description in zip(call.base64_images, call.filenames, call.descriptions):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename
+            tag += (f"\n{description}") if description is not None else ""
             data["messages"][0]["content"].append(
                 {"type": "text", "text": tag + ":"})
             data["messages"][0]["content"].append(
@@ -704,6 +712,7 @@ class Ollama(Provider):
             port=port,
             protocol=protocol
         )
+        _LOGGER.debug(f"Calling Ollama url:{endpoint} data:{Request.sanitize_data(data)}")
 
         response = await self._post(url=endpoint, headers={}, data=data)
         response_text = response.get("message").get("content")
@@ -712,9 +721,10 @@ class Ollama(Provider):
     def _prepare_vision_data(self, call) -> dict:
         data = {"model": call.model, "messages": [], "stream": False, "options": {
             "num_predict": call.max_tokens, "temperature": call.temperature}}
-        for image, filename in zip(call.base64_images, call.filenames):
+        for image, filename, description in zip(call.base64_images, call.filenames, call.descriptions):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename
+            tag += (f"\n{description}") if description is not None else ""
             image_message = {"role": "user",
                              "content": tag + ":", "images": [image]}
             data["messages"].append(image_message)
@@ -826,9 +836,10 @@ class AWSBedrock(Provider):
             }
 
         # Bedrock converse API wants the raw bytes of the image
-        for image, filename in zip(call.base64_images, call.filenames):
+        for image, filename, description in zip(call.base64_images, call.filenames, call.descriptions):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                 ) if filename == "" else filename
+            tag += (f"\n{description}") if description is not None else ""
             data["messages"][0]["content"].append(
                 {"text": tag + ":"})
             data["messages"][0]["content"].append({
