@@ -190,10 +190,6 @@ class Request:
                 'port': port,
                 'https': https
             })
-            response_text = await provider_instance.vision_request(call)
-            if call.generate_title:
-                call.message = gen_title_prompt.format(response=response_text)
-                gen_title = await provider_instance.title_request(call)
 
         elif provider == 'Custom OpenAI':
             api_key = config.get(CONF_CUSTOM_OPENAI_API_KEY)
