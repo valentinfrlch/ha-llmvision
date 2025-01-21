@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "LLM Vision Setup",
-                "description": "Select what you want to set up"
+                "description": "Select a provider to set up"
             },
             "localai": {
                 "title": "Connect to your LocalAI server",
@@ -27,14 +27,14 @@
                 "title": "Configure OpenAI",
                 "description": "Provide a valid OpenAI API key.",
                 "data": {
-                    "openai_api_key": "Your API key"
+                    "openai_api_key": "API key"
                 }
             },
             "azure": {
                 "title": "Configure Azure",
                 "description": "Provide a valid Azure API key, base URL, deployment and API version.\nThe Base URL must be in the format `https://domain.openai.azure.com/` including the trailing slash.",
                 "data": {
-                    "azure_api_key": "Your API key",
+                    "azure_api_key": "API key",
                     "azure_base_url": "Base URL",
                     "azure_deployment": "Deployment",
                     "azure_version": "API Version"
@@ -44,21 +44,21 @@
                 "title": "Configure Anthropic Claude",
                 "description": "Provide a valid Anthropic API key.",
                 "data": {
-                    "anthropic_api_key": "Your API key"
+                    "anthropic_api_key": "API key"
                 }
             },
             "google": {
                 "title": "Configure Google Gemini",
                 "description": "Provide a valid Google Gemini API key.",
                 "data": {
-                    "google_api_key": "Your API key"
+                    "google_api_key": "API key"
                 }
             },
             "groq": {
                 "title": "Configure Groq",
                 "description": "Provide a valid Groq API key.",
                 "data": {
-                    "groq_api_key": "Your API key"
+                    "groq_api_key": "API key"
                 }
             },
             "custom_openai": {
@@ -66,7 +66,7 @@
                 "description": "**Important**: Only works if the API is compatible with OpenAI's API. If the API doesn't require an API key, enter a dummy value. The endpoint must have the following format: `http(s)://baseURL(:port)/some/endpoint`",
                 "data": {
                     "custom_openai_endpoint": "Custom Endpoint",
-                    "custom_openai_api_key": "Your API key",
+                    "custom_openai_api_key": "API key",
                     "custom_openai_default_model": "Default model to use, e.g. gpt-4o-mini"
                 }
             },
@@ -81,8 +81,8 @@
                 "title": "Configure AWS Bedrock provider",
                 "description": "**Important**: This currently only supports the following models: Nova, Anthropic Claude",
                 "data": {
-                    "aws_access_key_id": "Your Access Key",
-                    "aws_secret_access_key": "Your Secret Key",
+                    "aws_access_key_id": "Access Key",
+                    "aws_secret_access_key": "Secret",
                     "aws_region_name": "The region string",
                     "aws_default_model": "The default model to use"
                 }

@@ -2,37 +2,39 @@
     "config": {
         "step": {
             "user": {
-                "title": "LLM Visio Konfiguration",
-                "description": "Wähle was du konfigurieren möchtest."
+                "title": "LLM Vision Konfiguration",
+                "description": "Wähle einen Anbieter zum konfigurieren"
             },
             "localai": {
                 "title": "LocalAI konfigurieren",
-                "description": "Gib die IP-Adresse und den Port deines LocalAI-Servers an.",
+                "description": "Gib die IP-Adresse und den Port deines LocalAI Servers an.",
                 "data": {
                     "localai_ip": "IP-Adresse",
-                    "localai_port": "Port"
+                    "localai_port": "Port",
+                    "localai_https": "HTTPS"
                 }
             },
             "ollama": {
                 "title": "Ollama konfigurieren",
-                "description": "Gib die IP-Adresse und den Port deines Ollama-Servers an.",
+                "description": "Gib die IP-Adresse und den Port deines Ollama Servers an.",
                 "data": {
-                    "localai_ip": "IP-Addresse",
-                    "localai_port": "Port"
+                    "ollama_ip": "IP-Addresse",
+                    "ollama_port": "Port",
+                    "ollama_https": "HTTPS"
                 }
             },
             "openai": {
                 "title": "OpenAI konfigurieren",
                 "description": "Gib einen gültigen OpenAI API-key ein.",
                 "data": {
-                    "api_key": "Dein API-key"
+                    "openai_api_key": "API-key"
                 }
             },
             "azure": {
                 "title": "Azure konfigurieren",
                 "description": "Gib einen gültigen Azure API-key, die Base URL, den Namen des Deployments und die API-Version an.\nDie Base URL muss dieses Format haben: `https://domain.openai.azure.com/` (einschliesslich des abschliessenden '/')",
                 "data": {
-                    "azure_api_key": "Dein API key",
+                    "azure_api_key": "API key",
                     "azure_base_url": "Base URL",
                     "azure_deployment": "Deployment",
                     "azure_version": "API Version"
@@ -42,22 +44,30 @@
                 "title": "Anthropic Claude konfigurieren",
                 "description": "Gib einen gültigen Anthropic API-key ein.",
                 "data": {
-                    "api_key": "Dein API-key"
+                    "anthropic_api_key": "API-key"
                 }
             },
             "google": {
                 "title": "Google Gemini konfigurieren",
                 "description": "Gib einen gültigen Google Gemini API-key ein.",
                 "data": {
-                    "api_key": "Dein API-key"
+                    "google_api_key": "API-key"
+                }
+            },
+            "groq": {
+                "title": "Groq konfigurieren",
+                "description": "Gib einen gültigen Groq API-key an.",
+                "data": {
+                    "groq_api_key": "API-key"
                 }
             },
             "custom_openai": {
-                "title": "OpenAI-kompatiblen Provider konfigurieren",
-                "description": "**Wichtig**: Funktioniert nur mit OpenAI API kompatiblen APIs. 'Custom Endpoint' muss das folgende Format haben: `http(s)://baseURL(:port)/some/endpoint`",
+                "title": "OpenAI kompatiblen Provider konfigurieren",
+                "description": "**Wichtig**: Funktioniert nur wenn die API kompatibel mit der von OpenAI ist. Wenn deine API keinen Schlüssel benötigt, gib 'openai' ein. Der API Endpoint muss das folgende Format besitzen: `http(s)://baseURL(:port)/some/endpoint`",
                 "data": {
-                    "custom_openai_endpoint": "Custom Endpoint",
-                    "custom_openai_api_key": "Dein API-key"
+                    "custom_openai_endpoint": "Endpoint",
+                    "custom_openai_api_key": "API-key",
+                    "custom_openai_default_model": "Standartmodell, zum Beispiel 'gpt-4o-mini'"
                 }
             },
             "semantic_index": {
@@ -65,6 +75,16 @@
                 "description": "Konfiguriere wie viele Tage Events gespeichert werden, danach werden sie automatisch gelöscht. Events werden nur lokal gespeichert und können in der Kalenderansicht gelöscht werden. (0 deaktiviert auto delete)",
                 "data": {
                     "retention_time": "Automatisch löschen nach (in Tagen)"
+                }
+            },
+            "aws_bedrock": {
+                "title": "AWS Bedrock konfigurieren",
+                "description": "**Wichtig**: Unterstützt derzeit nur die Modelle Nova und Anthropic Claude.",
+                "data": {
+                    "aws_access_key_id": "API-key",
+                    "aws_secret_access_key": "Secret",
+                    "aws_region_name": "Region",
+                    "aws_default_model": "Standartmodell"
                 }
             }
         },
