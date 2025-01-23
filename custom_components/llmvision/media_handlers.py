@@ -72,6 +72,13 @@ class MediaProcessor:
         previous_frame_np = np.array(previous_frame, dtype=np.float64)
         current_frame_np = np.array(current_frame_gray, dtype=np.float64)
 
+        # Ensure both frames have same dimensions
+        if previous_frame_np.shape != current_frame_np.shape:
+            min_shape = np.minimum(
+                previous_frame_np.shape, current_frame_np.shape)
+            previous_frame_np = previous_frame_np[:min_shape[0], :min_shape[1]]
+            current_frame_np = current_frame_np[:min_shape[0], :min_shape[1]]
+
         # Calculate mean (mu)
         mu1 = np.mean(previous_frame_np)
         mu2 = np.mean(current_frame_np)
