@@ -298,7 +298,7 @@ class Provider(ABC):
 
     async def title_request(self, call) -> str:
         call.temperature = 0.1
-        call.max_tokens = 5
+        call.max_tokens = 10
         data = self._prepare_text_data(call)
         return await self._make_request(data)
 

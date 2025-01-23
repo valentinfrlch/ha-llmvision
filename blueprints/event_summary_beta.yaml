@@ -233,7 +233,7 @@ variables:
   motion_sensors_list: !input motion_sensors
   camera_entity: >
     {% if mode == 'Camera' %}
-      {% if motion_sensors_list and not "camera" in trigger.entity_id %}
+      {% if motion_sensors_list and not trigger.entity_id.startswith("camera") %}
         {% set index = motion_sensors_list.index(trigger.entity_id) %}
         {{ camera_entities_list[index] }}
       {% else %}
