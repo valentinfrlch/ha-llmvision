@@ -2,19 +2,19 @@ blueprint:
   name: AI Event Summary (Beta)
   author: valentinfrlch
   description: >
-    AI-powered security event summaries for frigate or camera entities.
+    AI-powered security event summaries for Frigate events or camera entities.
     Sends a notification with a preview to your phone that is updated dynamically when the AI summary is available.
   domain: automation
-  source_url: https://github.com/valentinfrlch/ha-llmvision/blob/main/blueprints/event_summary.yaml
+  source_url: https://github.com/valentinfrlch/ha-llmvision/blob/main/blueprints/event_summary_beta.yaml
   input:
-    mode:
+    input_mode:
       name: Mode
       description: Select the mode to use
       selector:
         select:
           options:
-            - 'Frigate'
-            - 'Camera'
+            - Frigate
+            - Camera
     important:
       name: Important (Beta)
       description: >
@@ -215,7 +215,7 @@ blueprint:
 variables:
   important: !input important
   cooldown: !input cooldown
-  mode: !input mode
+  input_mode: !input input_mode
   preview_mode: !input preview_mode
   notify_devices: !input notify_device
   device_name_map: >
@@ -232,7 +232,7 @@ variables:
   ignore_stationary: !input ignore_stationary
   motion_sensors_list: !input motion_sensors
   camera_entity: >
-    {% if mode == 'Camera' %}
+    {% if input_mode == 'Camera' %}
       {% if motion_sensors_list and not trigger.entity_id.startswith("camera") %}
         {% set index = motion_sensors_list.index(trigger.entity_id) %}
         {{ camera_entities_list[index] }}
@@ -243,35 +243,35 @@ variables:
       {{ trigger.payload_json['after']['camera'] }}
     {% endif %}
   tag: >
-    {% if mode == 'Frigate' %}
+    {% if input_mode == 'Frigate' %}
       {{ trigger.payload_json['after']['camera'] + int(as_timestamp(now()))|string }}
     {% else %}
       {{ camera_entity + int(as_timestamp(now()))|string }}
     {% endif %}
   group: >
-    {% if mode == 'Frigate' %}
+    {% if input_mode == 'Frigate' %}
       {{ trigger.payload_json['after']['camera'] }}
     {% else %}
       {{ camera_entity }}
     {% endif %}
   label: >
-    {% if mode == 'Frigate' %}
+    {% if input_mode == 'Frigate' %}
       {{ trigger.payload_json['after']['label']|capitalize }} seen
     {% else %}
       Motion detected
     {% endif %}
   camera: >
-    {% if mode == 'Frigate' %}
+    {% if input_mode == 'Frigate' %}
       {{ trigger.payload_json['after']['camera'].replace('_', ' ')|capitalize }}
     {% else %}
       {{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize }}
     {% endif %}
   video: >
-    {% if mode == 'Frigate' %}
+    {% if input_mode == 'Frigate' %}
       /api/frigate/notifications/{{ trigger.payload_json['after']['id'] }}/clip.mp4
     {% else %} {% endif %}
   image: >
-    {% if mode == 'Frigate' %}
+    {% if input_mode == 'Frigate' %}
       ''
     {% else %}
       {% if preview_mode == 'Live Preview' %}
@@ -288,24 +288,31 @@ variables:
 max_exceeded: silent
 mode: single
 
-trigger:
-  - platform: mqtt
-    topic: "frigate/events"
+trigger_variables:
+    input_mode: !input input_mode
+    listen_mqtt: "{{input_mode == 'Frigate'}}"
+    listen_state: "{{input_mode == 'Camera'}}"
+
+triggers:
+  - trigger: mqtt
+    topic: frigate/events
     id: frigate_trigger
-    enabled: "{{mode == 'Frigate'}}"
-  - platform: 'state'
+    enabled: "{{listen_mqtt}}"
+  - trigger: state
     entity_id: !input camera_entities
     to: !input trigger_state
     id: 'camera_trigger'
-  - platform: 'state'
+    enabled: "{{listen_state}}"
+  - trigger: state
     entity_id: !input motion_sensors
     to: 'on'
     id: 'motion_sensor_trigger'
+    enabled: "{{listen_state}}"
 
 condition:
   - condition: template
     value_template: >
-      {% if mode == 'Frigate' %}
+      {% if input_mode == 'Frigate' %}
         {{ trigger.payload_json["type"] == "end"
            and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list
            and ((object_types_list|length) == 0 or ((trigger.payload_json['after']['label']|lower) in object_types_list))
@@ -327,7 +334,7 @@ action:
             choose:
               - conditions:
                   - condition: template
-                    value_template: "{{ mode == 'Frigate'}}"
+                    value_template: "{{ input_mode == 'Frigate'}}"
                 sequence:
                   - action: llmvision.image_analyzer
                     data:
@@ -343,7 +350,7 @@ action:
                     response_variable: importance
               - conditions:
                   - condition: template
-                    value_template: "{{ mode == 'Camera' }}"
+                    value_template: "{{ input_mode == 'Camera' }}"
                 sequence:
                   - action: llmvision.image_analyzer
                     data:
@@ -382,7 +389,7 @@ action:
                     data:
                       video: "{{video if video != '' else None}}"
                       image: "{{image if image != '' else None}}"
-                      entity_id: "{{camera_entity if mode=='Camera' and preview_mode=='Live Preview'}}"
+                      entity_id: "{{camera_entity if input_mode=='Camera' and preview_mode=='Live Preview'}}"
                       url: !input tap_navigate #iOS
                       clickAction: !input tap_navigate #Android
                       tag: "{{tag}}"
@@ -393,7 +400,7 @@ action:
     choose:
       - conditions:
           - condition: template
-            value_template: "{{ mode == 'Frigate' }}"
+            value_template: "{{ input_mode == 'Frigate' }}"
         sequence:
           - action: llmvision.video_analyzer
             data:
@@ -412,7 +419,7 @@ action:
             response_variable: response
       - conditions:
           - condition: template
-            value_template: "{{ mode == 'Camera' }}"
+            value_template: "{{ input_mode == 'Camera' }}"
         sequence:
           - action: llmvision.stream_analyzer
             data:
@@ -449,7 +456,7 @@ action:
                       data:
                         video: "{{video if video != '' else None}}"
                         image: "{{image if image != '' else None}}"
-                        entity_id: "{{camera_entity if mode=='Camera' and preview_mode=='Live Preview'}}"
+                        entity_id: "{{camera_entity if input_mode=='Camera' and preview_mode=='Live Preview'}}"
                         url: !input tap_navigate #iOS
                         clickAction: !input tap_navigate #Android
                         tag: "{{tag}}"
