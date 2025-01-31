@@ -394,7 +394,9 @@ action:
                       clickAction: !input tap_navigate #Android
                       tag: "{{tag}}"
                       group: "{{group}}"
-                      interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
+                      alert_once: true
+                      push:
+                        interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
 
   - alias: "Analyze event"
     choose:
@@ -461,6 +463,7 @@ action:
                         clickAction: !input tap_navigate #Android
                         tag: "{{tag}}"
                         group: "{{group}}"
-                        interruption-level: passive
+                        push:
+                          interruption-level: passive
 
   - delay: '00:{{cooldown|int}}:00'
