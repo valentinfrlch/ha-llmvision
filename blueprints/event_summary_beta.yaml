@@ -2,14 +2,14 @@ blueprint:
   name: AI Event Summary (Beta)
   author: valentinfrlch
   description: >
-    AI-powered security event summaries for Frigate events or camera entities.
+    AI-powered summaries for Frigate events or camera entities.
     Sends a notification with a preview to your phone that is updated dynamically when the AI summary is available.
   domain: automation
   source_url: https://github.com/valentinfrlch/ha-llmvision/blob/main/blueprints/event_summary_beta.yaml
   input:
     input_mode:
       name: Mode
-      description: Select the mode to use
+      description: Select input mode
       selector:
         select:
           options:
@@ -18,16 +18,16 @@ blueprint:
     important:
       name: Important (Beta)
       description: >
-        Use AI to classify events into 'critical', 'normal' and 'low'.
-        Notifications will only be sent when an event is classified as at least 'normal'.
-        For critical events, the notification will be delivered even if 'Do not disturb' is on.
+        Use AI to classify events as Critical, Normal or Low.
+        Notifications are sent only for events classified as Normal or higher.
+        Critical events override 'Do Not Disturb' settings.
         Use with caution: AI can make mistakes.
       default: false
       selector:
         boolean:
     remember:
       name: Remember
-      description: Remember this event so you can ask about it later. Event Calendar needs to be configured. If 'important' is set to true, only events classified as 'normal' or higher will be remembered.
+      description: Stores this event in Event Calendar so you can ask about it. If important is enabled, only events classified as Normal or Critical will be saved.
       default: false
       selector:
         boolean:
@@ -43,7 +43,7 @@ blueprint:
     camera_entities:
       name: Camera Entities
       description: >-
-        (Camera and Frigate mode)
+        **(Camera and Frigate mode)**
 
         List of camera entities to monitor
       default: []
@@ -55,8 +55,9 @@ blueprint:
     required_zones:
       name: Required Zone(s)
       description: >-
-        (Frigate mode only)
-        Only run if the Frigate event occurs within the specified zones (e.g., Driveway, Entry, etc.)
+        **(Frigate mode only)**
+
+        Only run if the Frigate event occurs within the specified zones (e.g. Driveway, Entry, etc.)
       default: []
       selector:
         text:
@@ -65,9 +66,9 @@ blueprint:
     object_type:
       name: Included Object Type(s)
       description: >-
-        (Frigate mode only)
+        **(Frigate mode only)**
 
-        Only run if frigate labels the object as one of these. (person, dog, bird, etc)
+        Only run if Frigate labels the object as one of these. (e.g. person, dog, bird, etc.)
       default: []
       selector:
         text:
@@ -76,18 +77,18 @@ blueprint:
     ignore_stationary:
       name: Ignore Stationary Objects
       description: >-
-        (Frigate mode only)
+        **(Frigate mode only)**
 
-        Does not alert if objects are detected as stationary by Frigate.
+        Do not alert if objects are detected as stationary by Frigate
       default: true
       selector:
         boolean:
     trigger_state:
       name: Trigger State
       description: >-
-        (Camera mode only)
+        **(Camera mode only)**
 
-        Trigger the automation when your cameras change to this state.
+        Trigger the automation when your cameras change to this state
       default: 'recording'
       selector:
         text:
@@ -95,7 +96,7 @@ blueprint:
     motion_sensors:
       name: Motion Sensor
       description: >-
-        (Camera mode only)
+        **(Camera mode only)**
 
         Set if your cameras don't change state. Use the same order used for camera entities.
       default: []
@@ -107,15 +108,15 @@ blueprint:
     preview_mode:
       name: Preview Mode
       description: >-
-        (Camera mode only)
+        **(Camera mode only)**
 
         Choose between a live preview or a snapshot of the event
-      default: 'Live Preview'
+      default: Live Preview
       selector:
         select:
           options:
-            - 'Live Preview'
-            - 'Snapshot'
+            - Live Preview
+            - Snapshot
     cooldown:
       name: Cooldown
       description: Time in minutes to wait before running again. Recommended for busy areas.
@@ -128,17 +129,14 @@ blueprint:
       name: Tap Navigate
       description: >-
         Path to navigate to when notification is opened (e.g. /lovelace/cameras).
-
-        To have use the same input which was sent to the ai engine, use
-          `{{video if video != '''' else image}}`
-      default: "/lovelace/0"
+      default: /lovelace/0
       selector:
         text:
           multiline: false
     duration:
       name: Duration
       description: >-
-        (Camera mode only)
+        **(Camera mode only)**
 
         How long to record before analyzing (in seconds)
       default: 5
@@ -149,7 +147,7 @@ blueprint:
     max_frames:
       name: Max Frames
       description: >-
-        (Camera and Frigate mode)
+        **(Camera and Frigate mode)**
 
         How many frames to analyze. Picks frames with the most movement.
       default: 3
@@ -200,8 +198,8 @@ blueprint:
       selector:
         select:
           options:
-            - 'high'
-            - 'low'
+            - high
+            - low
     temperature:
       name: Temperature
       description: Randomness. Lower is more accurate, higher is more creative.
