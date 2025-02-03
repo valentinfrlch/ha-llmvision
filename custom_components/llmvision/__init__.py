@@ -216,7 +216,7 @@ async def _remember(hass, call, start, response) -> None:
             end=dt_util.now() + timedelta(minutes=1),
             label=title,
             camera_name=camera_name,
-            summary=response["response_text"]
+            summary=response["response_text"],
         )
 
 
@@ -337,7 +337,8 @@ def setup(hass, config):
                                              image_paths=call.image_paths,
                                              target_width=call.target_width,
                                              include_filename=call.include_filename,
-                                             expose_images=call.expose_images
+                                             expose_images=call.expose_images,
+                                             expose_images_persist=call.expose_images_persist
                                              )
 
         # Validate configuration, input data and make the call
@@ -387,7 +388,8 @@ def setup(hass, config):
                                               max_frames=call.max_frames,
                                               target_width=call.target_width,
                                               include_filename=call.include_filename,
-                                              expose_images=call.expose_images
+                                              expose_images=call.expose_images,
+                                              expose_images_persist=call.expose_images_persist
                                               )
 
         response = await request.call(call)
