@@ -78,6 +78,10 @@ class SemanticIndex(CalendarEntity):
         """Return the state attributes"""
         return {
             "events": [event.summary for event in self._events],
+            "start": [event.start for event in self._events],
+            "end": [event.end for event in self._events],
+            "summary": [event.summary for event in self._events],
+            "key_frames": [event.location for event in self._events],
         }
 
     @property
@@ -95,7 +99,6 @@ class SemanticIndex(CalendarEntity):
         summary = kwargs[EVENT_SUMMARY]
         description = kwargs.get(EVENT_DESCRIPTION)
         location = kwargs.get(EVENT_LOCATION)
-        image_path = kwargs.get("image_path")
 
         if isinstance(dtstart, datetime.datetime):
             start = dt_util.as_local(dtstart)
@@ -109,7 +112,7 @@ class SemanticIndex(CalendarEntity):
             summary=summary,
             start=start,
             end=end,
-            description=description + f"//{image_path}" if description else "//" + image_path,
+            description=description,
             location=location
         )
 
@@ -142,8 +145,8 @@ class SemanticIndex(CalendarEntity):
                 summary=event["summary"],
                 start=dt_util.as_local(dt_util.parse_datetime(event["start"])),
                 end=dt_util.as_local(dt_util.parse_datetime(event["end"])),
-                description=event.get("description").split("//")[0],
-                location=event.get("location"),
+                description=event.get("description"),
+                location=event.get("location")
             )
             for event in events_data
         ]
@@ -163,9 +166,8 @@ class SemanticIndex(CalendarEntity):
                 "summary": event.summary,
                 "start": dt_util.as_local(self._ensure_datetime(event.start)).isoformat(),
                 "end": dt_util.as_local(self._ensure_datetime(event.end)).isoformat(),
-                "description": event.description.split("//")[0],
-                "location": event.location,
-                "image_path": event.description.split("//")[1] if len(event.description.split("//")) > 1 else ""
+                "description": event.description,
+                "location": event.location
             }
             for event in self._events
             if dt_util.as_local(self._ensure_datetime(event.end)) >= self._ensure_datetime(cutoff_date) or self._retention_time == 0
@@ -177,15 +179,14 @@ class SemanticIndex(CalendarEntity):
 
         await self.hass.loop.run_in_executor(None, write_to_file)
 
-    async def remember(self, start, end, label, camera_name, summary, image_path):
+    async def remember(self, start, end, label, key_frame, summary):
         """Remember the event"""
         await self.async_create_event(
             dtstart=start,
             dtend=end,
             summary=label,
-            location=camera_name,
+            location=key_frame,
             description=summary,
-            image_path=image_path
         )
 
 

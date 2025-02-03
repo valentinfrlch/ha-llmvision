@@ -25,6 +25,7 @@ class MediaProcessor:
         self.client = client
         self.base64_images = []
         self.filenames = []
+        self.key_frame = ""
 
     async def _encode_image(self, img):
         """Encode image as base64"""
@@ -61,6 +62,8 @@ class MediaProcessor:
             persist_filename = f"/config/www/llmvision/{uid}-" + frame_name
         else:
             persist_filename = f"/config/www/llmvision/" + frame_name
+        if self.key_frame == "":
+            self.key_frame = persist_filename
         await self._save_clip(image_data=resized_image, image_path=persist_filename + ".jpg")
 
     def _similarity_score(self, previous_frame, current_frame_gray):
