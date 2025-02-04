@@ -301,7 +301,7 @@ class MediaProcessor:
                     )
 
                     if expose_images:
-                        await self._save_clip(image_data=resized_image, image_path=f"{self.path}{image_entity.replace('camera.', '')}.jpg")
+                        await self._save_clip(image_data=resized_image, image_path=f"{self.path}/{image_entity.replace('camera.', '')}.jpg")
 
                 except AttributeError as e:
                     raise ServiceValidationError(
