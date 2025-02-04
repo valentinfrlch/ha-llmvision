@@ -26,7 +26,7 @@ class SemanticIndex(CalendarEntity):
     """Representation of a Calendar."""
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry):
-        """Initialize the calendar."""
+        """Initialize the calendar"""
         self.hass = hass
         self._attr_name = config_entry.title
         self._attr_unique_id = config_entry.entry_id
@@ -35,16 +35,18 @@ class SemanticIndex(CalendarEntity):
             self._attr_unique_id).get(CONF_RETENTION_TIME)
         self._current_event = None
         self._attr_supported_features = (CalendarEntityFeature.DELETE_EVENT)
+
         # Path to the JSON file where events are stored
         self._file_path = os.path.join(
             self.hass.config.path("llmvision"), "events.json"
         )
+
         # Ensure the directory exists
         os.makedirs(os.path.dirname(self._file_path), exist_ok=True)
         self.hass.loop.create_task(self.async_update())
-        
+
     def _ensure_datetime(self, dt):
-        """Ensure the input is a datetime.datetime object."""
+        """Ensure the input is a datetime.datetime object"""
         if isinstance(dt, datetime.date) and not isinstance(dt, datetime.datetime):
             dt = datetime.datetime.combine(dt, datetime.datetime.min.time())
         if dt.tzinfo is None:
@@ -57,7 +59,7 @@ class SemanticIndex(CalendarEntity):
         start_date: datetime.datetime,
         end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
-        """Return calendar events within a datetime range."""
+        """Return calendar events within a datetime range"""
         events = []
 
         # Ensure start_date and end_date are datetime.datetime objects and timezone-aware
@@ -75,18 +77,23 @@ class SemanticIndex(CalendarEntity):
 
     @property
     def extra_state_attributes(self):
-        """Return the state attributes."""
+        """Return the state attributes"""
         return {
             "events": [event.summary for event in self._events],
+            "starts": [event.start for event in self._events],
+            "ends": [event.end for event in self._events],
+            "summaries": [event.summary for event in self._events],
+            "key_frames": [event.location.split(",")[0] for event in self._events],
+            "camera_names": [event.location.split(",")[1] if len(event.location.split(",")) > 1 else "" for event in self._events],
         }
 
     @property
     def event(self):
-        """Return the current event."""
+        """Return the current event"""
         return self._current_event
 
     async def async_create_event(self, **kwargs: any) -> None:
-        """Add a new event to calendar."""
+        """Add a new event to calendar"""
         await self.async_update()
         dtstart = kwargs[EVENT_START]
         dtend = kwargs[EVENT_END]
@@ -127,7 +134,7 @@ class SemanticIndex(CalendarEntity):
         await self._save_events()
 
     async def async_update(self) -> None:
-        """Load events from the JSON file."""
+        """Load events from JSON"""
         def read_from_file():
             if os.path.exists(self._file_path):
                 with open(self._file_path, 'r') as file:
@@ -142,18 +149,17 @@ class SemanticIndex(CalendarEntity):
                 start=dt_util.as_local(dt_util.parse_datetime(event["start"])),
                 end=dt_util.as_local(dt_util.parse_datetime(event["end"])),
                 description=event.get("description"),
-                location=event.get("location"),
+                location=event.get("location")
             )
             for event in events_data
         ]
-        # _LOGGER.info(f"events: {self._events}")
 
     async def _save_events(self) -> None:
-        """Save events to the JSON file."""
+        """Save events to JSON"""
         # Delete events outside of retention time window
         now = datetime.datetime.now()
         cutoff_date = now - datetime.timedelta(days=self._retention_time)
-        
+
         if self._retention_time != 0:
             _LOGGER.info(f"Deleting events before {cutoff_date}")
 
@@ -164,7 +170,7 @@ class SemanticIndex(CalendarEntity):
                 "start": dt_util.as_local(self._ensure_datetime(event.start)).isoformat(),
                 "end": dt_util.as_local(self._ensure_datetime(event.end)).isoformat(),
                 "description": event.description,
-                "location": event.location,
+                "location": event.location
             }
             for event in self._events
             if dt_util.as_local(self._ensure_datetime(event.end)) >= self._ensure_datetime(cutoff_date) or self._retention_time == 0
@@ -176,13 +182,13 @@ class SemanticIndex(CalendarEntity):
 
         await self.hass.loop.run_in_executor(None, write_to_file)
 
-    async def remember(self, start, end, label, camera_name, summary):
-        """Remember the event."""
+    async def remember(self, start, end, label, key_frame, summary, camera_name=""):
+        """Remember the event"""
         await self.async_create_event(
             dtstart=start,
             dtend=end,
             summary=label,
-            location=camera_name,
+            location=key_frame + "," + camera_name,
             description=summary,
         )
 

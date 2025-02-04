@@ -383,6 +383,15 @@ stream_analyzer:
       default: false
       selector:
         boolean:
+    expose_images_persist:
+      name: Persist Exposed Images
+      description: (Experimental) Normally exposed images are re-written with each new event. Setting this to true will include the Frigate eventID, if available, as part of the filename. If there is no 
+          Frigate eventID, a uid will be used instead.
+      required: false
+      example: false
+      default: false
+      selector:
+        boolean:
 
 data_analyzer:
   name: Data Analyzer

@@ -26,6 +26,8 @@ class MediaProcessor:
         self.base64_images = []
         self.filenames = []
         self.path = "/config/www/llmvision"
+        self.key_frame = ""
+
 
     async def _encode_image(self, img):
         """Encode image as base64"""
@@ -56,6 +58,15 @@ class MediaProcessor:
         if img.mode == 'RGBA' or img.format == 'GIF':
             img = img.convert('RGB')
         return img
+
+    async def _expose_image(self, frame_name, resized_image, persist, uid):
+        if persist:
+            persist_filename = f"/config/www/llmvision/{uid}-" + frame_name
+        else:
+            persist_filename = f"/config/www/llmvision/" + frame_name
+        if self.key_frame == "":
+            self.key_frame = persist_filename
+        await self._save_clip(image_data=resized_image, image_path=persist_filename + ".jpg")
 
     def _similarity_score(self, previous_frame, current_frame_gray):
         """
@@ -146,7 +157,7 @@ class MediaProcessor:
                 base64_image = await self._encode_image(img)
 
         return base64_image
-    
+
     async def _fetch(self, url, max_retries=2, retry_delay=1):
         """Fetch image from url and return image data"""
         retries = 0
@@ -169,7 +180,7 @@ class MediaProcessor:
                 await asyncio.sleep(retry_delay)
         _LOGGER.warning(f"Failed to fetch {url} after {max_retries} retries")
 
-    async def record(self, image_entities, duration, max_frames, target_width, include_filename, expose_images):
+    async def record(self, image_entities, duration, max_frames, target_width, include_filename, expose_images, expose_images_persist):
         """Wrapper for client.add_frame with integrated recorder
 
         Args:
@@ -220,7 +231,7 @@ class MediaProcessor:
 
                     # Use either entity name or assign number to each camera
                     frame_label = (image_entity.replace("camera.", "") + " frame " + str(frame_counter)
-                                   if include_filename else "Camera " + str(camera_number) + " frame " + str(frame_counter))
+                                   if include_filename else "camera " + str(camera_number) + " frame " + str(frame_counter))
                     frames.update(
                         {frame_label: {"frame_data": frame_data, "ssim_score": score}})
 
@@ -269,13 +280,15 @@ class MediaProcessor:
         for frame_name, frame_data, _ in selected_frames:
             resized_image = await self.resize_image(target_width=target_width, image_data=frame_data)
             if expose_images:
-                await self._save_clip(image_data=resized_image, image_path=f"{self.path}/{frame_name.replace(" frame ", "_")}.jpg")
+                await self._expose_image(
+                    frame_name.replace(" frame ", "-") if not expose_images_persist else frame_name[-1], resized_image, expose_images_persist, uid=str(uuid.uuid4())[:8])
+                
             self.client.add_frame(
                 base64_image=resized_image,
                 filename=frame_name
             )
 
-    async def add_images(self, image_entities, image_paths, target_width, include_filename, expose_images):
+    async def add_images(self, image_entities, image_paths, target_width, include_filename, expose_images, expose_images_persist):
         """Wrapper for client.add_frame for images"""
         if image_entities:
             for image_entity in image_entities:
@@ -301,7 +314,10 @@ class MediaProcessor:
                     )
 
                     if expose_images:
-                        await self._save_clip(image_data=resized_image, image_path=f"{self.path}/{image_entity.replace('camera.', '')}.jpg")
+                        frame_name = image_entity.replace(
+                            'camera.', '') if not expose_images_persist else "0"
+                        await self._expose_image(
+                            frame_name, resized_image, expose_images_persist, str(uuid.uuid4())[:8])
 
                 except AttributeError as e:
                     raise ServiceValidationError(
@@ -323,6 +339,11 @@ class MediaProcessor:
                     if not os.path.exists(image_path):
                         raise ServiceValidationError(
                             f"File {image_path} does not exist")
+                    if expose_images:
+                        frame_name = image_path.split(
+                            '/')[-1].split('.')[-2] if not expose_images_persist else "0"
+                        await self._expose_image(
+                            frame_name, await self.resize_image(target_width=target_width, image_path=image_path), expose_images_persist, str(uuid.uuid4())[:8])
                 except Exception as e:
                     raise ServiceValidationError(f"Error: {e}")
         return self.client
@@ -342,7 +363,7 @@ class MediaProcessor:
                     frigate_url = base_url + "/api/frigate/notifications/" + event_id + "/clip.mp4"
 
                     clip_data = await self._fetch(frigate_url, max_retries=frigate_retry_attempts, retry_delay=frigate_retry_seconds)
-                    
+
                     if not clip_data:
                         raise ServiceValidationError(
                             f"Failed to fetch frigate clip {event_id}")
@@ -363,90 +384,97 @@ class MediaProcessor:
                 except AttributeError as e:
                     raise ServiceValidationError(
                         f"Failed to fetch frigate clip {event_id}: {e}")
-        if video_paths:
-            _LOGGER.debug(f"Processing videos: {video_paths}")
-            for video_path in video_paths:
-                try:
-                    current_event_id = str(uuid.uuid4())
-                    processed_event_ids.append(current_event_id)
-                    video_path = video_path.strip()
-                    if os.path.exists(video_path):
-                        # create tmp dir to store extracted frames
-                        await self.hass.loop.run_in_executor(None, partial(os.makedirs, tmp_frames_dir, exist_ok=True))
-                        if os.path.exists(tmp_frames_dir):
-                            _LOGGER.debug(f"Created {tmp_frames_dir}")
-                        else:
-                            _LOGGER.error(
-                                f"Failed to create temp directory {tmp_frames_dir}")
-
-                        interval = 2
-
-                        # Extract frames from video every interval seconds
-                        ffmpeg_cmd = [
-                            "ffmpeg",
-                            "-i", video_path,
-                            "-vf", f"fps=fps='source_fps',select='eq(n\\,0)+not(mod(n\\,{interval}))'", 
-                            "-fps_mode", "passthrough",
-                            os.path.join(tmp_frames_dir, "frame%04d.jpg")
-                        ]
-                        # Run ffmpeg command
-                        await self.hass.loop.run_in_executor(None, os.system, " ".join(ffmpeg_cmd))
-
-                        frame_counter = 0
-                        previous_frame = None
-                        frames = []
-
-                        for frame_file in await self.hass.loop.run_in_executor(None, os.listdir, tmp_frames_dir):
-                            _LOGGER.debug(f"Adding frame {frame_file}")
-                            frame_path = os.path.join(tmp_frames_dir, frame_file)
-                            try:
-                                # open image in hass.loop
-                                img = await self.hass.loop.run_in_executor(None, Image.open, frame_path)
-                                # Remove transparency for compatibility
-                                if img.mode == 'RGBA':
-                                    img = img.convert('RGB')
-                                    await self.hass.loop.run_in_executor(None, img.save, frame_path)
-                        
-                                current_frame_gray = np.array(img.convert('L'))
-                        
-                                # Calculate similarity score
-                                if previous_frame is not None:
-                                    score = self._similarity_score(previous_frame, current_frame_gray)
-                                    frames.append((frame_path, score))
-                                    frame_counter += 1
-                                    previous_frame = current_frame_gray
-                                else:
-                                    # Initialize previous_frame with the first frame
-                                    previous_frame = current_frame_gray
-                            except UnidentifiedImageError:
-                                _LOGGER.error(f"Cannot identify image file {frame_path}")
-                                continue
-                        
-                        # Keep only max_frames many frames with lowest SSIM scores
-                        sorted_frames = sorted(frames, key=lambda x: x[1])[:max_frames]
-                        
-                        # Ensure at least one frame is present
-                        if not sorted_frames and frames:
-                            sorted_frames.append(frames[0])
-                        
-                        # Add frames to client
-                        for counter, (frame_path, _) in enumerate(sorted_frames, start=1):
-                            resized_image = await self.resize_image(image_path=frame_path, target_width=target_width)
-                            if expose_images:
-                                persist_filename = f"{self.path}/{frame_path.split('/')[-1]}"
-                                if expose_images_persist:
-                                    persist_filename = f"{self.path}/{current_event_id}-{frame_path.split('/')[-1]}"
-                                await self._save_clip(image_data=resized_image, image_path=persist_filename)
-                            self.client.add_frame(
-                                base64_image=resized_image,
-                                filename=video_path.split('/')[-1].split('.')[-2] + " (frame " + str(counter) + ")" if include_filename else "Video frame " + str(counter)
-                            )
-
+        
+        _LOGGER.debug(f"Processing videos: {video_paths}")
+        for video_path in video_paths:
+            try:
+                current_event_id = str(uuid.uuid4())
+                processed_event_ids.append(current_event_id)
+                video_path = video_path.strip()
+                if os.path.exists(video_path):
+                    # create tmp dir to store extracted frames
+                    await self.hass.loop.run_in_executor(None, partial(os.makedirs, tmp_frames_dir, exist_ok=True))
+                    if os.path.exists(tmp_frames_dir):
+                        _LOGGER.debug(f"Created {tmp_frames_dir}")
                     else:
-                        raise ServiceValidationError(
-                            f"File {video_path} does not exist")
-                except Exception as e:
-                    raise ServiceValidationError(f"Error: {e}")
+                        _LOGGER.error(
+                            f"Failed to create temp directory {tmp_frames_dir}")
+
+                    interval = 2
+
+                    # Extract frames from video every interval seconds
+                    ffmpeg_cmd = [
+                        "ffmpeg",
+                        "-i", video_path,
+                        "-vf", f"fps=fps='source_fps',select='eq(n\\,0)+not(mod(n\\,{interval}))'",
+                        "-fps_mode", "passthrough",
+                        os.path.join(tmp_frames_dir, "frame%d.jpg")
+                    ]
+                    # Run ffmpeg command
+                    await self.hass.loop.run_in_executor(None, os.system, " ".join(ffmpeg_cmd))
+
+                    frame_counter = 0
+                    previous_frame = None
+                    frames = []
+
+                    for frame_file in await self.hass.loop.run_in_executor(None, os.listdir, tmp_frames_dir):
+                        _LOGGER.debug(f"Adding frame {frame_file}")
+                        frame_path = os.path.join(
+                            tmp_frames_dir, frame_file)
+                        try:
+                            # open image in hass.loop
+                            img = await self.hass.loop.run_in_executor(None, Image.open, frame_path)
+                            # Remove transparency for compatibility
+                            if img.mode == 'RGBA':
+                                img = img.convert('RGB')
+                                await self.hass.loop.run_in_executor(None, img.save, frame_path)
+
+                            current_frame_gray = np.array(img.convert('L'))
+
+                            # Calculate similarity score
+                            if previous_frame is not None:
+                                score = self._similarity_score(
+                                    previous_frame, current_frame_gray)
+                                frames.append((frame_path, score))
+                                frame_counter += 1
+                                previous_frame = current_frame_gray
+                            else:
+                                # Initialize previous_frame with the first frame
+                                previous_frame = current_frame_gray
+                        except UnidentifiedImageError:
+                            _LOGGER.error(
+                                f"Cannot identify image file {frame_path}")
+                            continue
+
+                    # Keep only max_frames many frames with lowest SSIM scores
+                    sorted_frames = sorted(frames, key=lambda x: x[1])[
+                        :max_frames]
+
+                    # Ensure at least one frame is present
+                    if not sorted_frames and frames:
+                        sorted_frames.append(frames[0])
+
+                    # Add frames to client
+                    for counter, (frame_path, _) in enumerate(sorted_frames, start=1):
+                        resized_image = await self.resize_image(image_path=frame_path, target_width=target_width)
+
+                        if expose_images:
+                            frame_name = frame_path.split(
+                                '/')[-1].split('.')[-2].replace("frame", "") if expose_images_persist else video_path.split('/')[-1].split('.')[-2] + "-" + str(counter)
+                            await self._expose_image(
+                                frame_name, resized_image, expose_images_persist, current_event_id[:8])
+
+                        self.client.add_frame(
+                            base64_image=resized_image,
+                            filename=video_path.split('/')[-1].split('.')[-2] + " (frame " + str(
+                                counter) + ")" if include_filename else "Video frame " + str(counter)
+                        )
+
+                else:
+                    raise ServiceValidationError(
+                        f"File {video_path} does not exist")
+            except Exception as e:
+                raise ServiceValidationError(f"Error: {e}")
 
         # Clean up tmp dirs
         try:
@@ -463,7 +491,7 @@ class MediaProcessor:
             _LOGGER.info(f"Failed to delete tmp folders: {e}")
         return self.client
 
-    async def add_streams(self, image_entities, duration, max_frames, target_width, include_filename, expose_images):
+    async def add_streams(self, image_entities, duration, max_frames, target_width, include_filename, expose_images, expose_images_persist):
         if image_entities:
             await self.record(
                 image_entities=image_entities,
@@ -471,7 +499,8 @@ class MediaProcessor:
                 max_frames=max_frames,
                 target_width=target_width,
                 include_filename=include_filename,
-                expose_images=expose_images
+                expose_images=expose_images,
+                expose_images_persist=expose_images_persist
             )
         return self.client
 

@@ -81,7 +81,8 @@ async def async_setup_entry(hass, entry):
     ollama_https = entry.data.get(CONF_OLLAMA_HTTPS)
     custom_openai_endpoint = entry.data.get(CONF_CUSTOM_OPENAI_ENDPOINT)
     custom_openai_api_key = entry.data.get(CONF_CUSTOM_OPENAI_API_KEY)
-    custom_openai_default_model = entry.data.get(CONF_CUSTOM_OPENAI_DEFAULT_MODEL)
+    custom_openai_default_model = entry.data.get(
+        CONF_CUSTOM_OPENAI_DEFAULT_MODEL)
     retention_time = entry.data.get(CONF_RETENTION_TIME)
     aws_access_key_id = entry.data.get(CONF_AWS_ACCESS_KEY_ID)
     aws_secret_access_key = entry.data.get(CONF_AWS_SECRET_ACCESS_KEY)
@@ -170,7 +171,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
         return False
 
 
-async def _remember(hass, call, start, response) -> None:
+async def _remember(hass, call, start, response, key_frame) -> None:
     if call.remember:
         # Find semantic index config
         config_entry = None
@@ -186,37 +187,27 @@ async def _remember(hass, call, start, response) -> None:
 
         semantic_index = SemanticIndex(hass, config_entry)
 
+        if call.image_entities and len(call.image_entities) > 0:
+            camera_name = call.image_entities[0]
+            title = "Motion detected near " + camera_name
+        elif call.video_paths and len(call.video_paths) > 0:
+            camera_name = call.video_paths[0].split(
+                "/")[-1].replace(".mp4", "")
+            title = "Motion detected in " + camera_name
+        else:
+            camera_name = ""
+            title = "Motion detected"
+
         if "title" in response:
-            title = response.get("title", "Unknown object seen")
-            if call.image_entities and len(call.image_entities) > 0:
-                camera_name = call.image_entities[0]
-            elif call.video_paths and len(call.video_paths) > 0:
-                camera_name = call.video_paths[0].split(
-                    "/")[-1].replace(".mp4", "")
-            else:
-                camera_name = "File Input"
-
-        if "title" not in response:
-            if call.image_entities and len(call.image_entities) > 0:
-                camera_name = call.image_entities[0]
-                title = "Motion detected near " + camera_name
-            elif call.video_paths and len(call.video_paths) > 0:
-                camera_name = call.video_paths[0].split(
-                    "/")[-1].replace(".mp4", "")
-                title = "Motion detected in " + camera_name
-            else:
-                camera_name = "File Input"
-                title = "Motion detected"
-
-        if "response_text" not in response:
-            raise ValueError("response_text is missing in the response")
+            title = response.get("title")
 
         await semantic_index.remember(
             start=start,
             end=dt_util.now() + timedelta(minutes=1),
             label=title,
-            camera_name=camera_name,
-            summary=response["response_text"]
+            summary=response["response_text"],
+            key_frame=key_frame,
+            camera_name=camera_name
         )
 
 
@@ -337,12 +328,17 @@ def setup(hass, config):
                                              image_paths=call.image_paths,
                                              target_width=call.target_width,
                                              include_filename=call.include_filename,
-                                             expose_images=call.expose_images
+                                             expose_images=call.expose_images,
+                                             expose_images_persist=call.expose_images_persist
                                              )
 
         # Validate configuration, input data and make the call
         response = await request.call(call)
-        await _remember(hass, call, start, response)
+        await _remember(hass=hass,
+                        call=call,
+                        start=start,
+                        response=response,
+                        key_frame=processor.key_frame)
         return response
 
     async def video_analyzer(data_call):
@@ -368,7 +364,11 @@ def setup(hass, config):
                                              frigate_retry_seconds=call.frigate_retry_seconds
                                              )
         response = await request.call(call)
-        await _remember(hass, call, start, response)
+        await _remember(hass=hass,
+                        call=call,
+                        start=start,
+                        response=response,
+                        key_frame=processor.key_frame)
         return response
 
     async def stream_analyzer(data_call):
@@ -382,16 +382,22 @@ def setup(hass, config):
                           temperature=call.temperature,
                           )
         processor = MediaProcessor(hass, request)
+
         request = await processor.add_streams(image_entities=call.image_entities,
                                               duration=call.duration,
                                               max_frames=call.max_frames,
                                               target_width=call.target_width,
                                               include_filename=call.include_filename,
-                                              expose_images=call.expose_images
+                                              expose_images=call.expose_images,
+                                              expose_images_persist=call.expose_images_persist
                                               )
 
         response = await request.call(call)
-        await _remember(hass, call, start, response)
+        await _remember(hass=hass,
+                        call=call,
+                        start=start,
+                        response=response,
+                        key_frame=processor.key_frame)
         return response
 
     async def data_analyzer(data_call):
