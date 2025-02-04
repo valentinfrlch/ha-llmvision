@@ -35,14 +35,16 @@ class SemanticIndex(CalendarEntity):
             self._attr_unique_id).get(CONF_RETENTION_TIME)
         self._current_event = None
         self._attr_supported_features = (CalendarEntityFeature.DELETE_EVENT)
+
         # Path to the JSON file where events are stored
         self._file_path = os.path.join(
             self.hass.config.path("llmvision"), "events.json"
         )
+
         # Ensure the directory exists
         os.makedirs(os.path.dirname(self._file_path), exist_ok=True)
         self.hass.loop.create_task(self.async_update())
-        
+
     def _ensure_datetime(self, dt):
         """Ensure the input is a datetime.datetime object"""
         if isinstance(dt, datetime.date) and not isinstance(dt, datetime.datetime):
@@ -78,10 +80,11 @@ class SemanticIndex(CalendarEntity):
         """Return the state attributes"""
         return {
             "events": [event.summary for event in self._events],
-            "start": [event.start for event in self._events],
-            "end": [event.end for event in self._events],
-            "summary": [event.summary for event in self._events],
-            "key_frames": [event.location for event in self._events],
+            "starts": [event.start for event in self._events],
+            "ends": [event.end for event in self._events],
+            "summaries": [event.summary for event in self._events],
+            "key_frames": [event.location.split(",")[0] for event in self._events],
+            "camera_names": [event.location.split(",")[1] if len(event.location.split(",")) > 1 else "" for event in self._events],
         }
 
     @property
@@ -156,7 +159,7 @@ class SemanticIndex(CalendarEntity):
         # Delete events outside of retention time window
         now = datetime.datetime.now()
         cutoff_date = now - datetime.timedelta(days=self._retention_time)
-        
+
         if self._retention_time != 0:
             _LOGGER.info(f"Deleting events before {cutoff_date}")
 
@@ -179,13 +182,13 @@ class SemanticIndex(CalendarEntity):
 
         await self.hass.loop.run_in_executor(None, write_to_file)
 
-    async def remember(self, start, end, label, key_frame, summary):
+    async def remember(self, start, end, label, key_frame, summary, camera_name=""):
         """Remember the event"""
         await self.async_create_event(
             dtstart=start,
             dtend=end,
             summary=label,
-            location=key_frame,
+            location=key_frame + "," + camera_name,
             description=summary,
         )
 

@@ -187,29 +187,27 @@ async def _remember(hass, call, start, response, key_frame) -> None:
 
         semantic_index = SemanticIndex(hass, config_entry)
 
-        if "title" in response:
-            title = response.get("title", "Unknown object seen")
-
+        if call.image_entities and len(call.image_entities) > 0:
+            camera_name = call.image_entities[0]
+            title = "Motion detected near " + camera_name
+        elif call.video_paths and len(call.video_paths) > 0:
+            camera_name = call.video_paths[0].split(
+                "/")[-1].replace(".mp4", "")
+            title = "Motion detected in " + camera_name
         else:
-            if call.image_entities and len(call.image_entities) > 0:
-                camera_name = call.image_entities[0]
-                title = "Motion detected near " + camera_name
-            elif call.video_paths and len(call.video_paths) > 0:
-                camera_name = call.video_paths[0].split(
-                    "/")[-1].replace(".mp4", "")
-                title = "Motion detected in " + camera_name
-            else:
-                title = "Motion detected"
+            camera_name = ""
+            title = "Motion detected"
 
-        if "response_text" not in response:
-            raise ValueError("response_text is missing in the response")
+        if "title" in response:
+            title = response.get("title")
 
         await semantic_index.remember(
             start=start,
             end=dt_util.now() + timedelta(minutes=1),
             label=title,
             summary=response["response_text"],
-            key_frame=key_frame
+            key_frame=key_frame,
+            camera_name=camera_name
         )
 
 
