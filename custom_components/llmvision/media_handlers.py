@@ -25,6 +25,7 @@ class MediaProcessor:
         self.client = client
         self.base64_images = []
         self.filenames = []
+        self.path = "/config/www/llmvision"
 
     async def _encode_image(self, img):
         """Encode image as base64"""
@@ -36,7 +37,7 @@ class MediaProcessor:
 
     async def _save_clip(self, clip_data=None, clip_path=None, image_data=None, image_path=None):
         # Ensure dir exists
-        await self.hass.loop.run_in_executor(None, partial(os.makedirs, "/config/www/llmvision", exist_ok=True))
+        await self.hass.loop.run_in_executor(None, partial(os.makedirs, self.path, exist_ok=True))
 
         def _run_save_clips(clip_data, clip_path, image_data, image_path):
             _LOGGER.info(f"[save_clip] clip: {clip_path}, image: {image_path}")
@@ -268,7 +269,7 @@ class MediaProcessor:
         for frame_name, frame_data, _ in selected_frames:
             resized_image = await self.resize_image(target_width=target_width, image_data=frame_data)
             if expose_images:
-                await self._save_clip(image_data=resized_image, image_path=f"/config/www/llmvision/{frame_name.replace(" frame ", "_")}.jpg")
+                await self._save_clip(image_data=resized_image, image_path=f"{self.path}/{frame_name.replace(" frame ", "_")}.jpg")
             self.client.add_frame(
                 base64_image=resized_image,
                 filename=frame_name
@@ -300,7 +301,7 @@ class MediaProcessor:
                     )
 
                     if expose_images:
-                        await self._save_clip(image_data=resized_image, image_path=f"/config/www/llmvision/{image_entity.replace('camera.', '')}.jpg")
+                        await self._save_clip(image_data=resized_image, image_path=f"{self.path}{image_entity.replace('camera.', '')}.jpg")
 
                 except AttributeError as e:
                     raise ServiceValidationError(
@@ -432,9 +433,9 @@ class MediaProcessor:
                         for counter, (frame_path, _) in enumerate(sorted_frames, start=1):
                             resized_image = await self.resize_image(image_path=frame_path, target_width=target_width)
                             if expose_images:
-                                persist_filename = f"/config/www/llmvision/" + frame_path.split("/")[-1]
+                                persist_filename = f"{self.path}/{frame_path.split('/')[-1]}"
                                 if expose_images_persist:
-                                    persist_filename = f"/config/www/llmvision/{current_event_id}-" + frame_path.split("/")[-1]
+                                    persist_filename = f"{self.path}/{current_event_id}-{frame_path.split('/')[-1]}"
                                 await self._save_clip(image_data=resized_image, image_path=persist_filename)
                             self.client.add_frame(
                                 base64_image=resized_image,

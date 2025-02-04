@@ -5,8 +5,9 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from functools import partial
 import logging
 import inspect
-import json
 import re
+import json
+import base64
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
@@ -229,7 +230,6 @@ class Request:
 
     async def _resolve_error(self, response, provider):
         """Translate response status to error message"""
-        import json
         full_response_text = await response.text()
         _LOGGER.info(f"[INFO] Full Response: {full_response_text}")
 
@@ -324,7 +324,6 @@ class Provider(ABC):
 
     async def _resolve_error(self, response, provider) -> str:
         """Translate response status to error message"""
-        import json
         full_response_text = await response.text()
         _LOGGER.info(f"[INFO] Full Response: {full_response_text}")
 
@@ -827,7 +826,6 @@ class AWSBedrock(Provider):
             }
 
         # Bedrock converse API wants the raw bytes of the image
-        import base64
         for image, filename in zip(call.base64_images, call.filenames):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                 ) if filename == "" else filename
