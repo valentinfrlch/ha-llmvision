@@ -82,7 +82,7 @@ class SemanticIndex(CalendarEntity):
             "events": [event.summary for event in self._events],
             "starts": [event.start for event in self._events],
             "ends": [event.end for event in self._events],
-            "summaries": [event.summary for event in self._events],
+            "summaries": [event.description for event in self._events],
             "key_frames": [event.location.split(",")[0] for event in self._events],
             "camera_names": [event.location.split(",")[1] if len(event.location.split(",")) > 1 else "" for event in self._events],
         }
