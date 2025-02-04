@@ -25,7 +25,9 @@ class MediaProcessor:
         self.client = client
         self.base64_images = []
         self.filenames = []
+        self.path = "/config/www/llmvision"
         self.key_frame = ""
+
 
     async def _encode_image(self, img):
         """Encode image as base64"""
@@ -37,7 +39,7 @@ class MediaProcessor:
 
     async def _save_clip(self, clip_data=None, clip_path=None, image_data=None, image_path=None):
         # Ensure dir exists
-        await self.hass.loop.run_in_executor(None, partial(os.makedirs, "/config/www/llmvision", exist_ok=True))
+        await self.hass.loop.run_in_executor(None, partial(os.makedirs, self.path, exist_ok=True))
 
         def _run_save_clips(clip_data, clip_path, image_data, image_path):
             _LOGGER.info(f"[save_clip] clip: {clip_path}, image: {image_path}")
@@ -280,6 +282,7 @@ class MediaProcessor:
             if expose_images:
                 await self._expose_image(
                     frame_name.replace(" frame ", "-") if not expose_images_persist else frame_name[-1], resized_image, expose_images_persist, uid=str(uuid.uuid4())[:8])
+                
             self.client.add_frame(
                 base64_image=resized_image,
                 filename=frame_name
