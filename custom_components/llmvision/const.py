@@ -72,4 +72,5 @@ ENDPOINT_GOOGLE = "https://generativelanguage.googleapis.com/v1beta/models/{mode
 ENDPOINT_GROQ = "https://api.groq.com/openai/v1/chat/completions"
 ENDPOINT_LOCALAI = "{protocol}://{ip_address}:{port}/v1/chat/completions"
 ENDPOINT_OLLAMA = "{protocol}://{ip_address}:{port}/api/chat"
+ENDPOINT_OPENWEBUI = "{protocol}://{ip_address}:{port}/api/chat/completions"
 ENDPOINT_AZURE = "{base_url}openai/deployments/{deployment}/chat/completions?api-version={api_version}"
