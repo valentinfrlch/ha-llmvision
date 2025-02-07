@@ -43,6 +43,7 @@ from .const import (
     ENDPOINT_GOOGLE,
     ENDPOINT_LOCALAI,
     ENDPOINT_OLLAMA,
+    ENDPOINT_OPENWEBUI,
     ENDPOINT_GROQ,
     ERROR_NOT_CONFIGURED,
     ERROR_GROQ_MULTIPLE_IMAGES,
@@ -901,7 +902,7 @@ class OpenWebUI(Provider):
         ip_address = self.endpoint.get("ip_address")
         port = self.endpoint.get("port")
         protocol = "https" if https else "http"
-        endpoint = ENDPOINT_OLLAMA.format(
+        endpoint = ENDPOINT_OPENWEBUI.format(
             ip_address=ip_address,
             port=port,
             protocol=protocol
@@ -941,12 +942,22 @@ class OpenWebUI(Provider):
     async def validate(self) -> None | ServiceValidationError:
         if self.api_key:
             headers = self._generate_headers()
+            https = self.endpoint.get("https")
+            ip_address = self.endpoint.get("ip_address")
+            port = self.endpoint.get("port")
+            protocol = "https" if https else "http"
+            endpoint = ENDPOINT_OPENWEBUI.format(
+                ip_address=ip_address,
+                port=port,
+                protocol=protocol
+            )
             data = {
                 "model": self.default_model,
                 "messages": [{"role": "user", "content": [{"type": "text", "text": "Hi"}]}],
                 "max_tokens": 1,
                 "temperature": 0.5
             }
-            await self._post(url=self.endpoint.get('base_url'), headers=headers, data=data)
+
+            await self._post(url=endpoint, headers=headers, data=data)
         else:
             raise ServiceValidationError("empty_api_key")
