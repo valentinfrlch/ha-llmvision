@@ -26,6 +26,11 @@ CONF_AWS_ACCESS_KEY_ID = 'aws_access_key_id'
 CONF_AWS_SECRET_ACCESS_KEY = 'aws_secret_access_key'
 CONF_AWS_REGION_NAME = 'aws_region_name'
 CONF_AWS_DEFAULT_MODEL = 'aws_default_model'
+CONF_OPENWEBUI_IP_ADDRESS = 'openwebui_ip'
+CONF_OPENWEBUI_PORT = 'openwebui_port'
+CONF_OPENWEBUI_HTTPS = 'openwebui_https'
+CONF_OPENWEBUI_API_KEY = 'openwebui_api_key'
+CONF_OPENWEBUI_DEFAULT_MODEL = 'openwebui_default_model'
 
 # service call constants
 MESSAGE = 'message'
