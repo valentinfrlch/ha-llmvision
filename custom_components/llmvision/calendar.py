@@ -52,6 +52,16 @@ class SemanticIndex(CalendarEntity):
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=datetime.timezone.utc)
         return dt
+    
+    async def _delete_image(self, event_id: str):
+        """Delete the image associated with the event"""
+        for event in self._events:
+            if event.uid == event_id:
+                image_path = event.location.split(",")[0]
+                _LOGGER.info(f"Image path: {image_path}")
+                if os.path.exists(image_path) and "/llmvision/" in image_path:
+                    os.remove(image_path)
+                    _LOGGER.info(f"Deleted image: {image_path}")
 
     async def async_get_events(
         self,
@@ -78,7 +88,7 @@ class SemanticIndex(CalendarEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes"""
-        events = self._events[:10] # Set limit to 10 events to improve performance
+        events = self._events[:10]  # Set limit to 10 events to improve performance
         return {
             "events": [event.summary for event in events],
             "starts": [event.start for event in events],
@@ -130,7 +140,9 @@ class SemanticIndex(CalendarEntity):
         recurrence_range: str | None = None,
     ) -> None:
         """Delete an event on the calendar."""
+        _LOGGER.info(f"Deleting event with UID: {uid}")
         await self.async_update()
+        await self._delete_image(uid)
         self._events = [event for event in self._events if event.uid != uid]
         await self._save_events()
 
@@ -164,6 +176,15 @@ class SemanticIndex(CalendarEntity):
         if self._retention_time != 0:
             _LOGGER.info(f"Deleting events before {cutoff_date}")
 
+        remaining_events = []
+        for event in self._events:
+            event_end = dt_util.as_local(self._ensure_datetime(event.end))
+            if event_end >= self._ensure_datetime(cutoff_date) or self._retention_time == 0:
+                remaining_events.append(event)
+            else:
+                # Delete image associated with the event
+                await self._delete_image(event.uid)
+
         events_data = [
             {
                 "uid": event.uid,
@@ -173,8 +194,7 @@ class SemanticIndex(CalendarEntity):
                 "description": event.description,
                 "location": event.location
             }
-            for event in self._events
-            if dt_util.as_local(self._ensure_datetime(event.end)) >= self._ensure_datetime(cutoff_date) or self._retention_time == 0
+            for event in remaining_events
         ]
 
         def write_to_file():
