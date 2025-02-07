@@ -80,7 +80,8 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required("provider", default="Event Calendar"): selector({
                 "select": {
-                    "options": ["Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI", "Event Calendar"], # Azure removed until fixed
+                    # Azure removed until fixed
+                    "options": ["Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI", "Event Calendar"],
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -109,7 +110,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
-            data_schema=self.add_suggested_values_to_schema(
+            data_schema = self.add_suggested_values_to_schema(
                 data_schema, self.init_info
             )
 
@@ -156,7 +157,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
-            data_schema=self.add_suggested_values_to_schema(
+            data_schema = self.add_suggested_values_to_schema(
                 data_schema, self.init_info
             )
 
@@ -192,7 +193,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="ollama",
             data_schema=data_schema,
         )
-    
+
     async def async_step_openwebui(self, user_input=None):
         data_schema = vol.Schema({
             vol.Required(CONF_OPENWEBUI_API_KEY): str,
@@ -213,11 +214,14 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
             try:
-                openwebui = OpenWebUI(self.hass, user_input[CONF_OPENWEBUI_API_KEY], user_input[CONF_OPENWEBUI_DEFAULT_MODEL] endpoint={
-                    'ip_address': user_input[CONF_OPENWEBUI_IP_ADDRESS],
-                    'port': user_input[CONF_OPENWEBUI_PORT],
-                    'https': user_input[CONF_OPENWEBUI_HTTPS]
-                })
+                openwebui = OpenWebUI(hass=self.hass,
+                                      api_key=user_input[CONF_OPENWEBUI_API_KEY],
+                                      model=user_input[CONF_OPENWEBUI_DEFAULT_MODEL],
+                                      endpoint={
+                                          'ip_address': user_input[CONF_OPENWEBUI_IP_ADDRESS],
+                                          'port': user_input[CONF_OPENWEBUI_PORT],
+                                          'https': user_input[CONF_OPENWEBUI_HTTPS]
+                                      })
                 await openwebui.validate()
                 # add the mode to user_input
                 if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -250,7 +254,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
-            data_schema=self.add_suggested_values_to_schema(
+            data_schema = self.add_suggested_values_to_schema(
                 data_schema, self.init_info
             )
 
@@ -296,7 +300,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
-            data_schema=self.add_suggested_values_to_schema(
+            data_schema = self.add_suggested_values_to_schema(
                 data_schema, self.init_info
             )
 
@@ -343,7 +347,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
-            data_schema=self.add_suggested_values_to_schema(
+            data_schema = self.add_suggested_values_to_schema(
                 data_schema, self.init_info
             )
 
@@ -386,7 +390,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
-            data_schema=self.add_suggested_values_to_schema(
+            data_schema = self.add_suggested_values_to_schema(
                 data_schema, self.init_info
             )
 
@@ -429,7 +433,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
-            data_schema=self.add_suggested_values_to_schema(
+            data_schema = self.add_suggested_values_to_schema(
                 data_schema, self.init_info
             )
 
@@ -473,7 +477,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
-            data_schema=self.add_suggested_values_to_schema(
+            data_schema = self.add_suggested_values_to_schema(
                 data_schema, self.init_info
             )
 
@@ -482,10 +486,11 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input["provider"] = self.init_info["provider"]
             try:
                 custom_openai = OpenAI(self.hass,
-                    api_key=user_input[CONF_CUSTOM_OPENAI_API_KEY],
-                    endpoint={'base_url': user_input[CONF_CUSTOM_OPENAI_ENDPOINT]},
-                    default_model=user_input[CONF_CUSTOM_OPENAI_DEFAULT_MODEL],
-                )
+                                       api_key=user_input[CONF_CUSTOM_OPENAI_API_KEY],
+                                       endpoint={
+                                           'base_url': user_input[CONF_CUSTOM_OPENAI_ENDPOINT]},
+                                       default_model=user_input[CONF_CUSTOM_OPENAI_DEFAULT_MODEL],
+                                       )
                 await custom_openai.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
@@ -519,7 +524,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
-            data_schema=self.add_suggested_values_to_schema(
+            data_schema = self.add_suggested_values_to_schema(
                 data_schema, self.init_info
             )
 
@@ -559,7 +564,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
-            data_schema=self.add_suggested_values_to_schema(
+            data_schema = self.add_suggested_values_to_schema(
                 data_schema, self.init_info
             )
 
@@ -568,11 +573,11 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input["provider"] = self.init_info["provider"]
             try:
                 aws_bedrock = AWSBedrock(self.hass,
-                    aws_access_key_id=user_input[CONF_AWS_ACCESS_KEY_ID],
-                    aws_secret_access_key=user_input[CONF_AWS_SECRET_ACCESS_KEY],
-                    aws_region_name=user_input[CONF_AWS_REGION_NAME],
-                    model=user_input[CONF_AWS_DEFAULT_MODEL],
-                )
+                                         aws_access_key_id=user_input[CONF_AWS_ACCESS_KEY_ID],
+                                         aws_secret_access_key=user_input[CONF_AWS_SECRET_ACCESS_KEY],
+                                         aws_region_name=user_input[CONF_AWS_REGION_NAME],
+                                         model=user_input[CONF_AWS_DEFAULT_MODEL],
+                                         )
                 await aws_bedrock.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
