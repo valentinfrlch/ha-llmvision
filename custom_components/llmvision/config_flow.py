@@ -9,6 +9,7 @@ from .providers import (
     Groq,
     LocalAI,
     Ollama,
+    OpenWebUI,
     AWSBedrock
 )
 from .const import (
@@ -36,6 +37,12 @@ from .const import (
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
     CONF_AWS_DEFAULT_MODEL,
+    CONF_OPENWEBUI_IP_ADDRESS,
+    CONF_OPENWEBUI_PORT,
+    CONF_OPENWEBUI_HTTPS,
+    CONF_OPENWEBUI_API_KEY,
+    CONF_OPENWEBUI_DEFAULT_MODEL,
+
 )
 import voluptuous as vol
 import logging
@@ -59,6 +66,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "LocalAI": self.async_step_localai,
             "Ollama": self.async_step_ollama,
             "OpenAI": self.async_step_openai,
+            "OpenWebUI": self.async_step_openwebui,
         }
 
         step_method = provider_steps.get(provider)
@@ -72,7 +80,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required("provider", default="Event Calendar"): selector({
                 "select": {
-                    "options": ["Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "Custom OpenAI", "Event Calendar"], # Azure removed until fixed
+                    "options": ["Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI", "Event Calendar"], # Azure removed until fixed
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -182,6 +190,55 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="ollama",
+            data_schema=data_schema,
+        )
+    
+    async def async_step_openwebui(self, user_input=None):
+        data_schema = vol.Schema({
+            vol.Required(CONF_OPENWEBUI_API_KEY): str,
+            vol.Required(CONF_OPENWEBUI_DEFAULT_MODEL, default="minicpm-v"): str,
+            vol.Required(CONF_OPENWEBUI_IP_ADDRESS): str,
+            vol.Required(CONF_OPENWEBUI_PORT, default=11434): int,
+            vol.Required(CONF_OPENWEBUI_HTTPS, default=False): bool,
+        })
+
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            data_schema = self.add_suggested_values_to_schema(
+                data_schema, self.init_info
+            )
+
+        if user_input is not None:
+            # save provider to user_input
+            user_input["provider"] = self.init_info["provider"]
+            try:
+                openwebui = OpenWebUI(self.hass, user_input[CONF_OPENWEBUI_API_KEY], user_input[CONF_OPENWEBUI_DEFAULT_MODEL] endpoint={
+                    'ip_address': user_input[CONF_OPENWEBUI_IP_ADDRESS],
+                    'port': user_input[CONF_OPENWEBUI_PORT],
+                    'https': user_input[CONF_OPENWEBUI_HTTPS]
+                })
+                await openwebui.validate()
+                # add the mode to user_input
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    # we're reconfiguring an existing config
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    # New config entry
+                    return self.async_create_entry(title=f"OpenWebUI ({user_input[CONF_OPENWEBUI_IP_ADDRESS]})", data=user_input)
+            except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
+                return self.async_show_form(
+                    step_id="openwebui",
+                    data_schema=data_schema,
+                    errors={"base": "handshake_failed"}
+                )
+
+        return self.async_show_form(
+            step_id="openwebui",
             data_schema=data_schema,
         )
 
