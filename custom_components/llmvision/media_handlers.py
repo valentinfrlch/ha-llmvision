@@ -6,6 +6,7 @@ import shutil
 import logging
 import time
 import asyncio
+from pathlib import Path
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from functools import partial
 from PIL import Image, UnidentifiedImageError
@@ -27,7 +28,7 @@ class MediaProcessor:
         self.filenames = []
         self.path = "/config/www/llmvision"
         self.key_frame = ""
-
+        self.descriptions = []
 
     async def _encode_image(self, img):
         """Encode image as base64"""
@@ -288,10 +289,21 @@ class MediaProcessor:
                 filename=frame_name
             )
 
-    async def add_images(self, image_entities, image_paths, target_width, include_filename, expose_images, expose_images_persist):
+    async def add_images(self, image_entities, image_paths, target_width, include_filename, expose_images, expose_images_persist, image_descriptions):
         """Wrapper for client.add_frame for images"""
         if image_entities:
             for image_entity in image_entities:
+                friendly_name = self.hass.states.get(image_entity).attributes.get('friendly_name')
+                # Grab the image description if they're provided
+                description = None
+                if len(image_descriptions) > 0:
+                    if friendly_name in image_descriptions:
+                        description = image_descriptions.get(friendly_name)
+                    else:
+                        raise ServiceValidationError(
+                                f"Image descriptions are defined, but are missing the one for '{friendly_name}'")
+                _LOGGER.debug(f"friendly_name={friendly_name} description={description}")
+
                 try:
                     base_url = get_url(self.hass)
                     image_url = base_url + \
@@ -309,8 +321,8 @@ class MediaProcessor:
                     resized_image = await self.resize_image(target_width=target_width, image_data=image_data)
                     self.client.add_frame(
                         base64_image=resized_image,
-                        filename=self.hass.states.get(
-                            image_entity).attributes.get('friendly_name') if include_filename else ""
+                        filename=friendly_name if include_filename else "",
+                        description=description
                     )
 
                     if expose_images:
@@ -324,17 +336,24 @@ class MediaProcessor:
                         f"Entity {image_entity} does not exist")
         if image_paths:
             for image_path in image_paths:
+                image_path = image_path.strip()
+                filename=Path(image_path).stem
+                # Grab the image description if they're provided
+                description = None
+                if len(image_descriptions) > 0:
+                    if filename in image_descriptions:
+                        description = image_descriptions.get(filename)
+                    else:
+                        raise ServiceValidationError(
+                                f"Image descriptions are defined, but are missing the one for '{filename}'")
+                _LOGGER.debug(f"filename={filename} description={description}")
+
                 try:
-                    image_path = image_path.strip()
-                    if include_filename and os.path.exists(image_path):
+                    if os.path.exists(image_path):
                         self.client.add_frame(
                             base64_image=await self.resize_image(target_width=target_width, image_path=image_path),
-                            filename=image_path.split('/')[-1].split('.')[-2]
-                        )
-                    elif os.path.exists(image_path):
-                        self.client.add_frame(
-                            base64_image=await self.resize_image(target_width=target_width, image_path=image_path),
-                            filename=""
+                            filename=filename if include_filename else "",
+                            description=description
                         )
                     if not os.path.exists(image_path):
                         raise ServiceValidationError(
@@ -511,6 +530,7 @@ class MediaProcessor:
             image_paths=image_paths,
             target_width=target_width,
             include_filename=include_filename,
-            expose_images=False
+            expose_images=False,
+            image_descriptions=None
         )
         return self.client

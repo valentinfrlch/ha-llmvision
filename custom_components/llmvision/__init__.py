@@ -31,6 +31,7 @@ from .const import (
     TARGET_WIDTH,
     IMAGE_FILE,
     IMAGE_ENTITY,
+    IMAGE_DESCRIPTIONS,
     VIDEO_FILE,
     EVENT_ID,
     FRIGATE_RETRY_ATTEMPTS,
@@ -295,6 +296,7 @@ class ServiceCallData:
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 100))
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
+        self.image_descriptions = data_call.data.get(IMAGE_DESCRIPTIONS, {})
         self.expose_images_persist = data_call.data.get(
             EXPOSE_IMAGES_PERSIST, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)
@@ -302,6 +304,7 @@ class ServiceCallData:
         # ------------ Added during call ------------
         # self.base64_images : List[str] = []
         # self.filenames : List[str] = []
+        # self.descriptions : List[str] = []
 
     def get_service_call_data(self):
         return self
@@ -329,7 +332,8 @@ def setup(hass, config):
                                              target_width=call.target_width,
                                              include_filename=call.include_filename,
                                              expose_images=call.expose_images,
-                                             expose_images_persist=call.expose_images_persist
+                                             expose_images_persist=call.expose_images_persist,
+                                             image_descriptions=call.image_descriptions
                                              )
 
         # Validate configuration, input data and make the call

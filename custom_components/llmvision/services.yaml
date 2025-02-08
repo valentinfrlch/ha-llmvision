@@ -50,6 +50,12 @@ image_analyzer:
         entity:
           domain: ["image", "camera"]
           multiple: true
+    image_descriptions:
+      name: Image Descriptions
+      required: false
+      description: 'Dict with information about each image. The filename or camera entity name is the key.'
+      selector:
+        object:
     include_filename:
       name: Include Filename
       required: true
