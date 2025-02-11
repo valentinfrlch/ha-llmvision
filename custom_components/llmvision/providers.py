@@ -229,11 +229,16 @@ class Request:
             api_key = config.get(CONF_OPENWEBUI_API_KEY)
             default_model = config.get(CONF_OPENWEBUI_DEFAULT_MODEL)
 
-            provider_instance = OpenWebUI(hass=self.hass, api_key=api_key, model=default_model, endpoint={
-                'ip_address': ip_address,
-                'port': port,
-                'https': https
-            })
+
+            endpoint = ENDPOINT_OPENWEBUI.format(
+                ip_address=ip_address,
+                port=port,
+                protocol="https" if https else "http"
+            )
+
+            provider_instance = OpenAI(
+                self.hass, api_key=api_key, endpoint={'base_url': endpoint}, default_model=default_model)
+            
 
         else:
             raise ServiceValidationError("invalid_provider")
@@ -885,79 +890,3 @@ class AWSBedrock(Provider):
             "inferenceConfig": {"maxTokens": 10, "temperature": 0.5}
         }
         await self.invoke_bedrock(model=self.default_model, data=data)
-
-
-class OpenWebUI(Provider):
-    def __init__(self, hass, api_key, model, endpoint={'ip_address': "0.0.0.0", 'port': "3000", 'https': False}):
-        super().__init__(hass, api_key, endpoint=endpoint)
-        self.default_model = model
-
-    def _generate_headers(self) -> dict:
-        return {'Content-type': 'application/json',
-                'Authorization': 'Bearer ' + self.api_key}
-
-    async def _make_request(self, data) -> str:
-        headers = self._generate_headers()
-        https = self.endpoint.get("https")
-        ip_address = self.endpoint.get("ip_address")
-        port = self.endpoint.get("port")
-        protocol = "https" if https else "http"
-        endpoint = ENDPOINT_OPENWEBUI.format(
-            ip_address=ip_address,
-            port=port,
-            protocol=protocol
-        )
-
-        response = await self._post(url=endpoint, headers=headers, data=data)
-        response_text = response.get(
-            "choices")[0].get("message").get("content")
-        return response_text
-
-    def _prepare_vision_data(self, call) -> list:
-        payload = {"model": call.model,
-                   "messages": [{"role": "user", "content": []}],
-                   "max_tokens": call.max_tokens,
-                   "temperature": call.temperature
-                   }
-
-        for image, filename in zip(call.base64_images, call.filenames):
-            tag = ("Image " + str(call.base64_images.index(image) + 1)
-                   ) if filename == "" else filename
-            payload["messages"][0]["content"].append(
-                {"type": "text", "text": tag + ":"})
-            payload["messages"][0]["content"].append({"type": "image_url", "image_url": {
-                "url": f"data:image/jpeg;base64,{image}"}})
-        payload["messages"][0]["content"].append(
-            {"type": "text", "text": call.message})
-        return payload
-
-    def _prepare_text_data(self, call) -> list:
-        return {
-            "model": call.model,
-            "messages": [{"role": "user", "content": [{"type": "text", "text": call.message}]}],
-            "max_tokens": call.max_tokens,
-            "temperature": call.temperature
-        }
-
-    async def validate(self) -> None | ServiceValidationError:
-        if self.api_key:
-            headers = self._generate_headers()
-            https = self.endpoint.get("https")
-            ip_address = self.endpoint.get("ip_address")
-            port = self.endpoint.get("port")
-            protocol = "https" if https else "http"
-            endpoint = ENDPOINT_OPENWEBUI.format(
-                ip_address=ip_address,
-                port=port,
-                protocol=protocol
-            )
-            data = {
-                "model": self.default_model,
-                "messages": [{"role": "user", "content": [{"type": "text", "text": "Hi"}]}],
-                "max_tokens": 1,
-                "temperature": 0.5
-            }
-
-            await self._post(url=endpoint, headers=headers, data=data)
-        else:
-            raise ServiceValidationError("empty_api_key")

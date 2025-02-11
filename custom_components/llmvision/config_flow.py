@@ -9,7 +9,6 @@ from .providers import (
     Groq,
     LocalAI,
     Ollama,
-    OpenWebUI,
     AWSBedrock
 )
 from .const import (
@@ -42,6 +41,7 @@ from .const import (
     CONF_OPENWEBUI_HTTPS,
     CONF_OPENWEBUI_API_KEY,
     CONF_OPENWEBUI_DEFAULT_MODEL,
+    ENDPOINT_OPENWEBUI,
 
 )
 import voluptuous as vol
@@ -214,14 +214,15 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
             try:
-                openwebui = OpenWebUI(hass=self.hass,
-                                      api_key=user_input[CONF_OPENWEBUI_API_KEY],
-                                      model=user_input[CONF_OPENWEBUI_DEFAULT_MODEL],
-                                      endpoint={
-                                          'ip_address': user_input[CONF_OPENWEBUI_IP_ADDRESS],
-                                          'port': user_input[CONF_OPENWEBUI_PORT],
-                                          'https': user_input[CONF_OPENWEBUI_HTTPS]
-                                      })
+                endpoint = ENDPOINT_OPENWEBUI.format(
+                    ip_address=user_input[CONF_OPENWEBUI_IP_ADDRESS],
+                    port=user_input[CONF_OPENWEBUI_PORT],
+                    protocol="https" if user_input[CONF_OPENWEBUI_HTTPS] else "http"
+                )
+                openwebui = OpenAI(hass=self.hass,
+                                   api_key=user_input[CONF_OPENWEBUI_API_KEY],
+                                   default_model=user_input[CONF_OPENWEBUI_DEFAULT_MODEL],
+                                   endpoint={'base_url': endpoint})
                 await openwebui.validate()
                 # add the mode to user_input
                 if self.source == config_entries.SOURCE_RECONFIGURE:
