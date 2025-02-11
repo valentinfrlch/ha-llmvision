@@ -94,7 +94,7 @@
                     "openwebui_api_key": "API Key (JWT token)",
                     "openwebui_ip": "IP Addresse",
                     "openwebui_port": "Port",
-                    "openwebui_https": "HTTPS",
+                    "openwebui_https": "HTTPS verwenden",
                     "openwebui_default_model": "Standardmodell"
                 }
             }

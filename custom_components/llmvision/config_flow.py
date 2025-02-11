@@ -199,7 +199,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_OPENWEBUI_API_KEY): str,
             vol.Required(CONF_OPENWEBUI_DEFAULT_MODEL, default="minicpm-v"): str,
             vol.Required(CONF_OPENWEBUI_IP_ADDRESS): str,
-            vol.Required(CONF_OPENWEBUI_PORT, default=11434): int,
+            vol.Required(CONF_OPENWEBUI_PORT, default=3000): int,
             vol.Required(CONF_OPENWEBUI_HTTPS, default=False): bool,
         })
 
