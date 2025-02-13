@@ -86,6 +86,17 @@
                     "aws_region_name": "The region string",
                     "aws_default_model": "The default model to use"
                 }
+            },
+            "openwebui": {
+                "title": "Configure Open WebUI provider",
+                "description": "Provide API key (JWT token), IP Address, Port, HTTP(S) and default model.",
+                "data": {
+                    "openwebui_api_key": "API Key (JWT token)",
+                    "openwebui_ip": "IP Address",
+                    "openwebui_port": "Port",
+                    "openwebui_https": "Use HTTPS",
+                    "openwebui_default_model": "Default model"
+                }
             }
         },
         "error": {
