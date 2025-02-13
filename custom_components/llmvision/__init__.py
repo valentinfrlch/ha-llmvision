@@ -221,7 +221,7 @@ async def _remember(hass, call, start, response, key_frame) -> None:
             end=dt_util.now() + timedelta(minutes=1),
             label=title,
             summary=response["response_text"],
-            key_frame=key_frame,
+            key_frame=key_frame + ".jpg",
             camera_name=camera_name
         )
 

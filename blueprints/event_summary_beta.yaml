@@ -409,6 +409,8 @@ action:
               model: !input model
               message: !input message
               remember: !input remember
+              expose_images: !input remember
+              expose_images_persist: !input remember
               generate_title: !input remember
               include_filename: true
               max_frames: !input max_frames
@@ -429,6 +431,8 @@ action:
               model: !input model
               message: !input message
               remember: !input remember
+              expose_images: "{{preview_mode == 'Snapshot' or remember}}"
+              expose_images_persist: !input remember
               generate_title: !input remember
               include_filename: true
               max_frames: !input max_frames
@@ -436,7 +440,7 @@ action:
               detail: !input detail
               max_tokens: !input max_tokens
               temperature: !input temperature
-              expose_images: "{{true if preview_mode == 'Snapshot'}}"
+              
             response_variable: response
 
 
