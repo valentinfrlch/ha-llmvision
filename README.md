@@ -3,7 +3,7 @@
 </p>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badg>
-<img src=https://img.shields.io/badge/version-1.3.8-blue>
+<img src=https://img.shields.io/badge/version-1.3.9-blue>
 <a href="https://github.com/valentinfrlch/ha-llmvision/issues">
 <img src="https://img.shields.io/maintenance/yes/2025.svg">
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-llmvision?color=0088ff"/>
@@ -33,14 +33,11 @@
 <br>
 <p align="center">
   <strong>LLM Vision</strong> is a Home Assistant integration that can analyze images, videos,  
-  live camera feeds and frigate events using the vision capabilities of multimodal LLMs.  
-  Supported providers are OpenAI, Anthropic, Google Gemini, AWS Bedrock, Groq, 
-  <a href="https://github.com/mudler/LocalAI">LocalAI</a>, 
-  <a href="https://ollama.com/">Ollama</a> and any OpenAI compatible API.
+  live camera feeds and frigate events using the vision capabilities of multimodal LLMs.
 </p>
 
 ## Features
-- Compatible with OpenAI, Anthropic Claude, Google Gemini, AWS Bedrock, Groq, [LocalAI](https://github.com/mudler/LocalAI), [Ollama](https://ollama.com/) and custom OpenAI compatible APIs
+- Compatible with OpenAI, Anthropic Claude, Google Gemini, AWS Bedrock, Groq, [LocalAI](https://github.com/mudler/LocalAI), [Ollama](https://ollama.com/), [Open WebUI](https://github.com/open-webui/open-webui) and providers with OpenAI compatible enpoints.
 - Analyzes images and video files, live camera feeds and Frigate events
 - Remembers Frigate events and camera motion events so you can ask about them later
 - Seamlessly updates sensors based on image input

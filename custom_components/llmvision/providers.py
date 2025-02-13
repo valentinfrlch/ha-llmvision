@@ -31,6 +31,11 @@ from .const import (
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
     CONF_AWS_DEFAULT_MODEL,
+    CONF_OPENWEBUI_IP_ADDRESS,
+    CONF_OPENWEBUI_PORT,
+    CONF_OPENWEBUI_HTTPS,
+    CONF_OPENWEBUI_API_KEY,
+    CONF_OPENWEBUI_DEFAULT_MODEL,
     VERSION_ANTHROPIC,
     ENDPOINT_OPENAI,
     ENDPOINT_AZURE,
@@ -38,6 +43,7 @@ from .const import (
     ENDPOINT_GOOGLE,
     ENDPOINT_LOCALAI,
     ENDPOINT_OLLAMA,
+    ENDPOINT_OPENWEBUI,
     ENDPOINT_GROQ,
     ERROR_NOT_CONFIGURED,
     ERROR_GROQ_MULTIPLE_IMAGES,
@@ -99,6 +105,8 @@ class Request:
             return "OpenAI"
         elif CONF_AWS_ACCESS_KEY_ID in entry_data:
             return "AWS Bedrock"
+        elif CONF_OPENWEBUI_API_KEY in entry_data:
+            return "OpenWebUI"
 
         return None
 
@@ -164,7 +172,8 @@ class Request:
         elif provider == 'Google':
             api_key = config.get(CONF_GOOGLE_API_KEY)
             model = call.model if call.model and call.model != "None" else "gemini-1.5-flash-latest"
-            provider_instance = Google(self.hass, api_key=api_key, endpoint={'base_url': ENDPOINT_GOOGLE, 'model': model})
+            provider_instance = Google(self.hass, api_key=api_key, endpoint={
+                                       'base_url': ENDPOINT_GOOGLE, 'model': model})
 
         elif provider == 'Groq':
             api_key = config.get(CONF_GROQ_API_KEY)
@@ -196,18 +205,40 @@ class Request:
             api_key = config.get(CONF_CUSTOM_OPENAI_API_KEY)
             endpoint = config.get(
                 CONF_CUSTOM_OPENAI_ENDPOINT)
-            default_model=config.get(CONF_CUSTOM_OPENAI_DEFAULT_MODEL)
+            default_model = config.get(CONF_CUSTOM_OPENAI_DEFAULT_MODEL)
             provider_instance = OpenAI(
                 self.hass, api_key=api_key, endpoint={'base_url': endpoint}, default_model=default_model)
 
         elif provider == 'AWS Bedrock':
-            model = call.model if call.model and call.model != "None" else config.get(CONF_AWS_DEFAULT_MODEL)
+            model = call.model if call.model and call.model != "None" else config.get(
+                CONF_AWS_DEFAULT_MODEL)
             provider_instance = AWSBedrock(self.hass,
-                    aws_access_key_id=config.get(CONF_AWS_ACCESS_KEY_ID),
-                    aws_secret_access_key=config.get(CONF_AWS_SECRET_ACCESS_KEY),
-                    aws_region_name=config.get(CONF_AWS_REGION_NAME),
-                    model=model
-                )
+                                           aws_access_key_id=config.get(
+                                               CONF_AWS_ACCESS_KEY_ID),
+                                           aws_secret_access_key=config.get(
+                                               CONF_AWS_SECRET_ACCESS_KEY),
+                                           aws_region_name=config.get(
+                                               CONF_AWS_REGION_NAME),
+                                           model=model
+                                           )
+
+        elif provider == 'OpenWebUI':
+            ip_address = config.get(CONF_OPENWEBUI_IP_ADDRESS)
+            port = config.get(CONF_OPENWEBUI_PORT)
+            https = config.get(CONF_OPENWEBUI_HTTPS, False)
+            api_key = config.get(CONF_OPENWEBUI_API_KEY)
+            default_model = config.get(CONF_OPENWEBUI_DEFAULT_MODEL)
+
+
+            endpoint = ENDPOINT_OPENWEBUI.format(
+                ip_address=ip_address,
+                port=port,
+                protocol="https" if https else "http"
+            )
+
+            provider_instance = OpenAI(
+                self.hass, api_key=api_key, endpoint={'base_url': endpoint}, default_model=default_model)
+            
 
         else:
             raise ServiceValidationError("invalid_provider")
@@ -346,7 +377,7 @@ class Provider(ABC):
 class OpenAI(Provider):
     def __init__(self, hass, api_key="", endpoint={'base_url': ENDPOINT_OPENAI}, default_model="gpt-4o-mini"):
         super().__init__(hass, api_key, endpoint=endpoint)
-        self.default_model=default_model
+        self.default_model = default_model
 
     def _generate_headers(self) -> dict:
         return {'Content-type': 'application/json',
@@ -359,7 +390,8 @@ class OpenAI(Provider):
         else:
             url = self.endpoint
         response = await self._post(url=url, headers=headers, data=data)
-        response_text = response.get("choices")[0].get("message").get("content")
+        response_text = response.get(
+            "choices")[0].get("message").get("content")
         return response_text
 
     def _prepare_vision_data(self, call) -> list:
@@ -749,13 +781,14 @@ class Ollama(Provider):
             _LOGGER.error(f"Error: {e}")
             raise ServiceValidationError('handshake_failed')
 
+
 class AWSBedrock(Provider):
     def __init__(self, hass, aws_access_key_id, aws_secret_access_key, aws_region_name, model):
         super().__init__(hass, )
-        self.default_model=model
-        self.aws_access_key_id=aws_access_key_id
-        self.aws_secret_access_key=aws_secret_access_key
-        self.aws_region=aws_region_name
+        self.default_model = model
+        self.aws_access_key_id = aws_access_key_id
+        self.aws_secret_access_key = aws_secret_access_key
+        self.aws_region = aws_region_name
 
     def _generate_headers(self) -> dict:
         return {'Content-type': 'application/json',
@@ -768,12 +801,14 @@ class AWSBedrock(Provider):
 
     async def invoke_bedrock(self, model, data) -> dict:
         """Post data to url and return response data"""
-        _LOGGER.debug(f"AWS Bedrock request data: {Request.sanitize_data(data)}")
+        _LOGGER.debug(
+            f"AWS Bedrock request data: {Request.sanitize_data(data)}")
 
         try:
-            _LOGGER.info(f"Invoking Bedrock model {model} in {self.aws_region}")
+            _LOGGER.info(
+                f"Invoking Bedrock model {model} in {self.aws_region}")
             client = await self.hass.async_add_executor_job(
-                 partial(
+                partial(
                     boto3.client,
                     "bedrock-runtime",
                     region_name=self.aws_region,
@@ -789,7 +824,7 @@ class AWSBedrock(Provider):
                     modelId=model,
                     messages=data.get("messages"),
                     inferenceConfig=data.get("inferenceConfig")
-            ))
+                ))
             _LOGGER.debug(f"AWS Bedrock call Response: {response}")
 
         except Exception as e:
@@ -808,35 +843,35 @@ class AWSBedrock(Provider):
             tokens_in = token_usage.get("inputTokens")
             tokens_out = token_usage.get("outputTokens")
             tokens_total = token_usage.get("totalTokens")
-            _LOGGER.info(f"AWS Bedrock call latency: {latency}ms inputTokens: {tokens_in} outputTokens: {tokens_out} totalTokens: {tokens_total}")
+            _LOGGER.info(
+                f"AWS Bedrock call latency: {latency}ms inputTokens: {tokens_in} outputTokens: {tokens_out} totalTokens: {tokens_total}")
             response_data = response.get("output")
             _LOGGER.debug(f"AWS Bedrock call response data: {response_data}")
             return response_data
-
 
     def _prepare_vision_data(self, call) -> list:
         _LOGGER.debug(f"Found model type `{call.model}` for AWS Bedrock call.")
         # We need to generate the correct format for the respective models
         data = {
-                "messages": [{"role": "user", "content": []}],
-                "inferenceConfig": {
-                    "maxTokens": call.max_tokens,
-                    "temperature": call.temperature
-                }
+            "messages": [{"role": "user", "content": []}],
+            "inferenceConfig": {
+                "maxTokens": call.max_tokens,
+                "temperature": call.temperature
             }
+        }
 
         # Bedrock converse API wants the raw bytes of the image
         for image, filename in zip(call.base64_images, call.filenames):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
-                ) if filename == "" else filename
+                   ) if filename == "" else filename
             data["messages"][0]["content"].append(
                 {"text": tag + ":"})
             data["messages"][0]["content"].append({
                 "image": {
                     "format": "jpeg",
                     "source": {"bytes": base64.b64decode(image)}
-                    }
-                })
+                }
+            })
         data["messages"][0]["content"].append({"text": call.message})
         return data
 

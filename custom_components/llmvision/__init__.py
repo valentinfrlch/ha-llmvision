@@ -23,6 +23,11 @@ from .const import (
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
     CONF_AWS_DEFAULT_MODEL,
+    CONF_OPENWEBUI_IP_ADDRESS,
+    CONF_OPENWEBUI_PORT,
+    CONF_OPENWEBUI_HTTPS,
+    CONF_OPENWEBUI_API_KEY,
+    CONF_OPENWEBUI_DEFAULT_MODEL,
     MESSAGE,
     REMEMBER,
     MODEL,
@@ -88,6 +93,11 @@ async def async_setup_entry(hass, entry):
     aws_secret_access_key = entry.data.get(CONF_AWS_SECRET_ACCESS_KEY)
     aws_region_name = entry.data.get(CONF_AWS_REGION_NAME)
     aws_default_model = entry.data.get(CONF_AWS_DEFAULT_MODEL)
+    openwebui_ip_address = entry.data.get(CONF_OPENWEBUI_IP_ADDRESS)
+    openwebui_port = entry.data.get(CONF_OPENWEBUI_PORT)
+    openwebui_https = entry.data.get(CONF_OPENWEBUI_HTTPS)
+    openwebui_api_key = entry.data.get(CONF_OPENWEBUI_API_KEY)
+    openwebui_default_model = entry.data.get(CONF_OPENWEBUI_DEFAULT_MODEL)
 
     # Ensure DOMAIN exists in hass.data
     if DOMAIN not in hass.data:
@@ -117,6 +127,11 @@ async def async_setup_entry(hass, entry):
         CONF_AWS_SECRET_ACCESS_KEY: aws_secret_access_key,
         CONF_AWS_REGION_NAME: aws_region_name,
         CONF_AWS_DEFAULT_MODEL: aws_default_model,
+        CONF_OPENWEBUI_IP_ADDRESS: openwebui_ip_address,
+        CONF_OPENWEBUI_PORT: openwebui_port,
+        CONF_OPENWEBUI_HTTPS: openwebui_https,
+        CONF_OPENWEBUI_API_KEY: openwebui_api_key,
+        CONF_OPENWEBUI_DEFAULT_MODEL: openwebui_default_model
     }
 
     # Filter out None values

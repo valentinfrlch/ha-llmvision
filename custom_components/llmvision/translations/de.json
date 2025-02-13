@@ -86,6 +86,17 @@
                     "aws_region_name": "Region",
                     "aws_default_model": "Standartmodell"
                 }
+            },
+            "openwebui": {
+                "title": "OpenWebUI konfigurieren",
+                "description": "Gib einen gültigen OpenWebUI API-key, die IP-Adresse, den Port, das Standardmodell und ob HTTPS verwendet werden soll an.",
+                "data": {
+                    "openwebui_api_key": "API Key (JWT token)",
+                    "openwebui_ip": "IP Addresse",
+                    "openwebui_port": "Port",
+                    "openwebui_https": "HTTPS verwenden",
+                    "openwebui_default_model": "Standardmodell"
+                }
             }
         },
         "error": {
