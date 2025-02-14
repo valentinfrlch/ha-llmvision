@@ -405,7 +405,7 @@ class MediaProcessor:
                     # Extract frames from video every interval seconds
                     ffmpeg_cmd = [
                         "ffmpeg",
-                        "-i", video_path,
+                        "-i", f"'{video_path}'",
                         "-vf", f"fps=fps='source_fps',select='eq(n\\,0)+not(mod(n\\,{interval}))'",
                         "-fps_mode", "passthrough",
                         os.path.join(tmp_frames_dir, "frame%d.jpg")
