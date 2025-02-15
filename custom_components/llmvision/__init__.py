@@ -221,7 +221,7 @@ async def _remember(hass, call, start, response, key_frame) -> None:
             end=dt_util.now() + timedelta(minutes=1),
             label=title,
             summary=response["response_text"],
-            key_frame=key_frame + ".jpg",
+            key_frame=key_frame,
             camera_name=camera_name
         )
 
@@ -359,6 +359,10 @@ def setup(hass, config):
 
         # Validate configuration, input data and make the call
         response = await request.call(call)
+        # Add processor.key_frame to response if it exists
+        if processor.key_frame:
+            response["key_frame"] = processor.key_frame
+
         await _remember(hass=hass,
                         call=call,
                         start=start,
@@ -389,6 +393,10 @@ def setup(hass, config):
                                              frigate_retry_seconds=call.frigate_retry_seconds
                                              )
         response = await request.call(call)
+        # Add processor.key_frame to response if it exists
+        if processor.key_frame:
+            response["key_frame"] = processor.key_frame
+
         await _remember(hass=hass,
                         call=call,
                         start=start,
@@ -418,6 +426,10 @@ def setup(hass, config):
                                               )
 
         response = await request.call(call)
+        # Add processor.key_frame to response if it exists
+        if processor.key_frame:
+            response["key_frame"] = processor.key_frame
+
         await _remember(hass=hass,
                         call=call,
                         start=start,

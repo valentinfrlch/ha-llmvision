@@ -65,8 +65,8 @@ class MediaProcessor:
         else:
             persist_filename = f"/config/www/llmvision/" + frame_name
         if self.key_frame == "":
-            self.key_frame = persist_filename
-        await self._save_clip(image_data=resized_image, image_path=persist_filename + ".jpg")
+            self.key_frame = persist_filename + ".jpg"
+        await self._save_clip(image_data=resized_image, image_path=persist_filename)
 
     def _similarity_score(self, previous_frame, current_frame_gray):
         """
