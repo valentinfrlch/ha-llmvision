@@ -289,7 +289,7 @@ class ServiceCallData:
         self.provider = str(data_call.data.get(PROVIDER))
         self.model = str(data_call.data.get(
             MODEL))
-        self.message = str(data_call.data.get(MESSAGE)[0:2000])
+        self.message = str(data_call.data.get(MESSAGE, "")[0:2000])
         self.remember = data_call.data.get(REMEMBER, False)
         self.image_paths = data_call.data.get(IMAGE_FILE, "").split(
             "\n") if data_call.data.get(IMAGE_FILE) else None
@@ -313,7 +313,17 @@ class ServiceCallData:
         self.expose_images_persist = data_call.data.get(
             EXPOSE_IMAGES_PERSIST, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)
-        self.sensor_entity = data_call.data.get(SENSOR_ENTITY)
+        self.sensor_entity = data_call.data.get(SENSOR_ENTITY, "")
+
+        # ------------ Remember ------------
+        self.title = data_call.data.get("title")
+        self.summary = data_call.data.get("summary")
+        self.image_path = data_call.data.get("image_path", "")
+        self.camera_entity = data_call.data.get("camera_entity", "")
+        self.start_time = data_call.data.get("start_time", dt_util.now())
+        self.end_time = data_call.data.get(
+            "end_time", self.start_time + timedelta(minutes=1))
+
         # ------------ Added during call ------------
         # self.base64_images : List[str] = []
         # self.filenames : List[str] = []
@@ -466,6 +476,34 @@ def setup(hass, config):
         await _update_sensor(hass, sensor_entity, response["response_text"], type)
         return response
 
+    async def remember(data_call):
+        """Handle the service call to remember an event"""
+        start = dt_util.now()
+        call = ServiceCallData(data_call).get_service_call_data()
+
+        # Find semantic index config
+        config_entry = None
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            # Check if the config entry is empty
+            if entry.data["provider"] == "Event Calendar":
+                config_entry = entry
+                break
+
+        if config_entry is None:
+            raise ServiceValidationError(
+                f"Config entry not found. Please create the 'Event Calendar' config entry first.")
+
+        semantic_index = SemanticIndex(hass, config_entry)
+
+        await semantic_index.remember(
+            start=call.start_time,
+            end=call.end_time,
+            label=call.title,
+            summary=call.summary,
+            key_frame=call.image_path,
+            camera_name=call.camera_entity
+        )
+
     # Register services
     hass.services.register(
         DOMAIN, "image_analyzer", image_analyzer,
@@ -481,6 +519,9 @@ def setup(hass, config):
     )
     hass.services.register(
         DOMAIN, "data_analyzer", data_analyzer,
+    )
+    hass.services.register(
+        DOMAIN, "remember", remember,
     )
 
     return True
