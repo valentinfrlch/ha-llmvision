@@ -275,7 +275,7 @@ variables:
       {% if preview_mode == 'Live Preview' %}
         {{ '/api/camera_proxy/' + camera_entity }}
       {% else %}
-        /local/llmvision/{{camera_entity.replace("camera.", "")}}_0.jpg
+        /local/llmvision/{{camera_entity.replace("camera.", "")}}-0.jpg
       {% endif %}
     {% endif %}
   importance_prompt: >
