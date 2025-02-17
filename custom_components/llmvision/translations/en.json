@@ -97,6 +97,15 @@
                     "openwebui_https": "Use HTTPS",
                     "openwebui_default_model": "Default model"
                 }
+            },
+            "memory": {
+                "title": "Memory",
+                "description": "Items in memory apply to all providers and are used to provide additional context to the model.",
+                "data": {
+                    "memory_paths": "Image file path",
+                    "memory_strings": "Facts, interests or preferences",
+                    "system_prompt": "System prompt"
+                }
             }
         },
         "error": {

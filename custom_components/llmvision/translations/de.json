@@ -97,6 +97,15 @@
                     "openwebui_https": "HTTPS verwenden",
                     "openwebui_default_model": "Standardmodell"
                 }
+            },
+            "memory": {
+                "title": "Erinnerungen",
+                "description": "Erinnerungen sind providerübergreifend und werden verwended um dem Modell mehr kontext zur Verfügung zu stellen.",
+                "data": {
+                    "memory_paths": "Image file path",
+                    "memory_strings": "Facts, interests or preferences",
+                    "system_prompt": "System prompt"
+                }
             }
         },
         "error": {

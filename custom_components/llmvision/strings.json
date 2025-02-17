@@ -97,12 +97,22 @@
                     "openwebui_https": "Use HTTPS",
                     "openwebui_default_model": "Default model"
                 }
+            },
+            "memory": {
+                "title": "Memory",
+                "description": "Items in memory apply to all providers and are used to provide additional context to the model.",
+                "data": {
+                    "memory_paths": "Image file path",
+                    "memory_strings": "Facts, interests or preferences",
+                    "system_prompt": "System prompt"
+                }
             }
         },
         "error": {
             "handshake_failed": "Could not connect to the server. Check you API key or IP and port",
             "empty_api_key": "Invalid API key",
-            "invalid_provider": "Invalid provider selected"
+            "invalid_provider": "Invalid provider selected",
+            "memory_not_supported": "This provider does not support memory"
         },
         "abort": {
             "unknown_provider": "Unknown provider"

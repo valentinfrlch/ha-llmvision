@@ -32,6 +32,9 @@ from .const import (
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_DEFAULT_MODEL,
     CONF_RETENTION_TIME,
+    CONF_MEMORY_PATHS,
+    CONF_MEMORY_STRINGS,
+    CONF_SYSTEM_PROMPT,
     CONF_AWS_ACCESS_KEY_ID,
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
@@ -56,11 +59,12 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def handle_provider(self, provider):
         provider_steps = {
+            "Event Calendar": self.async_step_semantic_index,
+            "Memory": self.async_step_memory,
             "Anthropic": self.async_step_anthropic,
             "AWS Bedrock": self.async_step_aws_bedrock,
             "Azure": self.async_step_azure,
             "Custom OpenAI": self.async_step_custom_openai,
-            "Event Calendar": self.async_step_semantic_index,
             "Google": self.async_step_google,
             "Groq": self.async_step_groq,
             "LocalAI": self.async_step_localai,
@@ -81,7 +85,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required("provider", default="Event Calendar"): selector({
                 "select": {
                     # Azure removed until fixed
-                    "options": ["Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI", "Event Calendar"],
+                    "options": ["Event Calendar", "Memory", "Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI"],
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -551,6 +555,60 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="semantic_index",
+            data_schema=data_schema,
+        )
+
+    async def async_step_memory(self, user_input=None):
+        data_schema = vol.Schema({
+            vol.Optional(CONF_MEMORY_PATHS, default="/config/llmvision/memory/example.jpg"): selector({
+                "text": {
+                    "multiline": False,
+                    "multiple": True
+                }
+            }),
+            vol.Optional(CONF_MEMORY_STRINGS, default="Alice"): selector({
+                "text": {
+                    "multiline": False,
+                    "multiple": True
+                }
+            }),
+            vol.Optional(CONF_SYSTEM_PROMPT, default="You are a helpful AI assistant."): selector({
+                "text": {
+                    "multiline": True,
+                    "multiple": False
+                }
+            }),
+        })
+
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            data_schema = self.add_suggested_values_to_schema(
+                data_schema, self.init_info
+            )
+
+        if user_input is not None:
+            user_input["provider"] = self.init_info["provider"]
+
+            try:
+                for uid in self.hass.data[DOMAIN]:
+                    if 'system_prompt' in self.hass.data[DOMAIN][uid]:
+                        self.async_abort(reason="already_configured")
+            except KeyError:
+                # no existing configuration, continue
+                pass
+            if self.source == config_entries.SOURCE_RECONFIGURE:
+                # we're reconfiguring an existing config
+                return self.async_update_reload_and_abort(
+                    self._get_reconfigure_entry(),
+                    data_updates=user_input,
+                )
+            else:
+                # New config entry
+                return self.async_create_entry(title="LLM Vision Memory", data=user_input)
+
+        return self.async_show_form(
+            step_id="memory",
             data_schema=data_schema,
         )
 

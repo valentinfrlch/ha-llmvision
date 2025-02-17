@@ -19,6 +19,10 @@ from .const import (
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_DEFAULT_MODEL,
     CONF_RETENTION_TIME,
+    CONF_MEMORY_PATHS,
+    CONG_MEMORY_IMAGES_ENCODED,
+    CONF_MEMORY_STRINGS,
+    CONF_SYSTEM_PROMPT,
     CONF_AWS_ACCESS_KEY_ID,
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
@@ -30,6 +34,7 @@ from .const import (
     CONF_OPENWEBUI_DEFAULT_MODEL,
     MESSAGE,
     REMEMBER,
+    USE_MEMORY,
     MODEL,
     PROVIDER,
     MAXTOKENS,
@@ -52,6 +57,7 @@ from .const import (
 )
 from .calendar import SemanticIndex
 from .providers import Request
+from .memory import Memory
 from .media_handlers import MediaProcessor
 import re
 from datetime import timedelta
@@ -89,6 +95,10 @@ async def async_setup_entry(hass, entry):
     custom_openai_default_model = entry.data.get(
         CONF_CUSTOM_OPENAI_DEFAULT_MODEL)
     retention_time = entry.data.get(CONF_RETENTION_TIME)
+    memory_paths = entry.data.get(CONF_MEMORY_PATHS)
+    memory_images_encoded = entry.data.get(CONG_MEMORY_IMAGES_ENCODED)
+    memory_strings = entry.data.get(CONF_MEMORY_STRINGS)
+    system_prompt = entry.data.get(CONF_SYSTEM_PROMPT)
     aws_access_key_id = entry.data.get(CONF_AWS_ACCESS_KEY_ID)
     aws_secret_access_key = entry.data.get(CONF_AWS_SECRET_ACCESS_KEY)
     aws_region_name = entry.data.get(CONF_AWS_REGION_NAME)
@@ -123,6 +133,10 @@ async def async_setup_entry(hass, entry):
         CONF_CUSTOM_OPENAI_API_KEY: custom_openai_api_key,
         CONF_CUSTOM_OPENAI_DEFAULT_MODEL: custom_openai_default_model,
         CONF_RETENTION_TIME: retention_time,
+        CONF_MEMORY_PATHS: memory_paths,
+        CONG_MEMORY_IMAGES_ENCODED: memory_images_encoded,
+        CONF_MEMORY_STRINGS: memory_strings,
+        CONF_SYSTEM_PROMPT: system_prompt,
         CONF_AWS_ACCESS_KEY_ID: aws_access_key_id,
         CONF_AWS_SECRET_ACCESS_KEY: aws_secret_access_key,
         CONF_AWS_REGION_NAME: aws_region_name,
@@ -153,7 +167,6 @@ async def async_remove_entry(hass, entry):
     """Remove config entry from hass.data"""
     # Use the entry_id from the config entry as the UID
     entry_uid = entry.entry_id
-
     if entry_uid in hass.data[DOMAIN]:
         # Remove the entry from hass.data
         _LOGGER.info(f"Removing {entry.title} from hass.data")
@@ -162,20 +175,17 @@ async def async_remove_entry(hass, entry):
     else:
         _LOGGER.warning(
             f"Entry {entry.title} not found but was requested to be removed")
-
     return True
 
 
 async def async_unload_entry(hass, entry) -> bool:
     _LOGGER.debug(f"Unloading {entry.title} from hass.data")
-
     # check if the entry is the calendar entry (has entry rentention_time)
     if entry.data.get(CONF_RETENTION_TIME) is not None:
         # unload the calendar
         unload_ok = await hass.config_entries.async_unload_platforms(entry, ["calendar"])
     else:
         unload_ok = True
-
     return unload_ok
 
 
@@ -291,6 +301,7 @@ class ServiceCallData:
             MODEL))
         self.message = str(data_call.data.get(MESSAGE, "")[0:2000])
         self.remember = data_call.data.get(REMEMBER, False)
+        self.use_memory = data_call.data.get(USE_MEMORY, False)
         self.image_paths = data_call.data.get(IMAGE_FILE, "").split(
             "\n") if data_call.data.get(IMAGE_FILE) else None
         self.image_entities = data_call.data.get(IMAGE_ENTITY)
@@ -345,7 +356,6 @@ def setup(hass, config):
                           max_tokens=call.max_tokens,
                           temperature=call.temperature,
                           )
-
         # Fetch and preprocess images
         processor = MediaProcessor(hass, request)
         # Send images to RequestHandler client
@@ -356,6 +366,10 @@ def setup(hass, config):
                                              expose_images=call.expose_images,
                                              expose_images_persist=call.expose_images_persist
                                              )
+
+        if call.use_memory:
+            call.memory = Memory(hass)
+            await call.memory._update_memory()
 
         # Validate configuration, input data and make the call
         response = await request.call(call)
@@ -392,6 +406,10 @@ def setup(hass, config):
                                              frigate_retry_attempts=call.frigate_retry_attempts,
                                              frigate_retry_seconds=call.frigate_retry_seconds
                                              )
+        if call.use_memory:
+            call.memory = Memory(hass)
+            await call.memory._update_memory()
+
         response = await request.call(call)
         # Add processor.key_frame to response if it exists
         if processor.key_frame:
@@ -424,6 +442,10 @@ def setup(hass, config):
                                               expose_images=call.expose_images,
                                               expose_images_persist=call.expose_images_persist
                                               )
+
+        if call.use_memory:
+            call.memory = Memory(hass)
+            await call.memory._update_memory()
 
         response = await request.call(call)
         # Add processor.key_frame to response if it exists
@@ -481,6 +503,10 @@ def setup(hass, config):
                                                   target_width=call.target_width,
                                                   include_filename=call.include_filename
                                                   )
+        if call.use_memory:
+            call.memory =  Memory(hass)
+            await call.memory._update_memory()
+        
         response = await request.call(call)
         _LOGGER.info(f"Response: {response}")
         _LOGGER.info(f"Sensor type: {type}")

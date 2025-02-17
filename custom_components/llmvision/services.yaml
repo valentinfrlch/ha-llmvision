@@ -33,6 +33,14 @@ image_analyzer:
       default: false
       selector:
         boolean:
+    use_memory:
+      name: Use Memory
+      required: false
+      description: 'Use information stored in memory to provide additional context. Memory must be set up.'
+      example: true
+      default: false
+      selector:
+        boolean:
     image_file:
       name: Image File
       required: false
@@ -145,6 +153,14 @@ video_analyzer:
       name: Remember
       required: false
       description: 'Remember this event so you can ask about it later'
+      example: true
+      default: false
+      selector:
+        boolean:
+    use_memory:
+      name: Use Memory
+      required: false
+      description: 'Use information stored in memory to provide additional context. Memory must be set up.'
       example: true
       default: false
       selector:
@@ -299,6 +315,14 @@ stream_analyzer:
       default: false
       selector:
         boolean:
+    use_memory:
+      name: Use Memory
+      required: false
+      description: 'Use information stored in memory to provide additional context. Memory must be set up.'
+      example: true
+      default: false
+      selector:
+        boolean:
     image_entity:
       name: Camera Entity
       required: true
@@ -421,6 +445,14 @@ data_analyzer:
       selector:
         text:
           multiline: true
+    use_memory:
+      name: Use Memory
+      required: false
+      description: 'Use information stored in memory to provide additional context. Memory must be set up.'
+      example: true
+      default: false
+      selector:
+        boolean:
     sensor_entity:
       name: Sensor Entity
       description: The sensor to update
