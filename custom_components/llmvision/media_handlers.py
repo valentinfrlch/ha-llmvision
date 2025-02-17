@@ -66,7 +66,7 @@ class MediaProcessor:
             persist_filename = f"/config/www/llmvision/" + frame_name
         if self.key_frame == "":
             self.key_frame = persist_filename + ".jpg"
-        await self._save_clip(image_data=resized_image, image_path=persist_filename)
+            await self._save_clip(image_data=resized_image, image_path=self.key_frame)
 
     def _similarity_score(self, previous_frame, current_frame_gray):
         """
@@ -370,7 +370,6 @@ class MediaProcessor:
 
                     # create tmp dir to store video clips
                     await self.hass.loop.run_in_executor(None, partial(os.makedirs, tmp_clips_dir, exist_ok=True))
-                    _LOGGER.info(f"Created {tmp_clips_dir}")
                     # save clip to file with event_id as filename
                     clip_path = os.path.join(
                         tmp_clips_dir, event_id + ".mp4")
