@@ -100,10 +100,10 @@
             },
             "memory": {
                 "title": "Memory",
-                "description": "Content in memory apply to all providers and are used to provide additional context to the model. \n Images and descriptions must be in the same order and there have to be as many descriptions as images.",
+                "description": "Content in memory applies to all providers and is used to provide additional context to the model. \n Images and descriptions must be in the same order and there have to be as many descriptions as images.",
                 "data": {
                     "memory_paths": "Image file path",
-                    "memory_strings": "Describe the image",
+                    "memory_strings": "Image description",
                     "system_prompt": "System prompt"
                 }
             }
@@ -111,7 +111,9 @@
         "error": {
             "handshake_failed": "Could not connect to the server. Check you API key or IP and port",
             "empty_api_key": "Invalid API key",
-            "invalid_provider": "Invalid provider selected"
+            "invalid_provider": "Invalid provider selected",
+            "invalid_image_path": "One or more image paths are invalid",
+            "mismatched_lengths": "The number of image paths and descriptions must match"
         },
         "abort": {
             "unknown_provider": "Unknown provider"

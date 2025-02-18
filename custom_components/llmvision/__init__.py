@@ -54,6 +54,8 @@ from .const import (
     EXPOSE_IMAGES_PERSIST,
     GENERATE_TITLE,
     SENSOR_ENTITY,
+    DEFAULT_SYSTEM_PROMPT,
+    DATA_EXTRACTION_PROMPT,
 )
 from .calendar import SemanticIndex
 from .providers import Request
@@ -367,9 +369,8 @@ def setup(hass, config):
                                              expose_images_persist=call.expose_images_persist
                                              )
 
-        if call.use_memory:
-            call.memory = Memory(hass)
-            await call.memory._update_memory()
+        call.memory = Memory(hass, fallback_prompt=DEFAULT_SYSTEM_PROMPT)
+        await call.memory._update_memory()
 
         # Validate configuration, input data and make the call
         response = await request.call(call)
@@ -406,9 +407,8 @@ def setup(hass, config):
                                              frigate_retry_attempts=call.frigate_retry_attempts,
                                              frigate_retry_seconds=call.frigate_retry_seconds
                                              )
-        if call.use_memory:
-            call.memory = Memory(hass)
-            await call.memory._update_memory()
+        call.memory = Memory(hass, fallback_prompt=DEFAULT_SYSTEM_PROMPT)
+        await call.memory._update_memory()
 
         response = await request.call(call)
         # Add processor.key_frame to response if it exists
@@ -443,9 +443,8 @@ def setup(hass, config):
                                               expose_images_persist=call.expose_images_persist
                                               )
 
-        if call.use_memory:
-            call.memory = Memory(hass)
-            await call.memory._update_memory()
+        call.memory = Memory(hass, fallback_prompt=DEFAULT_SYSTEM_PROMPT)
+        await call.memory._update_memory()
 
         response = await request.call(call)
         # Add processor.key_frame to response if it exists
@@ -503,10 +502,10 @@ def setup(hass, config):
                                                   target_width=call.target_width,
                                                   include_filename=call.include_filename
                                                   )
-        if call.use_memory:
-            call.memory =  Memory(hass)
-            await call.memory._update_memory()
         
+        call.memory = Memory(hass, fallback_prompt=DATA_EXTRACTION_PROMPT)
+        await call.memory._update_memory()
+
         response = await request.call(call)
         _LOGGER.info(f"Response: {response}")
         _LOGGER.info(f"Sensor type: {type}")

@@ -111,7 +111,9 @@
         "error": {
             "handshake_failed": "Verbindung zum Server konnte nicht hergestellt werden. Überprüfe deinen API-key oder IP und Port",
             "empty_api_key": "Ungültiger API-key",
-            "invalid_provider": "Ungültiger Provider ausgewählt"
+            "invalid_provider": "Ungültiger Provider ausgewählt",
+            "invalid_image_path": "Ein oder mehrere Bildpfade sind ungültig",
+            "mismatched_lengths": "Die Anzahl der Bildpfade und Beschreibungen muss übereinstimmen"
         },
         "abort": {
             "unknown_provider": "Unbekannter Anbieter"

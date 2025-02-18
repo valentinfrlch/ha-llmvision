@@ -410,7 +410,7 @@ class OpenAI(Provider):
         payload["messages"][0]["content"].append(
             {"type": "text", "text": call.message})
 
-        if call.memory:
+        if hasattr(call, 'memory') and call.memory:
             memory_content = call.memory._get_memory_images(
                 memory_type="OpenAI")
             system_prompt = call.memory.system_prompt
@@ -483,7 +483,7 @@ class AzureOpenAI(Provider):
         payload["messages"][0]["content"].append(
             {"type": "text", "text": call.message})
 
-        if call.memory:
+        if hasattr(call, 'memory') and call.memory:
             memory_content = call.memory._get_memory_images(
                 memory_type="OpenAI")
             system_prompt = call.memory.system_prompt
@@ -555,7 +555,7 @@ class Anthropic(Provider):
         payload["messages"][0]["content"].append(
             {"type": "text", "text": call.message})
 
-        if call.memory:
+        if hasattr(call, 'memory') and call.memory:
             memory_content = call.memory._get_memory_images(
                 memory_type="Anthropic")
             system_prompt = call.memory.system_prompt
@@ -563,8 +563,7 @@ class Anthropic(Provider):
                 payload["messages"].insert(
                     0, {"role": "user", "content": memory_content})
             if system_prompt:
-                payload["messages"].insert(
-                    0, {"role": "user", "content": system_prompt})
+                payload["system"] = system_prompt
 
         return payload
 
@@ -621,7 +620,7 @@ class Google(Provider):
                 {"inline_data": {"mime_type": "image/jpeg", "data": image}})
         payload["contents"][0]["parts"].append({"text": call.message})
 
-        if call.memory:
+        if hasattr(call, 'memory') and call.memory:
             memory_content = call.memory._get_memory_images(
                 memory_type="Google")
             system_prompt = call.memory.system_prompt
@@ -683,8 +682,10 @@ class Groq(Provider):
             "model": call.model
         }
 
-        if call.memory:
-            raise ServiceValidationError("memory_not_supported")
+        if hasattr(call, 'memory') and call.memory:
+            system_prompt = call.memory.system_prompt
+            if system_prompt:
+                payload["messages"].insert(0, {"role": "user", "content": "System Prompt:" + system_prompt})
 
         return payload
 
@@ -706,7 +707,7 @@ class Groq(Provider):
             raise ServiceValidationError("empty_api_key")
         headers = self._generate_headers()
         data = {
-            "model": "llama3-8b-8192",
+            "model": self.default_model,
             "messages": [{
                 "role": "user",
                 "content": "Hi"
@@ -746,7 +747,7 @@ class LocalAI(Provider):
         payload["messages"][0]["content"].append(
             {"type": "text", "text": call.message})
 
-        if call.memory:
+        if hasattr(call, 'memory') and call.memory:
             memory_content = call.memory._get_memory_images(
                 memory_type="OpenAI")
             system_prompt = call.memory.system_prompt
@@ -807,7 +808,7 @@ class Ollama(Provider):
         payload = {"model": call.model, "messages": [], "stream": False, "options": {
             "num_predict": call.max_tokens, "temperature": call.temperature}}
         
-        if call.memory:
+        if hasattr(call, 'memory') and call.memory:
             memory_content = call.memory._get_memory_images(
                 memory_type="Ollama")
             system_prompt = call.memory.system_prompt
@@ -947,7 +948,7 @@ class AWSBedrock(Provider):
             })
         payload["messages"][0]["content"].append({"text": call.message})
 
-        if call.memory:
+        if hasattr(call, 'memory') and call.memory:
             memory_content = call.memory._get_memory_images(memory_type="AWS")
             system_prompt = call.memory.system_prompt
             if memory_content:
@@ -955,7 +956,7 @@ class AWSBedrock(Provider):
                     0, {"role": "user", "content": memory_content})
             if system_prompt:
                 payload["messages"].insert(
-                    0, {"role": "system", "content": system_prompt})
+                    0, {"role": "user", "content": [{"text": system_prompt}]})
 
         return payload
 

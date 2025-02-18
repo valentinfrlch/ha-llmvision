@@ -3,7 +3,8 @@ from .const import (
     CONF_MEMORY_PATHS,
     CONG_MEMORY_IMAGES_ENCODED,
     CONF_MEMORY_STRINGS,
-    CONF_SYSTEM_PROMPT
+    CONF_SYSTEM_PROMPT,
+    DEFAULT_SYSTEM_PROMPT
 )
 import base64
 import io
@@ -14,14 +15,17 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Memory:
-    def __init__(self, hass):
+    def __init__(self, hass, strings=[], paths=[], fallback_prompt=DEFAULT_SYSTEM_PROMPT):
         self.hass = hass
         self.entry = self._find_memory_entry()
-        self._system_prompt = self.entry.data.get(CONF_SYSTEM_PROMPT, "")
-        self.memory_strings = self.entry.data.get(CONF_MEMORY_STRINGS, [])
-        self.memory_paths = self.entry.data.get(CONF_MEMORY_PATHS, [])
+        self._system_prompt = self.entry.data.get(
+            CONF_SYSTEM_PROMPT, fallback_prompt)
+        self.memory_strings = self.entry.data.get(CONF_MEMORY_STRINGS, strings)
+        self.memory_paths = self.entry.data.get(CONF_MEMORY_PATHS, paths)
         self.memory_images = self.entry.data.get(
             CONG_MEMORY_IMAGES_ENCODED, [])
+
+        _LOGGER.debug(self)
 
     def _get_memory_images(self, memory_type="OpenAI") -> list:
         content = []
@@ -37,7 +41,7 @@ class Memory:
                     {"type": "text", "text": tag + ":"})
                 content.append({"type": "image_url", "image_url": {
                     "url": f"data:image/jpeg;base64,{image}"}})
-        
+
         elif memory_type == "OpenAI-legacy":
             content.append(
                 {"type": "text", "text": memory_prompt})
@@ -48,7 +52,7 @@ class Memory:
                     {"type": "text", "text": tag + ":"})
                 content.append({"type": "image_url", "image_url": {
                     "url": f"data:image/jpeg;base64,{image}"}})
-                
+
         elif memory_type == "Ollama":
             content.append(
                 {"role": "user", "content": memory_prompt})
@@ -56,7 +60,7 @@ class Memory:
                 tag = self.memory_strings[self.memory_images.index(image)]
 
                 content.append({"role": "user",
-                 "content": tag + ":", "images": [image]})
+                                "content": tag + ":", "images": [image]})
 
         elif memory_type == "Anthropic":
             content.append(
@@ -78,14 +82,14 @@ class Memory:
                     {"inline_data": {"mime_type": "image/jpeg", "data": image}})
         elif memory_type == "AWS":
             content.append(
-                {"type": "text", "text": memory_prompt})
+                {"text": memory_prompt})
             for image in self.memory_images:
                 tag = self.memory_strings[self.memory_images.index(image)]
 
                 content.append(
                     {"text": tag + ":"})
                 content.append({"image": {
-                    "format": "jpeg", "source": {"bytes": image}}})
+                    "format": "jpeg", "source": {"bytes": base64.b64decode(image)}}})
         else:
             return None
 
@@ -94,8 +98,6 @@ class Memory:
     @property
     def system_prompt(self) -> str:
         return "System prompt: " + self._system_prompt
-
-    # TODO: Add validation: Same lentgh for memory_paths and memory_strings
 
     def _find_memory_entry(self):
         memory_entry = None
@@ -140,7 +142,6 @@ class Memory:
 
     async def _update_memory(self):
         """Manage encoded images"""
-
         # check if len(memory_paths) != len(memory_images)
         if len(self.memory_paths) != len(self.memory_images):
             self.memory_images = await self._encode_images(self.memory_paths)
@@ -152,4 +153,4 @@ class Memory:
                 self.entry, data=memory)
 
     def __str__(self):
-        return f"Memory:({self.memory_strings}, {self.memory_paths})"
+        return f"Memory({self.memory_strings}, {self.memory_paths}, {len(self.memory_images)})"

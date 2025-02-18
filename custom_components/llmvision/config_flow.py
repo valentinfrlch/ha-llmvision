@@ -11,6 +11,7 @@ from .providers import (
     Ollama,
     AWSBedrock
 )
+from .memory import Memory
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
@@ -45,9 +46,10 @@ from .const import (
     CONF_OPENWEBUI_API_KEY,
     CONF_OPENWEBUI_DEFAULT_MODEL,
     ENDPOINT_OPENWEBUI,
-
+    DEFAULT_SYSTEM_PROMPT,
 )
 import voluptuous as vol
+import os
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -566,13 +568,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     "multiple": True
                 }
             }),
-            vol.Optional(CONF_MEMORY_STRINGS, default="Alice"): selector({
+            vol.Optional(CONF_MEMORY_STRINGS): selector({
                 "text": {
                     "multiline": False,
                     "multiple": True
                 }
             }),
-            vol.Optional(CONF_SYSTEM_PROMPT, default="You are a helpful AI assistant."): selector({
+            vol.Optional(CONF_SYSTEM_PROMPT, default=DEFAULT_SYSTEM_PROMPT): selector({
                 "text": {
                     "multiline": True,
                     "multiple": False
@@ -597,6 +599,20 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except KeyError:
                 # no existing configuration, continue
                 pass
+
+            errors = {}
+            if len(user_input.get(CONF_MEMORY_PATHS, [])) != len(user_input.get(CONF_MEMORY_STRINGS, [])):
+                errors = {"base": "mismatched_lengths"}
+            for path in user_input.get(CONF_MEMORY_PATHS, []):
+                if not os.path.exists(path):
+                    errors = {"base": "invalid_image_path"}
+            
+            if errors:
+                return self.async_show_form(
+                    step_id="memory",
+                    data_schema=data_schema,
+                    errors=errors
+                )
             if self.source == config_entries.SOURCE_RECONFIGURE:
                 # we're reconfiguring an existing config
                 return self.async_update_reload_and_abort(
