@@ -17,20 +17,19 @@ class Memory:
     def __init__(self, hass):
         self.hass = hass
         self.entry = self._find_memory_entry()
-        self.system_prompt = self.entry.data.get(CONF_SYSTEM_PROMPT, "")
+        self._system_prompt = self.entry.data.get(CONF_SYSTEM_PROMPT, "")
         self.memory_strings = self.entry.data.get(CONF_MEMORY_STRINGS, [])
         self.memory_paths = self.entry.data.get(CONF_MEMORY_PATHS, [])
         self.memory_images = self.entry.data.get(
             CONG_MEMORY_IMAGES_ENCODED, [])
 
-    def get_memory_strings(self):
-        return self.memory_strings
-
-    def _get_memory_images(self, type="OpenAI"):
+    def _get_memory_images(self, memory_type="OpenAI") -> list:
         content = []
-        if type == "OpenAI":
+        memory_prompt = "The following images along with descriptions serve as reference. They are not to be mentioned in the response."
+
+        if memory_type == "OpenAI":
             content.append(
-                {"type": "text", "text": "The following images along with descriptions serve as reference. They are not to be mentioned in the response."})
+                {"type": "text", "text": memory_prompt})
             for image in self.memory_images:
                 tag = self.memory_strings[self.memory_images.index(image)]
 
@@ -38,10 +37,30 @@ class Memory:
                     {"type": "text", "text": tag + ":"})
                 content.append({"type": "image_url", "image_url": {
                     "url": f"data:image/jpeg;base64,{image}"}})
-
-        elif type == "Anthropic":
+        
+        elif memory_type == "OpenAI-legacy":
             content.append(
-                {"type": "text", "text": "The following images along with descriptions serve as reference. They are not to be mentioned in the response."})
+                {"type": "text", "text": memory_prompt})
+            for image in self.memory_images:
+                tag = self.memory_strings[self.memory_images.index(image)]
+
+                content.append(
+                    {"type": "text", "text": tag + ":"})
+                content.append({"type": "image_url", "image_url": {
+                    "url": f"data:image/jpeg;base64,{image}"}})
+                
+        elif memory_type == "Ollama":
+            content.append(
+                {"role": "user", "content": memory_prompt})
+            for image in self.memory_images:
+                tag = self.memory_strings[self.memory_images.index(image)]
+
+                content.append({"role": "user",
+                 "content": tag + ":", "images": [image]})
+
+        elif memory_type == "Anthropic":
+            content.append(
+                {"type": "text", "text": memory_prompt})
             for image in self.memory_images:
                 tag = self.memory_strings[self.memory_images.index(image)]
 
@@ -49,19 +68,17 @@ class Memory:
                     {"type": "text", "text": tag + ":"})
                 content.append({"type": "image", "source": {
                     "type": "base64", "media_type": "image/jpeg", "data": f"{image}"}})
-        elif type == "Google":
-            content.append(
-                {"type": "text", "text": "The following images along with descriptions serve as reference. They are not to be mentioned in the response."})
+        elif memory_type == "Google":
+            content.append({"text": memory_prompt})
             for image in self.memory_images:
                 tag = self.memory_strings[self.memory_images.index(image)]
 
+                content.append({"text": tag + ":"})
                 content.append(
-                    {"type": "text", "text": tag + ":"})
-                content.append({"type": "image", "source": {
-                    "type": "base64", "data": f"{image}"}})
-        elif type == "AWS":
+                    {"inline_data": {"mime_type": "image/jpeg", "data": image}})
+        elif memory_type == "AWS":
             content.append(
-                {"type": "text", "text": "The following images along with descriptions serve as reference. They are not to be mentioned in the response."})
+                {"type": "text", "text": memory_prompt})
             for image in self.memory_images:
                 tag = self.memory_strings[self.memory_images.index(image)]
 
@@ -74,8 +91,11 @@ class Memory:
 
         return content
 
-    def get_system_prompt(self):
-        return "System prompt: " + self.system_prompt
+    @property
+    def system_prompt(self) -> str:
+        return "System prompt: " + self._system_prompt
+
+    # TODO: Add validation: Same lentgh for memory_paths and memory_strings
 
     def _find_memory_entry(self):
         memory_entry = None

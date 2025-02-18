@@ -398,7 +398,7 @@ class OpenAI(Provider):
                    "max_tokens": call.max_tokens,
                    "temperature": call.temperature
                    }
-                
+
         for image, filename in zip(call.base64_images, call.filenames):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename
@@ -409,10 +409,11 @@ class OpenAI(Provider):
 
         payload["messages"][0]["content"].append(
             {"type": "text", "text": call.message})
-        
+
         if call.memory:
-            memory_content = call.memory._get_memory_images(type="OpenAI")
-            system_prompt = call.memory.get_system_prompt()
+            memory_content = call.memory._get_memory_images(
+                memory_type="OpenAI")
+            system_prompt = call.memory.system_prompt
             if memory_content:
                 payload["messages"].insert(
                     0, {"role": "user", "content": memory_content})
@@ -481,10 +482,11 @@ class AzureOpenAI(Provider):
                 "url": f"data:image/jpeg;base64,{image}"}})
         payload["messages"][0]["content"].append(
             {"type": "text", "text": call.message})
-        
+
         if call.memory:
-            memory_content = call.memory._get_memory_images(type="OpenAI")
-            system_prompt = call.memory.get_system_prompt()
+            memory_content = call.memory._get_memory_images(
+                memory_type="OpenAI")
+            system_prompt = call.memory.system_prompt
             if memory_content:
                 payload["messages"].insert(
                     0, {"role": "user", "content": memory_content})
@@ -549,20 +551,21 @@ class Anthropic(Provider):
             payload["messages"][0]["content"].append(
                 {"type": "text", "text": tag + ":"})
             payload["messages"][0]["content"].append({"type": "image", "source": {
-                                                  "type": "base64", "media_type": "image/jpeg", "data": f"{image}"}})
+                "type": "base64", "media_type": "image/jpeg", "data": f"{image}"}})
         payload["messages"][0]["content"].append(
             {"type": "text", "text": call.message})
-        
+
         if call.memory:
-            memory_content = call.memory._get_memory_images(type="Anthropic")
-            system_prompt = call.memory.get_system_prompt()
+            memory_content = call.memory._get_memory_images(
+                memory_type="Anthropic")
+            system_prompt = call.memory.system_prompt
             if memory_content:
                 payload["messages"].insert(
                     0, {"role": "user", "content": memory_content})
             if system_prompt:
                 payload["messages"].insert(
                     0, {"role": "user", "content": system_prompt})
-                
+
         return payload
 
     def _prepare_text_data(self, call) -> dict:
@@ -592,7 +595,7 @@ class Anthropic(Provider):
 class Google(Provider):
     def __init__(self, hass, api_key="", endpoint={'base_url': ENDPOINT_GOOGLE, 'model': "gemini-1.5-flash-latest"}):
         super().__init__(hass, api_key, endpoint)
-        self.default_model = "gemini-1.5-flash-latest"
+        self.default_model = "gemini-2.0-flash"
 
     def _generate_headers(self) -> dict:
         return {'content-type': 'application/json'}
@@ -608,27 +611,27 @@ class Google(Provider):
         return response_text
 
     def _prepare_vision_data(self, call) -> dict:
-        payload = {"contents": [], "generationConfig": {
+        payload = {"contents": [{"role": "user", "parts": []}], "generationConfig": {
             "maxOutputTokens": call.max_tokens, "temperature": call.temperature}}
         for image, filename in zip(call.base64_images, call.filenames):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename
-            payload["contents"].append({"role": "user", "parts": [
-                                    {"text": tag + ":"}, {"inline_data": {"mime_type": "image/jpeg", "data": image}}]})
-        payload["contents"].append(
-            {"role": "user", "parts": [{"text": call.message}]})
-        
+            payload["contents"][0]["parts"].append({"text": tag + ":"})
+            payload["contents"][0]["parts"].append(
+                {"inline_data": {"mime_type": "image/jpeg", "data": image}})
+        payload["contents"][0]["parts"].append({"text": call.message})
+
         if call.memory:
-            memory_content = call.memory._get_memory_images(type="Google")
-            system_prompt = call.memory.get_system_prompt()
+            memory_content = call.memory._get_memory_images(
+                memory_type="Google")
+            system_prompt = call.memory.system_prompt
             if memory_content:
                 payload["contents"].insert(
                     0, {"role": "user", "parts": memory_content})
             if system_prompt:
-                # Add "system_instruction": {"parts":{"text":self.system_prompt}} to the payload on the same level as "contents"
-                payload["system_instruction"] = {"parts": {"text": system_prompt}}
-                
-                
+                payload["system_instruction"] = {
+                    "parts": {"text": system_prompt}}
+
         return payload
 
     def _prepare_text_data(self, call) -> dict:
@@ -682,7 +685,7 @@ class Groq(Provider):
 
         if call.memory:
             raise ServiceValidationError("memory_not_supported")
-                
+
         return payload
 
     def _prepare_text_data(self, call) -> dict:
@@ -742,17 +745,18 @@ class LocalAI(Provider):
                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image}"}})
         payload["messages"][0]["content"].append(
             {"type": "text", "text": call.message})
-        
+
         if call.memory:
-            memory_content = call.memory._get_memory_images(type="OpenAI")
-            system_prompt = call.memory.get_system_prompt()
+            memory_content = call.memory._get_memory_images(
+                memory_type="OpenAI")
+            system_prompt = call.memory.system_prompt
             if memory_content:
                 payload["messages"].insert(
                     0, {"role": "user", "content": memory_content})
             if system_prompt:
                 payload["messages"].insert(
                     0, {"role": "system", "content": system_prompt})
-                
+
         return payload
 
     def _prepare_text_data(self, call) -> dict:
@@ -802,6 +806,16 @@ class Ollama(Provider):
     def _prepare_vision_data(self, call) -> dict:
         payload = {"model": call.model, "messages": [], "stream": False, "options": {
             "num_predict": call.max_tokens, "temperature": call.temperature}}
+        
+        if call.memory:
+            memory_content = call.memory._get_memory_images(
+                memory_type="Ollama")
+            system_prompt = call.memory.system_prompt
+            if memory_content:
+                payload["messages"].extend(memory_content)
+            if system_prompt:
+                payload["system"] = system_prompt
+        
         for image, filename in zip(call.base64_images, call.filenames):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename
@@ -810,16 +824,6 @@ class Ollama(Provider):
             payload["messages"].append(image_message)
         prompt_message = {"role": "user", "content": call.message}
         payload["messages"].append(prompt_message)
-
-        if call.memory:
-            memory_content = call.memory._get_memory_images(type="OpenAI")
-            system_prompt = call.memory.get_system_prompt()
-            if memory_content:
-                payload["messages"].insert(
-                    0, {"role": "user", "content": memory_content})
-            if system_prompt:
-                payload["messages"].insert(
-                    0, {"role": "system", "content": system_prompt})
 
         return payload
 
@@ -944,8 +948,8 @@ class AWSBedrock(Provider):
         payload["messages"][0]["content"].append({"text": call.message})
 
         if call.memory:
-            memory_content = call.memory._get_memory_images(type="AWS")
-            system_prompt = call.memory.get_system_prompt()
+            memory_content = call.memory._get_memory_images(memory_type="AWS")
+            system_prompt = call.memory.system_prompt
             if memory_content:
                 payload["messages"].insert(
                     0, {"role": "user", "content": memory_content})
