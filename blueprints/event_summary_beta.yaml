@@ -8,7 +8,7 @@ blueprint:
   source_url: https://github.com/valentinfrlch/ha-llmvision/blob/main/blueprints/event_summary_beta.yaml
   input:
     important:
-      name: Important (Beta)
+      name: Important (Experimental)
       description: >
         Use AI to classify events as Critical, Normal or Low.
         Notifications are sent only for events classified as Normal or higher.
@@ -23,6 +23,12 @@ blueprint:
       default: false
       selector:
         boolean:
+    run_conditions:
+      name: Run Conditions
+      description: All conditions must be true in order for the blueprint to run.
+      default: false
+      selector:
+        condition:
     notify_device:
       name: Notify Device
       description: The devices to send the notification to. Multiple devices may be used. Only works with Home Assistant mobile app.
@@ -32,6 +38,15 @@ blueprint:
           multiple: true
           filter:
             integration: mobile_app
+    notification_delivery:
+      name: Notification Delivery
+      description: "Controls how notifications are delivered. \n \n **Dynamic** immediately notifies with a live preview and updates the notification silently with a summary once it is available. \n **Consolidated** Delays the notification until the event summary is generated. Use this if you're receiving multiple notifications for the same event."
+      default: 'Dynamic'
+      selector:
+        select:
+          options:
+            - Dynamic
+            - Consolidated
     camera_entities:
       name: Camera Entities
       description: List of camera entities to monitor
@@ -74,15 +89,6 @@ blueprint:
         number:
           min: 0
           max: 60
-    condition_entity:
-      name: Conditional Entity
-      description: Binary Sensor used as condition. Used to control then the automation can run. Automation will only run when binary_sensor is true/on.
-      default: false
-      selector:
-        entity:
-          multiple: false
-          filter: 
-            domain: binary_sensor
     tap_navigate:
       name: Tap Navigate
       description: >-
@@ -143,15 +149,6 @@ blueprint:
         number:
           min: 1
           max: 100
-    detail:
-      name: Detail
-      description: Detail parameter (OpenAI only)
-      default: 'low'
-      selector:
-        select:
-          options:
-            - high
-            - low
     temperature:
       name: Temperature
       description: Randomness. Lower is more accurate, higher is more creative.
@@ -167,7 +164,7 @@ variables:
   cooldown: !input cooldown
   preview_mode: !input preview_mode
   notify_devices: !input notify_device
-  condition_entity: !input condition_entity
+  notification_delivery: !input notification_delivery
   device_name_map: >
     {% set ns = namespace(device_names=[]) %}
     {% for device_id in notify_devices %}
@@ -193,9 +190,8 @@ variables:
   camera: >
       {{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize }}
   importance_prompt: >
-    Your job is to classify security events based on cctv footage. Your options: "passive" if an event seems unimportant, "time-sensitive" if important and "critical" for suspicious events.
-    Use "critical" only for possible burglaries and similar events. "time-sensitive" could be a courier at the front door or an event of similar importance.
-    Reply with these replies exactly.
+    Your job is to classify security events based on home security footage. Your options: "passive" if an event seems unimportant, "time-sensitive" if important and "critical" for suspicious events.
+    Use "critical" only for possible burglaries and similar events. "time-sensitive" could be a person at the front door or an event of similar importance. You must reply with one of these options exactly.
 
 max_exceeded: silent
 mode: single
@@ -211,13 +207,9 @@ triggers:
     id: 'motion_sensor_trigger'
 
 condition:
-  - condition: template
-    value_template: >
-      {% if condition_entity %}
-        {{ states(condition_entity) == 'on' }}
-      {% else %}
-        true
-      {% endif %}
+  - condition: and
+    conditions: !input run_conditions
+  
 
 action:
   - choose:
@@ -233,7 +225,6 @@ action:
               message: "{{importance_prompt}}"
               include_filename: true
               target_width: 1280
-              detail: low
               max_tokens: 3
               temperature: 0.1
             response_variable: importance
@@ -246,24 +237,28 @@ action:
         sequence:
           - stop: "Event is not important"
 
-
-  - alias: "Send instant notification to notify devices"
-    repeat:
-      for_each: "{{device_name_map}}"
-      sequence:
-        - action: "notify.{{ repeat.item }}"
-          data:
-            title: "{{ label }}"
-            message: "{{camera}}"
-            data:
-              entity_id: "{{camera_entity}}"
-              url: !input tap_navigate #iOS
-              clickAction: !input tap_navigate #Android
-              tag: "{{tag}}"
-              group: "{{group}}"
-              alert_once: true
-              push:
-                interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ notification_delivery == 'Dynamic' }}"
+        sequence:
+        - alias: "Send instant notification to notify devices"
+          repeat:
+            for_each: "{{device_name_map}}"
+            sequence:
+              - action: "notify.{{ repeat.item }}"
+                data:
+                  title: "{{ label }}"
+                  message: "{{camera}}"
+                  data:
+                    entity_id: "{{camera_entity}}"
+                    url: !input tap_navigate #iOS
+                    clickAction: !input tap_navigate #Android
+                    tag: "{{tag}}"
+                    group: "{{group}}"
+                    alert_once: true
+                    push:
+                      interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
 
   - alias: "Analyze event"
     action: llmvision.stream_analyzer
@@ -280,28 +275,53 @@ action:
       include_filename: true
       max_frames: !input max_frames
       target_width: !input target_width
-      detail: !input detail
       max_tokens: !input max_tokens
       temperature: !input temperature  
     response_variable: response
 
 
-  - alias: "Update notification on notify devices"
-    repeat:
-      for_each: "{{device_name_map}}"
-      sequence:
-        - action: "notify.{{ repeat.item }}"
-          data:
-            title: "{{ label }}"
-            message: "{{response.response_text}}"
-            data:
-              image: "{{response.key_frame.replace('/config/www/','/local/') if preview_mode=='Snapshot'}}"
-              entity_id: "{{camera_entity if preview_mode=='Live Preview' else None}}"
-              url: !input tap_navigate #iOS
-              clickAction: !input tap_navigate #Android
-              tag: "{{tag}}"
-              group: "{{group}}"
-              push:
-                interruption-level: passive
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ preview_mode=='Snapshot' }}"
+        sequence:
+        - alias: "(Snapshot) Update notification on notify devices"
+          repeat:
+            for_each: "{{device_name_map}}"
+            sequence:
+              - action: "notify.{{ repeat.item }}"
+                data:
+                  title: "{{ label }}"
+                  message: "{{response.response_text}}"
+                  data:
+                    image: "{{response.key_frame.replace('/config/www/','/local/') }}"
+                    url: !input tap_navigate #iOS
+                    clickAction: !input tap_navigate #Android
+                    tag: "{{tag}}"
+                    group: "{{group}}"
+                    push:
+                      interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
+      - conditions:
+          - condition: template
+            value_template: "{{ preview_mode=='Live Preview' }}"
+        sequence:
+        - alias: "(Live Preview) Update notification on notify devices"
+          repeat:
+            for_each: "{{device_name_map}}"
+            sequence:
+              - action: "notify.{{ repeat.item }}"
+                data:
+                  title: "{{ label }}"
+                  message: "{{response.response_text}}"
+                  data:
+                    entity_id: "{{camera_entity}}"
+                    url: !input tap_navigate #iOS
+                    clickAction: !input tap_navigate #Android
+                    tag: "{{tag}}"
+                    group: "{{group}}"
+                    push:
+                      interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
+            
 
   - delay: '00:{{cooldown|int}}:00'
