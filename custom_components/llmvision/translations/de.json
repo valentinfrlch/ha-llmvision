@@ -100,11 +100,11 @@
             },
             "memory": {
                 "title": "Erinnerungen",
-                "description": "Erinnerungen sind providerübergreifend und werden verwended um dem Modell mehr kontext zur Verfügung zu stellen.",
+                "description": "Erinnerungen sind providerübergreifend und werden verwended um dem Modell mehr kontext zur Verfügung zu stellen. \n Bilder und Beschreibungen müssen in der selben Reihenfolge sein und es müssen gleich viele Bilder wie Beschreibungen vorhanden sein.",
                 "data": {
-                    "memory_paths": "Image file path",
-                    "memory_strings": "Facts, interests or preferences",
-                    "system_prompt": "System prompt"
+                    "memory_paths": "Bildpfad",
+                    "memory_strings": "Bildbeschreibung",
+                    "system_prompt": "System Prompt"
                 }
             }
         },

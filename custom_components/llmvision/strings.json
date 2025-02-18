@@ -100,10 +100,10 @@
             },
             "memory": {
                 "title": "Memory",
-                "description": "Items in memory apply to all providers and are used to provide additional context to the model.",
+                "description": "Content in memory apply to all providers and are used to provide additional context to the model. \n Images and descriptions must be in the same order and there have to be as many descriptions as images.",
                 "data": {
                     "memory_paths": "Image file path",
-                    "memory_strings": "Facts, interests or preferences",
+                    "memory_strings": "Describe the image",
                     "system_prompt": "System prompt"
                 }
             }
