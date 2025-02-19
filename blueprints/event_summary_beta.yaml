@@ -19,7 +19,7 @@ blueprint:
         boolean:
     remember:
       name: Remember
-      description: Stores this event in Event Calendar so you can ask about it. If important is enabled, only events classified as Normal or Critical will be saved.
+      description: Stores this event in the Timeline so you can ask about it. If important is enabled, only events classified as Normal or Critical will be saved.
       default: false
       selector:
         boolean:
