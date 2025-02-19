@@ -23,6 +23,19 @@ blueprint:
       default: false
       selector:
         boolean:
+    message:
+      name: Prompt
+      description: Model prompt for the video_analyzer action
+      default: "Summarize what's happening in the camera feed (one sentence max). Don't describe the scene! If there is a person, describe what they're doing and what they look like. If they look like a courier mention that! If nothing is happening, say so."
+      selector:
+        text:
+          multiline: true
+    use_memory:
+      name: Use Memory
+      description: 'Use information stored in memory to provide additional context. Memory must be set up.'
+      default: false
+      selector:
+        boolean:
     run_conditions:
       name: Run Conditions
       description: All conditions must be true in order for the blueprint to run.
@@ -126,13 +139,6 @@ blueprint:
       selector:
         text:
           multiline: false
-    message:
-      name: Prompt
-      description: Model prompt for the video_analyzer action
-      default: "Summarize what's happening in the camera feed (one sentence max). Don't describe the scene! If there is a person, describe what they're doing and what they look like. If they look like a courier mention that! If nothing is happening, say so."
-      selector:
-        text:
-          multiline: true
     target_width:
       name: Target Width
       description: Downscale images (uses less tokens and speeds up processing)
@@ -268,6 +274,7 @@ action:
       provider: !input provider
       model: !input model
       message: !input message
+      use_memory: !input use_memory
       remember: !input remember
       expose_images: "{{preview_mode == 'Snapshot' or remember}}"
       expose_images_persist: !input remember

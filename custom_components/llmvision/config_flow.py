@@ -568,7 +568,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     "multiple": True
                 }
             }),
-            vol.Optional(CONF_MEMORY_STRINGS): selector({
+            vol.Optional(CONF_MEMORY_STRINGS, default="This an example"): selector({
                 "text": {
                     "multiline": False,
                     "multiple": True

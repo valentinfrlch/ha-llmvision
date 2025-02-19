@@ -410,7 +410,7 @@ class OpenAI(Provider):
         payload["messages"][0]["content"].append(
             {"type": "text", "text": call.message})
 
-        if hasattr(call, 'memory') and call.memory:
+        if call.use_memory:
             memory_content = call.memory._get_memory_images(
                 memory_type="OpenAI")
             system_prompt = call.memory.system_prompt
@@ -483,7 +483,7 @@ class AzureOpenAI(Provider):
         payload["messages"][0]["content"].append(
             {"type": "text", "text": call.message})
 
-        if hasattr(call, 'memory') and call.memory:
+        if call.use_memory:
             memory_content = call.memory._get_memory_images(
                 memory_type="OpenAI")
             system_prompt = call.memory.system_prompt
@@ -555,7 +555,7 @@ class Anthropic(Provider):
         payload["messages"][0]["content"].append(
             {"type": "text", "text": call.message})
 
-        if hasattr(call, 'memory') and call.memory:
+        if call.use_memory:
             memory_content = call.memory._get_memory_images(
                 memory_type="Anthropic")
             system_prompt = call.memory.system_prompt
@@ -620,7 +620,7 @@ class Google(Provider):
                 {"inline_data": {"mime_type": "image/jpeg", "data": image}})
         payload["contents"][0]["parts"].append({"text": call.message})
 
-        if hasattr(call, 'memory') and call.memory:
+        if call.use_memory:
             memory_content = call.memory._get_memory_images(
                 memory_type="Google")
             system_prompt = call.memory.system_prompt
@@ -682,10 +682,8 @@ class Groq(Provider):
             "model": call.model
         }
 
-        if hasattr(call, 'memory') and call.memory:
-            system_prompt = call.memory.system_prompt
-            if system_prompt:
-                payload["messages"].insert(0, {"role": "user", "content": "System Prompt:" + system_prompt})
+        system_prompt = call.memory.system_prompt
+        payload["messages"].insert(0, {"role": "user", "content": "System Prompt:" + system_prompt})
 
         return payload
 
@@ -747,7 +745,7 @@ class LocalAI(Provider):
         payload["messages"][0]["content"].append(
             {"type": "text", "text": call.message})
 
-        if hasattr(call, 'memory') and call.memory:
+        if call.use_memory:
             memory_content = call.memory._get_memory_images(
                 memory_type="OpenAI")
             system_prompt = call.memory.system_prompt
@@ -808,7 +806,7 @@ class Ollama(Provider):
         payload = {"model": call.model, "messages": [], "stream": False, "options": {
             "num_predict": call.max_tokens, "temperature": call.temperature}}
         
-        if hasattr(call, 'memory') and call.memory:
+        if call.use_memory:
             memory_content = call.memory._get_memory_images(
                 memory_type="Ollama")
             system_prompt = call.memory.system_prompt
@@ -948,7 +946,7 @@ class AWSBedrock(Provider):
             })
         payload["messages"][0]["content"].append({"text": call.message})
 
-        if hasattr(call, 'memory') and call.memory:
+        if call.use_memory:
             memory_content = call.memory._get_memory_images(memory_type="AWS")
             system_prompt = call.memory.system_prompt
             if memory_content:

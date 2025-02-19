@@ -70,13 +70,6 @@
                     "custom_openai_default_model": "Default model to use, e.g. gpt-4o-mini"
                 }
             },
-            "semantic_index": {
-                "title": "Remember Events",
-                "description": "Set how many days events will be remembered for. Events will automatically be deleted after this time. Events are stored locally and can be deleted manually in the calendar view. (0 disables auto delete)",
-                "data": {
-                    "retention_time": "Auto delete events after (days)"
-                }
-            },
             "aws_bedrock": {
                 "title": "Configure AWS Bedrock provider",
                 "description": "**Important**: This currently only supports the following models: Nova, Anthropic Claude",
@@ -98,9 +91,16 @@
                     "openwebui_default_model": "Default model"
                 }
             },
+            "timeline": {
+                "title": "Timeline",
+                "description": "Set how many days events will be remembered for. Events will automatically be deleted after this time. Events are stored locally and can be deleted manually in the calendar view. (0 disables auto delete)",
+                "data": {
+                    "retention_time": "Auto delete events after (days)"
+                }
+            },
             "memory": {
                 "title": "Memory",
-                "description": "Content in memory syncs across providers and is used to provide additional context to the model. \n Images and descriptions must be in the same order and there have to be as many descriptions as images.",
+                "description": "Content in memory syncs across providers and is used to provide additional context to the model. \n Images and descriptions must be in the same order, and there must be as many descriptions as images.",
                 "data": {
                     "memory_paths": "Image file path",
                     "memory_strings": "Image description",
