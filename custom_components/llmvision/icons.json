@@ -3,6 +3,7 @@
         "image_analyzer": "mdi:image-search",
         "video_analyzer": "mdi:movie-search",
         "stream_analyzer": "mdi:video-wireless",
-        "data_analyzer": "mdi:database-search"
+        "data_analyzer": "mdi:database-search",
+        "remember": "mdi:timeline-text"
     }
 }

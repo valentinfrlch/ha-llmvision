@@ -521,7 +521,7 @@ data_analyzer:
 
 remember:
   name: Remember
-  description: Remember an event in LLM Vision Event Calendar
+  description: Remember an event in the LLM Vision Timeline
   fields:
     title:
       name: Title

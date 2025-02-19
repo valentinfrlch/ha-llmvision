@@ -11,7 +11,6 @@ from .providers import (
     Ollama,
     AWSBedrock
 )
-from .memory import Memory
 from .const import (
     DOMAIN,
     CONF_OPENAI_API_KEY,
@@ -57,11 +56,12 @@ _LOGGER = logging.getLogger(__name__)
 
 class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
-    VERSION = 2
+    VERSION = 3
+    MINOR_VERSION = 0
 
     async def handle_provider(self, provider):
         provider_steps = {
-            "Event Calendar": self.async_step_semantic_index,
+            "Timeline": self.async_step_timeline,
             "Memory": self.async_step_memory,
             "Anthropic": self.async_step_anthropic,
             "AWS Bedrock": self.async_step_aws_bedrock,
@@ -84,10 +84,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required("provider", default="Event Calendar"): selector({
+            vol.Required("provider", default="Timeline"): selector({
                 "select": {
                     # Azure removed until fixed
-                    "options": ["Event Calendar", "Memory", "Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI"],
+                    "options": ["Timeline", "Memory", "Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI"],
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -523,7 +523,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=data_schema,
         )
 
-    async def async_step_semantic_index(self, user_input=None):
+    async def async_step_timeline(self, user_input=None):
         data_schema = vol.Schema({
             vol.Required(CONF_RETENTION_TIME, default=7): int,
         })
@@ -553,10 +553,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
             else:
                 # New config entry
-                return self.async_create_entry(title="LLM Vision Events", data=user_input)
+                return self.async_create_entry(title="LLM Vision Timeline", data=user_input)
 
         return self.async_show_form(
-            step_id="semantic_index",
+            step_id="timeline",
             data_schema=data_schema,
         )
 

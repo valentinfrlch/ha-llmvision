@@ -100,7 +100,7 @@
             },
             "memory": {
                 "title": "Memory",
-                "description": "Content in memory applies to all providers and is used to provide additional context to the model. \n Images and descriptions must be in the same order and there have to be as many descriptions as images.",
+                "description": "Content in memory syncs across providers and is used to provide additional context to the model. \n Images and descriptions must be in the same order and there have to be as many descriptions as images.",
                 "data": {
                     "memory_paths": "Image file path",
                     "memory_strings": "Image description",

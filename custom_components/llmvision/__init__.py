@@ -57,7 +57,7 @@ from .const import (
     DEFAULT_SYSTEM_PROMPT,
     DATA_EXTRACTION_PROMPT,
 )
-from .calendar import SemanticIndex
+from .calendar import Timeline
 from .providers import Request
 from .memory import Memory
 from .media_handlers import MediaProcessor
@@ -192,27 +192,40 @@ async def async_unload_entry(hass, entry) -> bool:
 
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
-    if DOMAIN not in hass.data:
+    _LOGGER.debug(f"{config_entry.title} version: {config_entry.version}.{config_entry.minor_version}")
+    if config_entry.version == 3 and config_entry.data["provider"] == "Event Calendar":
+        _LOGGER.info("Migrating LLM Vision Timeline config entry from v2.0 to v3.0")
+        # Change Provider name to Timeline
+        new_data = config_entry.data.copy()
+        new_data["provider"] = "Timeline"
+
+        # Update the config entry
+        hass.config_entries.async_update_entry(
+            config_entry, title="LLM Vision Timeline", data=new_data, version=3, minor_version=0
+        )
         return True
     else:
-        return False
+        hass.config_entries.async_update_entry(
+            config_entry, version=3, minor_version=0
+        )
+        return True
 
 
 async def _remember(hass, call, start, response, key_frame) -> None:
     if call.remember:
-        # Find semantic index config
+        # Find timeline config
         config_entry = None
         for entry in hass.config_entries.async_entries(DOMAIN):
             # Check if the config entry is empty
-            if entry.data["provider"] == "Event Calendar":
+            if entry.data["provider"] == "Timeline":
                 config_entry = entry
                 break
 
         if config_entry is None:
             raise ServiceValidationError(
-                f"Config entry not found. Please create the 'Event Calendar' config entry first.")
+                f"Config entry not found. Please create the 'Timeline' config entry first.")
 
-        semantic_index = SemanticIndex(hass, config_entry)
+        timeline = Timeline(hass, config_entry)
 
         if call.image_entities and len(call.image_entities) > 0:
             camera_name = call.image_entities[0]
@@ -228,7 +241,7 @@ async def _remember(hass, call, start, response, key_frame) -> None:
         if "title" in response:
             title = response.get("title")
 
-        await semantic_index.remember(
+        await timeline.remember(
             start=start,
             end=dt_util.now() + timedelta(minutes=1),
             label=title,
@@ -518,21 +531,21 @@ def setup(hass, config):
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
 
-        # Find semantic index config
+        # Find timeline config
         config_entry = None
         for entry in hass.config_entries.async_entries(DOMAIN):
             # Check if the config entry is empty
-            if entry.data["provider"] == "Event Calendar":
+            if entry.data["provider"] == "Timeline":
                 config_entry = entry
                 break
 
         if config_entry is None:
             raise ServiceValidationError(
-                f"Config entry not found. Please create the 'Event Calendar' config entry first.")
+                f"Config entry not found. Please create the 'Timeline' config entry first.")
 
-        semantic_index = SemanticIndex(hass, config_entry)
+        timeline = Timeline(hass, config_entry)
 
-        await semantic_index.remember(
+        await timeline.remember(
             start=call.start_time,
             end=call.end_time,
             label=call.title,

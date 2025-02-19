@@ -22,7 +22,7 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 
-class SemanticIndex(CalendarEntity):
+class Timeline(CalendarEntity):
     """Representation of a Calendar."""
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry):
@@ -44,6 +44,11 @@ class SemanticIndex(CalendarEntity):
         # Ensure the directory exists
         os.makedirs(os.path.dirname(self._file_path), exist_ok=True)
         self.hass.loop.create_task(self.async_update())
+
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend"""
+        return "mdi:timeline-outline"
 
     def _ensure_datetime(self, dt):
         """Ensure the input is a datetime.datetime object"""
@@ -220,5 +225,5 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
 
-    calendar_entity = SemanticIndex(hass, config_entry)
+    calendar_entity = Timeline(hass, config_entry)
     async_add_entities([calendar_entity])
