@@ -18,12 +18,19 @@ class Memory:
     def __init__(self, hass, strings=[], paths=[], fallback_prompt=DEFAULT_SYSTEM_PROMPT):
         self.hass = hass
         self.entry = self._find_memory_entry()
-        self._system_prompt = self.entry.data.get(
-            CONF_SYSTEM_PROMPT, fallback_prompt)
-        self.memory_strings = self.entry.data.get(CONF_MEMORY_STRINGS, strings)
-        self.memory_paths = self.entry.data.get(CONF_MEMORY_PATHS, paths)
-        self.memory_images = self.entry.data.get(
-            CONG_MEMORY_IMAGES_ENCODED, [])
+        if self.entry is None:
+            self._system_prompt = fallback_prompt
+            self.memory_strings = strings
+            self.memory_paths = paths
+            self.memory_images = []
+
+
+        else:
+            self._system_prompt = self.entry.data.get(
+                CONF_SYSTEM_PROMPT, fallback_prompt)
+            self.memory_strings = self.entry.data.get(CONF_MEMORY_STRINGS, strings)
+            self.memory_paths = self.entry.data.get(CONF_MEMORY_PATHS, paths)
+            self.memory_images = self.entry.data.get(CONG_MEMORY_IMAGES_ENCODED, [])
 
         _LOGGER.debug(self)
 
@@ -108,7 +115,7 @@ class Memory:
                 break
 
         if memory_entry is None:
-            _LOGGER.error("Memory entry not set up")
+            _LOGGER.warning("Memory is not set up!")
             return None
 
         return memory_entry

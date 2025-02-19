@@ -23,6 +23,12 @@ blueprint:
       default: false
       selector:
         boolean:
+    use_memory:
+      name: Use Memory
+      description: 'Use information stored in memory to provide additional context. Memory must be set up.'
+      default: false
+      selector:
+        boolean:
     message:
       name: Prompt
       description: Model prompt for the video_analyzer action
@@ -30,12 +36,6 @@ blueprint:
       selector:
         text:
           multiline: true
-    use_memory:
-      name: Use Memory
-      description: 'Use information stored in memory to provide additional context. Memory must be set up.'
-      default: false
-      selector:
-        boolean:
     run_conditions:
       name: Run Conditions
       description: All conditions must be true in order for the blueprint to run.
