@@ -56,7 +56,6 @@ MAX_FRAMES = 'max_frames'
 TEMPERATURE = 'temperature'
 INCLUDE_FILENAME = 'include_filename'
 EXPOSE_IMAGES = 'expose_images'
-EXPOSE_IMAGES_PERSIST = 'expose_images_persist'
 GENERATE_TITLE = 'generate_title'
 SENSOR_ENTITY = 'sensor_entity'
 

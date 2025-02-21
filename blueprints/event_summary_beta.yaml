@@ -134,7 +134,7 @@ blueprint:
           integration: llmvision
     model:
       name: Model
-      description: Model to use for the video_analyzer action. Leave blank to automatically detect the best model.
+      description: Which model to use. Depends on provider.
       default: "gpt-4o-mini"
       selector:
         text:
@@ -277,7 +277,6 @@ action:
       use_memory: !input use_memory
       remember: !input remember
       expose_images: "{{preview_mode == 'Snapshot' or remember}}"
-      expose_images_persist: !input remember
       generate_title: !input remember
       include_filename: true
       max_frames: !input max_frames

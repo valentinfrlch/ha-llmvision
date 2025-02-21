@@ -51,7 +51,6 @@ from .const import (
     TEMPERATURE,
     INCLUDE_FILENAME,
     EXPOSE_IMAGES,
-    EXPOSE_IMAGES_PERSIST,
     GENERATE_TITLE,
     SENSOR_ENTITY,
     DEFAULT_SYSTEM_PROMPT,
@@ -62,6 +61,7 @@ from .providers import Request
 from .memory import Memory
 from .media_handlers import MediaProcessor
 import re
+import os
 from datetime import timedelta
 from homeassistant.util import dt as dt_util
 from homeassistant.config_entries import ConfigEntry
@@ -174,6 +174,14 @@ async def async_remove_entry(hass, entry):
         _LOGGER.info(f"Removing {entry.title} from hass.data")
         await async_unload_entry(hass, entry)
         hass.data[DOMAIN].pop(entry_uid)
+        # Check if entry is the timeline entry
+        if entry.data["provider"] == 'Timeline':
+            # Check if "/llmvision/events.db" exists
+            db_path = os.path.join(
+                hass.config.path("llmvision"), "events.db"
+            )
+            if os.path.exists(db_path):
+                os.remove(db_path)
     else:
         _LOGGER.warning(
             f"Entry {entry.title} not found but was requested to be removed")
@@ -192,9 +200,11 @@ async def async_unload_entry(hass, entry) -> bool:
 
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
-    _LOGGER.debug(f"{config_entry.title} version: {config_entry.version}.{config_entry.minor_version}")
-    if config_entry.version == 3 and config_entry.data["provider"] == "Event Calendar":
-        _LOGGER.info("Migrating LLM Vision Timeline config entry from v2.0 to v3.0")
+    _LOGGER.debug(
+        f"{config_entry.title} version: {config_entry.version}.{config_entry.minor_version}")
+    if config_entry.version == 2 and config_entry.data["provider"] == "Event Calendar":
+        _LOGGER.info(
+            "Migrating LLM Vision Timeline config entry from v2.0 to v3.0")
         # Change Provider name to Timeline
         new_data = config_entry.data.copy()
         new_data["provider"] = "Timeline"
@@ -229,17 +239,16 @@ async def _remember(hass, call, start, response, key_frame) -> None:
 
         if call.image_entities and len(call.image_entities) > 0:
             camera_name = call.image_entities[0]
-            title = "Motion detected near " + camera_name
         elif call.video_paths and len(call.video_paths) > 0:
             camera_name = call.video_paths[0].split(
                 "/")[-1].replace(".mp4", "")
-            title = "Motion detected in " + camera_name
         else:
             camera_name = ""
-            title = "Motion detected"
 
         if "title" in response:
             title = response.get("title")
+        else:
+            title = "Motion detected"
 
         await timeline.remember(
             start=start,
@@ -336,8 +345,6 @@ class ServiceCallData:
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 100))
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
-        self.expose_images_persist = data_call.data.get(
-            EXPOSE_IMAGES_PERSIST, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)
         self.sensor_entity = data_call.data.get(SENSOR_ENTITY, "")
 
@@ -379,7 +386,6 @@ def setup(hass, config):
                                              target_width=call.target_width,
                                              include_filename=call.include_filename,
                                              expose_images=call.expose_images,
-                                             expose_images_persist=call.expose_images_persist
                                              )
 
         call.memory = Memory(hass, fallback_prompt=DEFAULT_SYSTEM_PROMPT)
@@ -416,7 +422,6 @@ def setup(hass, config):
                                              target_width=call.target_width,
                                              include_filename=call.include_filename,
                                              expose_images=call.expose_images,
-                                             expose_images_persist=call.expose_images_persist,
                                              frigate_retry_attempts=call.frigate_retry_attempts,
                                              frigate_retry_seconds=call.frigate_retry_seconds
                                              )
@@ -453,7 +458,6 @@ def setup(hass, config):
                                               target_width=call.target_width,
                                               include_filename=call.include_filename,
                                               expose_images=call.expose_images,
-                                              expose_images_persist=call.expose_images_persist
                                               )
 
         call.memory = Memory(hass, fallback_prompt=DEFAULT_SYSTEM_PROMPT)
@@ -515,7 +519,7 @@ def setup(hass, config):
                                                   target_width=call.target_width,
                                                   include_filename=call.include_filename
                                                   )
-        
+
         call.memory = Memory(hass, fallback_prompt=DATA_EXTRACTION_PROMPT)
         await call.memory._update_memory()
 
