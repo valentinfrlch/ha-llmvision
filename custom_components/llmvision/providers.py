@@ -144,8 +144,6 @@ class Request:
 
         self.validate(call)
 
-        gen_title_prompt = "Your job is to generate a title in the form '<object> seen' for texts. Do not mention the time, do not speculate. Generate a title for this text: {response}"
-
         if provider == 'OpenAI':
             api_key = config.get(CONF_OPENAI_API_KEY)
             provider_instance = OpenAI(hass=self.hass, api_key=api_key)
@@ -248,7 +246,7 @@ class Request:
         response_text = await provider_instance.vision_request(call)
 
         if call.generate_title:
-            call.message = gen_title_prompt.format(response=response_text)
+            call.message = call.generate_title_prompt.format(response=response_text)
             gen_title = await provider_instance.title_request(call)
 
             return {"title": re.sub(r'[^a-zA-Z0-9\s]', '', gen_title), "response_text": response_text}

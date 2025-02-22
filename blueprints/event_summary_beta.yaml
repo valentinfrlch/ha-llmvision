@@ -279,6 +279,7 @@ action:
       expose_images: "{{preview_mode == 'Snapshot' or remember}}"
       expose_images_persist: !input remember
       generate_title: !input remember
+      generate_title_prompt: !input remember
       include_filename: true
       max_frames: !input max_frames
       target_width: !input target_width

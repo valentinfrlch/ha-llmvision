@@ -48,6 +48,7 @@ from .const import (
     EXPOSE_IMAGES,
     EXPOSE_IMAGES_PERSIST,
     GENERATE_TITLE,
+    GENERATE_TITLE_PROMPT,
     SENSOR_ENTITY,
 )
 from .calendar import SemanticIndex
@@ -313,6 +314,7 @@ class ServiceCallData:
         self.expose_images_persist = data_call.data.get(
             EXPOSE_IMAGES_PERSIST, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)
+        self.generate_title_prompt = data_call.data.get(GENERATE_TITLE_PROMPT, "Your job is to generate a title in the form '<object> seen' for texts. Do not mention the time, do not speculate. Generate a title for this text: {response}")
         self.sensor_entity = data_call.data.get(SENSOR_ENTITY)
         # ------------ Added during call ------------
         # self.base64_images : List[str] = []
