@@ -43,8 +43,8 @@ class Timeline(CalendarEntity):
         )
         # Ensure the directory exists
         os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
+        
         self.hass.loop.create_task(self.async_update())
-
         self.hass.async_create_task(self._migrate())  # Run migration if needed
 
     @property
@@ -100,7 +100,7 @@ class Timeline(CalendarEntity):
         return self._current_event
 
     def _ensure_datetime(self, dt):
-        """Ensure the input is a datetime.datetime object"""
+        """Ensures the input is a datetime.datetime object"""
         if isinstance(dt, datetime.date) and not isinstance(dt, datetime.datetime):
             dt = datetime.datetime.combine(dt, datetime.datetime.min.time())
         if dt.tzinfo is None:
@@ -108,7 +108,7 @@ class Timeline(CalendarEntity):
         return dt
 
     async def _delete_image(self, event_id: str):
-        """Delete the image associated with the event"""
+        """Deletes the image associated with the event"""
         for event in self._events:
             if event.uid == event_id:
                 image_path = event.location.split(",")[0]
@@ -116,7 +116,12 @@ class Timeline(CalendarEntity):
                 if os.path.exists(image_path) and "/llmvision/" in image_path:
                     os.remove(image_path)
                     _LOGGER.info(f"Deleted image: {image_path}")
-
+    @property
+    async def linked_images(self):
+        """Returns the filenames of key_frames associated with events"""
+        await self.async_update()
+        return [os.path.basename(event.location.split(",")[0]) for event in self._events]
+    
     async def _initialize_db(self):
         """Initialize database"""
         try:
@@ -143,7 +148,7 @@ class Timeline(CalendarEntity):
             _LOGGER.error(f"Error initializing database: {e}")
 
     async def async_update(self) -> None:
-        """Load events from database"""
+        """Loads events from database"""
         await self._initialize_db()
         async with aiosqlite.connect(self._db_path) as db:
             async with db.execute('SELECT * FROM events') as cursor:
@@ -166,7 +171,7 @@ class Timeline(CalendarEntity):
         start_date: datetime.datetime,
         end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
-        """Return calendar events within a datetime range"""
+        """Returns calendar events within a datetime range"""
         events = []
 
         # Ensure start_date and end_date are datetime.datetime objects and timezone-aware
@@ -183,7 +188,7 @@ class Timeline(CalendarEntity):
         return events
 
     async def async_create_event(self, **kwargs: any) -> None:
-        """Add a new event to calendar"""
+        """Adds a new event to calendar"""
         await self.async_update()
         dtstart = kwargs[EVENT_START]
         dtend = kwargs[EVENT_END]
@@ -221,7 +226,7 @@ class Timeline(CalendarEntity):
         recurrence_id: str | None = None,
         recurrence_range: str | None = None,
     ) -> None:
-        """Delete an event on the calendar."""
+        """Deletes an event on the calendar."""
         _LOGGER.info(f"Deleting event with UID: {uid}")
         await self.async_update()
         await self._delete_image(uid)
@@ -229,7 +234,7 @@ class Timeline(CalendarEntity):
         await self._save_events()
 
     async def _save_events(self) -> None:
-        """Save events to database"""
+        """Saves events to database"""
         await self._initialize_db()
         now = datetime.datetime.now()
         cutoff_date = now - datetime.timedelta(days=self._retention_time)
@@ -274,7 +279,7 @@ class Timeline(CalendarEntity):
         await self.async_update()
 
     async def remember(self, start, end, label, key_frame, summary, camera_name=""):
-        """Remember the event"""
+        """Remembers the event"""
         await self.async_create_event(
             dtstart=start,
             dtend=end,
