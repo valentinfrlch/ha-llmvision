@@ -100,8 +100,8 @@ image_analyzer:
       name: Generate Title Prompt
       required: false
       description: Prompt for the title. (Used for notifications and remembered events)
-      example: "Your job is to generate a title in the form '<object> seen' for texts. Do not mention the time, do not speculate. Generate a title for this text: {response}"
-      default: false
+      default: "Your job is to generate a title in the form '<object> seen' for texts. Do not mention the time, do not speculate. Generate a title for this text: {response}"
+      selector:
         text:
           multiline: true
     expose_images:
@@ -254,6 +254,14 @@ video_analyzer:
       default: false
       selector:
         boolean:
+    generate_title_prompt:
+      name: Generate Title Prompt
+      required: false
+      description: Prompt for the title. (Used for notifications and remembered events)
+      default: "Your job is to generate a title in the form '<object> seen' for texts. Do not mention the time, do not speculate. Generate a title for this text: {response}"
+      selector:
+        text:
+          multiline: true
     expose_images:
       name: Expose Images
       description: (Experimental) Expose analyzed frames after processing. This will save analyzed frames in /www/llmvision so they can be used for notifications. (Only works for entity input, include camera name should be enabled). Existing files will be overwritten.
@@ -383,6 +391,14 @@ stream_analyzer:
       default: false
       selector:
         boolean:
+    generate_title_prompt:
+      name: Generate Title Prompt
+      required: false
+      description: Prompt for the title. (Used for notifications and remembered events)
+      default: "Your job is to generate a title in the form '<object> seen' for texts. Do not mention the time, do not speculate. Generate a title for this text: {response}"
+      selector:
+        text:
+          multiline: true
     expose_images:
       name: Expose Images
       description: (Experimental) Expose analyzed frames after processing. This will save analyzed frames in /www/llmvision so they can be used for notifications. (Only works for entity input, include camera name should be enabled). Existing files will be overwritten.
