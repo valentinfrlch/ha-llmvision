@@ -544,4 +544,5 @@ remember:
       selector:
         datetime:
 cleanup:
-  description: 'Deletes images not associated with an event in /www/llmvision/.'
+  name: 'Cleanup'
+  description: 'Deletes images not associated with an event in /www/llmvision/. If Timeline is not configured, this action will delete all files in /www/llmvision.'
