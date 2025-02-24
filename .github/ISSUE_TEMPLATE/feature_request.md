@@ -1,11 +1,13 @@
 ---
 name: Feature request
 about: Suggest an idea for this project
-title: ''
+title: "[Add FEATURE]"
 labels: feature request
 assignees: ''
 
 ---
+
+<!-- This template is not a suggestion! Please fill out all required fields, otherwise this request will be closed.-->
 
 **Is your feature request related to a problem? Please describe.**
 <!-- A clear and concise description of what the problem is. Ex. I'm always frustrated when [...] -->
@@ -13,8 +15,5 @@ assignees: ''
 **Describe the solution you'd like**
 <!-- A clear and concise description of what you want to happen.-->
 
-**Describe alternatives you've considered**
-<!-- A clear and concise description of any alternative solutions or features you've considered.-->
-
-**Additional context**
-<!-- Add any other context or screenshots about the feature request here.-->
+**Documentation**
+<!-- Provide additional resources such as documentation. E.g. if you're requesting a new provider, link to their API docs etc.-->
