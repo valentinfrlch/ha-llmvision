@@ -23,6 +23,7 @@ from .const import (
     CONG_MEMORY_IMAGES_ENCODED,
     CONF_MEMORY_STRINGS,
     CONF_SYSTEM_PROMPT,
+    CONF_TITLE_PROMPT,
     CONF_AWS_ACCESS_KEY_ID,
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
@@ -54,6 +55,7 @@ from .const import (
     GENERATE_TITLE,
     SENSOR_ENTITY,
     DEFAULT_SYSTEM_PROMPT,
+    DEFAULT_TITLE_PROMPT,
     DATA_EXTRACTION_PROMPT,
 )
 from .calendar import Timeline
@@ -101,6 +103,7 @@ async def async_setup_entry(hass, entry):
     memory_images_encoded = entry.data.get(CONG_MEMORY_IMAGES_ENCODED)
     memory_strings = entry.data.get(CONF_MEMORY_STRINGS)
     system_prompt = entry.data.get(CONF_SYSTEM_PROMPT)
+    title_prompt = entry.data.get(CONF_TITLE_PROMPT)
     aws_access_key_id = entry.data.get(CONF_AWS_ACCESS_KEY_ID)
     aws_secret_access_key = entry.data.get(CONF_AWS_SECRET_ACCESS_KEY)
     aws_region_name = entry.data.get(CONF_AWS_REGION_NAME)
@@ -139,6 +142,7 @@ async def async_setup_entry(hass, entry):
         CONG_MEMORY_IMAGES_ENCODED: memory_images_encoded,
         CONF_MEMORY_STRINGS: memory_strings,
         CONF_SYSTEM_PROMPT: system_prompt,
+        CONF_TITLE_PROMPT: title_prompt,
         CONF_AWS_ACCESS_KEY_ID: aws_access_key_id,
         CONF_AWS_SECRET_ACCESS_KEY: aws_secret_access_key,
         CONF_AWS_REGION_NAME: aws_region_name,
@@ -388,7 +392,7 @@ def setup(hass, config):
                                              expose_images=call.expose_images,
                                              )
 
-        call.memory = Memory(hass, fallback_prompt=DEFAULT_SYSTEM_PROMPT)
+        call.memory = Memory(hass)
         await call.memory._update_memory()
 
         # Validate configuration, input data and make the call
@@ -425,7 +429,7 @@ def setup(hass, config):
                                              frigate_retry_attempts=call.frigate_retry_attempts,
                                              frigate_retry_seconds=call.frigate_retry_seconds
                                              )
-        call.memory = Memory(hass, fallback_prompt=DEFAULT_SYSTEM_PROMPT)
+        call.memory = Memory(hass)
         await call.memory._update_memory()
 
         response = await request.call(call)
@@ -460,7 +464,7 @@ def setup(hass, config):
                                               expose_images=call.expose_images,
                                               )
 
-        call.memory = Memory(hass, fallback_prompt=DEFAULT_SYSTEM_PROMPT)
+        call.memory = Memory(hass)
         await call.memory._update_memory()
 
         response = await request.call(call)
@@ -520,7 +524,7 @@ def setup(hass, config):
                                                   include_filename=call.include_filename
                                                   )
 
-        call.memory = Memory(hass, fallback_prompt=DATA_EXTRACTION_PROMPT)
+        call.memory = Memory(hass, system_prompt=DATA_EXTRACTION_PROMPT)
         await call.memory._update_memory()
 
         response = await request.call(call)

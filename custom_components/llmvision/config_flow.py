@@ -46,6 +46,8 @@ from .const import (
     CONF_OPENWEBUI_DEFAULT_MODEL,
     ENDPOINT_OPENWEBUI,
     DEFAULT_SYSTEM_PROMPT,
+    CONF_TITLE_PROMPT,
+    DEFAULT_TITLE_PROMPT,
 )
 import voluptuous as vol
 import os
@@ -575,6 +577,12 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             }),
             vol.Optional(CONF_SYSTEM_PROMPT, default=DEFAULT_SYSTEM_PROMPT): selector({
+                "text": {
+                    "multiline": True,
+                    "multiple": False
+                }
+            }),
+            vol.Optional(CONF_TITLE_PROMPT, default=DEFAULT_TITLE_PROMPT): selector({
                 "text": {
                     "multiline": True,
                     "multiple": False

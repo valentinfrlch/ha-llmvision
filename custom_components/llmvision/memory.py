@@ -4,7 +4,9 @@ from .const import (
     CONG_MEMORY_IMAGES_ENCODED,
     CONF_MEMORY_STRINGS,
     CONF_SYSTEM_PROMPT,
-    DEFAULT_SYSTEM_PROMPT
+    CONF_TITLE_PROMPT,
+    DEFAULT_SYSTEM_PROMPT,
+    DEFAULT_TITLE_PROMPT,
 )
 import base64
 import io
@@ -15,22 +17,28 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Memory:
-    def __init__(self, hass, strings=[], paths=[], fallback_prompt=DEFAULT_SYSTEM_PROMPT):
+    def __init__(self, hass, strings=[], paths=[], system_prompt=None):
         self.hass = hass
         self.entry = self._find_memory_entry()
         if self.entry is None:
-            self._system_prompt = fallback_prompt
+
+            self._system_prompt = system_prompt if system_prompt else self.entry.data.get(
+                CONF_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT)
+            self._title_prompt = DEFAULT_TITLE_PROMPT
             self.memory_strings = strings
             self.memory_paths = paths
             self.memory_images = []
 
-
         else:
-            self._system_prompt = self.entry.data.get(
-                CONF_SYSTEM_PROMPT, fallback_prompt)
-            self.memory_strings = self.entry.data.get(CONF_MEMORY_STRINGS, strings)
+            self._system_prompt = system_prompt if system_prompt else self.entry.data.get(
+                CONF_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT)
+            self._title_prompt = self.entry.data.get(
+                CONF_TITLE_PROMPT, DEFAULT_TITLE_PROMPT)
+            self.memory_strings = self.entry.data.get(
+                CONF_MEMORY_STRINGS, strings)
             self.memory_paths = self.entry.data.get(CONF_MEMORY_PATHS, paths)
-            self.memory_images = self.entry.data.get(CONG_MEMORY_IMAGES_ENCODED, [])
+            self.memory_images = self.entry.data.get(
+                CONG_MEMORY_IMAGES_ENCODED, [])
 
         _LOGGER.debug(self)
 
@@ -105,6 +113,10 @@ class Memory:
     @property
     def system_prompt(self) -> str:
         return "System prompt: " + self._system_prompt
+
+    @property
+    def title_prompt(self) -> str:
+        return self._title_prompt
 
     def _find_memory_entry(self):
         memory_entry = None
