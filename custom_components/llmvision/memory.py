@@ -22,8 +22,7 @@ class Memory:
         self.entry = self._find_memory_entry()
         if self.entry is None:
 
-            self._system_prompt = system_prompt if system_prompt else self.entry.data.get(
-                CONF_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT)
+            self._system_prompt = system_prompt if system_prompt else DEFAULT_SYSTEM_PROMPT
             self._title_prompt = DEFAULT_TITLE_PROMPT
             self.memory_strings = strings
             self.memory_paths = paths
@@ -47,8 +46,9 @@ class Memory:
         memory_prompt = "The following images along with descriptions serve as reference. They are not to be mentioned in the response."
 
         if memory_type == "OpenAI":
-            content.append(
-                {"type": "text", "text": memory_prompt})
+            if self.memory_images:
+                content.append(
+                    {"type": "text", "text": memory_prompt})
             for image in self.memory_images:
                 tag = self.memory_strings[self.memory_images.index(image)]
 
@@ -58,8 +58,9 @@ class Memory:
                     "url": f"data:image/jpeg;base64,{image}"}})
 
         elif memory_type == "OpenAI-legacy":
-            content.append(
-                {"type": "text", "text": memory_prompt})
+            if self.memory_images:
+                content.append(
+                    {"type": "text", "text": memory_prompt})
             for image in self.memory_images:
                 tag = self.memory_strings[self.memory_images.index(image)]
 
@@ -69,8 +70,9 @@ class Memory:
                     "url": f"data:image/jpeg;base64,{image}"}})
 
         elif memory_type == "Ollama":
-            content.append(
-                {"role": "user", "content": memory_prompt})
+            if self.memory_images:
+                content.append(
+                    {"role": "user", "content": memory_prompt})
             for image in self.memory_images:
                 tag = self.memory_strings[self.memory_images.index(image)]
 
@@ -78,8 +80,9 @@ class Memory:
                                 "content": tag + ":", "images": [image]})
 
         elif memory_type == "Anthropic":
-            content.append(
-                {"type": "text", "text": memory_prompt})
+            if self.memory_images:
+                content.append(
+                    {"type": "text", "text": memory_prompt})
             for image in self.memory_images:
                 tag = self.memory_strings[self.memory_images.index(image)]
 
@@ -88,7 +91,8 @@ class Memory:
                 content.append({"type": "image", "source": {
                     "type": "base64", "media_type": "image/jpeg", "data": f"{image}"}})
         elif memory_type == "Google":
-            content.append({"text": memory_prompt})
+            if self.memory_images:
+                content.append({"text": memory_prompt})
             for image in self.memory_images:
                 tag = self.memory_strings[self.memory_images.index(image)]
 
@@ -96,8 +100,9 @@ class Memory:
                 content.append(
                     {"inline_data": {"mime_type": "image/jpeg", "data": image}})
         elif memory_type == "AWS":
-            content.append(
-                {"text": memory_prompt})
+            if self.memory_images:
+                content.append(
+                    {"text": memory_prompt})
             for image in self.memory_images:
                 tag = self.memory_strings[self.memory_images.index(image)]
 
@@ -125,10 +130,6 @@ class Memory:
             if entry.data["provider"] == "Memory":
                 memory_entry = entry
                 break
-
-        if memory_entry is None:
-            _LOGGER.warning("Memory is not set up!")
-            return None
 
         return memory_entry
 
