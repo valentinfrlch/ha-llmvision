@@ -167,6 +167,7 @@ blueprint:
 
 variables:
   important: !input important
+  remember: !input remember
   cooldown: !input cooldown
   preview_mode: !input preview_mode
   notify_devices: !input notify_device
