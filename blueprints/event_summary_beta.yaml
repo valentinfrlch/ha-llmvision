@@ -1,5 +1,5 @@
 blueprint:
-  name: AI Event Summary (v1.4.0 Beta 1)
+  name: AI Event Summary (v1.4.0 Beta 2)
   author: valentinfrlch
   description: >
     AI-powered summaries for security camera events.
@@ -134,7 +134,7 @@ blueprint:
           integration: llmvision
     model:
       name: Model
-      description: Model to use for the video_analyzer action. Leave blank to automatically detect the best model.
+      description: Which model to use. Depends on provider.
       default: "gpt-4o-mini"
       selector:
         text:
@@ -167,6 +167,7 @@ blueprint:
 
 variables:
   important: !input important
+  remember: !input remember
   cooldown: !input cooldown
   preview_mode: !input preview_mode
   notify_devices: !input notify_device
@@ -277,7 +278,6 @@ action:
       use_memory: !input use_memory
       remember: !input remember
       expose_images: "{{preview_mode == 'Snapshot' or remember}}"
-      expose_images_persist: !input remember
       generate_title: !input remember
       include_filename: true
       max_frames: !input max_frames
