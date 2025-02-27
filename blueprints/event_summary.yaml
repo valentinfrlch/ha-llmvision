@@ -1,9 +1,9 @@
 blueprint:
-  name: AI Event Summary (LLM Vision v1.3.8)
+  name: AI Camera Event Summary (LLM Fixed Vision v1.3.9)
   author: valentinfrlch
   description: >
     AI-powered security event summaries for frigate or camera entities.
-    Sends a notification with a preview to your phone that is updated dynamically when the AI summary is available.
+    Sends a notification with a preview to your phone that is updated dynamically when the AI summary is available, forked from (LLM Vision v1.3.8).
   domain: automation
   source_url: https://github.com/valentinfrlch/ha-llmvision/blob/main/blueprints/event_summary.yaml
   input:
@@ -89,7 +89,7 @@ blueprint:
         **(Camera mode only)**
 
         Trigger the automation when your cameras change to this state
-      default: 'recording'
+      default: "recording"
       selector:
         text:
           multiline: false
@@ -125,14 +125,14 @@ blueprint:
         number:
           min: 0
           max: 60
-    tap_navigate:
-      name: Tap Navigate
-      description: >-
-        Path to navigate to when notification is opened (e.g. /lovelace/cameras).
-      default: /lovelace/0
-      selector:
-        text:
-          multiline: false
+    # tap_navigate:
+    #   name: Tap Navigate
+    #   description: >-
+    #     Path to navigate to when notification is opened (e.g. /lovelace/cameras).
+    #   default: /ccab4aaf_frigate-proxy/ingress
+    #   selector:
+    #     text:
+    #       multiline: false
     duration:
       name: Duration
       description: >-
@@ -164,7 +164,7 @@ blueprint:
     model:
       name: Model
       description: Model to use for the video_analyzer action. Leave blank to automatically detect the best model.
-      default: "gpt-4o-mini"
+      default: ""
       selector:
         text:
           multiline: false
@@ -194,7 +194,7 @@ blueprint:
     detail:
       name: Detail
       description: Detail parameter (OpenAI only)
-      default: 'low'
+      default: "low"
       selector:
         select:
           options:
@@ -268,9 +268,19 @@ variables:
     {% if input_mode == 'Frigate' %}
       /api/frigate/notifications/{{ trigger.payload_json['after']['id'] }}/clip.mp4
     {% else %} {% endif %}
+  thumbnail_image: >
+    {% if input_mode == 'Frigate' %}
+      /api/frigate/notifications/{{trigger.payload_json['after']['id']}}/thumbnail.jpg
+    {% else %}
+      {% if preview_mode == 'Live Preview' %}
+        {{ '/api/camera_proxy/' + camera_entity }}
+      {% else %}
+        /local/llmvision/{{camera_entity.replace("camera.", "")}}-0.jpg
+      {% endif %}
+    {% endif %}
   image: >
     {% if input_mode == 'Frigate' %}
-      ''
+      /api/frigate/notifications/{{trigger.payload_json['after']['id']}}/snapshot.jpg
     {% else %}
       {% if preview_mode == 'Live Preview' %}
         {{ '/api/camera_proxy/' + camera_entity }}
@@ -287,9 +297,9 @@ max_exceeded: silent
 mode: single
 
 trigger_variables:
-    input_mode: !input input_mode
-    listen_mqtt: "{{input_mode == 'Frigate'}}"
-    listen_state: "{{input_mode == 'Camera'}}"
+  input_mode: !input input_mode
+  listen_mqtt: "{{input_mode == 'Frigate'}}"
+  listen_state: "{{input_mode == 'Camera'}}"
 
 triggers:
   - trigger: mqtt
@@ -299,28 +309,30 @@ triggers:
   - trigger: state
     entity_id: !input camera_entities
     to: !input trigger_state
-    id: 'camera_trigger'
+    id: "camera_trigger"
     enabled: "{{listen_state}}"
   - trigger: state
     entity_id: !input motion_sensors
-    to: 'on'
-    id: 'motion_sensor_trigger'
+    to: "on"
+    id: "motion_sensor_trigger"
     enabled: "{{listen_state}}"
 
 condition:
   - condition: template
     value_template: >
       {% if input_mode == 'Frigate' %}
-        {{ trigger.payload_json["type"] == "end"
+        {{
+           trigger.payload_json["type"] == "end"
            and ('camera.' + trigger.payload_json['after']['camera']|lower) in camera_entities_list
            and ((object_types_list|length) == 0 or ((trigger.payload_json['after']['label']|lower) in object_types_list))
            and (not required_zones_list or ((set(trigger.payload_json['after']['current_zones']).intersection(required_zones_list))))
            and not (ignore_stationary and trigger.payload_json['after']['stationary'])
+           and trigger.payload_json["after"]["has_clip"] == true
+           and trigger.payload_json["after"]["has_snapshot"] == true
         }}
       {% else %}
         true
       {% endif %}
-
 
 action:
   - choose:
@@ -338,6 +350,8 @@ action:
                     data:
                       image_entity: "{{ ['camera.' + trigger.payload_json['after']['camera']|lower] }}"
                       provider: !input provider
+                      frigate_retry_attempts : 10    # retry getting clips for 7 times, python fetch, before sending it to LLM
+                      frigate_retry_seconds: 4  # retry interval in seconds
                       model: !input model
                       message: "{{importance_prompt}}"
                       include_filename: true
@@ -376,6 +390,11 @@ action:
           - condition: template
             value_template: "{{ image != '' or video != '' }}"
         sequence:
+          - delay:  ## add a 0.5 second delay so the thumnails should be ready.
+              hours: 0
+              minutes: 0
+              seconds: 0
+              milliseconds: 500
           - alias: "Send instant notification to notify devices"
             repeat:
               for_each: "{{device_name_map}}"
@@ -383,13 +402,16 @@ action:
                 - action: "notify.{{ repeat.item }}"
                   data:
                     title: "{{ label }}"
-                    message: "{{camera}}"
+                    message: "Detection at Camera: {{camera}}"
                     data:
-                      video: "{{video if video != '' else None}}"
-                      image: "{{image if image != '' else None}}"
+                      video: None # to avoid issue when a video is too long#"{{video if video != '' else None}}"
+                      image: "{{thumbnail_image if ((trigger.payload_json['after']['has_snapshot'] == true) and (thumbnail_image != '')) else None}}"
                       entity_id: "{{camera_entity if input_mode=='Camera' and preview_mode=='Live Preview'}}"
-                      url: !input tap_navigate #iOS
-                      clickAction: !input tap_navigate #Android
+                      attachment:
+                        content-type: jpeg
+                        url: "{{ image }}"
+                      url: "{{video if video != '' else image}}" #iOS Click Action
+                      clickAction: "{{video if video != '' else image}}" #Android
                       tag: "{{tag}}"
                       group: "{{group}}"
                       alert_once: true
@@ -406,6 +428,8 @@ action:
             data:
               event_id: "{{ trigger.payload_json['after']['id'] }}"
               provider: !input provider
+              frigate_retry_attempts : 10    # retry getting clips for 7 times, python fetch, before sending it to LLM
+              frigate_retry_seconds: 4  # retry interval in seconds
               model: !input model
               message: !input message
               remember: !input remember
@@ -439,29 +463,31 @@ action:
               expose_images: "{{true if preview_mode == 'Snapshot'}}"
             response_variable: response
 
-
   - choose:
-        - conditions:
-            - condition: template
-              value_template: "{{ image != '' or video != '' }}"
-          sequence:
-            - alias: "Send instant notification to notify devices"
-              repeat:
-                for_each: "{{device_name_map}}"
-                sequence:
-                  - action: "notify.{{ repeat.item }}"
+      - conditions:
+          - condition: template
+            value_template: "{{ image != '' or video != '' }}"
+        sequence:
+          - alias: "Send instant notification to notify devices"
+            repeat:
+              for_each: "{{device_name_map}}"
+              sequence:
+                - action: "notify.{{ repeat.item }}"
+                  data:
+                    title: "AI summary: {{ label }}"
+                    message: "{{response.response_text}}"
                     data:
-                      title: "{{ label }}"
-                      message: "{{response.response_text}}"
-                      data:
-                        video: "{{video if video != '' else None}}"
-                        image: "{{image if image != '' else None}}"
-                        entity_id: "{{camera_entity if input_mode=='Camera' and preview_mode=='Live Preview'}}"
-                        url: !input tap_navigate #iOS
-                        clickAction: !input tap_navigate #Android
-                        tag: "{{tag}}"
-                        group: "{{group}}"
-                        push:
-                          interruption-level: passive
+                      video: None # to avoid issue when a video is too long#"{{video if video != '' else None}}"
+                      image: "{{thumbnail_image if ((trigger.payload_json['after']['has_snapshot'] == true) and (thumbnail_image != '')) else None}}"
+                      entity_id: "{{camera_entity if input_mode=='Camera' and preview_mode=='Live Preview'}}"
+                      attachment:
+                        content-type: jpeg
+                        url: "{{ image }}"
+                      url: "{{video if video != '' else image}}" #iOS Click action
+                      clickAction: "{{video if video != '' else image}}" #Android
+                      tag: "{{tag}}"
+                      group: "{{group}}"
+                      push:
+                        interruption-level: passive
 
-  - delay: '00:{{cooldown|int}}:00'
+  - delay: "00:{{cooldown|int}}:00"
