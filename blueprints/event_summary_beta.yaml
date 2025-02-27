@@ -1,5 +1,5 @@
 blueprint:
-  name: AI Event Summary (Beta)
+  name: AI Event Summary (v1.4.0)
   author: valentinfrlch
   description: >
     AI-powered summaries for security camera events.
@@ -32,14 +32,14 @@ blueprint:
     message:
       name: Prompt
       description: Model prompt for the video_analyzer action
-      default: "Summarize what's happening in the camera feed (one sentence max). Don't describe the scene! If there is a person, describe what they're doing and what they look like. If they look like a courier mention that! If nothing is happening, say so."
+      default: "Summarize the events based on a series of images captured at short intervals. Focus only on actions and moving subjects such as people, vehicles, and other dynamic elements. Do not describe the scenery or static objects. Provide a clear and concise account of movements and interactions without referencing the source of the images."
       selector:
         text:
           multiline: true
     run_conditions:
       name: Run Conditions
       description: All conditions must be true in order for the blueprint to run.
-      default: false
+      default: []
       selector:
         condition:
     notify_device:
@@ -71,14 +71,14 @@ blueprint:
             domain: camera
     trigger_state:
       name: Trigger State
-      description: Trigger the automation when your cameras change to this state
+      description: Automation starts when one of your camera changes to this state.
       default: 'recording'
       selector:
         text:
           multiline: false
     motion_sensors:
       name: Motion Sensor
-      description: Set if your cameras don't change state. Use the same order used for camera entities.
+      description: Set if your cameras don't change state (Frigate). Use the same order used for camera entities.
       default: []
       selector:
         entity:
@@ -87,16 +87,16 @@ blueprint:
             domain: binary_sensor
     preview_mode:
       name: Preview Mode
-      description: Choose between a live preview or a snapshot of the event
-      default: Live Preview
+      description: "Choose between a live preview or a snapshot of the event. \n\n **Important:** Live Preview is only supported on iOS."
+      default: Snapshot
       selector:
         select:
           options:
-            - Live Preview
             - Snapshot
+            - Live Preview
     cooldown:
       name: Cooldown
-      description: Time in minutes to wait before running again. Recommended for busy areas.
+      description: Time in minutes to wait before running again. Strongly recommended for busy areas.
       default: 10
       selector:
         number:
@@ -105,14 +105,14 @@ blueprint:
     tap_navigate:
       name: Tap Navigate
       description: >-
-        Path to navigate to when notification is opened (e.g. /lovelace/cameras).
+        Home Assistant dashboard to navigate to when notification is opened (e.g. /lovelace/cameras).
       default: /lovelace/0
       selector:
         text:
           multiline: false
     duration:
       name: Duration
-      description: How long to record before analyzing (in seconds)
+      description: Duration to record for analysis (in seconds).
       default: 5
       selector:
         number:
@@ -134,7 +134,7 @@ blueprint:
           integration: llmvision
     model:
       name: Model
-      description: Which model to use. Depends on provider.
+      description: Which model to use. Depends on chosen provider.
       default: "gpt-4o-mini"
       selector:
         text:
@@ -194,10 +194,9 @@ variables:
     {{ camera_entity }}
   label: Motion detected
   camera: >
-      {{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize }}
+    {{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize }}
   importance_prompt: >
-    Your job is to classify security events based on home security footage. Your options: "passive" if an event seems unimportant, "time-sensitive" if important and "critical" for suspicious events.
-    Use "critical" only for possible burglaries and similar events. "time-sensitive" could be a person at the front door or an event of similar importance. You must reply with one of these options exactly.
+    Classify the security event based on this image. Choose from the following options: "passive" for unimportant events, "time-sensitive" for notable but non-critical events such as a person at the front door, and "critical" only for potential burglaries or highly suspicious activity. Respond with one of these options exactly, without additional explanation.
 
 max_exceeded: silent
 mode: single
