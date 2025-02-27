@@ -89,7 +89,7 @@ blueprint:
         **(Camera mode only)**
 
         Trigger the automation when your cameras change to this state
-      default: "recording"
+      default: 'recording'
       selector:
         text:
           multiline: false
@@ -125,14 +125,6 @@ blueprint:
         number:
           min: 0
           max: 60
-    # tap_navigate:
-    #   name: Tap Navigate
-    #   description: >-
-    #     Path to navigate to when notification is opened (e.g. /lovelace/cameras).
-    #   default: /ccab4aaf_frigate-proxy/ingress
-    #   selector:
-    #     text:
-    #       multiline: false
     duration:
       name: Duration
       description: >-
@@ -194,7 +186,7 @@ blueprint:
     detail:
       name: Detail
       description: Detail parameter (OpenAI only)
-      default: "low"
+      default: 'low'
       selector:
         select:
           options:
