@@ -53,6 +53,7 @@ INCLUDE_FILENAME = 'include_filename'
 EXPOSE_IMAGES = 'expose_images'
 EXPOSE_IMAGES_PERSIST = 'expose_images_persist'
 GENERATE_TITLE = 'generate_title'
+GENERATE_TITLE_PROMPT = 'generate_title_prompt'
 SENSOR_ENTITY = 'sensor_entity'
 
 # Error messages
