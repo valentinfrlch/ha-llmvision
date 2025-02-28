@@ -32,7 +32,7 @@ blueprint:
     message:
       name: Prompt
       description: Model prompt for the video_analyzer action
-      default: "Summarize the events based on a series of images captured at short intervals. Focus only on actions and moving subjects such as people, vehicles, and other dynamic elements. Do not describe the scenery or static objects. Provide a clear and concise account of movements and interactions without referencing the source of the images."
+      default: "Summarize the events based on a series of images captured at short intervals. Focus only on moving subjects such as people, vehicles, and other active elements. Ignore static objects and scenery. Provide a clear and concise account of movements and interactions. Do not mention or imply the existence of images—present the information as if directly observing the events. If no movement is detected, respond with: 'No activity observed.'"
       selector:
         text:
           multiline: true
@@ -285,7 +285,9 @@ action:
       temperature: !input temperature  
     response_variable: response
 
-
+  - alias: "Update label with title"
+    variables:
+      label: "{{response.title}}"
 
   - choose:
       - conditions:
