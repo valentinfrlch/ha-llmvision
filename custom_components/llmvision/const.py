@@ -22,6 +22,11 @@ CONF_CUSTOM_OPENAI_ENDPOINT = 'custom_openai_endpoint'
 CONF_CUSTOM_OPENAI_API_KEY = 'custom_openai_api_key'
 CONF_CUSTOM_OPENAI_DEFAULT_MODEL = 'custom_openai_default_model'
 CONF_RETENTION_TIME = 'retention_time'
+CONF_MEMORY_PATHS = 'memory_paths'
+CONG_MEMORY_IMAGES_ENCODED = 'memory_images_encoded'
+CONF_MEMORY_STRINGS = 'memory_strings'
+CONF_SYSTEM_PROMPT = 'system_prompt'
+CONF_TITLE_PROMPT = 'title_prompt'
 CONF_AWS_ACCESS_KEY_ID = 'aws_access_key_id'
 CONF_AWS_SECRET_ACCESS_KEY = 'aws_secret_access_key'
 CONF_AWS_REGION_NAME = 'aws_region_name'
@@ -35,6 +40,7 @@ CONF_OPENWEBUI_DEFAULT_MODEL = 'openwebui_default_model'
 # service call constants
 MESSAGE = 'message'
 REMEMBER = 'remember'
+USE_MEMORY = 'use_memory'
 PROVIDER = 'provider'
 MAXTOKENS = 'max_tokens'
 TARGET_WIDTH = 'target_width'
@@ -51,7 +57,6 @@ MAX_FRAMES = 'max_frames'
 TEMPERATURE = 'temperature'
 INCLUDE_FILENAME = 'include_filename'
 EXPOSE_IMAGES = 'expose_images'
-EXPOSE_IMAGES_PERSIST = 'expose_images_persist'
 GENERATE_TITLE = 'generate_title'
 SENSOR_ENTITY = 'sensor_entity'
 
@@ -64,6 +69,12 @@ ERROR_HANDSHAKE_FAILED = "Connection could not be established"
 # Versions
 # https://docs.anthropic.com/en/api/versioning
 VERSION_ANTHROPIC = "2023-06-01"
+
+# Defaults
+DEFAULT_SYSTEM_PROMPT = "Your task is to analyze a series of images and provide a concise event description based on user instructions. Focus on identifying and describing the actions of people and dynamic objects (e.g., vehicles) rather than static background details. When multiple images are provided, track and summarize movements or changes over time (e.g., 'A person walks to the front door' or 'A car pulls out of the driveway'). Keep responses brief, objective, and aligned with the user's prompt. Avoid speculation and prioritize observable activity."
+DEFAULT_TITLE_PROMPT = "Provide a short and concise event title based on the description provided. The title should summarize the key actions or events captured in the images and be suitable for use in a notification or alert. Keep the title clear, relevant to the content of the images and shorter than 6 words. Avoid unnecessary details or subjective interpretations. The title should be in the format: '<Object> seen at <location>. For example: 'Person seen at front door'."
+DATA_EXTRACTION_PROMPT = "You are an advanced image analysis assistant specializing in extracting precise data from images captured by a home security camera. Your task is to analyze one or more images and extract specific information as requested by the user (e.g., the number of cars or a license plate). Provide only the requested information in your response, with no additional text or commentary. Your response must be a {data_format} Ensure the extracted data is accurate and reflects the content of the images."
+
 
 # API Endpoints
 ENDPOINT_OPENAI = "https://api.openai.com/v1/chat/completions"

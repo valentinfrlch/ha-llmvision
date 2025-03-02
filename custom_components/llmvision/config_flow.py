@@ -32,6 +32,9 @@ from .const import (
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_DEFAULT_MODEL,
     CONF_RETENTION_TIME,
+    CONF_MEMORY_PATHS,
+    CONF_MEMORY_STRINGS,
+    CONF_SYSTEM_PROMPT,
     CONF_AWS_ACCESS_KEY_ID,
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
@@ -42,9 +45,12 @@ from .const import (
     CONF_OPENWEBUI_API_KEY,
     CONF_OPENWEBUI_DEFAULT_MODEL,
     ENDPOINT_OPENWEBUI,
-
+    DEFAULT_SYSTEM_PROMPT,
+    CONF_TITLE_PROMPT,
+    DEFAULT_TITLE_PROMPT,
 )
 import voluptuous as vol
+import os
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,15 +58,17 @@ _LOGGER = logging.getLogger(__name__)
 
 class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
-    VERSION = 2
+    VERSION = 3
+    MINOR_VERSION = 0
 
     async def handle_provider(self, provider):
         provider_steps = {
+            "Timeline": self.async_step_timeline,
+            "Memory": self.async_step_memory,
             "Anthropic": self.async_step_anthropic,
             "AWS Bedrock": self.async_step_aws_bedrock,
             "Azure": self.async_step_azure,
             "Custom OpenAI": self.async_step_custom_openai,
-            "Event Calendar": self.async_step_semantic_index,
             "Google": self.async_step_google,
             "Groq": self.async_step_groq,
             "LocalAI": self.async_step_localai,
@@ -78,10 +86,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required("provider", default="Event Calendar"): selector({
+            vol.Required("provider", default="Timeline"): selector({
                 "select": {
                     # Azure removed until fixed
-                    "options": ["Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI", "Event Calendar"],
+                    "options": ["Timeline", "Memory", "Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI"],
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -517,7 +525,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=data_schema,
         )
 
-    async def async_step_semantic_index(self, user_input=None):
+    async def async_step_timeline(self, user_input=None):
         data_schema = vol.Schema({
             vol.Required(CONF_RETENTION_TIME, default=7): int,
         })
@@ -547,10 +555,84 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
             else:
                 # New config entry
-                return self.async_create_entry(title="LLM Vision Events", data=user_input)
+                return self.async_create_entry(title="LLM Vision Timeline", data=user_input)
 
         return self.async_show_form(
-            step_id="semantic_index",
+            step_id="timeline",
+            data_schema=data_schema,
+        )
+
+    async def async_step_memory(self, user_input=None):
+        data_schema = vol.Schema({
+            vol.Optional(CONF_MEMORY_PATHS, default="/config/llmvision/memory/example.jpg"): selector({
+                "text": {
+                    "multiline": False,
+                    "multiple": True
+                }
+            }),
+            vol.Optional(CONF_MEMORY_STRINGS, default="This an example"): selector({
+                "text": {
+                    "multiline": False,
+                    "multiple": True
+                }
+            }),
+            vol.Optional(CONF_SYSTEM_PROMPT, default=DEFAULT_SYSTEM_PROMPT): selector({
+                "text": {
+                    "multiline": True,
+                    "multiple": False
+                }
+            }),
+            vol.Optional(CONF_TITLE_PROMPT, default=DEFAULT_TITLE_PROMPT): selector({
+                "text": {
+                    "multiline": True,
+                    "multiple": False
+                }
+            }),
+        })
+
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            data_schema = self.add_suggested_values_to_schema(
+                data_schema, self.init_info
+            )
+
+        if user_input is not None:
+            user_input["provider"] = self.init_info["provider"]
+
+            try:
+                for uid in self.hass.data[DOMAIN]:
+                    if 'system_prompt' in self.hass.data[DOMAIN][uid]:
+                        self.async_abort(reason="already_configured")
+            except KeyError:
+                # no existing configuration, continue
+                pass
+
+            errors = {}
+            if len(user_input.get(CONF_MEMORY_PATHS, [])) != len(user_input.get(CONF_MEMORY_STRINGS, [])):
+                errors = {"base": "mismatched_lengths"}
+            for path in user_input.get(CONF_MEMORY_PATHS, []):
+                if not os.path.exists(path):
+                    errors = {"base": "invalid_image_path"}
+            
+            if errors:
+                return self.async_show_form(
+                    step_id="memory",
+                    data_schema=data_schema,
+                    errors=errors
+                )
+            if self.source == config_entries.SOURCE_RECONFIGURE:
+                # we're reconfiguring an existing config
+                return self.async_update_reload_and_abort(
+                    self._get_reconfigure_entry(),
+                    data_updates=user_input,
+                )
+            else:
+                # New config entry
+                return self.async_create_entry(title="LLM Vision Memory", data=user_input)
+
+        return self.async_show_form(
+            step_id="memory",
             data_schema=data_schema,
         )
 

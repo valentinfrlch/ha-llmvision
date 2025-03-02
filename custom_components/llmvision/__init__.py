@@ -19,6 +19,11 @@ from .const import (
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_DEFAULT_MODEL,
     CONF_RETENTION_TIME,
+    CONF_MEMORY_PATHS,
+    CONG_MEMORY_IMAGES_ENCODED,
+    CONF_MEMORY_STRINGS,
+    CONF_SYSTEM_PROMPT,
+    CONF_TITLE_PROMPT,
     CONF_AWS_ACCESS_KEY_ID,
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
@@ -30,6 +35,7 @@ from .const import (
     CONF_OPENWEBUI_DEFAULT_MODEL,
     MESSAGE,
     REMEMBER,
+    USE_MEMORY,
     MODEL,
     PROVIDER,
     MAXTOKENS,
@@ -46,14 +52,18 @@ from .const import (
     TEMPERATURE,
     INCLUDE_FILENAME,
     EXPOSE_IMAGES,
-    EXPOSE_IMAGES_PERSIST,
     GENERATE_TITLE,
     SENSOR_ENTITY,
+    DEFAULT_SYSTEM_PROMPT,
+    DEFAULT_TITLE_PROMPT,
+    DATA_EXTRACTION_PROMPT,
 )
-from .calendar import SemanticIndex
+from .calendar import Timeline
 from .providers import Request
+from .memory import Memory
 from .media_handlers import MediaProcessor
 import re
+import os
 from datetime import timedelta
 from homeassistant.util import dt as dt_util
 from homeassistant.config_entries import ConfigEntry
@@ -89,6 +99,11 @@ async def async_setup_entry(hass, entry):
     custom_openai_default_model = entry.data.get(
         CONF_CUSTOM_OPENAI_DEFAULT_MODEL)
     retention_time = entry.data.get(CONF_RETENTION_TIME)
+    memory_paths = entry.data.get(CONF_MEMORY_PATHS)
+    memory_images_encoded = entry.data.get(CONG_MEMORY_IMAGES_ENCODED)
+    memory_strings = entry.data.get(CONF_MEMORY_STRINGS)
+    system_prompt = entry.data.get(CONF_SYSTEM_PROMPT)
+    title_prompt = entry.data.get(CONF_TITLE_PROMPT)
     aws_access_key_id = entry.data.get(CONF_AWS_ACCESS_KEY_ID)
     aws_secret_access_key = entry.data.get(CONF_AWS_SECRET_ACCESS_KEY)
     aws_region_name = entry.data.get(CONF_AWS_REGION_NAME)
@@ -123,6 +138,11 @@ async def async_setup_entry(hass, entry):
         CONF_CUSTOM_OPENAI_API_KEY: custom_openai_api_key,
         CONF_CUSTOM_OPENAI_DEFAULT_MODEL: custom_openai_default_model,
         CONF_RETENTION_TIME: retention_time,
+        CONF_MEMORY_PATHS: memory_paths,
+        CONG_MEMORY_IMAGES_ENCODED: memory_images_encoded,
+        CONF_MEMORY_STRINGS: memory_strings,
+        CONF_SYSTEM_PROMPT: system_prompt,
+        CONF_TITLE_PROMPT: title_prompt,
         CONF_AWS_ACCESS_KEY_ID: aws_access_key_id,
         CONF_AWS_SECRET_ACCESS_KEY: aws_secret_access_key,
         CONF_AWS_REGION_NAME: aws_region_name,
@@ -153,75 +173,93 @@ async def async_remove_entry(hass, entry):
     """Remove config entry from hass.data"""
     # Use the entry_id from the config entry as the UID
     entry_uid = entry.entry_id
-
     if entry_uid in hass.data[DOMAIN]:
         # Remove the entry from hass.data
         _LOGGER.info(f"Removing {entry.title} from hass.data")
         await async_unload_entry(hass, entry)
         hass.data[DOMAIN].pop(entry_uid)
+        # Check if entry is the timeline entry
+        if entry.data["provider"] == 'Timeline':
+            # Check if "/llmvision/events.db" exists
+            db_path = os.path.join(
+                hass.config.path("llmvision"), "events.db"
+            )
+            if os.path.exists(db_path):
+                os.remove(db_path)
     else:
         _LOGGER.warning(
             f"Entry {entry.title} not found but was requested to be removed")
-
     return True
 
 
 async def async_unload_entry(hass, entry) -> bool:
     _LOGGER.debug(f"Unloading {entry.title} from hass.data")
-
     # check if the entry is the calendar entry (has entry rentention_time)
     if entry.data.get(CONF_RETENTION_TIME) is not None:
         # unload the calendar
         unload_ok = await hass.config_entries.async_unload_platforms(entry, ["calendar"])
     else:
         unload_ok = True
-
     return unload_ok
 
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
-    if DOMAIN not in hass.data:
+    _LOGGER.debug(
+        f"{config_entry.title} version: {config_entry.version}.{config_entry.minor_version}")
+    if config_entry.version == 2 and config_entry.data["provider"] == "Event Calendar":
+        _LOGGER.info(
+            "Migrating LLM Vision Timeline config entry from v2.0 to v3.0")
+        # Change Provider name to Timeline
+        new_data = config_entry.data.copy()
+        new_data["provider"] = "Timeline"
+
+        # Update the config entry
+        hass.config_entries.async_update_entry(
+            config_entry, title="LLM Vision Timeline", data=new_data, version=3, minor_version=0
+        )
         return True
     else:
-        return False
+        hass.config_entries.async_update_entry(
+            config_entry, version=3, minor_version=0
+        )
+        return True
 
 
 async def _remember(hass, call, start, response, key_frame) -> None:
     if call.remember:
-        # Find semantic index config
+        # Find timeline config
         config_entry = None
         for entry in hass.config_entries.async_entries(DOMAIN):
             # Check if the config entry is empty
-            if entry.data["provider"] == "Event Calendar":
+            if entry.data["provider"] == "Timeline":
                 config_entry = entry
                 break
 
         if config_entry is None:
             raise ServiceValidationError(
-                f"Config entry not found. Please create the 'Event Calendar' config entry first.")
+                f"Config entry not found. Please create the 'Timeline' config entry first.")
 
-        semantic_index = SemanticIndex(hass, config_entry)
+        timeline = Timeline(hass, config_entry)
 
         if call.image_entities and len(call.image_entities) > 0:
             camera_name = call.image_entities[0]
-            title = "Motion detected near " + camera_name
         elif call.video_paths and len(call.video_paths) > 0:
             camera_name = call.video_paths[0].split(
                 "/")[-1].replace(".mp4", "")
-            title = "Motion detected in " + camera_name
         else:
             camera_name = ""
-            title = "Motion detected"
 
         if "title" in response:
             title = response.get("title")
+        else:
+            title = "Motion detected"
 
-        await semantic_index.remember(
+        await timeline.remember(
             start=start,
             end=dt_util.now() + timedelta(minutes=1),
             label=title,
             summary=response["response_text"],
-            key_frame=key_frame + ".jpg",
+            key_frame=key_frame,
             camera_name=camera_name
         )
 
@@ -289,8 +327,9 @@ class ServiceCallData:
         self.provider = str(data_call.data.get(PROVIDER))
         self.model = str(data_call.data.get(
             MODEL))
-        self.message = str(data_call.data.get(MESSAGE)[0:2000])
+        self.message = str(data_call.data.get(MESSAGE, "")[0:2000])
         self.remember = data_call.data.get(REMEMBER, False)
+        self.use_memory = data_call.data.get(USE_MEMORY, False)
         self.image_paths = data_call.data.get(IMAGE_FILE, "").split(
             "\n") if data_call.data.get(IMAGE_FILE) else None
         self.image_entities = data_call.data.get(IMAGE_ENTITY)
@@ -310,10 +349,18 @@ class ServiceCallData:
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 100))
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
-        self.expose_images_persist = data_call.data.get(
-            EXPOSE_IMAGES_PERSIST, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)
-        self.sensor_entity = data_call.data.get(SENSOR_ENTITY)
+        self.sensor_entity = data_call.data.get(SENSOR_ENTITY, "")
+
+        # ------------ Remember ------------
+        self.title = data_call.data.get("title")
+        self.summary = data_call.data.get("summary")
+        self.image_path = data_call.data.get("image_path", "")
+        self.camera_entity = data_call.data.get("camera_entity", "")
+        self.start_time = data_call.data.get("start_time", dt_util.now())
+        self.end_time = data_call.data.get(
+            "end_time", self.start_time + timedelta(minutes=1))
+
         # ------------ Added during call ------------
         # self.base64_images : List[str] = []
         # self.filenames : List[str] = []
@@ -335,7 +382,6 @@ def setup(hass, config):
                           max_tokens=call.max_tokens,
                           temperature=call.temperature,
                           )
-
         # Fetch and preprocess images
         processor = MediaProcessor(hass, request)
         # Send images to RequestHandler client
@@ -344,11 +390,17 @@ def setup(hass, config):
                                              target_width=call.target_width,
                                              include_filename=call.include_filename,
                                              expose_images=call.expose_images,
-                                             expose_images_persist=call.expose_images_persist
                                              )
+
+        call.memory = Memory(hass)
+        await call.memory._update_memory()
 
         # Validate configuration, input data and make the call
         response = await request.call(call)
+        # Add processor.key_frame to response if it exists
+        if processor.key_frame:
+            response["key_frame"] = processor.key_frame
+
         await _remember(hass=hass,
                         call=call,
                         start=start,
@@ -374,11 +426,17 @@ def setup(hass, config):
                                              target_width=call.target_width,
                                              include_filename=call.include_filename,
                                              expose_images=call.expose_images,
-                                             expose_images_persist=call.expose_images_persist,
                                              frigate_retry_attempts=call.frigate_retry_attempts,
                                              frigate_retry_seconds=call.frigate_retry_seconds
                                              )
+        call.memory = Memory(hass)
+        await call.memory._update_memory()
+
         response = await request.call(call)
+        # Add processor.key_frame to response if it exists
+        if processor.key_frame:
+            response["key_frame"] = processor.key_frame
+
         await _remember(hass=hass,
                         call=call,
                         start=start,
@@ -404,10 +462,16 @@ def setup(hass, config):
                                               target_width=call.target_width,
                                               include_filename=call.include_filename,
                                               expose_images=call.expose_images,
-                                              expose_images_persist=call.expose_images_persist
                                               )
 
+        call.memory = Memory(hass)
+        await call.memory._update_memory()
+
         response = await request.call(call)
+        # Add processor.key_frame to response if it exists
+        if processor.key_frame:
+            response["key_frame"] = processor.key_frame
+
         await _remember(hass=hass,
                         call=call,
                         start=start,
@@ -459,12 +523,68 @@ def setup(hass, config):
                                                   target_width=call.target_width,
                                                   include_filename=call.include_filename
                                                   )
+
+        call.memory = Memory(hass, system_prompt=DATA_EXTRACTION_PROMPT)
+        await call.memory._update_memory()
+
         response = await request.call(call)
         _LOGGER.info(f"Response: {response}")
         _LOGGER.info(f"Sensor type: {type}")
         # update sensor in data_call.data.get("sensor_entity")
         await _update_sensor(hass, sensor_entity, response["response_text"], type)
         return response
+
+    async def remember(data_call):
+        """Handle the service call to remember an event"""
+        start = dt_util.now()
+        call = ServiceCallData(data_call).get_service_call_data()
+
+        # Find timeline config
+        config_entry = None
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            # Check if the config entry is empty
+            if entry.data["provider"] == "Timeline":
+                config_entry = entry
+                break
+
+        if config_entry is None:
+            raise ServiceValidationError(
+                f"Config entry not found. Please create the 'Timeline' config entry first.")
+
+        timeline = Timeline(hass, config_entry)
+
+        await timeline.remember(
+            start=call.start_time,
+            end=call.end_time,
+            label=call.title,
+            summary=call.summary,
+            key_frame=call.image_path,
+            camera_name=call.camera_entity
+        )
+
+    async def cleanup(data_call):
+        """Action to clean /tmp/llmvision"""
+        def delete_files(path, filenames=[]):
+            """Helper function to run in executor"""
+            for file in os.listdir(path):
+                if file not in filenames:
+                    _LOGGER.info(f"Removing {file}")
+                    os.remove(os.path.join(path, file))
+        # Find timeline config
+        config_entry = None
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            if entry.data["provider"] == "Timeline":
+                config_entry = entry
+                break
+        if config_entry is None:
+            # delete all files in /www/llmvision/
+            llmvision_path = hass.config.path("www/llmvision")
+            await hass.loop.run_in_executor(None, delete_files, llmvision_path)
+        else:
+            timeline = Timeline(hass, config_entry)
+            filenames = await timeline.linked_images
+            llmvision_path = hass.config.path("www/llmvision")
+            await hass.loop.run_in_executor(None, delete_files, llmvision_path, filenames)
 
     # Register services
     hass.services.register(
@@ -481,6 +601,12 @@ def setup(hass, config):
     )
     hass.services.register(
         DOMAIN, "data_analyzer", data_analyzer,
+    )
+    hass.services.register(
+        DOMAIN, "remember", remember,
+    )
+    hass.services.register(
+        DOMAIN, "cleanup", cleanup,
     )
 
     return True

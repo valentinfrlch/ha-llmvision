@@ -70,13 +70,6 @@
                     "custom_openai_default_model": "Standartmodell, zum Beispiel 'gpt-4o-mini'"
                 }
             },
-            "semantic_index": {
-                "title": "Events erinnern",
-                "description": "Konfiguriere wie viele Tage Events gespeichert werden, danach werden sie automatisch gelöscht. Events werden nur lokal gespeichert und können in der Kalenderansicht gelöscht werden. (0 deaktiviert auto delete)",
-                "data": {
-                    "retention_time": "Automatisch löschen nach (in Tagen)"
-                }
-            },
             "aws_bedrock": {
                 "title": "AWS Bedrock konfigurieren",
                 "description": "**Wichtig**: Unterstützt derzeit nur die Modelle Nova und Anthropic Claude.",
@@ -97,12 +90,31 @@
                     "openwebui_https": "HTTPS verwenden",
                     "openwebui_default_model": "Standardmodell"
                 }
+            },
+            "timeline": {
+                "title": "Timeline",
+                "description": "Konfiguriere wie viele Tage Events gespeichert werden, danach werden sie automatisch gelöscht. Events werden nur lokal gespeichert und können in der Kalenderansicht gelöscht werden. (0 deaktiviert auto delete)",
+                "data": {
+                    "retention_time": "Automatisch löschen nach (in Tagen)"
+                }
+            },
+            "memory": {
+                "title": "Erinnerungen",
+                "description": "Erinnerungen sind providerübergreifend und werden verwended um dem Modell mehr kontext zur Verfügung zu stellen. \n\n **Image file paths**: Provide the path to the image file. \n **Image descriptions**: Provide a description of the image (e.g.: 'This is Cookie, my dog'). \n Images and descriptions must be in the same order, and there must be as many descriptions as images. \n\n **System Prompt**: Benutze den System Prompt um zu verändern wie das Modell sich verhält und antwortet. \n **Title Prompt**: Die Anweisung die dem Modell gegeben wird um einen Titel zu generieren.",
+                "data": {
+                    "memory_paths": "Bildpfad",
+                    "memory_strings": "Bildbeschreibung",
+                    "system_prompt": "System Prompt",
+                    "title_prompt": "Title prompt"
+                }
             }
         },
         "error": {
             "handshake_failed": "Verbindung zum Server konnte nicht hergestellt werden. Überprüfe deinen API-key oder IP und Port",
             "empty_api_key": "Ungültiger API-key",
-            "invalid_provider": "Ungültiger Provider ausgewählt"
+            "invalid_provider": "Ungültiger Provider ausgewählt",
+            "invalid_image_path": "Ein oder mehrere Bildpfade sind ungültig",
+            "mismatched_lengths": "Die Anzahl der Bildpfade und Beschreibungen muss übereinstimmen"
         },
         "abort": {
             "unknown_provider": "Unbekannter Anbieter"

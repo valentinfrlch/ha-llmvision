@@ -28,7 +28,6 @@ class MediaProcessor:
         self.path = "/config/www/llmvision"
         self.key_frame = ""
 
-
     async def _encode_image(self, img):
         """Encode image as base64"""
         img_byte_arr = io.BytesIO()
@@ -59,14 +58,11 @@ class MediaProcessor:
             img = img.convert('RGB')
         return img
 
-    async def _expose_image(self, frame_name, resized_image, persist, uid):
-        if persist:
-            persist_filename = f"/config/www/llmvision/{uid}-" + frame_name
-        else:
-            persist_filename = f"/config/www/llmvision/" + frame_name
+    async def _expose_image(self, frame_name, resized_image, uid):
+        filename = f"/config/www/llmvision/{uid}-" + frame_name
         if self.key_frame == "":
-            self.key_frame = persist_filename
-        await self._save_clip(image_data=resized_image, image_path=persist_filename + ".jpg")
+            self.key_frame = filename + ".jpg"
+            await self._save_clip(image_data=resized_image, image_path=self.key_frame)
 
     def _similarity_score(self, previous_frame, current_frame_gray):
         """
@@ -180,7 +176,7 @@ class MediaProcessor:
                 await asyncio.sleep(retry_delay)
         _LOGGER.warning(f"Failed to fetch {url} after {max_retries} retries")
 
-    async def record(self, image_entities, duration, max_frames, target_width, include_filename, expose_images, expose_images_persist):
+    async def record(self, image_entities, duration, max_frames, target_width, include_filename, expose_images):
         """Wrapper for client.add_frame with integrated recorder
 
         Args:
@@ -280,15 +276,14 @@ class MediaProcessor:
         for frame_name, frame_data, _ in selected_frames:
             resized_image = await self.resize_image(target_width=target_width, image_data=frame_data)
             if expose_images:
-                await self._expose_image(
-                    frame_name.replace(" frame ", "-") if not expose_images_persist else frame_name[-1], resized_image, expose_images_persist, uid=str(uuid.uuid4())[:8])
-                
+                await self._expose_image(frame_name[-1], resized_image, uid=str(uuid.uuid4())[:8])
+
             self.client.add_frame(
                 base64_image=resized_image,
                 filename=frame_name
             )
 
-    async def add_images(self, image_entities, image_paths, target_width, include_filename, expose_images, expose_images_persist):
+    async def add_images(self, image_entities, image_paths, target_width, include_filename, expose_images):
         """Wrapper for client.add_frame for images"""
         if image_entities:
             for image_entity in image_entities:
@@ -314,10 +309,7 @@ class MediaProcessor:
                     )
 
                     if expose_images:
-                        frame_name = image_entity.replace(
-                            'camera.', '') if not expose_images_persist else "0"
-                        await self._expose_image(
-                            frame_name, resized_image, expose_images_persist, str(uuid.uuid4())[:8])
+                        await self._expose_image("0", resized_image, str(uuid.uuid4())[:8])
 
                 except AttributeError as e:
                     raise ServiceValidationError(
@@ -340,18 +332,15 @@ class MediaProcessor:
                         raise ServiceValidationError(
                             f"File {image_path} does not exist")
                     if expose_images:
-                        frame_name = image_path.split(
-                            '/')[-1].split('.')[-2] if not expose_images_persist else "0"
-                        await self._expose_image(
-                            frame_name, await self.resize_image(target_width=target_width, image_path=image_path), expose_images_persist, str(uuid.uuid4())[:8])
+                        await self._expose_image("0", await self.resize_image(target_width=target_width, image_path=image_path), str(uuid.uuid4())[:8])
                 except Exception as e:
                     raise ServiceValidationError(f"Error: {e}")
         return self.client
 
-    async def add_videos(self, video_paths, event_ids, max_frames, target_width, include_filename, expose_images, expose_images_persist, frigate_retry_attempts, frigate_retry_seconds):
+    async def add_videos(self, video_paths, event_ids, max_frames, target_width, include_filename, expose_images, frigate_retry_attempts, frigate_retry_seconds):
         """Wrapper for client.add_frame for videos"""
-        tmp_clips_dir = f"/config/custom_components/{DOMAIN}/tmp_clips"
-        tmp_frames_dir = f"/config/custom_components/{DOMAIN}/tmp_frames"
+        tmp_clips_dir = self.hass.config.path(f"custom_components/{DOMAIN}/tmp_clips")
+        tmp_frames_dir = self.hass.config.path(f"custom_components/{DOMAIN}/tmp_frames")
         processed_event_ids = []
 
         if not video_paths:
@@ -370,7 +359,6 @@ class MediaProcessor:
 
                     # create tmp dir to store video clips
                     await self.hass.loop.run_in_executor(None, partial(os.makedirs, tmp_clips_dir, exist_ok=True))
-                    _LOGGER.info(f"Created {tmp_clips_dir}")
                     # save clip to file with event_id as filename
                     clip_path = os.path.join(
                         tmp_clips_dir, event_id + ".mp4")
@@ -384,7 +372,7 @@ class MediaProcessor:
                 except AttributeError as e:
                     raise ServiceValidationError(
                         f"Failed to fetch frigate clip {event_id}: {e}")
-        
+
         _LOGGER.debug(f"Processing videos: {video_paths}")
         for video_path in video_paths:
             try:
@@ -416,6 +404,7 @@ class MediaProcessor:
                     frame_counter = 0
                     previous_frame = None
                     frames = []
+                    
 
                     for frame_file in await self.hass.loop.run_in_executor(None, os.listdir, tmp_frames_dir):
                         _LOGGER.debug(f"Adding frame {frame_file}")
@@ -460,9 +449,9 @@ class MediaProcessor:
 
                         if expose_images:
                             frame_name = frame_path.split(
-                                '/')[-1].split('.')[-2].replace("frame", "") if expose_images_persist else video_path.split('/')[-1].split('.')[-2] + "-" + str(counter)
+                                '/')[-1].split('.')[-2].replace("frame", "")
                             await self._expose_image(
-                                frame_name, resized_image, expose_images_persist, current_event_id[:8])
+                                frame_name, resized_image, current_event_id[:8])
 
                         self.client.add_frame(
                             base64_image=resized_image,
@@ -491,7 +480,7 @@ class MediaProcessor:
             _LOGGER.info(f"Failed to delete tmp folders: {e}")
         return self.client
 
-    async def add_streams(self, image_entities, duration, max_frames, target_width, include_filename, expose_images, expose_images_persist):
+    async def add_streams(self, image_entities, duration, max_frames, target_width, include_filename, expose_images):
         if image_entities:
             await self.record(
                 image_entities=image_entities,
@@ -500,7 +489,6 @@ class MediaProcessor:
                 target_width=target_width,
                 include_filename=include_filename,
                 expose_images=expose_images,
-                expose_images_persist=expose_images_persist
             )
         return self.client
 

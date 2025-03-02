@@ -1,3 +1,4 @@
+import aiosqlite
 import datetime
 import uuid
 import os
@@ -22,7 +23,7 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 
-class SemanticIndex(CalendarEntity):
+class Timeline(CalendarEntity):
     """Representation of a Calendar."""
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry):
@@ -37,24 +38,77 @@ class SemanticIndex(CalendarEntity):
         self._attr_supported_features = (CalendarEntityFeature.DELETE_EVENT)
 
         # Path to the JSON file where events are stored
-        self._file_path = os.path.join(
+        self._db_path = os.path.join(
+            self.hass.config.path("llmvision"), "events.db"
+        )
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
+        
+        self.hass.loop.create_task(self.async_update())
+        self.hass.async_create_task(self._migrate())  # Run migration if needed
+
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend"""
+        return "mdi:timeline-outline"
+
+    async def _migrate(self):
+        # Migrate events from events.json to events.db
+        old_db_path = os.path.join(
             self.hass.config.path("llmvision"), "events.json"
         )
+        if os.path.exists(old_db_path):
+            _LOGGER.info("Migrating events from events.json to events.db")
+            with open(old_db_path, "r") as file:
+                data = json.load(file)
+                event_counter = 0
+                for event in data:
+                    await self.hass.loop.create_task(self.async_create_event(
+                        dtstart=datetime.datetime.fromisoformat(
+                            event["start"]),
+                        dtend=datetime.datetime.fromisoformat(event["end"]),
+                        summary=event["summary"],
+                        description=event["description"],
+                        key_frame=event["location"].split(",")[0],
+                        camera_name=event["location"].split(",")[1] if len(
+                            event["location"].split(",")) > 1 else ""
+                    ))
+                    event_counter += 1
+                _LOGGER.info(f"Migrated {event_counter} events")
+            _LOGGER.info("Migration complete, deleting events.json")
+            os.remove(old_db_path)
 
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(self._file_path), exist_ok=True)
-        self.hass.loop.create_task(self.async_update())
+    @property
+    def extra_state_attributes(self):
+        """Return the state attributes"""
+        sorted_events = sorted(
+            self._events, key=lambda event: event.start, reverse=True)
+        # Set limit to 10 newest events to improve performance
+        events = sorted_events[:10]
+        return {
+            "events": [event.summary for event in events],
+            "starts": [event.start for event in events],
+            "ends": [event.end for event in events],
+            "summaries": [event.description for event in events],
+            "key_frames": [event.location.split(",")[0] for event in events],
+            "camera_names": [event.location.split(",")[1] if len(event.location.split(",")) > 1 else "" for event in events],
+        }
+
+    @property
+    def event(self):
+        """Return the current event"""
+        return self._current_event
 
     def _ensure_datetime(self, dt):
-        """Ensure the input is a datetime.datetime object"""
+        """Ensures the input is a datetime.datetime object"""
         if isinstance(dt, datetime.date) and not isinstance(dt, datetime.datetime):
             dt = datetime.datetime.combine(dt, datetime.datetime.min.time())
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=datetime.timezone.utc)
         return dt
-    
+
     async def _delete_image(self, event_id: str):
-        """Delete the image associated with the event"""
+        """Deletes the image associated with the event"""
         for event in self._events:
             if event.uid == event_id:
                 image_path = event.location.split(",")[0]
@@ -62,6 +116,54 @@ class SemanticIndex(CalendarEntity):
                 if os.path.exists(image_path) and "/llmvision/" in image_path:
                     os.remove(image_path)
                     _LOGGER.info(f"Deleted image: {image_path}")
+    @property
+    async def linked_images(self):
+        """Returns the filenames of key_frames associated with events"""
+        await self.async_update()
+        return [os.path.basename(event.location.split(",")[0]) for event in self._events]
+    
+    async def _initialize_db(self):
+        """Initialize database"""
+        try:
+            async with aiosqlite.connect(self._db_path) as db:
+                await db.execute('''
+                    CREATE TABLE IF NOT EXISTS events (
+                        uid TEXT PRIMARY KEY,
+                        summary TEXT,
+                        start TEXT,
+                        end TEXT,
+                        description TEXT,
+                        key_frame TEXT,
+                        camera_name TEXT
+                    )
+                ''')
+                await db.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_start ON events (start)
+                ''')
+                await db.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_end ON events (end)
+                ''')
+                await db.commit()
+        except aiosqlite.Error as e:
+            _LOGGER.error(f"Error initializing database: {e}")
+
+    async def async_update(self) -> None:
+        """Loads events from database"""
+        await self._initialize_db()
+        async with aiosqlite.connect(self._db_path) as db:
+            async with db.execute('SELECT * FROM events') as cursor:
+                rows = await cursor.fetchall()
+                self._events = [
+                    CalendarEvent(
+                        uid=row[0],
+                        summary=row[1],
+                        start=dt_util.as_local(dt_util.parse_datetime(row[2])),
+                        end=dt_util.as_local(dt_util.parse_datetime(row[3])),
+                        description=row[4],
+                        location=row[5] + "," + row[6] if row[6] else ""
+                    )
+                    for row in rows
+                ]
 
     async def async_get_events(
         self,
@@ -69,7 +171,7 @@ class SemanticIndex(CalendarEntity):
         start_date: datetime.datetime,
         end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
-        """Return calendar events within a datetime range"""
+        """Returns calendar events within a datetime range"""
         events = []
 
         # Ensure start_date and end_date are datetime.datetime objects and timezone-aware
@@ -85,26 +187,8 @@ class SemanticIndex(CalendarEntity):
                 events.append(event)
         return events
 
-    @property
-    def extra_state_attributes(self):
-        """Return the state attributes"""
-        events = self._events[:10]  # Set limit to 10 events to improve performance
-        return {
-            "events": [event.summary for event in events],
-            "starts": [event.start for event in events],
-            "ends": [event.end for event in events],
-            "summaries": [event.description for event in events],
-            "key_frames": [event.location.split(",")[0] for event in events],
-            "camera_names": [event.location.split(",")[1] if len(event.location.split(",")) > 1 else "" for event in events],
-        }
-
-    @property
-    def event(self):
-        """Return the current event"""
-        return self._current_event
-
     async def async_create_event(self, **kwargs: any) -> None:
-        """Add a new event to calendar"""
+        """Adds a new event to calendar"""
         await self.async_update()
         dtstart = kwargs[EVENT_START]
         dtend = kwargs[EVENT_END]
@@ -112,14 +196,17 @@ class SemanticIndex(CalendarEntity):
         end: datetime.datetime
         summary = kwargs[EVENT_SUMMARY]
         description = kwargs.get(EVENT_DESCRIPTION)
-        location = kwargs.get(EVENT_LOCATION)
+        key_frame = kwargs.get("key_frame", "")
+        camera_name = kwargs.get("camera_name", "")
 
-        if isinstance(dtstart, datetime.datetime):
-            start = dt_util.as_local(dtstart)
-            end = dt_util.as_local(dtend)
-        else:
-            start = dtstart
-            end = dtend
+        # Ensure dtstart and dtend are datetime objects
+        if isinstance(dtstart, str):
+            dtstart = datetime.datetime.fromisoformat(dtstart)
+        if isinstance(dtend, str):
+            dtend = datetime.datetime.fromisoformat(dtend)
+
+        start = dt_util.as_local(dtstart)
+        end = dt_util.as_local(dtend)
 
         event = CalendarEvent(
             uid=str(uuid.uuid4()),
@@ -127,7 +214,7 @@ class SemanticIndex(CalendarEntity):
             start=start,
             end=end,
             description=description,
-            location=location
+            location=f"{key_frame},{camera_name}"
         )
 
         self._events.append(event)
@@ -139,78 +226,67 @@ class SemanticIndex(CalendarEntity):
         recurrence_id: str | None = None,
         recurrence_range: str | None = None,
     ) -> None:
-        """Delete an event on the calendar."""
+        """Deletes an event on the calendar."""
         _LOGGER.info(f"Deleting event with UID: {uid}")
         await self.async_update()
         await self._delete_image(uid)
         self._events = [event for event in self._events if event.uid != uid]
         await self._save_events()
 
-    async def async_update(self) -> None:
-        """Load events from JSON"""
-        def read_from_file():
-            if os.path.exists(self._file_path):
-                with open(self._file_path, 'r') as file:
-                    return json.load(file)
-            return []
-
-        events_data = await self.hass.loop.run_in_executor(None, read_from_file)
-        self._events = [
-            CalendarEvent(
-                uid=event["uid"],
-                summary=event["summary"],
-                start=dt_util.as_local(dt_util.parse_datetime(event["start"])),
-                end=dt_util.as_local(dt_util.parse_datetime(event["end"])),
-                description=event.get("description"),
-                location=event.get("location")
-            )
-            for event in events_data
-        ]
-
     async def _save_events(self) -> None:
-        """Save events to JSON"""
-        # Delete events outside of retention time window
+        """Saves events to database"""
+        await self._initialize_db()
         now = datetime.datetime.now()
         cutoff_date = now - datetime.timedelta(days=self._retention_time)
-
+    
         if self._retention_time != 0:
             _LOGGER.info(f"Deleting events before {cutoff_date}")
-
+    
         remaining_events = []
         for event in self._events:
             event_end = dt_util.as_local(self._ensure_datetime(event.end))
             if event_end >= self._ensure_datetime(cutoff_date) or self._retention_time == 0:
                 remaining_events.append(event)
             else:
-                # Delete image associated with the event
                 await self._delete_image(event.uid)
-
-        events_data = [
-            {
-                "uid": event.uid,
-                "summary": event.summary,
-                "start": dt_util.as_local(self._ensure_datetime(event.start)).isoformat(),
-                "end": dt_util.as_local(self._ensure_datetime(event.end)).isoformat(),
-                "description": event.description,
-                "location": event.location
-            }
-            for event in remaining_events
-        ]
-
-        def write_to_file():
-            with open(self._file_path, 'w') as file:
-                json.dump(events_data, file, indent=4)
-
-        await self.hass.loop.run_in_executor(None, write_to_file)
+    
+        try:
+            async with aiosqlite.connect(self._db_path) as db:
+                await db.execute('DELETE FROM events')
+                await db.executemany('''
+                    INSERT INTO events (uid, summary, start, end, description, key_frame, camera_name)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', [
+                    (
+                        event.uid,
+                        event.summary,
+                        dt_util.as_local(self._ensure_datetime(
+                            event.start)).isoformat(),
+                        dt_util.as_local(self._ensure_datetime(
+                            event.end)).isoformat(),
+                        event.description,
+                        event.location.split(",")[0],
+                        event.location.split(",")[1] if len(
+                            event.location.split(",")) > 1 else ""
+                    )
+                    for event in remaining_events
+                ])
+                await db.commit()
+        except aiosqlite.Error as e:
+            _LOGGER.error(f"Error saving events to database: {e}")
+    
+        # Update calendar entity
+        await self.async_update()
 
     async def remember(self, start, end, label, key_frame, summary, camera_name=""):
-        """Remember the event"""
+        """Remembers the event"""
         await self.async_create_event(
             dtstart=start,
             dtend=end,
             summary=label,
-            location=key_frame + "," + camera_name,
             description=summary,
+            key_frame=key_frame,
+            camera_name=camera_name
         )
 
 
@@ -220,5 +296,5 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
 
-    calendar_entity = SemanticIndex(hass, config_entry)
+    calendar_entity = Timeline(hass, config_entry)
     async_add_entities([calendar_entity])
