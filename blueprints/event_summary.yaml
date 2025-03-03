@@ -134,8 +134,8 @@ blueprint:
           integration: llmvision
     model:
       name: Model
-      description: Which model to use. Depends on chosen provider.
-      default: "gpt-4o-mini"
+      description: Which model to use. Depends on chosen provider, leave balnk for default. e.g. 'gpt-4o-mini'
+      default: ""
       selector:
         text:
           multiline: false
@@ -255,7 +255,7 @@ action:
               - action: "notify.{{ repeat.item }}"
                 data:
                   title: "{{ label }}"
-                  message: "{{camera}}"
+                  message: "Detection at Camera: {{camera}}"
                   data:
                     entity_id: "{{camera_entity}}"
                     url: !input tap_navigate #iOS

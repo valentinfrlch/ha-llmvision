@@ -151,6 +151,10 @@ class Memory:
                     new_width = int(512 * aspect_ratio)
                 img = img.resize((new_width, new_height))
 
+                # Convert Memory Images to RGB mode if needed
+                if img.mode == "RGBA":
+                    img = img.convert("RGB")
+
                 # Encode the image to base64
                 img_byte_arr = io.BytesIO()
                 img.save(img_byte_arr, format='JPEG')
