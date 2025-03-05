@@ -216,26 +216,27 @@ class MediaProcessor:
                 img = await self.hass.loop.run_in_executor(None, Image.open, io.BytesIO(frame_data))
                 current_frame_gray = np.array(img.convert('L'))
 
+                # Calculate SSIM score in order to select key frames.
                 if previous_frame is not None:
                     score = self._similarity_score(
                         previous_frame, current_frame_gray)
-
-                    # Encode the image back to bytes
-                    buffer = io.BytesIO()
-                    img.save(buffer, format="JPEG")
-                    frame_data = buffer.getvalue()
-
-                    # Use either entity name or assign number to each camera
-                    frame_label = (image_entity.replace("camera.", "") + " frame " + str(frame_counter)
-                                   if include_filename else "camera " + str(camera_number) + " frame " + str(frame_counter))
-                    frames.update(
-                        {frame_label: {"frame_data": frame_data, "ssim_score": score}})
-
-                    frame_counter += 1
-                    previous_frame = current_frame_gray
                 else:
-                    # Initialize previous_frame with the first frame
-                    previous_frame = current_frame_gray
+                    # First snapshot of the camera, always considered important.
+                    score = -9999
+
+                # Save Snapshots to Key Frames: Encode the image back to bytes
+                buffer = io.BytesIO()
+                img.save(buffer, format="JPEG")
+                frame_data = buffer.getvalue()
+
+                # Use either entity name or assign number to each camera
+                frame_label = (image_entity.replace("camera.", "") + " frame " + str(frame_counter)
+                                if include_filename else "camera " + str(camera_number) + " frame " + str(frame_counter))
+                frames.update(
+                    {frame_label: {"frame_data": frame_data, "ssim_score": score}})
+
+                frame_counter += 1
+                previous_frame = current_frame_gray
 
                 preprocessing_duration = time.time() - preprocessing_start_time
                 _LOGGER.info(
