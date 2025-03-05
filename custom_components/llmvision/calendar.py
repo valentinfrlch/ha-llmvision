@@ -32,6 +32,7 @@ class Timeline(CalendarEntity):
         self._attr_name = config_entry.title
         self._attr_unique_id = config_entry.entry_id
         self._events = []
+        self._today_summary = ""
         self._retention_time = self.hass.data.get(DOMAIN).get(
             self._attr_unique_id).get(CONF_RETENTION_TIME)
         self._current_event = None
@@ -43,7 +44,7 @@ class Timeline(CalendarEntity):
         )
         # Ensure the directory exists
         os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
-        
+
         self.hass.loop.create_task(self.async_update())
         self.hass.async_create_task(self._migrate())  # Run migration if needed
 
@@ -53,7 +54,27 @@ class Timeline(CalendarEntity):
         return "mdi:timeline-outline"
 
     async def _migrate(self):
-        # Migrate events from events.json to events.db
+        """Handles migration for events.db (current v3)"""
+        # v2 -> v3: Add "today_summary" column to events.db if it doesn't exist
+        try:
+            async with aiosqlite.connect(self._db_path) as db:
+                async with db.execute('''
+                    PRAGMA table_info(events)
+                ''') as cursor:
+                    columns = await cursor.fetchall()
+                    column_names = [column[1] for column in columns]
+                    if "today_summary" not in column_names:
+                        _LOGGER.info(
+                            "Migrating events.db to include today_summary column")
+                        await db.execute('''
+                            ALTER TABLE events ADD COLUMN today_summary TEXT
+                        ''')
+                        await db.commit()
+                        _LOGGER.info("Migration complete")
+        except aiosqlite.Error as e:
+            _LOGGER.error(f"Error migrating events.db: {e}")
+
+        # v1 -> v2: Migrate events from events.json to events.db
         old_db_path = os.path.join(
             self.hass.config.path("llmvision"), "events.json"
         )
@@ -71,7 +92,8 @@ class Timeline(CalendarEntity):
                         description=event["description"],
                         key_frame=event["location"].split(",")[0],
                         camera_name=event["location"].split(",")[1] if len(
-                            event["location"].split(",")) > 1 else ""
+                            event["location"].split(",")) > 1 else "",
+                        today_summary=""
                     ))
                     event_counter += 1
                 _LOGGER.info(f"Migrated {event_counter} events")
@@ -92,6 +114,7 @@ class Timeline(CalendarEntity):
             "summaries": [event.description for event in events],
             "key_frames": [event.location.split(",")[0] for event in events],
             "camera_names": [event.location.split(",")[1] if len(event.location.split(",")) > 1 else "" for event in events],
+            "today_summary": self._today_summary
         }
 
     @property
@@ -116,12 +139,13 @@ class Timeline(CalendarEntity):
                 if os.path.exists(image_path) and "/llmvision/" in image_path:
                     os.remove(image_path)
                     _LOGGER.info(f"Deleted image: {image_path}")
+
     @property
     async def linked_images(self):
         """Returns the filenames of key_frames associated with events"""
         await self.async_update()
         return [os.path.basename(event.location.split(",")[0]) for event in self._events]
-    
+
     async def _initialize_db(self):
         """Initialize database"""
         try:
@@ -134,7 +158,8 @@ class Timeline(CalendarEntity):
                         end TEXT,
                         description TEXT,
                         key_frame TEXT,
-                        camera_name TEXT
+                        camera_name TEXT,
+                        today_summary TEXT
                     )
                 ''')
                 await db.execute('''
@@ -164,6 +189,9 @@ class Timeline(CalendarEntity):
                     )
                     for row in rows
                 ]
+                self._events.sort(key=lambda event: event.start, reverse=True)
+                self._today_summary = rows[-1][7] if rows and len(
+                    rows) != 0 else ""
 
     async def async_get_events(
         self,
@@ -198,6 +226,7 @@ class Timeline(CalendarEntity):
         description = kwargs.get(EVENT_DESCRIPTION)
         key_frame = kwargs.get("key_frame", "")
         camera_name = kwargs.get("camera_name", "")
+        today_summary = kwargs.get("today_summary", "")
 
         # Ensure dtstart and dtend are datetime objects
         if isinstance(dtstart, str):
@@ -218,6 +247,10 @@ class Timeline(CalendarEntity):
         )
 
         self._events.append(event)
+
+        # update today_summary
+        self._today_summary = today_summary
+
         await self._save_events()
 
     async def async_delete_event(
@@ -238,10 +271,10 @@ class Timeline(CalendarEntity):
         await self._initialize_db()
         now = datetime.datetime.now()
         cutoff_date = now - datetime.timedelta(days=self._retention_time)
-    
+
         if self._retention_time != 0:
             _LOGGER.info(f"Deleting events before {cutoff_date}")
-    
+
         remaining_events = []
         for event in self._events:
             event_end = dt_util.as_local(self._ensure_datetime(event.end))
@@ -249,13 +282,13 @@ class Timeline(CalendarEntity):
                 remaining_events.append(event)
             else:
                 await self._delete_image(event.uid)
-    
+
         try:
             async with aiosqlite.connect(self._db_path) as db:
                 await db.execute('DELETE FROM events')
                 await db.executemany('''
-                    INSERT INTO events (uid, summary, start, end, description, key_frame, camera_name)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO events (uid, summary, start, end, description, key_frame, camera_name, today_summary)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ''', [
                     (
                         event.uid,
@@ -267,18 +300,19 @@ class Timeline(CalendarEntity):
                         event.description,
                         event.location.split(",")[0],
                         event.location.split(",")[1] if len(
-                            event.location.split(",")) > 1 else ""
+                            event.location.split(",")) > 1 else "",
+                        self._today_summary
                     )
                     for event in remaining_events
                 ])
                 await db.commit()
         except aiosqlite.Error as e:
             _LOGGER.error(f"Error saving events to database: {e}")
-    
+
         # Update calendar entity
         await self.async_update()
 
-    async def remember(self, start, end, label, key_frame, summary, camera_name=""):
+    async def remember(self, start, end, label, key_frame, summary, camera_name="", today_summary=""):
         """Remembers the event"""
         await self.async_create_event(
             dtstart=start,
@@ -286,7 +320,8 @@ class Timeline(CalendarEntity):
             summary=label,
             description=summary,
             key_frame=key_frame,
-            camera_name=camera_name
+            camera_name=camera_name,
+            today_summary=today_summary
         )
 
 
