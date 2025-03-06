@@ -7,16 +7,6 @@ blueprint:
   domain: automation
   source_url: https://github.com/valentinfrlch/ha-llmvision/blob/main/blueprints/event_summary.yaml
   input:
-    important:
-      name: Important (Experimental)
-      description: >
-        Use AI to classify events as Critical, Normal or Low.
-        Notifications are sent only for events classified as Normal or higher.
-        Critical events override 'Do Not Disturb' settings.
-        Use with caution: AI can make mistakes.
-      default: false
-      selector:
-        boolean:
     remember:
       name: Remember
       description: Stores this event in the Timeline so you can ask about it. If important is enabled, only events classified as Normal or Critical will be saved.
@@ -166,7 +156,6 @@ blueprint:
           step: 0.1
 
 variables:
-  important: !input important
   remember: !input remember
   cooldown: !input cooldown
   preview_mode: !input preview_mode
@@ -222,34 +211,8 @@ actions:
   - sequence:
     - parallel:
 
-      # Parallel 1: Important determination + instant notification
+      # Parallel 1: instant notification
       - sequence:
-          # Classify Importance
-          - choose:
-              - conditions:
-                  - condition: template
-                    value_template: "{{ important }}"
-                sequence:
-                  - action: llmvision.image_analyzer
-                    data:
-                      image_entity: "{{[camera_entity]}}"
-                      provider: !input provider
-                      model: !input model
-                      message: "{{importance_prompt}}"
-                      include_filename: true
-                      target_width: 1280
-                      max_tokens: 3
-                      temperature: 0.1
-                    response_variable: importance
-
-          # Stop the Automation here if event is not important
-          - choose:
-              - conditions:
-                  - condition: template
-                    value_template: "{{ (important and importance.response_text|lower != 'passive') }}"
-                sequence:
-                  - stop: "Event is not important"
-
           # Instant Notification
           - choose:
               - conditions:
@@ -265,14 +228,12 @@ actions:
                             title: "{{ label }}"
                             message: "{{camera}} has detected activity."
                             data:
-                            entity_id: "{{camera_entity}}"
-                            url: !input tap_navigate #iOS
-                            clickAction: !input tap_navigate #Android
-                            tag: "{{tag}}"
-                            group: "{{group}}"
-                            alert_once: true
-                            push:
-                              interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
+                              entity_id: "{{camera_entity}}"
+                              url: !input tap_navigate #iOS
+                              clickAction: !input tap_navigate #Android
+                              tag: "{{tag}}"
+                              group: "{{group}}"
+                              alert_once: true
 
       # Parallel 2: Analyze event + save to timeline + notification
       - sequence: 
@@ -341,6 +302,6 @@ actions:
                           group: "{{group}}"
                           push:
                             interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
-            
+                
 
   - delay: '00:{{cooldown|int}}:00'
