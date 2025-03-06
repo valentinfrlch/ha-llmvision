@@ -259,9 +259,9 @@ actions:
                             sequence:
                               - action: "notify.{{ repeat.item }}"
                                 data:
-                                  title: "{{ label }}"
-                                  message: "{{camera}}"
-                                  data:
+                                    title: "{{ label }}"
+                                    message: "{{camera}} has detected activity."
+                                    data:
                                     entity_id: "{{camera_entity}}"
                                     url: !input tap_navigate #iOS
                                     clickAction: !input tap_navigate #Android
