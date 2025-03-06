@@ -1,0 +1,50 @@
+---
+name: "Bug Report (Form)"
+description: Report a bug
+body:
+- type: markdown
+  attributes:
+    value: |
+      Before you open a new issue, search through the existing issues to see if others have had the same problem.
+
+      The issue template is not a suggestion, please fill out everything.
+- type: checkboxes
+  attributes:
+    label: Checklist
+    options:
+      - label: I'm running the newest version of LLM Vision <https://github.com/valentinfrlch/ha-llmvision/releases/latest>
+        required: true
+      - label: I have enabled debug logging for the integration.
+        required: true
+      - label: I have filled out the issue template to the best of my ability.
+        required: true
+      - label: This issue only contains 1 issue (if you have multiple issues, open one issue for each issue).
+        required: true
+      - label: This is a bug and not a feature request.
+        required: true
+      - label: I have searched [open issues](https://github.com/valentinfrlch/ha-llmvision/issues) for my problem.
+        required: true
+- type: textarea
+  attributes:
+    label: "Describe the issue"
+    description: "A clear and concise description of what the issue is."
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Reproduction steps
+    description: "What actions did you take before this issue occurred?"
+    value: |
+      1.
+      2.
+      3.
+      ...
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: "Debug logs"
+    description: "Enable debug logging in the integration settings."
+    render: text
+  validations:
+    required: true
