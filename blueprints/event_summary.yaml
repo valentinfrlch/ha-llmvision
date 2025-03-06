@@ -1,5 +1,5 @@
 blueprint:
-  name: AI Event Summary (v1.4.0)
+  name: AI Event Summary (v1.4.1)
   author: valentinfrlch
   description: >
     AI-powered summaries for security camera events.
@@ -32,7 +32,7 @@ blueprint:
     message:
       name: Prompt
       description: Model prompt for the video_analyzer action
-      default: "Summarize the events based on a series of images captured at short intervals. Focus only on moving subjects such as people, vehicles, and other active elements. Ignore static objects and scenery. Provide a clear and concise account of movements and interactions. Do not mention or imply the existence of images—present the information as if directly observing the events. If no movement is detected, respond with: 'No activity observed.'"
+      default: "Summarize the events based on a series of images captured at short intervals. Focus only on moving subjects such as people, vehicles, and other active elements. Ignore static objects and scenery. Provide a clear and concise account of movements and interactions. Do not mention or imply the existence of images—present the information as if directly observing the events. If no movement is detected, respond with: 'No activity observed.', Do you recognise the person based on the reference image? It is crucial if you can specify the person."
       selector:
         text:
           multiline: true
@@ -217,79 +217,94 @@ condition:
     conditions: !input run_conditions
   
 
-action:
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: "{{ important }}"
-        sequence:
-          - action: llmvision.image_analyzer
-            data:
-              image_entity: "{{[camera_entity]}}"
-              provider: !input provider
-              model: !input model
-              message: "{{importance_prompt}}"
-              include_filename: true
-              target_width: 1280
-              max_tokens: 3
-              temperature: 0.1
-            response_variable: importance
+actions:
 
-  # Cancel automation if event not deemed important
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: "{{ important and importance.response_text|lower == 'passive' }}"
-        sequence:
-          - stop: "Event is not important"
+  - sequence:
+    - parallel:
 
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: "{{ notification_delivery == 'Dynamic' }}"
-        sequence:
-        - alias: "Send instant notification to notify devices"
-          repeat:
-            for_each: "{{device_name_map}}"
-            sequence:
-              - action: "notify.{{ repeat.item }}"
-                data:
-                  title: "{{ label }}"
-                  message: "{{camera}} Has Detected Activities."
-                  data:
-                    entity_id: "{{camera_entity}}"
-                    url: !input tap_navigate #iOS
-                    clickAction: !input tap_navigate #Android
-                    tag: "{{tag}}"
-                    group: "{{group}}"
-                    alert_once: true
-                    push:
-                      interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
+      # Parallel 1: Important determination + instant notification
+      - sequence:
+          # Classify Importance
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ important }}"
+                sequence:
+                  - action: llmvision.image_analyzer
+                    data:
+                      image_entity: "{{[camera_entity]}}"
+                      provider: !input provider
+                      model: !input model
+                      message: "{{importance_prompt}}"
+                      include_filename: true
+                      target_width: 1280
+                      max_tokens: 3
+                      temperature: 0.1
+                    response_variable: importance
 
-  - alias: "Analyze event"
-    action: llmvision.stream_analyzer
-    data:
-      image_entity: "{{[camera_entity]}}"
-      duration: !input duration
-      provider: !input provider
-      model: !input model
-      message: !input message
-      use_memory: !input use_memory
-      remember: !input remember
-      expose_images: "{{preview_mode == 'Snapshot' or remember}}"
-      generate_title: !input remember
-      include_filename: true
-      max_frames: !input max_frames
-      target_width: !input target_width
-      max_tokens: !input max_tokens
-      temperature: !input temperature  
-    response_variable: response
+          # Only send instant notification if event deemed important
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ not (important and importance.response_text|lower != 'passive') }}"
+                sequence:
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ notification_delivery == 'Dynamic' }}"
+                        sequence:
+                        - alias: "Send instant notification to notify devices"
+                          repeat:
+                            for_each: "{{device_name_map}}"
+                            sequence:
+                              - action: "notify.{{ repeat.item }}"
+                                data:
+                                  title: "{{ label }}"
+                                  message: "{{camera}}"
+                                  data:
+                                    entity_id: "{{camera_entity}}"
+                                    url: !input tap_navigate #iOS
+                                    clickAction: !input tap_navigate #Android
+                                    tag: "{{tag}}"
+                                    group: "{{group}}"
+                                    alert_once: true
+                                    push:
+                                      interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
 
-  - alias: "Update label with title"
-    variables:
-      label: "{{response.title}}"
+      # Parallel 2: Analyze event + save to timeline
+      - sequence: 
+      - alias: "Analyze event"
+        action: llmvision.stream_analyzer
+        data:
+          image_entity: "{{[camera_entity]}}"
+          duration: !input duration
+          provider: !input provider
+          model: !input model
+          message: !input message
+          use_memory: !input use_memory
+          remember: !input remember
+          expose_images: "{{preview_mode == 'Snapshot' or remember}}"
+          generate_title: !input remember
+          include_filename: true
+          max_frames: !input max_frames
+          target_width: !input target_width
+          max_tokens: !input max_tokens
+          temperature: !input temperature  
+        response_variable: response
 
-  - choose:
+      - alias: "Update label with title"
+        variables:
+          label: "{{response.title}}"
+
+
+    # After analysing and saving to  timeline, stop the automation here if event not deemed important, no further notifications.
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ important and importance.response_text|lower != 'passive' }}"
+          sequence:
+            - stop: "Event is not important"
+    - choose:
       - conditions:
           - condition: template
             value_template: "{{ preview_mode=='Snapshot' }}"
