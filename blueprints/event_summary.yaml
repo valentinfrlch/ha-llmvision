@@ -134,8 +134,8 @@ blueprint:
           integration: llmvision
     model:
       name: Model
-      description: Which model to use. Depends on chosen provider.
-      default: "gpt-4o-mini"
+      description: Which model to use. Depends on chosen provider, e.g. gpt-4o-mini.
+      default: ""
       selector:
         text:
           multiline: false
@@ -242,109 +242,105 @@ actions:
                       temperature: 0.1
                     response_variable: importance
 
-          # Only send instant notification if event deemed important
+          # Stop the Automation here if event is not important
           - choose:
               - conditions:
                   - condition: template
-                    value_template: "{{ not (important and importance.response_text|lower != 'passive') }}"
+                    value_template: "{{ (important and importance.response_text|lower != 'passive') }}"
                 sequence:
-                  - choose:
-                      - conditions:
-                          - condition: template
-                            value_template: "{{ notification_delivery == 'Dynamic' }}"
-                        sequence:
-                        - alias: "Send instant notification to notify devices"
-                          repeat:
-                            for_each: "{{device_name_map}}"
-                            sequence:
-                              - action: "notify.{{ repeat.item }}"
-                                data:
-                                    title: "{{ label }}"
-                                    message: "{{camera}} has detected activity."
-                                    data:
-                                    entity_id: "{{camera_entity}}"
-                                    url: !input tap_navigate #iOS
-                                    clickAction: !input tap_navigate #Android
-                                    tag: "{{tag}}"
-                                    group: "{{group}}"
-                                    alert_once: true
-                                    push:
-                                      interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
+                  - stop: "Event is not important"
 
-      # Parallel 2: Analyze event + save to timeline
+          # Instant Notification
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ notification_delivery == 'Dynamic' }}"
+                sequence:
+                - alias: "Send instant notification to notify devices"
+                  repeat:
+                    for_each: "{{device_name_map}}"
+                    sequence:
+                      - action: "notify.{{ repeat.item }}"
+                        data:
+                            title: "{{ label }}"
+                            message: "{{camera}} has detected activity."
+                            data:
+                            entity_id: "{{camera_entity}}"
+                            url: !input tap_navigate #iOS
+                            clickAction: !input tap_navigate #Android
+                            tag: "{{tag}}"
+                            group: "{{group}}"
+                            alert_once: true
+                            push:
+                              interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
+
+      # Parallel 2: Analyze event + save to timeline + notification
       - sequence: 
-      - alias: "Analyze event"
-        action: llmvision.stream_analyzer
-        data:
-          image_entity: "{{[camera_entity]}}"
-          duration: !input duration
-          provider: !input provider
-          model: !input model
-          message: !input message
-          use_memory: !input use_memory
-          remember: !input remember
-          expose_images: "{{preview_mode == 'Snapshot' or remember}}"
-          generate_title: !input remember
-          include_filename: true
-          max_frames: !input max_frames
-          target_width: !input target_width
-          max_tokens: !input max_tokens
-          temperature: !input temperature  
-        response_variable: response
+        # since this is a parallel action, and taking longer than "image_analyzer", it won't finish if the event is deemed as not important
+        - alias: "Analyze event"
+          action: llmvision.stream_analyzer
+          data:
+            image_entity: "{{[camera_entity]}}"
+            duration: !input duration
+            provider: !input provider
+            model: !input model
+            message: !input message
+            use_memory: !input use_memory
+            remember: !input remember
+            expose_images: "{{preview_mode == 'Snapshot' or remember}}"
+            generate_title: !input remember
+            include_filename: true
+            max_frames: !input max_frames
+            target_width: !input target_width
+            max_tokens: !input max_tokens
+            temperature: !input temperature  
+          response_variable: response
 
-      - alias: "Update label with title"
-        variables:
-          label: "{{response.title}}"
+        - alias: "Update label with title"
+          variables:
+            label: "{{response.title}}"
 
-
-    # After analysing and saving to  timeline, stop the automation here if event not deemed important, no further notifications.
-    - choose:
-        - conditions:
-            - condition: template
-              value_template: "{{ important and importance.response_text|lower != 'passive' }}"
-          sequence:
-            - stop: "Event is not important"
-    - choose:
-      - conditions:
-          - condition: template
-            value_template: "{{ preview_mode=='Snapshot' }}"
-        sequence:
-        - alias: "(Snapshot) Update notification on notify devices"
-          repeat:
-            for_each: "{{device_name_map}}"
+        - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ preview_mode=='Snapshot' }}"
             sequence:
-              - action: "notify.{{ repeat.item }}"
-                data:
-                  title: "{{ label }}"
-                  message: "{{response.response_text}}"
-                  data:
-                    image: "{{response.key_frame.replace('/config/www/','/local/') }}"
-                    url: !input tap_navigate #iOS
-                    clickAction: !input tap_navigate #Android
-                    tag: "{{tag}}"
-                    group: "{{group}}"
-                    push:
-                      interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
-      - conditions:
-          - condition: template
-            value_template: "{{ preview_mode=='Live Preview' }}"
-        sequence:
-        - alias: "(Live Preview) Update notification on notify devices"
-          repeat:
-            for_each: "{{device_name_map}}"
+              - alias: "(Snapshot) Update notification on notify devices"
+                repeat:
+                  for_each: "{{device_name_map}}"
+                  sequence:
+                    - action: "notify.{{ repeat.item }}"
+                      data:
+                        title: "{{ label }}"
+                        message: "{{response.response_text}}"
+                        data:
+                          image: "{{response.key_frame.replace('/config/www/','/local/') }}"
+                          url: !input tap_navigate #iOS
+                          clickAction: !input tap_navigate #Android
+                          tag: "{{tag}}"
+                          group: "{{group}}"
+                          push:
+                            interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
+          - conditions:
+              - condition: template
+                value_template: "{{ preview_mode=='Live Preview' }}"
             sequence:
-              - action: "notify.{{ repeat.item }}"
-                data:
-                  title: "{{ label }}"
-                  message: "{{response.response_text}}"
-                  data:
-                    entity_id: "{{camera_entity}}"
-                    url: !input tap_navigate #iOS
-                    clickAction: !input tap_navigate #Android
-                    tag: "{{tag}}"
-                    group: "{{group}}"
-                    push:
-                      interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
+              - alias: "(Live Preview) Update notification on notify devices"
+                repeat:
+                  for_each: "{{device_name_map}}"
+                  sequence:
+                    - action: "notify.{{ repeat.item }}"
+                      data:
+                        title: "{{ label }}"
+                        message: "{{response.response_text}}"
+                        data:
+                          entity_id: "{{camera_entity}}"
+                          url: !input tap_navigate #iOS
+                          clickAction: !input tap_navigate #Android
+                          tag: "{{tag}}"
+                          group: "{{group}}"
+                          push:
+                            interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
             
 
   - delay: '00:{{cooldown|int}}:00'
