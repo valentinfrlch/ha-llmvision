@@ -217,6 +217,7 @@ class Timeline(CalendarEntity):
 
     async def async_create_event(self, **kwargs: any) -> None:
         """Adds a new event to calendar"""
+        _LOGGER.info(f"Creating event: {kwargs}")
         await self.async_update()
         dtstart = kwargs[EVENT_START]
         dtend = kwargs[EVENT_END]
@@ -247,11 +248,7 @@ class Timeline(CalendarEntity):
         )
 
         self._events.append(event)
-
-        # update today_summary
-        self._today_summary = today_summary
-
-        await self._save_events()
+        await self._insert_event(event, today_summary)
 
     async def async_delete_event(
         self,
@@ -264,53 +261,47 @@ class Timeline(CalendarEntity):
         await self.async_update()
         await self._delete_image(uid)
         self._events = [event for event in self._events if event.uid != uid]
-        await self._save_events()
+        await self._delete_event_from_db(uid)
 
-    async def _save_events(self) -> None:
-        """Saves events to database"""
-        await self._initialize_db()
-        now = datetime.datetime.now()
-        cutoff_date = now - datetime.timedelta(days=self._retention_time)
-
-        if self._retention_time != 0:
-            _LOGGER.info(f"Deleting events before {cutoff_date}")
-
-        remaining_events = []
-        for event in self._events:
-            event_end = dt_util.as_local(self._ensure_datetime(event.end))
-            if event_end >= self._ensure_datetime(cutoff_date) or self._retention_time == 0:
-                remaining_events.append(event)
-            else:
-                await self._delete_image(event.uid)
-
+    async def _insert_event(self, event: CalendarEvent, today_summary: str) -> None:
+        """Inserts a new event into the database"""
         try:
             async with aiosqlite.connect(self._db_path) as db:
-                await db.execute('DELETE FROM events')
-                await db.executemany('''
+                await db.execute('''
                     INSERT INTO events (uid, summary, start, end, description, key_frame, camera_name, today_summary)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', [
-                    (
-                        event.uid,
-                        event.summary,
-                        dt_util.as_local(self._ensure_datetime(
-                            event.start)).isoformat(),
-                        dt_util.as_local(self._ensure_datetime(
-                            event.end)).isoformat(),
-                        event.description,
-                        event.location.split(",")[0],
-                        event.location.split(",")[1] if len(
-                            event.location.split(",")) > 1 else "",
-                        self._today_summary
-                    )
-                    for event in remaining_events
-                ])
+                ''', (
+                    event.uid,
+                    event.summary,
+                    dt_util.as_local(self._ensure_datetime(
+                        event.start)).isoformat(),
+                    dt_util.as_local(self._ensure_datetime(
+                        event.end)).isoformat(),
+                    event.description,
+                    event.location.split(",")[0],
+                    event.location.split(",")[1] if len(
+                        event.location.split(",")) > 1 else "",
+                    today_summary
+                ))
                 await db.commit()
         except aiosqlite.Error as e:
-            _LOGGER.error(f"Error saving events to database: {e}")
+            _LOGGER.error(f"Error inserting event into database: {e}")
 
-        # Update calendar entity
+    async def _delete_event_from_db(self, uid: str) -> None:
+        """Deletes an event from the database"""
+        try:
+            async with aiosqlite.connect(self._db_path) as db:
+                await db.execute('DELETE FROM events WHERE uid = ?', (uid,))
+                await db.commit()
+        except aiosqlite.Error as e:
+            _LOGGER.error(f"Error deleting event from database: {e}")
+
+    async def get_summaries(self, start: datetime, end: datetime):
+        """Generates a summary of events between start and end"""
         await self.async_update()
+        events = await self.async_get_events(self.hass, start, end)
+        events_summaries = "\n".join([event.summary for event in events])
+        return events_summaries
 
     async def remember(self, start, end, label, key_frame, summary, camera_name="", today_summary=""):
         """Remembers the event"""

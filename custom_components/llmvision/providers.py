@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 import boto3
+from datetime import datetime
+from .calendar import Timeline
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from functools import partial
@@ -36,6 +38,9 @@ from .const import (
     CONF_OPENWEBUI_HTTPS,
     CONF_OPENWEBUI_API_KEY,
     CONF_OPENWEBUI_DEFAULT_MODEL,
+    CONF_TIMELINE_TODAY_SUMMARY,
+    CONF_TIMELINE_SUMMARY_PROMPT,
+    DEFAULT_SUMMARY_PROMPT,
     VERSION_ANTHROPIC,
     ENDPOINT_OPENAI,
     ENDPOINT_AZURE,
@@ -142,7 +147,7 @@ class Request:
         call.base64_images = self.base64_images
         call.filenames = self.filenames
 
-        self.validate(call)
+        self.validate(call)  # TODO: Skip validation for text only requests
 
         if provider == 'OpenAI':
             api_key = config.get(CONF_OPENAI_API_KEY)
@@ -179,6 +184,7 @@ class Request:
 
         elif provider == 'LocalAI':
             ip_address = config.get(CONF_LOCALAI_IP_ADDRESS)
+        
             port = config.get(CONF_LOCALAI_PORT)
             https = config.get(CONF_LOCALAI_HTTPS, False)
 
@@ -242,14 +248,30 @@ class Request:
         # Make call to provider
         call.model = call.model if call.model and call.model != 'None' else provider_instance.default_model
         response_text = await provider_instance.vision_request(call)
+        
+        result = {"response_text": response_text}
 
+        _LOGGER.info(f"[INFO] summary: {config.get(CONF_TIMELINE_TODAY_SUMMARY, False)}")
+        
         if call.generate_title:
+            # Generate title for event
             call.message = call.memory.title_prompt + "Create a title for this text: " + response_text
             gen_title = await provider_instance.title_request(call)
-
-            return {"title": re.sub(r'[^a-zA-Z0-9\s]', '', gen_title), "response_text": response_text}
-        else:
-            return {"response_text": response_text}
+            result["title"] = re.sub(r'[^a-zA-Z0-9\s]', '', gen_title)
+        
+            if config.get(CONF_TIMELINE_TODAY_SUMMARY, False):
+                _LOGGER.info(f"[INFO] Generating summary for today")
+                # Generate summary for today (for timeline)
+                timeline = Timeline(self.hass)
+                now = datetime.now()
+                start = datetime.combine(now.date(), datetime.min.time())
+                end = datetime.combine(now.date(), datetime.max.time())
+                summaries = await timeline.get_summaries(start, end)
+                call.message = config.get(CONF_TIMELINE_SUMMARY_PROMPT, DEFAULT_SUMMARY_PROMPT) + gen_title + "\n" + summaries
+                summary = await provider_instance.title_request(call)
+                result["summary"] = summary
+        
+        return result
 
     def add_frame(self, base64_image, filename):
         self.base64_images.append(base64_image)
@@ -681,7 +703,8 @@ class Groq(Provider):
         }
 
         system_prompt = call.memory.system_prompt
-        payload["messages"].insert(0, {"role": "user", "content": "System Prompt:" + system_prompt})
+        payload["messages"].insert(
+            0, {"role": "user", "content": "System Prompt:" + system_prompt})
 
         return payload
 
@@ -803,7 +826,7 @@ class Ollama(Provider):
     def _prepare_vision_data(self, call) -> dict:
         payload = {"model": call.model, "messages": [], "stream": False, "options": {
             "num_predict": call.max_tokens, "temperature": call.temperature}}
-        
+
         if call.use_memory:
             memory_content = call.memory._get_memory_images(
                 memory_type="Ollama")
@@ -812,7 +835,7 @@ class Ollama(Provider):
                 payload["messages"].extend(memory_content)
             if system_prompt:
                 payload["system"] = system_prompt
-        
+
         for image, filename in zip(call.base64_images, call.filenames):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename

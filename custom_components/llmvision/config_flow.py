@@ -32,6 +32,8 @@ from .const import (
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_DEFAULT_MODEL,
     CONF_RETENTION_TIME,
+    CONF_TIMELINE_TODAY_SUMMARY,
+    CONF_TIMELINE_SUMMARY_PROMPT,
     CONF_MEMORY_PATHS,
     CONF_MEMORY_STRINGS,
     CONF_SYSTEM_PROMPT,
@@ -48,6 +50,7 @@ from .const import (
     DEFAULT_SYSTEM_PROMPT,
     CONF_TITLE_PROMPT,
     DEFAULT_TITLE_PROMPT,
+    DEFAULT_SUMMARY_PROMPT,
 )
 import voluptuous as vol
 import os
@@ -528,6 +531,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_timeline(self, user_input=None):
         data_schema = vol.Schema({
             vol.Required(CONF_RETENTION_TIME, default=7): int,
+            vol.Required(CONF_TIMELINE_TODAY_SUMMARY, default=True): bool,
+            vol.Optional(CONF_TIMELINE_SUMMARY_PROMPT, default=DEFAULT_SUMMARY_PROMPT): selector({
+                "text": {
+                    "multiline": True,
+                    "multiple": False
+                }
+            }),
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:

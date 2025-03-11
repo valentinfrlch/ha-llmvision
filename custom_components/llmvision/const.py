@@ -22,6 +22,8 @@ CONF_CUSTOM_OPENAI_ENDPOINT = 'custom_openai_endpoint'
 CONF_CUSTOM_OPENAI_API_KEY = 'custom_openai_api_key'
 CONF_CUSTOM_OPENAI_DEFAULT_MODEL = 'custom_openai_default_model'
 CONF_RETENTION_TIME = 'retention_time'
+CONF_TIMELINE_TODAY_SUMMARY = 'timeline_today_summary'
+CONF_TIMELINE_SUMMARY_PROMPT = 'timeline_summary_prompt'
 CONF_MEMORY_PATHS = 'memory_paths'
 CONG_MEMORY_IMAGES_ENCODED = 'memory_images_encoded'
 CONF_MEMORY_STRINGS = 'memory_strings'
@@ -74,7 +76,7 @@ VERSION_ANTHROPIC = "2023-06-01"
 DEFAULT_SYSTEM_PROMPT = "Your task is to analyze a series of images and provide a concise event description based on user instructions. Focus on identifying and describing the actions of people and dynamic objects (e.g., vehicles) rather than static background details. When multiple images are provided, track and summarize movements or changes over time (e.g., 'A person walks to the front door' or 'A car pulls out of the driveway'). Keep responses brief, objective, and aligned with the user's prompt. Avoid speculation and prioritize observable activity."
 DEFAULT_TITLE_PROMPT = "Provide a short and concise event title based on the description provided. The title should summarize the key actions or events captured in the images and be suitable for use in a notification or alert. Keep the title clear, relevant to the content of the images and shorter than 6 words. Avoid unnecessary details or subjective interpretations. The title should be in the format: '<Object> seen at <location>. For example: 'Person seen at front door'."
 DATA_EXTRACTION_PROMPT = "You are an advanced image analysis assistant specializing in extracting precise data from images captured by a home security camera. Your task is to analyze one or more images and extract specific information as requested by the user (e.g., the number of cars or a license plate). Provide only the requested information in your response, with no additional text or commentary. Your response must be a {data_format} Ensure the extracted data is accurate and reflects the content of the images."
-
+DEFAULT_SUMMARY_PROMPT = "Provide a brief summary for the following titles. Focus on the key actions or changes that occurred over time and avoid unnecessary details or subjective interpretations. The summary should be concise, objective, and relevant to the content of the images. Keep the summary under 50 words and ensure it captures the main events or activities described in the descriptions. Here are the descriptions:\n "
 
 # API Endpoints
 ENDPOINT_OPENAI = "https://api.openai.com/v1/chat/completions"
