@@ -32,6 +32,7 @@ class Timeline(CalendarEntity):
         self._attr_name = config_entry.title
         self._attr_unique_id = config_entry.entry_id
         self._events = []
+        self._today_summary = ""
         self._retention_time = self.hass.data.get(DOMAIN).get(
             self._attr_unique_id).get(CONF_RETENTION_TIME)
         self._current_event = None
@@ -43,7 +44,7 @@ class Timeline(CalendarEntity):
         )
         # Ensure the directory exists
         os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
-        
+
         self.hass.loop.create_task(self.async_update())
         self.hass.async_create_task(self._migrate())  # Run migration if needed
 
@@ -53,7 +54,27 @@ class Timeline(CalendarEntity):
         return "mdi:timeline-outline"
 
     async def _migrate(self):
-        # Migrate events from events.json to events.db
+        """Handles migration for events.db (current v3)"""
+        # v2 -> v3: Add "today_summary" column to events.db if it doesn't exist
+        try:
+            async with aiosqlite.connect(self._db_path) as db:
+                async with db.execute('''
+                    PRAGMA table_info(events)
+                ''') as cursor:
+                    columns = await cursor.fetchall()
+                    column_names = [column[1] for column in columns]
+                    if "today_summary" not in column_names:
+                        _LOGGER.info(
+                            "Migrating events.db to include today_summary column")
+                        await db.execute('''
+                            ALTER TABLE events ADD COLUMN today_summary TEXT
+                        ''')
+                        await db.commit()
+                        _LOGGER.info("Migration complete")
+        except aiosqlite.Error as e:
+            _LOGGER.error(f"Error migrating events.db: {e}")
+
+        # v1 -> v2: Migrate events from events.json to events.db
         old_db_path = os.path.join(
             self.hass.config.path("llmvision"), "events.json"
         )
@@ -71,7 +92,8 @@ class Timeline(CalendarEntity):
                         description=event["description"],
                         key_frame=event["location"].split(",")[0],
                         camera_name=event["location"].split(",")[1] if len(
-                            event["location"].split(",")) > 1 else ""
+                            event["location"].split(",")) > 1 else "",
+                        today_summary=""
                     ))
                     event_counter += 1
                 _LOGGER.info(f"Migrated {event_counter} events")
@@ -92,6 +114,7 @@ class Timeline(CalendarEntity):
             "summaries": [event.description for event in events],
             "key_frames": [event.location.split(",")[0] for event in events],
             "camera_names": [event.location.split(",")[1] if len(event.location.split(",")) > 1 else "" for event in events],
+            "today_summary": self._today_summary
         }
 
     @property
@@ -107,21 +130,12 @@ class Timeline(CalendarEntity):
             dt = dt.replace(tzinfo=datetime.timezone.utc)
         return dt
 
-    async def _delete_image(self, event_id: str):
-        """Deletes the image associated with the event"""
-        for event in self._events:
-            if event.uid == event_id:
-                image_path = event.location.split(",")[0]
-                _LOGGER.info(f"Image path: {image_path}")
-                if os.path.exists(image_path) and "/llmvision/" in image_path:
-                    os.remove(image_path)
-                    _LOGGER.info(f"Deleted image: {image_path}")
     @property
     async def linked_images(self):
         """Returns the filenames of key_frames associated with events"""
         await self.async_update()
         return [os.path.basename(event.location.split(",")[0]) for event in self._events]
-    
+
     async def _initialize_db(self):
         """Initialize database"""
         try:
@@ -134,7 +148,8 @@ class Timeline(CalendarEntity):
                         end TEXT,
                         description TEXT,
                         key_frame TEXT,
-                        camera_name TEXT
+                        camera_name TEXT,
+                        today_summary TEXT
                     )
                 ''')
                 await db.execute('''
@@ -160,10 +175,13 @@ class Timeline(CalendarEntity):
                         start=dt_util.as_local(dt_util.parse_datetime(row[2])),
                         end=dt_util.as_local(dt_util.parse_datetime(row[3])),
                         description=row[4],
-                        location=row[5] + "," + row[6] if row[6] else ""
+                        location=f"{row[5]},{row[6]}" if row[6] else row[5]
                     )
                     for row in rows
                 ]
+                self._events.sort(key=lambda event: event.start, reverse=True)
+                self._today_summary = rows[-1][7] if rows and len(
+                    rows) != 0 else ""
 
     async def async_get_events(
         self,
@@ -189,6 +207,7 @@ class Timeline(CalendarEntity):
 
     async def async_create_event(self, **kwargs: any) -> None:
         """Adds a new event to calendar"""
+        _LOGGER.info(f"Creating event: {kwargs}")
         await self.async_update()
         dtstart = kwargs[EVENT_START]
         dtend = kwargs[EVENT_END]
@@ -198,6 +217,7 @@ class Timeline(CalendarEntity):
         description = kwargs.get(EVENT_DESCRIPTION)
         key_frame = kwargs.get("key_frame", "")
         camera_name = kwargs.get("camera_name", "")
+        today_summary = kwargs.get("today_summary", "")
 
         # Ensure dtstart and dtend are datetime objects
         if isinstance(dtstart, str):
@@ -216,9 +236,33 @@ class Timeline(CalendarEntity):
             description=description,
             location=f"{key_frame},{camera_name}"
         )
+        await self._insert_event(event, today_summary)
 
-        self._events.append(event)
-        await self._save_events()
+    async def _insert_event(self, event: CalendarEvent, today_summary: str) -> None:
+        """Inserts a new event into the database"""
+        try:
+            async with aiosqlite.connect(self._db_path) as db:
+                _LOGGER.info(f"Inserting event into database: {event}")
+                await db.execute('''
+                    INSERT INTO events (uid, summary, start, end, description, key_frame, camera_name, today_summary)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    event.uid,
+                    event.summary,
+                    dt_util.as_local(self._ensure_datetime(
+                        event.start)).isoformat(),
+                    dt_util.as_local(self._ensure_datetime(
+                        event.end)).isoformat(),
+                    event.description,
+                    event.location.split(",")[0],
+                    event.location.split(",")[1] if len(
+                        event.location.split(",")) > 1 else "",
+                    today_summary
+                ))
+                await db.commit()
+                await self.async_update()
+        except aiosqlite.Error as e:
+            _LOGGER.error(f"Error inserting event into database: {e}")
 
     async def async_delete_event(
         self,
@@ -228,65 +272,48 @@ class Timeline(CalendarEntity):
     ) -> None:
         """Deletes an event on the calendar."""
         _LOGGER.info(f"Deleting event with UID: {uid}")
-        await self.async_update()
         await self._delete_image(uid)
-        self._events = [event for event in self._events if event.uid != uid]
-        await self._save_events()
+        await self._delete_event_from_db(uid)
 
-    async def _save_events(self) -> None:
-        """Saves events to database"""
-        await self._initialize_db()
-        now = datetime.datetime.now()
-        cutoff_date = now - datetime.timedelta(days=self._retention_time)
-    
-        if self._retention_time != 0:
-            _LOGGER.info(f"Deleting events before {cutoff_date}")
-    
-        remaining_events = []
-        for event in self._events:
-            event_end = dt_util.as_local(self._ensure_datetime(event.end))
-            if event_end >= self._ensure_datetime(cutoff_date) or self._retention_time == 0:
-                remaining_events.append(event)
-            else:
-                await self._delete_image(event.uid)
-    
+    async def _delete_event_from_db(self, uid: str) -> None:
+        """Deletes an event from the database"""
         try:
             async with aiosqlite.connect(self._db_path) as db:
-                await db.execute('DELETE FROM events')
-                await db.executemany('''
-                    INSERT INTO events (uid, summary, start, end, description, key_frame, camera_name)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', [
-                    (
-                        event.uid,
-                        event.summary,
-                        dt_util.as_local(self._ensure_datetime(
-                            event.start)).isoformat(),
-                        dt_util.as_local(self._ensure_datetime(
-                            event.end)).isoformat(),
-                        event.description,
-                        event.location.split(",")[0],
-                        event.location.split(",")[1] if len(
-                            event.location.split(",")) > 1 else ""
-                    )
-                    for event in remaining_events
-                ])
+                await db.execute('DELETE FROM events WHERE uid = ?', (uid,))
                 await db.commit()
+                await self.async_update()
         except aiosqlite.Error as e:
-            _LOGGER.error(f"Error saving events to database: {e}")
-    
-        # Update calendar entity
-        await self.async_update()
+            _LOGGER.error(f"Error deleting event from database: {e}")
 
-    async def remember(self, start, end, label, key_frame, summary, camera_name=""):
+    async def _delete_image(self, event_id: str):
+        """Deletes the image associated with the event"""
+        for event in self._events:
+            if event.uid == event_id:
+                image_path = event.location.split(",")[0]
+                _LOGGER.info(f"Image path: {image_path}")
+                if os.path.exists(image_path) and "/llmvision/" in image_path:
+                    os.remove(image_path)
+                    _LOGGER.info(f"Deleted image: {image_path}")
+
+    async def get_summaries(self, start: datetime, end: datetime):
+        """Generates a summary of events between start and end"""
+        await self.async_update()
+        events = await self.async_get_events(self.hass, start, end)
+        events_summaries = "\n".join([event.summary for event in events])
+        return events_summaries
+
+    async def remember(self, start, end, label, key_frame, summary, camera_name="", today_summary=""):
         """Remembers the event"""
+        _LOGGER.info(
+            f"(REMEMBER) Adding event: {label} from {start} to {end} with key_frame: {key_frame} and camera_name: {camera_name}")
         await self.async_create_event(
             dtstart=start,
             dtend=end,
             summary=label,
             description=summary,
             key_frame=key_frame,
-            camera_name=camera_name
+            camera_name=camera_name,
+            today_summary=today_summary
         )
 
 
