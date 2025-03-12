@@ -106,7 +106,7 @@ image_analyzer:
         boolean:
     expose_images:
       name: Expose Images
-      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response. (Only works for entity input).
+      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response.
       required: false
       example: false
       default: false
@@ -255,7 +255,7 @@ video_analyzer:
         boolean:
     expose_images:
       name: Expose Images
-      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response. (Only works for entity input).
+      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response.
       required: false
       example: false
       default: false
@@ -383,7 +383,7 @@ stream_analyzer:
         boolean:
     expose_images:
       name: Expose Images
-      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response. (Only works for entity input).
+      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response.
       required: false
       example: false
       default: false
