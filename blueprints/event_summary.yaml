@@ -1,5 +1,5 @@
 blueprint:
-  name: AI Event Summary (v1.4.0)
+  name: AI Event Summary (v1.4.1)
   author: valentinfrlch
   description: >
     AI-powered summaries for security camera events.
