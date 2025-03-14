@@ -2,7 +2,7 @@
 <img src="https://github.com/user-attachments/assets/bebd92b8-765e-4d63-bb3d-47e1bb8b51ad" width=500px>
 </p>
 <p align=center>
-<img src=https://img.shields.io/badge/HACS-Custom-orange.svg>
+<img src=https://img.shields.io/badge/HACS-Default-orange.svg>
 <img src="https://img.shields.io/maintenance/yes/2025.svg">
 <img src=https://img.shields.io/badge/version-1.4.0-blue>
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-llmvision?color=0088ff">
@@ -66,26 +66,20 @@ For technical questions see the discussions tab.
 
 
 ## Installation
+>[!TIP]
+>LLM Vision is available in the default HACS repository. You can install it directly through HACS or click the button below to open it there.
+
 [![Open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=valentinfrlch&repository=ha-llmvision&category=Integration)
-1. Search for `LLM Vision` in Home Assistant Settings/Devices & services
-2. Select your provider
-3. Follow the instructions to add your AI providers.
+1. Install `LLM Vision` from HACS
+2. Search for `LLM Vision` in Home Assistant Settings/Devices & services
+3. Select your provider
+4. Follow the instructions to add your AI providers.
 
-Detailed instruction on how to set up LLM Vision and each of the supported providers are available here: https://llm-vision.gitbook.io/getting-started/setup/providers
-
-
-### Debugging
-To enable debugging, add the following to your `configuration.yaml`:
-```yaml
-logger:
-  logs:
-    custom_components.llmvision: debug
-```
-
+Continue with setup here: https://llm-vision.gitbook.io/getting-started/setup/providers
 
 ## How to report a bug or request a feature
 > [!IMPORTANT]
-> **Bugs:** If you encounter any bugs and have followed the instructions carefully, file a bug report. Please check open issues first and include debug logs in your report. Learn how to enable debugging above.
+> **Bugs:** If you encounter any bugs and have followed the instructions carefully, file a bug report. Please check open issues first and include debug logs in your report. Debugging can be enabled on the integration's settings page.
 > **Feature Requests:** If you have an idea for a feature, create a feature request.
 ><div align = left>
 >
