@@ -339,8 +339,10 @@ class MediaProcessor:
 
     async def add_videos(self, video_paths, event_ids, max_frames, target_width, include_filename, expose_images, frigate_retry_attempts, frigate_retry_seconds):
         """Wrapper for client.add_frame for videos"""
-        tmp_clips_dir = self.hass.config.path(f"custom_components/{DOMAIN}/tmp_clips")
-        tmp_frames_dir = self.hass.config.path(f"custom_components/{DOMAIN}/tmp_frames")
+        tmp_clips_dir = self.hass.config.path(
+            f"custom_components/{DOMAIN}/tmp_clips")
+        tmp_frames_dir = self.hass.config.path(
+            f"custom_components/{DOMAIN}/tmp_frames")
         processed_event_ids = []
 
         if not video_paths:
@@ -404,7 +406,6 @@ class MediaProcessor:
                     frame_counter = 0
                     previous_frame = None
                     frames = []
-                    
 
                     for frame_file in await self.hass.loop.run_in_executor(None, os.listdir, tmp_frames_dir):
                         _LOGGER.debug(f"Adding frame {frame_file}")
@@ -492,13 +493,13 @@ class MediaProcessor:
             )
         return self.client
 
-    async def add_visual_data(self, image_entities, image_paths, target_width, include_filename):
+    async def add_visual_data(self, image_entities, image_paths, target_width, include_filename, expose_images):
         """Wrapper for add_images for visual data"""
         await self.add_images(
             image_entities=image_entities,
             image_paths=image_paths,
             target_width=target_width,
             include_filename=include_filename,
-            expose_images=False
+            expose_images=expose_images
         )
         return self.client
