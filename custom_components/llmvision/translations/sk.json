@@ -1,0 +1,123 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "LLM Vision Nastavenie",
+        "description": "Vyberte poskytovateľa na nastavenie"
+      },
+      "localai": {
+        "title": "Pripojte sa k vášmu serveru LocalAI",
+        "description": "Zadajte IP adresu a port vášho servera LocalAI.",
+        "data": {
+          "localai_ip": "IP adresa",
+          "localai_port": "Port",
+          "localai_https": "HTTPS"
+        }
+      },
+      "ollama": {
+        "title": "Konfigurácia Ollama",
+        "description": "Zadajte IP adresu a port vášho servera Ollama.",
+        "data": {
+          "ollama_ip": "IP adresa",
+          "ollama_port": "Port",
+          "ollama_https": "HTTPS"
+        }
+      },
+      "openai": {
+        "title": "Konfigurácia OpenAI",
+        "description": "Zadajte platný API kľúč OpenAI.",
+        "data": {
+          "openai_api_key": "API kľúč"
+        }
+      },
+      "azure": {
+        "title": "Konfigurácia Azure",
+        "description": "Zadajte platný API kľúč Azure, základnú URL, nasadenie a verziu API.\nZákladná URL musí byť vo formáte `https://domena.openai.azure.com/` vrátane koncovej lomky.",
+        "data": {
+          "azure_api_key": "API kľúč",
+          "azure_base_url": "Základná URL",
+          "azure_deployment": "Nasadenie",
+          "azure_version": "Verzia API"
+        }
+      },
+      "anthropic": {
+        "title": "Konfigurácia Anthropic Claude",
+        "description": "Zadajte platný API kľúč Anthropic.",
+        "data": {
+          "anthropic_api_key": "API kľúč"
+        }
+      },
+      "google": {
+        "title": "Konfigurácia Google Gemini",
+        "description": "Zadajte platný API kľúč Google Gemini.",
+        "data": {
+          "google_api_key": "API kľúč"
+        }
+      },
+      "groq": {
+        "title": "Konfigurácia Groq",
+        "description": "Zadajte platný API kľúč Groq.",
+        "data": {
+          "groq_api_key": "API kľúč"
+        }
+      },
+      "custom_openai": {
+        "title": "Konfigurácia vlastného poskytovateľa OpenAI",
+        "description": "**Dôležité**: Funguje len v prípade ak je API kompatibilné s API OpenAI. Ak API nevyžaduje API kľúč zadajte fiktívnu hodnotu. Koncový bod musí mať nasledujúci formát: `http(s)://základnáURL(:port)/nejaký/koncovýbod`",
+        "data": {
+          "custom_openai_endpoint": "Vlastný koncový bod",
+          "custom_openai_api_key": "API kľúč",
+          "custom_openai_default_model": "Predvolený model na použitie, napr. gpt-4o-mini"
+        }
+      },
+      "aws_bedrock": {
+        "title": "Konfigurácia poskytovateľa AWS Bedrock",
+        "description": "**Dôležité**: Toto momentálne podporuje iba nasledujúce modely: Nova, Anthropic Claude",
+        "data": {
+          "aws_access_key_id": "Prístupový kľúč",
+          "aws_secret_access_key": "Tajný kľúč",
+          "aws_region_name": "Reťazec regiónu",
+          "aws_default_model": "Predvolený model na použitie"
+        }
+      },
+      "openwebui": {
+        "title": "Konfigurácia poskytovateľa Open WebUI",
+        "description": "Zadajte API kľúč (JWT token), IP adresu, port, HTTP(S) a predvolený model.",
+        "data": {
+          "openwebui_api_key": "API kľúč (JWT token)",
+          "openwebui_ip": "IP adresa",
+          "openwebui_port": "Port",
+          "openwebui_https": "Použiť HTTPS",
+          "openwebui_default_model": "Predvolený model"
+        }
+      },
+      "timeline": {
+        "title": "Časová os",
+        "description": "Nastavte koľko dní sa budú udalosti pamätať. Udalosti sa automaticky vymažú po tomto čase. Udalosti sa ukladajú lokálne a je možné ich manuálne vymazať v zobrazení kalendára. (0 vypne automatické vymazanie)",
+        "data": {
+          "retention_time": "Automaticky vymazať udalosti po (dňoch)"
+        }
+      },
+      "memory": {
+        "title": "Pamäť",
+        "description": "Obsah v pamäti sa synchronizuje medzi poskytovateľmi a používa sa na poskytnutie dodatočného kontextu modelu. \n\n **Cesty k súborom obrázkov**: Zadajte cestu k súboru obrázka. \n**Popisy obrázkov**: Zadajte popis obrázka (napr.: 'Toto je Cookie, môj pes'). \n Obrázky a popisy musia byť v rovnakom poradí a musí existovať toľko popisov, koľko obrázkov. \n\n **Systémový prompt**: Použite systémový prompt na zmenu správania a odpovedí modelu. \n** Prompt pre názov**: Inštrukcia daná modelu na vygenerovanie názvu.",
+        "data": {
+          "memory_paths": "Cesta k súboru obrázka",
+          "memory_strings": "Popis obrázka",
+          "system_prompt": "Systémový prompt",
+          "title_prompt": "Prompt pre názov"
+        }
+      }
+    },
+    "error": {
+      "handshake_failed": "Nepodarilo sa pripojiť k serveru. Skontrolujte API kľúč alebo IP a port",
+      "empty_api_key": "Neplatný API kľúč",
+      "invalid_provider": "Vybratý neplatný poskytovateľ",
+      "invalid_image_path": "Jedna alebo viac ciest k obrázkom je neplatných",
+      "mismatched_lengths": "Počet ciest k obrázkom a popisov sa musí zhodovať"
+    },
+    "abort": {
+      "unknown_provider": "Neznámy poskytovateľ"
+    }
+  }
+}
