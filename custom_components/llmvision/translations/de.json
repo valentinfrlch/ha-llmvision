@@ -100,7 +100,7 @@
             },
             "memory": {
                 "title": "Erinnerungen",
-                "description": "Erinnerungen sind providerübergreifend und werden verwended um dem Modell mehr kontext zur Verfügung zu stellen. \n\n **Image file paths**: Provide the path to the image file. \n **Image descriptions**: Provide a description of the image (e.g.: 'This is Cookie, my dog'). \n Images and descriptions must be in the same order, and there must be as many descriptions as images. \n\n **System Prompt**: Benutze den System Prompt um zu verändern wie das Modell sich verhält und antwortet. \n **Title Prompt**: Die Anweisung die dem Modell gegeben wird um einen Titel zu generieren.",
+                "description": "Erinnerungen sind providerübergreifend und werden verwended um dem Modell mehr kontext zur Verfügung zu stellen.\nWenn `use_memory` aktiviert ist, werden alle Erinnerungen mitgesendet. Dies kann zu längeren Ladezeiten und höheren Kosten führen. \n\n **Image file paths**: Provide the path to the image file. \n **Image descriptions**: Provide a description of the image (e.g.: 'This is Cookie, my dog'). \n Images and descriptions must be in the same order, and there must be as many descriptions as images. \n\n **System Prompt**: Benutze den System Prompt um zu verändern wie das Modell sich verhält und antwortet. \n **Title Prompt**: Die Anweisung die dem Modell gegeben wird um einen Titel zu generieren.",
                 "data": {
                     "memory_paths": "Bildpfad",
                     "memory_strings": "Bildbeschreibung",
