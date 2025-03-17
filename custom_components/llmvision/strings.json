@@ -100,7 +100,7 @@
             },
             "memory": {
                 "title": "Memory",
-                "description": "Content in memory syncs across providers and is used to provide additional context to the model.  \n\n **Image file paths**: Provide the path to the image file. \n **Image descriptions**: Provide a description of the image (e.g.: 'This is Cookie, my dog'). \n Images and descriptions must be in the same order, and there must be as many descriptions as images. \n\n **System Prompt**: Use the system prompt to change how the model behaves and responds. \n **Title Prompt**: The instruction given to the model to generate a title.",
+                "description": "Content in memory syncs across providers and is used to provide additional context to the model.\nNote: If `use_memory` is enabled, all images in memory are sent to the provider with every call. Having lots of images in memory can increase processing time and increase cost!   \n\n **Image file paths**: Provide the path to the image file. \n **Image descriptions**: Provide a description of the image (e.g.: 'This is Cookie, my dog'). \n Images and descriptions must be in the same order, and there must be as many descriptions as images. \n\n **System Prompt**: Use the system prompt to change how the model behaves and responds. \n **Title Prompt**: The instruction given to the model to generate a title.",
                 "data": {
                     "memory_paths": "Image file path",
                     "memory_strings": "Image description",

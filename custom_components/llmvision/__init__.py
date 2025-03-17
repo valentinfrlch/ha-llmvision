@@ -481,6 +481,7 @@ def setup(hass, config):
 
     async def data_analyzer(data_call):
         """Handle the service call to analyze visual data"""
+        start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
         sensor_entity = data_call.data.get("sensor_entity")
         _LOGGER.info(f"Sensor entity: {sensor_entity}")
@@ -521,16 +522,26 @@ def setup(hass, config):
         request = await processor.add_visual_data(image_entities=call.image_entities,
                                                   image_paths=call.image_paths,
                                                   target_width=call.target_width,
-                                                  include_filename=call.include_filename
+                                                  include_filename=call.include_filename,
+                                                  expose_images=call.expose_images,
                                                   )
 
         call.memory = Memory(hass, system_prompt=DATA_EXTRACTION_PROMPT)
         await call.memory._update_memory()
 
         response = await request.call(call)
+        # Add processor.key_frame to response if it exists
+        if processor.key_frame:
+            response["key_frame"] = processor.key_frame
+
+        await _remember(hass=hass,
+                        call=call,
+                        start=start,
+                        response=response,
+                        key_frame=processor.key_frame)
+
         _LOGGER.info(f"Response: {response}")
         _LOGGER.info(f"Sensor type: {type}")
-        # update sensor in data_call.data.get("sensor_entity")
         await _update_sensor(hass, sensor_entity, response["response_text"], type)
         return response
 
@@ -601,6 +612,7 @@ def setup(hass, config):
     )
     hass.services.register(
         DOMAIN, "data_analyzer", data_analyzer,
+        supports_response=SupportsResponse.ONLY
     )
     hass.services.register(
         DOMAIN, "remember", remember,
