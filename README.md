@@ -4,7 +4,7 @@
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Default-orange.svg>
 <img src="https://img.shields.io/maintenance/yes/2025.svg">
-<img src=https://img.shields.io/badge/version-1.4.0-blue>
+<img src=https://img.shields.io/badge/version-1.4.1-blue>
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-llmvision?color=0088ff">
 <img alt="Static Badge" src="https://img.shields.io/badge/support-buymeacoffee?logo=buymeacoffee&logoColor=black&color=%23FFDD00&link=https%3A%2F%2Fbuymeacoffee.com%2Fvalentinfrlch">
     <p align=center style="font-weight:bold">
@@ -29,7 +29,7 @@
 <br>
 <br>
 <p align="center">
-    <strong>LLM Vision</strong> is a Home Assistant integration that uses multimodal LLMs to analyze images, videos, live camera feeds, and Frigate events. It can also keep track of analyzed events in a timeline, with an optional Timeline Card for your dashboard.
+    <strong>LLM Vision</strong> is a Home Assistant integration that uses multimodal large language models to analyze images, videos, live camera feeds, and Frigate events. It can also keep track of analyzed events in a timeline, with an optional Timeline Card for your dashboard.
 </p>
 
 ## Features
