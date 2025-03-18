@@ -184,13 +184,178 @@ blueprint:
               unit_of_measurement: seconds
               mode: box
               step: 1.0
+        notification_sticky:
+          name: Sticky - Android Only
+          description: 'When enabled, the notification will stay active on the device
+            after tapping it and remain unless swiped.
+
+            '
+          default: true
+          selector:
+            boolean: {}
+        notification_color:
+          name: Notification Color - Android Only
+          description: 'Set the color of the notification on your Android device,
+            in HEX. (default = Steelblue - #03a9f4)'
+          default: '#03a9f4'
+          selector:
+            select:
+              options:
+              - label: 'Steelblue - #03a9f4'
+                value: '#03a9f4'
+              - label: 'Red - #f44336'
+                value: '#f44336'
+              - label: 'Pink - #e91e63'
+                value: '#e91e63'
+              - label: 'Purple - #926bc7'
+                value: '#926bc7'
+              - label: 'Deep Purple - #6e41ab'
+                value: '#6e41ab'
+              - label: 'Indigo - #3f51b5'
+                value: '#3f51b5'
+              - label: 'Blue - #2196f3'
+                value: '#2196f3'
+              - label: 'Light Blue - #03a9f4'
+                value: '#03a9f4'
+              - label: 'Cyan - #00bcd4'
+                value: '#00bcd4'
+              - label: 'Teal - #009688'
+                value: '#009688'
+              - label: 'Green - #4caf50'
+                value: '#4caf50'
+              - label: 'Light Green - #8bc34a'
+                value: '#8bc34a'
+              - label: 'Lime - #cddc39'
+                value: '#cddc39'
+              - label: 'Yellow - #ffeb3b'
+                value: '#ffeb3b'
+              - label: 'Amber - #ffc107'
+                value: '#ffc107'
+              - label: 'Orange - #ff9800'
+                value: '#ff9800'
+              - label: 'Deep Orange - #ff5722'
+                value: '#ff5722'
+              - label: 'Brown - #795548'
+                value: '#795548'
+              - label: 'Light Grey - #bdbdbd'
+                value: '#bdbdbd'
+              - label: 'Grey - #9e9e9e'
+                value: '#9e9e9e'
+              - label: 'Dark Grey - #606060'
+                value: '#606060'
+              - label: 'Blue Grey - #607d8b'
+                value: '#607d8b'
+              - label: 'Black - #000000'
+                value: '#000000'
+              - label: White -#ffffff
+                value: '#ffffff'
+              custom_value: true
+              sort: false
+              multiple: false
+        notification_icon:
+          name: Notification Status Bar Icon - Android Only
+          description: Change the icon that displays in the notification.
+          default: mdi:cctv
+          selector:
+            icon:
+              placeholder: mdi:cctv
+        notification_channel:
+          name: Custom Notification Channel or Alarm Mode - Android Only
+          description: Create a new channel for notifications to allow custom notification
+            sounds, vibration patterns, and override Do Not Disturb mode. Configured
+            directly on the Android device -> Home Assistant App Setting -> Notifications.
+            Use `Alarm` to use the device's loud alarm notification sound.
+            [Learn More](https://companion.home-assistant.io/docs/notifications/notification-commands/#volume-level)
+            (default = Camera Name == {{ camera }} Snapshot). 
+          default: '{{ camera }} Snapshot'
+          selector:
+            select:
+              options:
+              - label: Camera Name
+                value: '{{ camera }} snapshot'
+              - label: Alarm
+                value: alarm_stream
+        camera_snapshot:
+          name: Android Instant Snapshot
+          description: The camera which creates the snapshot
+          selector:
+            entity:
+              domain:
+              - camera
+              multiple: false
+        file_path:
+          name: File Path - Needed for Android Instant Snapshot
+          description: "The file path to store the most current snapshot. \n\nDO NOT ADD `/local`, the blueprint with do that automaticaly with `/media` -> `/media/local`. \n\nDefaults
+            to **/media/snapshots/<camera_name>** `/media/snapshots/{{ states[camera].object_id
+            }}/last_motion.jpg`\n\n Try `/config/www/snapshots/{{ states[camera].object_id
+            }}/last_motion.jpg` if you are having issues"
+          default: /media/snapshots/{{ states[camera_snapshot].object_id }}/last_motion.jpg
         # TTS Notification
         tts_notification:
-          name: TTS Notification - Android Only
+          name: Use Text-to-Speech (TTS) on your device to speak the notification. Android Only
           description: Enable TTS notification.
           default: false
           selector:
             boolean:
+        tts_volume:
+          name: TTS Volume
+          description: Set TTS volume to device's current alarm volume or Max volume. Android Only
+          default: 'alarm_stream'
+          selector:
+            select:
+              options:
+                - label: Notification Volume
+                  value: notification_stream
+                - label: Alarm Volume/Sound
+                  value: alarm_stream
+                - label: Max Alarm Volume/Sound
+                  value: alarm_stream_max
+        # Condition to TTS Notify
+        condition_notify_tts:
+          name: Condition to TTS Notify
+          description: Condition to TTS notify the device.
+          default: []
+          selector:
+            condition:
+        notification_sound:
+          name: Notification Sound - iOS Only
+          description: 'You can specify a sound file on your device that will play
+            for the notifications. You can import the sound file into Home Assistant
+            or enter the filename of the [pre-installed notification sound](https://companion.home-assistant.io/docs/notifications/notification-sounds/#pre-installed-notification-sounds)
+            (example: US-EN-Alexa-Motion-Detected-Generic.wav).'
+          default: default
+          selector:
+            select:
+              options:
+              - label: Default
+                value: default
+              - label: None
+                value: none
+              - label: Alexa Motion Detected
+                value: US-EN-Alexa-Motion-Detected-Generic.wav
+              - label: Morgan Freeman Motion Detected
+                value: US-EN-Morgan-Freeman-Motion-Detected.wav
+              custom_value: true
+              sort: false
+              multiple: false
+        notification_volume:
+          name: Volume Sound - iOS Only
+          description: Specify a sound level %
+          default: 1
+          selector:
+            number:
+              max: 1.0
+              min: 0.0
+              unit_of_measurement: '%'
+              step: 1.0
+              mode: slider
+        notification_critical:
+          name: Critical Notification - iOS Only
+          description: Send as a critical notification to the mobile device. This
+            will ignore silent/vibrate modes.
+          default: false
+          selector:
+            boolean: {}
     stream_section:
       name: Stream Settings
       description: Settings for the stream analysis.
@@ -246,10 +411,25 @@ variables:
   preview_mode: !input preview_mode
   notify_devices: !input notify_device
   notification_delivery: !input notification_delivery
+  notification_sticky: !input notification_sticky
+  notification_color: !input notification_color
+  notification_icon: !input notification_icon
+  notification_channel: !input notification_channel
+  notification_sound: !input notification_sound
+  notification_volume: !input notification_volume
+  notification_critical: !input notification_critical
+  tts_volume: !input tts_volume
+  tts_notification: !input tts_notification
+  condition_notify_tts: !input condition_notify_tts
   additional_actions: !input additional_actions
   notify: !input notify
   condition_notify: !input condition_notify
   delay_notification: !input delay_notification
+  camera_snapshot: !input camera_snapshot
+  camera_name: '{{ states[camera_snapshot].name.replace(" ", "_") }}'
+  file_path: !input file_path
+  snapshot_access_file_path: '{{ file_path | replace(''/config/www'',
+    ''/local'') | replace(''/media'', ''/media/local'') }}'
   device_name_map: >
     {% set ns = namespace(device_names=[]) %}
     {% for device_id in notify_devices %}
@@ -267,6 +447,8 @@ variables:
     {% else %}
       {{ trigger.entity_id }}
     {% endif %}
+  camera_entity_snapshot: >
+    {{ camera_entities_list[0] }}
   tag: >
     {{ camera_entity + int(as_timestamp(now()))|string }}
   group: >
@@ -339,6 +521,10 @@ action:
                 - condition: template
                   value_template: "{{ notification_delivery == 'Dynamic' }}"
               sequence:
+              - service: camera.snapshot
+                entity_id: !input camera_snapshot
+                data:
+                  filename: !input file_path
               - alias: "Send instant notification to notify devices"
                 repeat:
                   for_each: "{{device_name_map}}"
@@ -348,6 +534,8 @@ action:
                         title: "{{ label }}"
                         message: "{{camera}} has detected activity."
                         data:
+                          # Send a snapshot of the event to Android devices
+                          image: "{{snapshot_access_file_path}}"
                           entity_id: "{{camera_entity}}"
                           url: !input tap_navigate #iOS
                           clickAction: !input tap_navigate #Android
@@ -356,6 +544,20 @@ action:
                           alert_once: true
                           push:
                             interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
+                          # My custom options
+                          ttl: 0
+                          priority: high
+                          # Android only
+                          channel: !input notification_channel
+                          color: !input notification_color
+                          notification_icon: !input notification_icon
+                          sticky: !input notification_sticky
+                          # iOS only
+                          push:
+                            sound:
+                              name: !input notification_sound
+                              volume: !input notification_volume
+                              critical: '{{ notification_critical }}'
 
   - alias: "Analyze event"
     action: llmvision.stream_analyzer
@@ -414,6 +616,20 @@ action:
                           group: "{{group}}"
                           push:
                             interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
+                          # My custom options
+                          ttl: 0
+                          priority: high
+                          # Android only
+                          channel: !input notification_channel
+                          color: !input notification_color
+                          notification_icon: !input notification_icon
+                          sticky: !input notification_sticky
+                          # iOS only
+                          push:
+                            sound:
+                              name: !input notification_sound
+                              volume: !input notification_volume
+                              critical: '{{ notification_critical }}'
             - conditions:
                 - condition: template
                   value_template: "{{ preview_mode=='Live Preview' }}"
@@ -434,6 +650,26 @@ action:
                           group: "{{group}}"
                           push:
                             interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
+
+        - if:
+          - condition: template
+            value_template: '{{ tts_notification }}'
+          then:
+          - if:
+            - condition: !input condition_notify_tts
+            then:
+            - alias: "TTS notification on notify devices"
+              repeat:
+                for_each: "{{device_name_map}}"
+                sequence:
+                  - action: "notify.{{ repeat.item }}"
+                    data:
+                      message: TTS
+                      data:
+                        ttl: 0
+                        priority: high
+                        media_stream: !input tts_volume
+                        tts_text: "{{response.response_text}}"
 
   # Add Customized Actions
   - choose: []
