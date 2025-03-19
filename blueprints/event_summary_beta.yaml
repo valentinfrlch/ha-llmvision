@@ -1,11 +1,11 @@
 blueprint:
-  name: AI Event Summary (v1.4.2)
+  name: AI Event Summary (v1.4.0)
   author: valentinfrlch
   description: >
     AI-powered summaries for security camera events.
     Sends a notification with a preview to your phone that is updated dynamically when the AI summary is available.
   domain: automation
-  source_url: https://github.com/valentinfrlch/ha-llmvision/blob/main/blueprints/event_summary.yaml
+  source_url: https://github.com/valentinfrlch/ha-llmvision/blob/main/blueprints/event_summary_beta.yaml
   input:
     important:
       name: Important (Experimental)
@@ -13,7 +13,7 @@ blueprint:
         Use AI to classify events as Critical, Normal or Low.
         Notifications are sent only for events classified as Normal or higher.
         Critical events override 'Do Not Disturb' settings.
-        Use with caution: AI can make mistakes, and this will introduce 2-3 seconds of delay before analysing the video.
+        Use with caution: AI can make mistakes.
       default: false
       selector:
         boolean:
@@ -255,7 +255,7 @@ action:
               - action: "notify.{{ repeat.item }}"
                 data:
                   title: "{{ label }}"
-                  message: "{{camera}} has detected activity."
+                  message: "{{camera}}"
                   data:
                     entity_id: "{{camera_entity}}"
                     url: !input tap_navigate #iOS
