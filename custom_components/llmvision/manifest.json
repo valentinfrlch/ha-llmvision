@@ -1,11 +1,11 @@
 {
     "domain": "llmvision",
     "name": "LLM Vision",
-    "codeowners": ["@chenghaoli"],
+    "codeowners": ["@valentinfrlch"],
     "config_flow": true,
-    "documentation": "https://github.com/lich2000117/ha-llmvision",
+    "documentation": "https://github.com/valentinfrlch/ha-llmvision",
     "iot_class": "cloud_polling",
-    "issue_tracker": "https://github.com/lich2000117/ha-llmvision/issues",
+    "issue_tracker": "https://github.com/valentinfrlch/ha-llmvision/issues",
     "requirements": ["boto3", "aiosqlite"],
-    "version": "1.0.0"
+    "version": "1.4.1"
 }
