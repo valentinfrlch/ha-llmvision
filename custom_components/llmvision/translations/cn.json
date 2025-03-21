@@ -1,0 +1,123 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "LLM Vision 设置",
+                "description": "选择要设置的提供者"
+            },
+            "localai": {
+                "title": "连接到您的 LocalAI 服务器",
+                "description": "提供您的 LocalAI 服务器的 IP 地址和端口。",
+                "data": {
+                    "localai_ip": "IP 地址",
+                    "localai_port": "端口",
+                    "localai_https": "HTTPS"
+                }
+            },
+            "ollama": {
+                "title": "配置 Ollama",
+                "description": "提供您的 Ollama 服务器的 IP 地址和端口。",
+                "data": {
+                    "ollama_ip": "IP 地址",
+                    "ollama_port": "端口",
+                    "ollama_https": "HTTPS"
+                }
+            },
+            "openai": {
+                "title": "配置 OpenAI",
+                "description": "提供一个有效的 OpenAI API 密钥。",
+                "data": {
+                    "openai_api_key": "API 密钥"
+                }
+            },
+            "azure": {
+                "title": "配置 Azure",
+                "description": "提供一个有效的 Azure API 密钥、基础 URL、部署和 API 版本。\n基础 URL 必须使用格式 `https://domain.openai.azure.com/` 并包含末尾的斜杠。",
+                "data": {
+                    "azure_api_key": "API 密钥",
+                    "azure_base_url": "基础 URL",
+                    "azure_deployment": "部署",
+                    "azure_version": "API 版本"
+                }
+            },
+            "anthropic": {
+                "title": "配置 Anthropic Claude",
+                "description": "提供一个有效的 Anthropic API 密钥。",
+                "data": {
+                    "anthropic_api_key": "API 密钥"
+                }
+            },
+            "google": {
+                "title": "配置 Google Gemini",
+                "description": "提供一个有效的 Google Gemini API 密钥。",
+                "data": {
+                    "google_api_key": "API 密钥"
+                }
+            },
+            "groq": {
+                "title": "配置 Groq",
+                "description": "提供一个有效的 Groq API 密钥。",
+                "data": {
+                    "groq_api_key": "API 密钥"
+                }
+            },
+            "custom_openai": {
+                "title": "配置自定义 OpenAI 提供者",
+                "description": "**重要**：仅在 API 与 OpenAI 的 API 兼容时才有效。如果该 API 不需要 API 密钥，请输入一个虚拟值。该端点必须使用以下格式：`http(s)://baseURL(:port)/some/endpoint`",
+                "data": {
+                    "custom_openai_endpoint": "自定义端点",
+                    "custom_openai_api_key": "API 密钥",
+                    "custom_openai_default_model": "默认使用的模型，例如 gpt-4o-mini"
+                }
+            },
+            "aws_bedrock": {
+                "title": "配置 AWS Bedrock 提供者",
+                "description": "**重要**：目前仅支持以下模型：Nova，Anthropic Claude",
+                "data": {
+                    "aws_access_key_id": "访问密钥",
+                    "aws_secret_access_key": "密钥",
+                    "aws_region_name": "地区字符串",
+                    "aws_default_model": "默认使用的模型"
+                }
+            },
+            "openwebui": {
+                "title": "配置 Open WebUI 提供者",
+                "description": "提供 API 密钥（JWT 令牌）、IP 地址、端口、HTTP(S) 和默认模型。",
+                "data": {
+                    "openwebui_api_key": "API 密钥（JWT 令牌）",
+                    "openwebui_ip": "IP 地址",
+                    "openwebui_port": "端口",
+                    "openwebui_https": "使用 HTTPS",
+                    "openwebui_default_model": "默认模型"
+                }
+            },
+            "timeline": {
+                "title": "时间线",
+                "description": "设置事件被记住的天数。到达此时限后，事件将自动删除。事件存储在本地，并可在日历视图中手动删除。（0表示禁用自动删除）",
+                "data": {
+                    "retention_time": "自动删除事件时间（天）"
+                }
+            },
+            "memory": {
+                "title": "记忆",
+                "description": "存储在记忆中的内容会在不同提供者之间同步，用于为模型提供额外的上下文。\n注意：如果启用 `use_memory`，记忆中的所有图像都会在每次调用时发送给提供者。存储大量图像可能会增加处理时间和成本！  \n\n **图像文件路径**：提供图像文件的路径。\n **图像描述**：提供对图像的描述（例如：“这是我的狗 Cookie”）。\n图像和描述必须顺序一致，并且描述数量要与图像数量相同。\n\n **System Prompt**：使用系统提示来改变模型的行为和响应。\n **Title Prompt**：用于生成标题的模型指令。",
+                "data": {
+                    "memory_paths": "图像文件路径",
+                    "memory_strings": "图像描述",
+                    "system_prompt": "系统提示",
+                    "title_prompt": "标题提示"
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "无法连接到服务器。请检查您的 API 密钥或 IP 和端口",
+            "empty_api_key": "无效的 API 密钥",
+            "invalid_provider": "选择了无效的提供者",
+            "invalid_image_path": "一个或多个图像路径无效",
+            "mismatched_lengths": "图像路径和描述的数量必须相同"
+        },
+        "abort": {
+            "unknown_provider": "未知的提供者"
+        }
+    }
+}

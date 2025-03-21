@@ -11,6 +11,7 @@ CONF_AZURE_DEPLOYMENT = 'azure_deployment'
 CONF_AZURE_VERSION = 'azure_version'
 CONF_ANTHROPIC_API_KEY = 'anthropic_api_key'
 CONF_GOOGLE_API_KEY = 'google_api_key'
+CONF_GOOGLE_DEFAULT_MODEL = 'gemini-2.0-flash'
 CONF_GROQ_API_KEY = 'groq_api_key'
 CONF_LOCALAI_IP_ADDRESS = 'localai_ip'
 CONF_LOCALAI_PORT = 'localai_port'
@@ -18,6 +19,7 @@ CONF_LOCALAI_HTTPS = 'localai_https'
 CONF_OLLAMA_IP_ADDRESS = 'ollama_ip'
 CONF_OLLAMA_PORT = 'ollama_port'
 CONF_OLLAMA_HTTPS = 'ollama_https'
+CONF_OLLAMA_DEFAULT_MODEL = 'llama-3.2-11b-vision-preview'
 CONF_CUSTOM_OPENAI_ENDPOINT = 'custom_openai_endpoint'
 CONF_CUSTOM_OPENAI_API_KEY = 'custom_openai_api_key'
 CONF_CUSTOM_OPENAI_DEFAULT_MODEL = 'custom_openai_default_model'
@@ -71,8 +73,8 @@ ERROR_HANDSHAKE_FAILED = "Connection could not be established"
 VERSION_ANTHROPIC = "2023-06-01"
 
 # Defaults
-DEFAULT_SYSTEM_PROMPT = "Your task is to analyze a series of images and provide a concise event description based on user instructions. Focus on identifying and describing the actions of people and dynamic objects (e.g., vehicles) rather than static background details. When multiple images are provided, track and summarize movements or changes over time (e.g., 'A person walks to the front door' or 'A car pulls out of the driveway'). Keep responses brief, objective, and aligned with the user's prompt. Avoid speculation and prioritize observable activity."
-DEFAULT_TITLE_PROMPT = "Provide a short and concise event title based on the description provided. The title should summarize the key actions or events captured in the images and be suitable for use in a notification or alert. Keep the title clear, relevant to the content of the images and shorter than 6 words. Avoid unnecessary details or subjective interpretations. The title should be in the format: '<Object> seen at <location>. For example: 'Person seen at front door'."
+DEFAULT_SYSTEM_PROMPT = "Your task is to analyze a series of images and provide a concise event description based on user instructions. Focus on identifying and describing the actions of people, pet and dynamic objects (e.g., vehicles) rather than static background details. When multiple images are provided, track and summarize movements or changes over time (e.g., 'A person walks to the front door' or 'A car pulls out of the driveway'). Keep responses brief objective, and aligned with the user's prompt. Avoid speculation and prioritize observable activity. The length of the summary must be less than 255 characters, so you must summarise it to the best readability within 255 chaaracters."
+DEFAULT_TITLE_PROMPT = "Provide a short and concise event title based on the description provided. The title should summarize the key actions or events captured in the images and be suitable for use in a notification or alert. Keep the title clear, relevant to the content of the images and shorter than 6 words. Avoid unnecessary details or subjective interpretations. The title should be in the format: '<Object> seen at <location>. For example: 'Person seen at front door'. Ensure the title accurately reflects the content of the images, can include names."
 DATA_EXTRACTION_PROMPT = "You are an advanced image analysis assistant specializing in extracting precise data from images captured by a home security camera. Your task is to analyze one or more images and extract specific information as requested by the user (e.g., the number of cars or a license plate). Provide only the requested information in your response, with no additional text or commentary. Your response must be a {data_format} Ensure the extracted data is accurate and reflects the content of the images."
 
 
