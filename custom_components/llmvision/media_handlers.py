@@ -77,8 +77,8 @@ class MediaProcessor:
         C1 = (K1 * L) ** 2
         C2 = (K2 * L) ** 2
 
-        previous_frame_np = np.array(previous_frame, dtype=np.float64)
-        current_frame_np = np.array(current_frame_gray, dtype=np.float64)
+        previous_frame_np = np.array(previous_frame)
+        current_frame_np = np.array(current_frame_gray)
 
         # Ensure both frames have same dimensions
         if previous_frame_np.shape != current_frame_np.shape:
@@ -88,14 +88,15 @@ class MediaProcessor:
             current_frame_np = current_frame_np[:min_shape[0], :min_shape[1]]
 
         # Calculate mean (mu)
-        mu1 = np.mean(previous_frame_np)
-        mu2 = np.mean(current_frame_np)
+        mu1 = np.mean(previous_frame_np, dtype=np.float64)
+        mu2 = np.mean(current_frame_np, dtype=np.float64)
 
         # Calculate variance (sigma^2) and covariance (sigma12)
-        sigma1_sq = np.var(previous_frame_np)
-        sigma2_sq = np.var(current_frame_np)
+        sigma1_sq = np.var(previous_frame_np, dtype=np.float64, mean=mu1)
+        sigma2_sq = np.var(current_frame_np, dtype=np.float64, mean=mu2)
         sigma12 = np.cov(previous_frame_np.flatten(),
-                         current_frame_np.flatten())[0, 1]
+                         current_frame_np.flatten(),
+                         dtype=np.float64)[0, 1]
 
         # Calculate SSIM
         ssim = ((2 * mu1 * mu2 + C1) * (2 * sigma12 + C2)) / \
