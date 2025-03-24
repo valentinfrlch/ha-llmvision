@@ -579,8 +579,11 @@ def setup(hass, config):
             """Helper function to run in executor"""
             for file in os.listdir(path):
                 if file not in filenames:
-                    _LOGGER.info(f"Removing {file}")
-                    os.remove(os.path.join(path, file))
+                    file_path = os.path.join(path, file)
+                    # ensure only files are removed
+                    if os.path.isfile(file_path):
+                        _LOGGER.info(f"Removing {file}")
+                        os.remove(file_path)
         # Find timeline config
         config_entry = None
         for entry in hass.config_entries.async_entries(DOMAIN):
