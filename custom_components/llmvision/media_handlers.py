@@ -109,6 +109,7 @@ class MediaProcessor:
             # Open the image file
             img = await self.hass.loop.run_in_executor(None, Image.open, image_path)
             with img:
+                await self.hass.loop.run_in_executor(None, img.load)
                 # Check if the image is a GIF and convert if necessary
                 img = self._convert_to_rgb(img)
                 # calculate new height based on aspect ratio
@@ -129,6 +130,7 @@ class MediaProcessor:
             img_byte_arr.write(image_data)
             img = await self.hass.loop.run_in_executor(None, Image.open, img_byte_arr)
             with img:
+                await self.hass.loop.run_in_executor(None, img.load)
                 img = self._convert_to_rgb(img)
                 # calculate new height based on aspect ratio
                 width, height = img.size
@@ -213,29 +215,29 @@ class MediaProcessor:
                     f"Fetched {image_entity} in {fetch_duration:.2f} seconds")
 
                 preprocessing_start_time = time.time()
-                img = await self.hass.loop.run_in_executor(None, Image.open, io.BytesIO(frame_data))
-                current_frame_gray = np.array(img.convert('L'))
+                with await self.hass.loop.run_in_executor(None, Image.open, io.BytesIO(frame_data)) as img:
+                    current_frame_gray = np.array(img.convert('L'))
 
-                if previous_frame is not None:
-                    score = self._similarity_score(
-                        previous_frame, current_frame_gray)
+                    if previous_frame is not None:
+                        score = self._similarity_score(
+                            previous_frame, current_frame_gray)
 
-                    # Encode the image back to bytes
-                    buffer = io.BytesIO()
-                    img.save(buffer, format="JPEG")
-                    frame_data = buffer.getvalue()
+                        # Encode the image back to bytes
+                        buffer = io.BytesIO()
+                        img.save(buffer, format="JPEG")
+                        frame_data = buffer.getvalue()
 
-                    # Use either entity name or assign number to each camera
-                    frame_label = (image_entity.replace("camera.", "") + " frame " + str(frame_counter)
-                                   if include_filename else "camera " + str(camera_number) + " frame " + str(frame_counter))
-                    frames.update(
-                        {frame_label: {"frame_data": frame_data, "ssim_score": score}})
+                        # Use either entity name or assign number to each camera
+                        frame_label = (image_entity.replace("camera.", "") + " frame " + str(frame_counter)
+                                    if include_filename else "camera " + str(camera_number) + " frame " + str(frame_counter))
+                        frames.update(
+                            {frame_label: {"frame_data": frame_data, "ssim_score": score}})
 
-                    frame_counter += 1
-                    previous_frame = current_frame_gray
-                else:
-                    # Initialize previous_frame with the first frame
-                    previous_frame = current_frame_gray
+                        frame_counter += 1
+                        previous_frame = current_frame_gray
+                    else:
+                        # Initialize previous_frame with the first frame
+                        previous_frame = current_frame_gray
 
                 preprocessing_duration = time.time() - preprocessing_start_time
                 _LOGGER.info(
@@ -413,13 +415,14 @@ class MediaProcessor:
                             tmp_frames_dir, frame_file)
                         try:
                             # open image in hass.loop
-                            img = await self.hass.loop.run_in_executor(None, Image.open, frame_path)
-                            # Remove transparency for compatibility
-                            if img.mode == 'RGBA':
-                                img = img.convert('RGB')
-                                await self.hass.loop.run_in_executor(None, img.save, frame_path)
+                            with await self.hass.loop.run_in_executor(None, Image.open, frame_path) as img:
+                                await self.hass.loop.run_in_executor(None, img.load)
+                                # Remove transparency for compatibility
+                                if img.mode == 'RGBA':
+                                    img = img.convert('RGB')
+                                    await self.hass.loop.run_in_executor(None, img.save, frame_path)
 
-                            current_frame_gray = np.array(img.convert('L'))
+                                current_frame_gray = np.array(img.convert('L'))
 
                             # Calculate similarity score
                             if previous_frame is not None:
