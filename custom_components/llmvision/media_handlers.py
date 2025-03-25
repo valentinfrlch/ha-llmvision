@@ -222,6 +222,7 @@ class MediaProcessor:
                     f"Fetched {image_entity} in {fetch_duration:.2f} seconds")
 
                 preprocessing_start_time = time.time()
+
                 with await self.hass.loop.run_in_executor(None, Image.open, io.BytesIO(frame_data)) as img:
                     current_frame_gray = np.array(img.convert('L'))
 
@@ -245,6 +246,8 @@ class MediaProcessor:
                     else:
                         # Initialize previous_frame with the first frame
                         previous_frame = current_frame_gray
+                        # First snapshot of the camera, always considered important.
+                        score = -9999
 
                 preprocessing_duration = time.time() - preprocessing_start_time
                 _LOGGER.info(
