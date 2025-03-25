@@ -284,6 +284,9 @@ class MediaProcessor:
         # Select frames with lowest ssim SIM scores
         selected_frames = frames_with_scores[:max_frames]
 
+        # Sort selected frames back into their original chronological order
+        selected_frames.sort(key=lambda x: x[0])
+
         # Add selected frames to client
         for frame_name, frame_data, _ in selected_frames:
             resized_image = await self.resize_image(target_width=target_width, image_data=frame_data)
@@ -439,14 +442,11 @@ class MediaProcessor:
                             # Calculate similarity score
                             if previous_frame is not None:
                                 score = self._similarity_score(previous_frame, current_frame_gray)
-                                # Insert the new frame while maintaining sorted order
+                                # Insert the new frame, maintain sorted order
                                 insort(frames, (previous_frame_path, score), key=lambda x: x[1])
                                 if len(frames) > max_frames:
                                     # Keep only max_frames many frames with lowest SSIM scores
                                     frames.pop()
-                            else:
-                                # Initialize previous_frame with the first frame
-                                pass
                             previous_frame = current_frame_gray
                             previous_frame_path = frame_path
                         except UnidentifiedImageError:
