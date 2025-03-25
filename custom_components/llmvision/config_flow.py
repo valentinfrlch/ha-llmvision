@@ -13,41 +13,40 @@ from .providers import (
 )
 from .const import (
     DOMAIN,
-    CONF_OPENAI_API_KEY,
-    CONF_AZURE_API_KEY,
+    CONF_PROVIDER,
+    CONF_API_KEY,
+    CONF_IP_ADDRESS,
+    CONF_PORT,
+    CONF_HTTPS,
+    CONF_DEFAULT_MODEL,
+    CONF_TEMPERATURE,
+    CONF_TOP_P,
+    CONF_AZURE_VERSION,
     CONF_AZURE_BASE_URL,
     CONF_AZURE_DEPLOYMENT,
-    CONF_AZURE_VERSION,
-    ENDPOINT_AZURE,
-    CONF_ANTHROPIC_API_KEY,
-    CONF_GOOGLE_API_KEY,
-    CONF_GROQ_API_KEY,
-    CONF_LOCALAI_IP_ADDRESS,
-    CONF_LOCALAI_PORT,
-    CONF_LOCALAI_HTTPS,
-    CONF_OLLAMA_IP_ADDRESS,
-    CONF_OLLAMA_PORT,
-    CONF_OLLAMA_HTTPS,
-    CONF_CUSTOM_OPENAI_API_KEY,
     CONF_CUSTOM_OPENAI_ENDPOINT,
-    CONF_CUSTOM_OPENAI_DEFAULT_MODEL,
     CONF_RETENTION_TIME,
     CONF_MEMORY_PATHS,
     CONF_MEMORY_STRINGS,
     CONF_SYSTEM_PROMPT,
+    CONF_TITLE_PROMPT,
     CONF_AWS_ACCESS_KEY_ID,
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
-    CONF_AWS_DEFAULT_MODEL,
-    CONF_OPENWEBUI_IP_ADDRESS,
-    CONF_OPENWEBUI_PORT,
-    CONF_OPENWEBUI_HTTPS,
-    CONF_OPENWEBUI_API_KEY,
-    CONF_OPENWEBUI_DEFAULT_MODEL,
-    ENDPOINT_OPENWEBUI,
-    DEFAULT_SYSTEM_PROMPT,
-    CONF_TITLE_PROMPT,
     DEFAULT_TITLE_PROMPT,
+    DEFAULT_SYSTEM_PROMPT,
+    DEFAULT_OPENAI_MODEL,
+    DEFAULT_ANTHROPIC_MODEL,
+    DEFAULT_AZURE_MODEL,
+    DEFAULT_GOOGLE_MODEL,
+    DEFAULT_GROQ_MODEL,
+    DEFAULT_LOCALAI_MODEL,
+    DEFAULT_OLLAMA_MODEL,
+    DEFAULT_CUSTOM_OPENAI_MODEL,
+    DEFAULT_AWS_MODEL,
+    DEFAULT_OPENWEBUI_MODEL,
+    ENDPOINT_OPENWEBUI,
+    ENDPOINT_AZURE
 )
 import voluptuous as vol
 import os
@@ -110,9 +109,12 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_localai(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_LOCALAI_IP_ADDRESS): str,
-            vol.Required(CONF_LOCALAI_PORT, default=8080): int,
-            vol.Required(CONF_LOCALAI_HTTPS, default=False): bool,
+            vol.Required(CONF_IP_ADDRESS): str,
+            vol.Required(CONF_PORT, default=8080): int,
+            vol.Required(CONF_HTTPS, default=False): bool,
+            vol.Optional(CONF_DEFAULT_MODEL, default=DEFAULT_LOCALAI_MODEL): str,
+            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+            vol.Optional(CONF_TOP_P, default=0.9): float,
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -125,11 +127,12 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
+            # user_input[CONF_PROVIDER] = 'localai'
             try:
                 localai = LocalAI(self.hass, endpoint={
-                    'ip_address': user_input[CONF_LOCALAI_IP_ADDRESS],
-                    'port': user_input[CONF_LOCALAI_PORT],
-                    'https': user_input[CONF_LOCALAI_HTTPS]
+                    'ip_address': user_input[CONF_IP_ADDRESS],
+                    'port': user_input[CONF_PORT],
+                    'https': user_input[CONF_HTTPS]
                 })
                 await localai.validate()
                 # add the mode to user_input
@@ -141,7 +144,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                 else:
                     # New config entry
-                    return self.async_create_entry(title=f"LocalAI ({user_input[CONF_LOCALAI_IP_ADDRESS]})", data=user_input)
+                    return self.async_create_entry(title=f"LocalAI ({user_input[CONF_IP_ADDRESS]})", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -157,9 +160,12 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_ollama(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_OLLAMA_IP_ADDRESS): str,
-            vol.Required(CONF_OLLAMA_PORT, default=11434): int,
-            vol.Required(CONF_OLLAMA_HTTPS, default=False): bool,
+            vol.Required(CONF_IP_ADDRESS): str,
+            vol.Required(CONF_PORT, default=11434): int,
+            vol.Required(CONF_HTTPS, default=False): bool,
+            vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_OLLAMA_MODEL): str,
+            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+            vol.Optional(CONF_TOP_P, default=0.9): float,
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -172,11 +178,12 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
+            # user_input[CONF_PROVIDER] = 'ollama'
             try:
                 ollama = Ollama(self.hass, endpoint={
-                    'ip_address': user_input[CONF_OLLAMA_IP_ADDRESS],
-                    'port': user_input[CONF_OLLAMA_PORT],
-                    'https': user_input[CONF_OLLAMA_HTTPS]
+                    'ip_address': user_input[CONF_IP_ADDRESS],
+                    'port': user_input[CONF_PORT],
+                    'https': user_input[CONF_HTTPS]
                 })
                 await ollama.validate()
                 # add the mode to user_input
@@ -188,7 +195,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                 else:
                     # New config entry
-                    return self.async_create_entry(title=f"Ollama ({user_input[CONF_OLLAMA_IP_ADDRESS]})", data=user_input)
+                    return self.async_create_entry(title=f"Ollama ({user_input[CONF_IP_ADDRESS]})", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -204,11 +211,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_openwebui(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_OPENWEBUI_API_KEY): str,
-            vol.Required(CONF_OPENWEBUI_DEFAULT_MODEL, default="minicpm-v"): str,
-            vol.Required(CONF_OPENWEBUI_IP_ADDRESS): str,
-            vol.Required(CONF_OPENWEBUI_PORT, default=3000): int,
-            vol.Required(CONF_OPENWEBUI_HTTPS, default=False): bool,
+            vol.Required(CONF_API_KEY): str,
+            vol.Required(CONF_IP_ADDRESS): str,
+            vol.Required(CONF_PORT, default=3000): int,
+            vol.Required(CONF_HTTPS, default=False): bool,
+            vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_OPENWEBUI_MODEL): str,
+            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+            vol.Optional(CONF_TOP_P, default=0.9): float,
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -221,15 +230,16 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
+            # user_input[CONF_PROVIDER] = 'openwebui'
             try:
                 endpoint = ENDPOINT_OPENWEBUI.format(
-                    ip_address=user_input[CONF_OPENWEBUI_IP_ADDRESS],
-                    port=user_input[CONF_OPENWEBUI_PORT],
-                    protocol="https" if user_input[CONF_OPENWEBUI_HTTPS] else "http"
+                    ip_address=user_input[CONF_IP_ADDRESS],
+                    port=user_input[CONF_PORT],
+                    protocol="https" if user_input[CONF_HTTPS] else "http"
                 )
                 openwebui = OpenAI(hass=self.hass,
-                                   api_key=user_input[CONF_OPENWEBUI_API_KEY],
-                                   default_model=user_input[CONF_OPENWEBUI_DEFAULT_MODEL],
+                                   api_key=user_input[CONF_API_KEY],
+                                   default_model=user_input[CONF_DEFAULT_MODEL],
                                    endpoint={'base_url': endpoint})
                 await openwebui.validate()
                 # add the mode to user_input
@@ -241,7 +251,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                 else:
                     # New config entry
-                    return self.async_create_entry(title=f"OpenWebUI ({user_input[CONF_OPENWEBUI_IP_ADDRESS]})", data=user_input)
+                    return self.async_create_entry(title=f"OpenWebUI ({user_input[CONF_IP_ADDRESS]})", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -257,7 +267,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_openai(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_OPENAI_API_KEY): str,
+            vol.Required(CONF_API_KEY): str,
+            vol.Optional(CONF_DEFAULT_MODEL, default=DEFAULT_OPENAI_MODEL): str,
+            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+            vol.Optional(CONF_TOP_P, default=0.9): float,
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -270,9 +283,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
+            #user_input[CONF_PROVIDER] = 'openai'
             try:
                 openai = OpenAI(
-                    self.hass, api_key=user_input[CONF_OPENAI_API_KEY])
+                    self.hass, api_key=user_input[CONF_API_KEY])
                 await openai.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
@@ -300,10 +314,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_azure(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_AZURE_API_KEY): str,
+            vol.Required(CONF_API_KEY): str,
             vol.Required(CONF_AZURE_BASE_URL, default="https://domain.openai.azure.com/"): str,
             vol.Required(CONF_AZURE_DEPLOYMENT, default="deployment"): str,
             vol.Required(CONF_AZURE_VERSION, default="2024-10-01-preview"): str,
+            vol.Optional(CONF_DEFAULT_MODEL, default=DEFAULT_AZURE_MODEL): str,
+            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+            vol.Optional(CONF_TOP_P, default=0.9): float,
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -316,8 +333,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
+            # user_input[CONF_PROVIDER] = 'azure'
             try:
-                azure = AzureOpenAI(self.hass, api_key=user_input[CONF_AZURE_API_KEY], endpoint={
+                azure = AzureOpenAI(self.hass, api_key=user_input[CONF_API_KEY], endpoint={
                     'base_url': ENDPOINT_AZURE,
                     'endpoint': user_input[CONF_AZURE_BASE_URL],
                     'deployment': user_input[CONF_AZURE_DEPLOYMENT],
@@ -350,7 +368,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_anthropic(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_ANTHROPIC_API_KEY): str,
+            vol.Required(CONF_API_KEY): str,
+            vol.Optional(CONF_DEFAULT_MODEL, default=DEFAULT_ANTHROPIC_MODEL): str,
+            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+            vol.Optional(CONF_TOP_P, default=0.9): float,
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -363,9 +384,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
+            # user_input[CONF_PROVIDER] = 'anthropic'
             try:
                 anthropic = Anthropic(
-                    self.hass, api_key=user_input[CONF_ANTHROPIC_API_KEY])
+                    self.hass, api_key=user_input[CONF_API_KEY])
                 await anthropic.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
@@ -393,7 +415,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_google(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_GOOGLE_API_KEY): str,
+            vol.Required(CONF_API_KEY): str,
+            vol.Optional(CONF_DEFAULT_MODEL, default=DEFAULT_GOOGLE_MODEL): str,
+            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+            vol.Optional(CONF_TOP_P, default=0.9): float,
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -406,9 +431,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
+            # user_input[CONF_PROVIDER] = 'google'
             try:
                 google = Google(
-                    self.hass, api_key=user_input[CONF_GOOGLE_API_KEY])
+                    self.hass, api_key=user_input[CONF_API_KEY])
                 await google.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
@@ -436,7 +462,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_groq(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_GROQ_API_KEY): str,
+            vol.Required(CONF_API_KEY): str,
+            vol.Optional(CONF_DEFAULT_MODEL, default=DEFAULT_GROQ_MODEL): str,
+            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+            vol.Optional(CONF_TOP_P, default=0.9): float,
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -449,8 +478,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
+            # user_input[CONF_PROVIDER] = 'groq'
             try:
-                groq = Groq(self.hass, api_key=user_input[CONF_GROQ_API_KEY])
+                groq = Groq(self.hass, api_key=user_input[CONF_API_KEY])
                 await groq.validate()
                 # add the mode to user_input
                 user_input["provider"] = self.init_info["provider"]
@@ -479,8 +509,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_custom_openai(self, user_input=None):
         data_schema = vol.Schema({
             vol.Required(CONF_CUSTOM_OPENAI_ENDPOINT, default="http://replace.with.your.host.com/v1/chat/completions"): str,
-            vol.Required(CONF_CUSTOM_OPENAI_DEFAULT_MODEL, default="gpt-4o-mini"): str,
-            vol.Required(CONF_CUSTOM_OPENAI_API_KEY): str,
+            vol.Required(CONF_API_KEY): str,
+            vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_CUSTOM_OPENAI_MODEL): str,
+            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+            vol.Optional(CONF_TOP_P, default=0.9): float
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -493,12 +525,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # save provider to user_input
             user_input["provider"] = self.init_info["provider"]
+            # user_input[CONF_PROVIDER] = 'custom_openai'
             try:
                 custom_openai = OpenAI(self.hass,
-                                       api_key=user_input[CONF_CUSTOM_OPENAI_API_KEY],
+                                       api_key=user_input[CONF_API_KEY],
                                        endpoint={
                                            'base_url': user_input[CONF_CUSTOM_OPENAI_ENDPOINT]},
-                                       default_model=user_input[CONF_CUSTOM_OPENAI_DEFAULT_MODEL],
+                                       default_model=user_input[CONF_DEFAULT_MODEL],
                                        )
                 await custom_openai.validate()
                 # add the mode to user_input
@@ -522,6 +555,59 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="custom_openai",
+            data_schema=data_schema,
+        )
+
+    async def async_step_aws_bedrock(self, user_input=None):
+        data_schema = vol.Schema({
+            vol.Required(CONF_AWS_REGION_NAME, default="us-east-1"): str,
+            vol.Required(CONF_AWS_ACCESS_KEY_ID): str,
+            vol.Required(CONF_AWS_SECRET_ACCESS_KEY): str,
+            vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_AWS_MODEL): str,
+            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+            vol.Optional(CONF_TOP_P, default=0.9): float,
+        })
+
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            data_schema = self.add_suggested_values_to_schema(
+                data_schema, self.init_info
+            )
+
+        if user_input is not None:
+            # save provider to user_input
+            user_input["provider"] = self.init_info["provider"]
+            # user_input[CONF_PROVIDER] = 'aws'
+            try:
+                aws_bedrock = AWSBedrock(self.hass,
+                                         aws_access_key_id=user_input[CONF_AWS_ACCESS_KEY_ID],
+                                         aws_secret_access_key=user_input[CONF_AWS_SECRET_ACCESS_KEY],
+                                         aws_region_name=user_input[CONF_AWS_REGION_NAME],
+                                         model=user_input[CONF_DEFAULT_MODEL],
+                                         )
+                await aws_bedrock.validate()
+                # add the mode to user_input
+                user_input["provider"] = self.init_info["provider"]
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    # we're reconfiguring an existing config
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    # New config entry
+                    return self.async_create_entry(title="AWS Bedrock Provider", data=user_input)
+            except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
+                return self.async_show_form(
+                    step_id="aws_bedrock",
+                    data_schema=data_schema,
+                    errors={"base": "handshake_failed"}
+                )
+
+        return self.async_show_form(
+            step_id="aws_bedrock",
             data_schema=data_schema,
         )
 
@@ -614,7 +700,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             for path in user_input.get(CONF_MEMORY_PATHS, []):
                 if not os.path.exists(path):
                     errors = {"base": "invalid_image_path"}
-            
+
             if errors:
                 return self.async_show_form(
                     step_id="memory",
@@ -633,56 +719,6 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="memory",
-            data_schema=data_schema,
-        )
-
-    async def async_step_aws_bedrock(self, user_input=None):
-        data_schema = vol.Schema({
-            vol.Required(CONF_AWS_REGION_NAME, default="us-east-1"): str,
-            vol.Required(CONF_AWS_DEFAULT_MODEL, default="us.amazon.nova-pro-v1:0"): str,
-            vol.Required(CONF_AWS_ACCESS_KEY_ID): str,
-            vol.Required(CONF_AWS_SECRET_ACCESS_KEY): str,
-        })
-
-        if self.source == config_entries.SOURCE_RECONFIGURE:
-            # load existing configuration and add it to the dialog
-            self.init_info = self._get_reconfigure_entry().data
-            data_schema = self.add_suggested_values_to_schema(
-                data_schema, self.init_info
-            )
-
-        if user_input is not None:
-            # save provider to user_input
-            user_input["provider"] = self.init_info["provider"]
-            try:
-                aws_bedrock = AWSBedrock(self.hass,
-                                         aws_access_key_id=user_input[CONF_AWS_ACCESS_KEY_ID],
-                                         aws_secret_access_key=user_input[CONF_AWS_SECRET_ACCESS_KEY],
-                                         aws_region_name=user_input[CONF_AWS_REGION_NAME],
-                                         model=user_input[CONF_AWS_DEFAULT_MODEL],
-                                         )
-                await aws_bedrock.validate()
-                # add the mode to user_input
-                user_input["provider"] = self.init_info["provider"]
-                if self.source == config_entries.SOURCE_RECONFIGURE:
-                    # we're reconfiguring an existing config
-                    return self.async_update_reload_and_abort(
-                        self._get_reconfigure_entry(),
-                        data_updates=user_input,
-                    )
-                else:
-                    # New config entry
-                    return self.async_create_entry(title="AWS Bedrock Provider", data=user_input)
-            except ServiceValidationError as e:
-                _LOGGER.error(f"Validation failed: {e}")
-                return self.async_show_form(
-                    step_id="aws_bedrock",
-                    data_schema=data_schema,
-                    errors={"base": "handshake_failed"}
-                )
-
-        return self.async_show_form(
-            step_id="aws_bedrock",
             data_schema=data_schema,
         )
 

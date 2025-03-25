@@ -271,6 +271,8 @@ class MediaProcessor:
 
         # Select frames with lowest ssim SIM scores
         selected_frames = frames_with_scores[:max_frames]
+        # Sort selected frames back into their original chronological order
+        selected_frames.sort(key=lambda x: x[0])
 
         # Add selected frames to client
         for frame_name, frame_data, _ in selected_frames:

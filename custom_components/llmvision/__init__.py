@@ -1,23 +1,18 @@
 # Declare variables
 from .const import (
     DOMAIN,
-    CONF_OPENAI_API_KEY,
-    CONF_AZURE_API_KEY,
+    CONF_PROVIDER,
+    CONF_API_KEY,
+    CONF_IP_ADDRESS,
+    CONF_PORT,
+    CONF_HTTPS,
+    CONF_DEFAULT_MODEL,
+    CONF_TEMPERATURE,
+    CONF_DEFAULT_TOP_P,
     CONF_AZURE_VERSION,
     CONF_AZURE_BASE_URL,
     CONF_AZURE_DEPLOYMENT,
-    CONF_ANTHROPIC_API_KEY,
-    CONF_GOOGLE_API_KEY,
-    CONF_GROQ_API_KEY,
-    CONF_LOCALAI_IP_ADDRESS,
-    CONF_LOCALAI_PORT,
-    CONF_LOCALAI_HTTPS,
-    CONF_OLLAMA_IP_ADDRESS,
-    CONF_OLLAMA_PORT,
-    CONF_OLLAMA_HTTPS,
     CONF_CUSTOM_OPENAI_ENDPOINT,
-    CONF_CUSTOM_OPENAI_API_KEY,
-    CONF_CUSTOM_OPENAI_DEFAULT_MODEL,
     CONF_RETENTION_TIME,
     CONF_MEMORY_PATHS,
     CONG_MEMORY_IMAGES_ENCODED,
@@ -27,12 +22,6 @@ from .const import (
     CONF_AWS_ACCESS_KEY_ID,
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
-    CONF_AWS_DEFAULT_MODEL,
-    CONF_OPENWEBUI_IP_ADDRESS,
-    CONF_OPENWEBUI_PORT,
-    CONF_OPENWEBUI_HTTPS,
-    CONF_OPENWEBUI_API_KEY,
-    CONF_OPENWEBUI_DEFAULT_MODEL,
     MESSAGE,
     REMEMBER,
     USE_MEMORY,
@@ -49,13 +38,10 @@ from .const import (
     INTERVAL,
     DURATION,
     MAX_FRAMES,
-    TEMPERATURE,
     INCLUDE_FILENAME,
     EXPOSE_IMAGES,
     GENERATE_TITLE,
     SENSOR_ENTITY,
-    DEFAULT_SYSTEM_PROMPT,
-    DEFAULT_TITLE_PROMPT,
     DATA_EXTRACTION_PROMPT,
 )
 from .calendar import Timeline
@@ -79,40 +65,37 @@ async def async_setup_entry(hass, entry):
     # Use the entry_id from the config entry as the UID
     entry_uid = entry.entry_id
 
-    # Get all entries from config flow
-    openai_api_key = entry.data.get(CONF_OPENAI_API_KEY)
-    azure_api_key = entry.data.get(CONF_AZURE_API_KEY)
+    provider = entry.data.get(CONF_PROVIDER)
+    api_key = entry.data.get(CONF_API_KEY)
+    ip_address = entry.data.get(CONF_IP_ADDRESS)
+    port = entry.data.get(CONF_PORT)
+    https = entry.data.get(CONF_HTTPS)
+    default_model = entry.data.get(CONF_DEFAULT_MODEL)
+    default_temperature = entry.data.get(CONF_TEMPERATURE)
+    default_top_p = entry.data.get(CONF_DEFAULT_TOP_P)
+
+    # Azure specific
     azure_base_url = entry.data.get(CONF_AZURE_BASE_URL)
     azure_deployment = entry.data.get(CONF_AZURE_DEPLOYMENT)
     azure_version = entry.data.get(CONF_AZURE_VERSION)
-    anthropic_api_key = entry.data.get(CONF_ANTHROPIC_API_KEY)
-    google_api_key = entry.data.get(CONF_GOOGLE_API_KEY)
-    groq_api_key = entry.data.get(CONF_GROQ_API_KEY)
-    localai_ip_address = entry.data.get(CONF_LOCALAI_IP_ADDRESS)
-    localai_port = entry.data.get(CONF_LOCALAI_PORT)
-    localai_https = entry.data.get(CONF_LOCALAI_HTTPS)
-    ollama_ip_address = entry.data.get(CONF_OLLAMA_IP_ADDRESS)
-    ollama_port = entry.data.get(CONF_OLLAMA_PORT)
-    ollama_https = entry.data.get(CONF_OLLAMA_HTTPS)
+
+    # Custom OpenAI specific
     custom_openai_endpoint = entry.data.get(CONF_CUSTOM_OPENAI_ENDPOINT)
-    custom_openai_api_key = entry.data.get(CONF_CUSTOM_OPENAI_API_KEY)
-    custom_openai_default_model = entry.data.get(
-        CONF_CUSTOM_OPENAI_DEFAULT_MODEL)
+    
+    # AWS specific
+    aws_access_key_id = entry.data.get(CONF_AWS_ACCESS_KEY_ID)
+    aws_secret_access_key = entry.data.get(CONF_AWS_SECRET_ACCESS_KEY)
+    aws_region_name = entry.data.get(CONF_AWS_REGION_NAME)
+    
+    # Timeline
     retention_time = entry.data.get(CONF_RETENTION_TIME)
+
+    # Memory
     memory_paths = entry.data.get(CONF_MEMORY_PATHS)
     memory_images_encoded = entry.data.get(CONG_MEMORY_IMAGES_ENCODED)
     memory_strings = entry.data.get(CONF_MEMORY_STRINGS)
     system_prompt = entry.data.get(CONF_SYSTEM_PROMPT)
     title_prompt = entry.data.get(CONF_TITLE_PROMPT)
-    aws_access_key_id = entry.data.get(CONF_AWS_ACCESS_KEY_ID)
-    aws_secret_access_key = entry.data.get(CONF_AWS_SECRET_ACCESS_KEY)
-    aws_region_name = entry.data.get(CONF_AWS_REGION_NAME)
-    aws_default_model = entry.data.get(CONF_AWS_DEFAULT_MODEL)
-    openwebui_ip_address = entry.data.get(CONF_OPENWEBUI_IP_ADDRESS)
-    openwebui_port = entry.data.get(CONF_OPENWEBUI_PORT)
-    openwebui_https = entry.data.get(CONF_OPENWEBUI_HTTPS)
-    openwebui_api_key = entry.data.get(CONF_OPENWEBUI_API_KEY)
-    openwebui_default_model = entry.data.get(CONF_OPENWEBUI_DEFAULT_MODEL)
 
     # Ensure DOMAIN exists in hass.data
     if DOMAIN not in hass.data:
@@ -120,38 +103,27 @@ async def async_setup_entry(hass, entry):
 
     # Create a dictionary for the entry data
     entry_data = {
-        CONF_OPENAI_API_KEY: openai_api_key,
-        CONF_AZURE_API_KEY: azure_api_key,
+        CONF_PROVIDER: provider,
+        CONF_API_KEY: api_key,
+        CONF_IP_ADDRESS: ip_address,
+        CONF_PORT: port,
+        CONF_HTTPS: https,
+        CONF_DEFAULT_MODEL: default_model,
+        CONF_TEMPERATURE: default_temperature,
+        CONF_DEFAULT_TOP_P: default_top_p,
         CONF_AZURE_BASE_URL: azure_base_url,
         CONF_AZURE_DEPLOYMENT: azure_deployment,
         CONF_AZURE_VERSION: azure_version,
-        CONF_ANTHROPIC_API_KEY: anthropic_api_key,
-        CONF_GOOGLE_API_KEY: google_api_key,
-        CONF_GROQ_API_KEY: groq_api_key,
-        CONF_LOCALAI_IP_ADDRESS: localai_ip_address,
-        CONF_LOCALAI_PORT: localai_port,
-        CONF_LOCALAI_HTTPS: localai_https,
-        CONF_OLLAMA_IP_ADDRESS: ollama_ip_address,
-        CONF_OLLAMA_PORT: ollama_port,
-        CONF_OLLAMA_HTTPS: ollama_https,
         CONF_CUSTOM_OPENAI_ENDPOINT: custom_openai_endpoint,
-        CONF_CUSTOM_OPENAI_API_KEY: custom_openai_api_key,
-        CONF_CUSTOM_OPENAI_DEFAULT_MODEL: custom_openai_default_model,
+        CONF_AWS_ACCESS_KEY_ID: aws_access_key_id,
+        CONF_AWS_SECRET_ACCESS_KEY: aws_secret_access_key,
+        CONF_AWS_REGION_NAME: aws_region_name,
         CONF_RETENTION_TIME: retention_time,
         CONF_MEMORY_PATHS: memory_paths,
         CONG_MEMORY_IMAGES_ENCODED: memory_images_encoded,
         CONF_MEMORY_STRINGS: memory_strings,
         CONF_SYSTEM_PROMPT: system_prompt,
         CONF_TITLE_PROMPT: title_prompt,
-        CONF_AWS_ACCESS_KEY_ID: aws_access_key_id,
-        CONF_AWS_SECRET_ACCESS_KEY: aws_secret_access_key,
-        CONF_AWS_REGION_NAME: aws_region_name,
-        CONF_AWS_DEFAULT_MODEL: aws_default_model,
-        CONF_OPENWEBUI_IP_ADDRESS: openwebui_ip_address,
-        CONF_OPENWEBUI_PORT: openwebui_port,
-        CONF_OPENWEBUI_HTTPS: openwebui_https,
-        CONF_OPENWEBUI_API_KEY: openwebui_api_key,
-        CONF_OPENWEBUI_DEFAULT_MODEL: openwebui_default_model
     }
 
     # Filter out None values
@@ -207,8 +179,6 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
     _LOGGER.debug(
         f"{config_entry.title} version: {config_entry.version}.{config_entry.minor_version}")
     if config_entry.version == 2 and config_entry.data["provider"] == "Event Calendar":
-        _LOGGER.info(
-            "Migrating LLM Vision Timeline config entry from v2.0 to v3.0")
         # Change Provider name to Timeline
         new_data = config_entry.data.copy()
         new_data["provider"] = "Timeline"
@@ -218,9 +188,19 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
             config_entry, title="LLM Vision Timeline", data=new_data, version=3, minor_version=0
         )
         return True
+    if config_entry.version == 3:        
+        new_data = config_entry.data.copy()
+
+        if config_entry.data.get(PROVIDER) is "OpenAI":
+            new_data[CONF_API_KEY] = new_data.pop("openai_api_key")
+            new_data[CONF_DEFAULT_MODEL] = DEFAULT_MODEL_OPENAI
+            new_data[CONF_TEMPERATURE] = DEFAULT_TEMPERATURE_OPENAI
+            new_data[CONF_DEFAULT_TOP_P] = DEFAULT_TOP_P_OPENAI
+        
+            
     else:
         hass.config_entries.async_update_entry(
-            config_entry, version=3, minor_version=0
+            config_entry, version=4, minor_version=0
         )
         return True
 
@@ -325,8 +305,7 @@ class ServiceCallData:
 
     def __init__(self, data_call):
         self.provider = str(data_call.data.get(PROVIDER))
-        self.model = str(data_call.data.get(
-            MODEL))
+        self.model = data_call.data.get(MODEL)
         self.message = str(data_call.data.get(MESSAGE, "")[0:2000])
         self.remember = data_call.data.get(REMEMBER, False)
         self.use_memory = data_call.data.get(USE_MEMORY, False)
@@ -345,7 +324,7 @@ class ServiceCallData:
             data_call.data.get(FRIGATE_RETRY_SECONDS, 1))
         self.max_frames = int(data_call.data.get(MAX_FRAMES, 3))
         self.target_width = data_call.data.get(TARGET_WIDTH, 3840)
-        self.temperature = float(data_call.data.get(TEMPERATURE, 0.3))
+        self.temperature = float()
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 100))
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)

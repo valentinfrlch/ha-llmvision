@@ -86,17 +86,6 @@ image_analyzer:
         number:
           min: 1
           max: 300
-    temperature:
-      name: Temperature
-      required: true
-      description: 'Randomness. Lower is more accurate, higher is more creative'
-      example: 0.2
-      default: 0.2
-      selector:
-        number:
-          min: 0.1
-          max: 1.0
-          step: 0.1
     generate_title:
       name: Generate Title
       required: false
@@ -235,17 +224,6 @@ video_analyzer:
         number:
           min: 1
           max: 300
-    temperature:
-      name: Temperature
-      required: true
-      description: 'Randomness. Lower is more accurate, higher is more creative'
-      example: 0.2
-      default: 0.2
-      selector:
-        number:
-          min: 0.0
-          max: 1.0
-          step: 0.1
     generate_title:
       name: Generate Title
       required: false
@@ -363,17 +341,6 @@ stream_analyzer:
         number:
           min: 1
           max: 300
-    temperature:
-      name: Temperature
-      required: true
-      description: 'Randomness. Lower is more accurate, higher is more creative'
-      example: 0.2
-      default: 0.2
-      selector:
-        number:
-          min: 0.1
-          max: 1.0
-          step: 0.1
     generate_title:
       name: Generate Title
       required: false
@@ -488,17 +455,6 @@ data_analyzer:
         number:
           min: 1
           max: 50
-    temperature:
-      name: Temperature
-      required: true
-      description: 'Randomness. Lower is more accurate, higher is more creative. 0.1 is recommended for best accuracy.'
-      example: 0.1
-      default: 0.1
-      selector:
-        number:
-          min: 0.1
-          max: 1.0
-          step: 0.1
     generate_title:
       name: Generate Title
       required: false
