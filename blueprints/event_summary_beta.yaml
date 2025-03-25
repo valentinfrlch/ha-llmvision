@@ -15,12 +15,17 @@ blueprint:
         condition:
     cooldown:
       name: Cooldown
-      description: Time in minutes to wait before running automation again. Strongly recommended for busy areas.
-      default: 10
+      description: Time to wait before running automation again. Strongly recommended for busy areas.
+      # description: Time in minutes to wait before running automation again. Strongly recommended for busy areas.
+      # default: 10
+      # selector:
+      #   number:
+      #     min: 0
+      #     max: 60
+      default:
+        minutes: 10
       selector:
-        number:
-          min: 0
-          max: 60
+        duration: {}
     # Camera & Sensor Section
     camera_sensor_section:
       name: Camera & Sensor Settings
@@ -675,4 +680,5 @@ action:
   - choose: []
     default: !input additional_actions
 
-  - delay: '00:{{cooldown|int}}:00'
+  # - delay: '00:{{cooldown|int}}:00'
+  - delay: !input cooldown
