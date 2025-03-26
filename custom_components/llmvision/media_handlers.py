@@ -26,7 +26,7 @@ class MediaProcessor:
         self.client = client
         self.base64_images = []
         self.filenames = []
-        self.path = "/config/www/llmvision"
+        self.path = self.hass.config.path(f"www/{DOMAIN}")
         self.key_frame = ""
 
     async def _encode_image(self, img):
@@ -60,8 +60,11 @@ class MediaProcessor:
         return img
 
     async def _expose_image(self, frame_name, image_data, uid, frame_path=None):
+        # ensure /www/llmvision dir exists
+        await self.hass.loop.run_in_executor(None, partial(os.makedirs, self.hass.config.path(f"www/{DOMAIN}"), exist_ok=True))
         if self.key_frame == "":
-            filename = f"/config/www/llmvision/{uid}-{frame_name}.jpg"
+            filename = self.hass.config.path(
+                f"www/{DOMAIN}/{uid}-{frame_name}.jpg")
             self.key_frame = filename
             if image_data is None and frame_path is not None:
                 # open image in hass.loop
@@ -237,7 +240,7 @@ class MediaProcessor:
 
                         # Use either entity name or assign number to each camera
                         frame_label = (image_entity.replace("camera.", "") + " frame " + str(frame_counter)
-                                    if include_filename else "camera " + str(camera_number) + " frame " + str(frame_counter))
+                                       if include_filename else "camera " + str(camera_number) + " frame " + str(frame_counter))
                         frames.update(
                             {frame_label: {"frame_data": frame_data, "ssim_score": score}})
 
@@ -441,9 +444,11 @@ class MediaProcessor:
 
                             # Calculate similarity score
                             if previous_frame is not None:
-                                score = self._similarity_score(previous_frame, current_frame_gray)
+                                score = self._similarity_score(
+                                    previous_frame, current_frame_gray)
                                 # Insert the new frame, maintain sorted order
-                                insort(frames, (previous_frame_path, score), key=lambda x: x[1])
+                                insort(frames, (previous_frame_path,
+                                       score), key=lambda x: x[1])
                                 if len(frames) > max_frames:
                                     # Keep only max_frames many frames with lowest SSIM scores
                                     frames.pop()
@@ -460,7 +465,8 @@ class MediaProcessor:
                     if expose_images:
                         # Expose images with original size, keep SSIM score order
                         for (frame_path, _) in frames:
-                            frame_name = os.path.splitext(os.path.basename(frame_path))[0].replace("frame", "")
+                            frame_name = os.path.splitext(os.path.basename(frame_path))[
+                                0].replace("frame", "")
                             await self._expose_image(frame_name, None, current_event_id[:8], frame_path)
 
                     # Add frames to client, sorted by frame number instead of SSIM score

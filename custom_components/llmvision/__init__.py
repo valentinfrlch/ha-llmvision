@@ -54,8 +54,6 @@ from .const import (
     EXPOSE_IMAGES,
     GENERATE_TITLE,
     SENSOR_ENTITY,
-    DEFAULT_SYSTEM_PROMPT,
-    DEFAULT_TITLE_PROMPT,
     DATA_EXTRACTION_PROMPT,
 )
 from .calendar import Timeline
@@ -592,12 +590,12 @@ def setup(hass, config):
                 break
         if config_entry is None:
             # delete all files in /www/llmvision/
-            llmvision_path = hass.config.path("www/llmvision")
+            llmvision_path = hass.config.path(f"www/{DOMAIN}")
             await hass.loop.run_in_executor(None, delete_files, llmvision_path)
         else:
             timeline = Timeline(hass, config_entry)
             filenames = await timeline.linked_images
-            llmvision_path = hass.config.path("www/llmvision")
+            llmvision_path = hass.config.path(f"www/{DOMAIN}")
             await hass.loop.run_in_executor(None, delete_files, llmvision_path, filenames)
 
     # Register services
