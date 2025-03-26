@@ -12,7 +12,6 @@ from homeassistant.components.calendar import (
     CalendarEntityFeature,
     EVENT_DESCRIPTION,
     EVENT_END,
-    EVENT_LOCATION,
     EVENT_START,
     EVENT_SUMMARY,
 )
