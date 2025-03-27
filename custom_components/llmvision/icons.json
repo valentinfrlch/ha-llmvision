@@ -4,7 +4,6 @@
         "video_analyzer": "mdi:movie-search",
         "stream_analyzer": "mdi:video-wireless",
         "data_analyzer": "mdi:database-search",
-        "remember": "mdi:timeline-text",
-        "cleanup": "mdi:delete-sweep"
+        "remember": "mdi:timeline-text"
     }
 }
