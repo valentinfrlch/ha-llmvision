@@ -163,7 +163,10 @@ async def async_setup_entry(hass, entry):
     if filtered_entry_data.get(CONF_RETENTION_TIME) is not None:
         # forward the calendar entity to the platform for setup
         await hass.config_entries.async_forward_entry_setups(entry, ["calendar"])
-
+        # Run cleanup
+        timeline = Timeline(hass, entry)
+        await timeline._cleanup()
+    
     return True
 
 

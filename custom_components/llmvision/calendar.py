@@ -48,7 +48,6 @@ class Timeline(CalendarEntity):
 
         self.hass.loop.create_task(self.async_update())
         self.hass.async_create_task(self._migrate())  # Run migration if needed
-        self.hass.async_create_task(self._cleanup())  # Run cleanup
 
     @property
     def icon(self) -> str:
