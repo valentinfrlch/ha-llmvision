@@ -328,7 +328,11 @@ class ServiceCallData:
         self.provider = str(data_call.data.get(PROVIDER))
         self.model = str(data_call.data.get(
             MODEL))
+        # Stream Analyzer prompts
+        self.message_header_prompt = str(data_call.data.get(MESSAGE_HEADER_PROMPT, "")[0:2000])
         self.message = str(data_call.data.get(MESSAGE, "")[0:2000])
+        self.generate_title_prompt = str(data_call.data.get(GENERATE_TITLE_PROMPT, "")[0:2000])
+
         self.remember = data_call.data.get(REMEMBER, False)
         self.use_memory = data_call.data.get(USE_MEMORY, False)
         self.image_paths = data_call.data.get(IMAGE_FILE, "").split(
@@ -449,7 +453,12 @@ def setup(hass, config):
         """Handle the service call to analyze a stream"""
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
-        call.message = "The attached images are frames from a live camera feed. " + call.message
+
+        if call.message_header_prompt != "":
+            call.message = call.message_header_prompt + " " + call.message
+        else:
+            call.message = "The attached images are frames from a live camera feed. " + call.message
+        
         request = Request(hass,
                           message=call.message,
                           max_tokens=call.max_tokens,
