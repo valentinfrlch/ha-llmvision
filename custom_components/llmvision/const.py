@@ -41,6 +41,7 @@ CONF_OPENWEBUI_DEFAULT_MODEL = 'openwebui_default_model'
 
 # service call constants
 MESSAGE = 'message'
+MESSAGE_HEADER_PROMPT = 'message_header_prompt'
 REMEMBER = 'remember'
 USE_MEMORY = 'use_memory'
 PROVIDER = 'provider'
@@ -60,6 +61,7 @@ TEMPERATURE = 'temperature'
 INCLUDE_FILENAME = 'include_filename'
 EXPOSE_IMAGES = 'expose_images'
 GENERATE_TITLE = 'generate_title'
+GENERATE_TITLE_PROMPT = 'generate_title_prompt'
 SENSOR_ENTITY = 'sensor_entity'
 
 # Error messages
