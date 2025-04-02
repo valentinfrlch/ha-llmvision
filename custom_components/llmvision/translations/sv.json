@@ -1,0 +1,123 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "LLM Vision Setup",
+                "description": "Välj en leverantör att konfigurera"
+            },
+            "localai": {
+                "title": "Anslut till din lokala AI server",
+                "description": "Ange IP-adressen och porten för din lokala AI server.",
+                "data": {
+                    "localai_ip": "IP adress",
+                    "localai_port": "Port",
+                    "localai_https": "HTTPS"
+                }
+            },
+            "ollama": {
+                "title": "Konfigurera Ollama",
+                "description": "Ange IP-adressen och porten för din Ollama server.",
+                "data": {
+                    "ollama_ip": "IP adress",
+                    "ollama_port": "Port",
+                    "ollama_https": "HTTPS"
+                }
+            },
+            "openai": {
+                "title": "Konfigurera OpenAI",
+                "description": "Ange en giltig OpenAI API-nyckel.",
+                "data": {
+                    "openai_api_key": "API-nyckel"
+                }
+            },
+            "azure": {
+                "title": "Konfigurera Azure",
+                "description": "Ange en giltig Azure API-nyckel, bas URL, implementering och API version.\nBas URL måste vara i formatet 'https://domain.openai.azure.com/', inklusive det avslutande snedstrecket.",
+                "data": {
+                    "azure_api_key": "API-nyckel",
+                    "azure_base_url": "Bas URL",
+                    "azure_deployment": "Distribution",
+                    "azure_version": "API Version"
+                }
+            },
+            "anthropic": {
+                "title": "Konfigurera Anthropic Claude",
+                "description": "Ange en giltig Anthropic API-nyckel.",
+                "data": {
+                    "anthropic_api_key": "API-nyckel"
+                }
+            },
+            "google": {
+                "title": "Konfigurera Google Gemini",
+                "description": "Ange en giltig Google Gemini API-nyckel.",
+                "data": {
+                    "google_api_key": "API-nyckel"
+                }
+            },
+            "groq": {
+                "title": "Konfigurera Groq",
+                "description": "Ange en giltig Groq API-nyckel.",
+                "data": {
+                    "groq_api_key": "API-nyckel"
+                }
+            },
+            "custom_openai": {
+                "title": "Konfigurera anpassad OpenAI leverantör",
+                "description": "**Viktigt**: Fungerar endast om API:et är kompatibelt med OpenAI:s API. Om API:et inte kräver en API-nyckel, ange ett dummy-värde. Slutpunkten måste ha följande format: `http(s)://basURL(:port)/någon/slutpunkt`",
+                "data": {
+                    "custom_openai_endpoint": "Anpassad slutpunkt",
+                    "custom_openai_api_key": "API-nyckel",
+                    "custom_openai_default_model": "Standardmodell att använda, t.ex. gpt-4o-mini"
+                }
+            },
+            "aws_bedrock": {
+                "title": "Konfigurera AWS Bedrock leverantör",
+                "description": "**Viktigt**: Detta stöder för närvarande endast följande modeller: Nova, Anthropic Claude",
+                "data": {
+                    "aws_access_key_id": "Åtkomstnyckel",
+                    "aws_secret_access_key": "Hemlighet",
+                    "aws_region_name": "Regionsträngen",
+                    "aws_default_model": "Standardmodellen att använda"
+                }
+            },
+            "openwebui": {
+                "title": "Konfigurera Open WebUI leverantör",
+                "description": "Ange API-nyckel (JWT-token), IP-adress, Port, HTTP(S) och standardmodell.",
+                "data": {
+                    "openwebui_api_key": "API-nyckel (JWT-token)",
+                    "openwebui_ip": "IP-adress",
+                    "openwebui_port": "Port",
+                    "openwebui_https": "Använd HTTPS",
+                    "openwebui_default_model": "Standardmodell"
+                }
+            },
+            "timeline": {
+                "title": "Tidslinje",
+                "description": "Ange hur många dagar händelser kommer att sparas. Händelser kommer automatiskt att raderas efter denna tid. Händelser lagras lokalt och kan raderas manuellt i kalendervyn. (0 inaktiverar automatisk radering)",
+                "data": {
+                    "retention_time": "Ta bort händelser automatiskt efter (dagar)"
+                }
+            },
+            "memory": {
+                "title": "Minne",
+                "description": "Innehåll i minnet synkroniseras mellan leverantörer och används för att ge ytterligare kontext till modellen.\nObservera: Om `use_memory` är aktiverat, skickas alla bilder i minnet till leverantören vid varje anrop. Att ha många bilder i minnet kan öka bearbetningstiden och öka kostnaden!   \n\n **Bildsökvägar**: Ange sökvägen till bildfilen. \n **Bildbeskrivningar**: Ange en beskrivning av bilden (t.ex.: 'Detta är Cookie, min hund'). \n Bilder och beskrivningar måste vara i samma ordning, och det måste finnas lika många beskrivningar som bilder. \n\n **Systemprompt**: Använd systemprompt för att ändra hur modellen beter sig och svarar. \n **Titelprompt**: Instruktionen som ges till modellen för att generera en titel.",
+                "data": {
+                    "memory_paths": "Bildsökväg",
+                    "memory_strings": "Bildbeskrivning",
+                    "system_prompt": "Systemprompt",
+                    "title_prompt": "Titelprompt"
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "Kunde inte ansluta till servern. Kontrollera din API-nyckel eller IP och port",
+            "empty_api_key": "Ogiltig API-nyckel",
+            "invalid_provider": "Ogiltig leverantör vald",
+            "invalid_image_path": "En eller flera bildsökvägar är ogiltiga",
+            "mismatched_lengths": "Antalet bildsökvägar och beskrivningar måste matcha"
+        },
+        "abort": {
+            "unknown_provider": "Okänd leverantör"
+        }
+    }
+}
