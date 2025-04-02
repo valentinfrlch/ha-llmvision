@@ -475,9 +475,11 @@ def setup(hass, config):
                                               include_filename=call.include_filename,
                                               expose_images=call.expose_images,
                                               )
-
-        call.memory = Memory(hass)
-        await call.memory._update_memory()
+        
+        # Let's use memory only if requested (and potentially setup)
+        if call.use_memory:
+            call.memory = Memory(hass)
+            await call.memory._update_memory()
 
         response = await request.call(call)
         # Add processor.key_frame to response if it exists
@@ -537,9 +539,11 @@ def setup(hass, config):
                                                   include_filename=call.include_filename,
                                                   expose_images=call.expose_images,
                                                   )
-
-        call.memory = Memory(hass, system_prompt=DATA_EXTRACTION_PROMPT)
-        await call.memory._update_memory()
+        
+        # Let's use memory only if requested (and potentially setup)
+        if call.use_memory:
+            call.memory = Memory(hass, system_prompt=DATA_EXTRACTION_PROMPT)
+            await call.memory._update_memory()
 
         response = await request.call(call)
         # Add processor.key_frame to response if it exists
