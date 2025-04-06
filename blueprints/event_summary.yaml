@@ -18,9 +18,9 @@ blueprint:
       selector:
         boolean:
     importance_prompt:
-      name: Prompt for "important" classification
-      description: Model prompt for the image classification as important or not (only "passive" when not important is used).
-      default: "Classify the security event based on this image. Choose from the following options: "passive" for unimportant events, "time-sensitive" for notable but non-critical events such as a person at the front door, and "critical" only for potential burglaries or highly suspicious activity. Respond with one of these options exactly, without additional explanation."
+      name: Prompt for 'important' classification
+      description: Model prompt for the image classification as important or not (only 'passive' when not important is used).
+      default: "Classify the security event based on this image. Choose from the following options: 'passive' for unimportant events, 'time-sensitive' for notable but non-critical events such as a person at the front door, and 'critical' only for potential burglaries or highly suspicious activity. Respond with one of these options exactly, without additional explanation."
       selector:
         text:
           multiline: true
