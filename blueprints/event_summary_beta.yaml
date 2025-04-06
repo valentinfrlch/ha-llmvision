@@ -587,47 +587,99 @@ action:
     variables:
       label: "{{response.title}}"
 
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: "{{ preview_mode=='Snapshot' }}"
-        sequence:
-        - alias: "(Snapshot) Update notification on notify devices"
-          repeat:
-            for_each: "{{device_name_map}}"
-            sequence:
-              - action: "notify.{{ repeat.item }}"
-                data:
-                  title: "{{ label }}"
-                  message: "{{response.response_text}}"
-                  data:
-                    image: "{{response.key_frame.replace('/config/www/','/local/') }}"
-                    url: !input tap_navigate #iOS
-                    clickAction: !input tap_navigate #Android
-                    tag: "{{tag}}"
-                    group: "{{group}}"
-                    push:
-                      interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
-      - conditions:
-          - condition: template
-            value_template: "{{ preview_mode=='Live Preview' }}"
-        sequence:
-        - alias: "(Live Preview) Update notification on notify devices"
-          repeat:
-            for_each: "{{device_name_map}}"
-            sequence:
-              - action: "notify.{{ repeat.item }}"
-                data:
-                  title: "{{ label }}"
-                  message: "{{response.response_text}}"
-                  data:
-                    entity_id: "{{camera_entity}}"
-                    url: !input tap_navigate #iOS
-                    clickAction: !input tap_navigate #Android
-                    tag: "{{tag}}"
-                    group: "{{group}}"
-                    push:
-                      interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
-            
+  # Only send notification if enabled, and if condtions and cooldown are met
+  - if:
+    - condition: template
+      value_template: !input notify
+    then:
+    - if:
+      - condition: !input condition_notify
+      then:
+      - if:
+        - condition: template
+          value_template: '{{ not this.attributes.last_triggered or (now() - this.attributes.last_triggered).seconds
+            > delay_notification }}'
+        then:
+        - choose:
+            - conditions:
+                - condition: template
+                  value_template: "{{ preview_mode=='Snapshot' }}"
+              sequence:
+              - alias: "(Snapshot) Update notification on notify devices"
+                repeat:
+                  for_each: "{{device_name_map}}"
+                  sequence:
+                    - action: "notify.{{ repeat.item }}"
+                      data:
+                        title: "{{ label }}"
+                        message: "{{response.response_text}}"
+                        data:
+                          image: "{{response.key_frame.replace('/config/www/','/local/') }}"
+                          url: !input tap_navigate #iOS
+                          clickAction: !input tap_navigate #Android
+                          tag: "{{tag}}"
+                          group: "{{group}}"
+                          alert_once: true
+                          push:
+                            interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
+                          # My custom options
+                          ttl: 0
+                          priority: high
+                          # Android only
+                          channel: !input notification_channel
+                          color: !input notification_color
+                          notification_icon: !input notification_icon
+                          sticky: !input notification_sticky
+                          # iOS only
+                          push:
+                            sound:
+                              name: !input notification_sound
+                              volume: !input notification_volume
+                              critical: '{{ notification_critical }}'
+            - conditions:
+                - condition: template
+                  value_template: "{{ preview_mode=='Live Preview' }}"
+              sequence:
+              - alias: "(Live Preview) Update notification on notify devices"
+                repeat:
+                  for_each: "{{device_name_map}}"
+                  sequence:
+                    - action: "notify.{{ repeat.item }}"
+                      data:
+                        title: "{{ label }}"
+                        message: "{{response.response_text}}"
+                        data:
+                          entity_id: "{{camera_entity}}"
+                          url: !input tap_navigate #iOS
+                          clickAction: !input tap_navigate #Android
+                          tag: "{{tag}}"
+                          group: "{{group}}"
+                          push:
+                            interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
 
-  - delay: '00:{{cooldown|int}}:00'
+        - if:
+          - condition: template
+            value_template: '{{ tts_notification }}'
+          then:
+          - if:
+            - condition: !input condition_notify_tts
+            then:
+            - alias: "TTS notification on notify devices"
+              repeat:
+                for_each: "{{device_name_map}}"
+                sequence:
+                  - action: "notify.{{ repeat.item }}"
+                    data:
+                      message: TTS
+                      data:
+                        ttl: 0
+                        priority: high
+                        media_stream: !input tts_volume
+                        tts_text: "{{response.response_text}}"
+
+  # Add Customized Actions
+  - choose: []
+    default: !input additional_actions
+
+  # - delay: '00:{{cooldown|int}}:00'
+  - delay: !input cooldown
