@@ -140,6 +140,7 @@ class Memory:
         for image_path in image_paths:
             img = await self.hass.loop.run_in_executor(None, Image.open, image_path)
             with img:
+                await self.hass.loop.run_in_executor(None, img.load)
                 # calculate new height and width based on aspect ratio
                 width, height = img.size
                 aspect_ratio = width / height

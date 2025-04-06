@@ -54,8 +54,6 @@ from .const import (
     EXPOSE_IMAGES,
     GENERATE_TITLE,
     SENSOR_ENTITY,
-    DEFAULT_SYSTEM_PROMPT,
-    DEFAULT_TITLE_PROMPT,
     DATA_EXTRACTION_PROMPT,
 )
 from .calendar import Timeline
@@ -165,7 +163,10 @@ async def async_setup_entry(hass, entry):
     if filtered_entry_data.get(CONF_RETENTION_TIME) is not None:
         # forward the calendar entity to the platform for setup
         await hass.config_entries.async_forward_entry_setups(entry, ["calendar"])
-
+        # Run cleanup
+        timeline = Timeline(hass, entry)
+        await timeline._cleanup()
+    
     return True
 
 
@@ -573,30 +574,6 @@ def setup(hass, config):
             camera_name=call.camera_entity
         )
 
-    async def cleanup(data_call):
-        """Action to clean /tmp/llmvision"""
-        def delete_files(path, filenames=[]):
-            """Helper function to run in executor"""
-            for file in os.listdir(path):
-                if file not in filenames:
-                    _LOGGER.info(f"Removing {file}")
-                    os.remove(os.path.join(path, file))
-        # Find timeline config
-        config_entry = None
-        for entry in hass.config_entries.async_entries(DOMAIN):
-            if entry.data["provider"] == "Timeline":
-                config_entry = entry
-                break
-        if config_entry is None:
-            # delete all files in /www/llmvision/
-            llmvision_path = hass.config.path("www/llmvision")
-            await hass.loop.run_in_executor(None, delete_files, llmvision_path)
-        else:
-            timeline = Timeline(hass, config_entry)
-            filenames = await timeline.linked_images
-            llmvision_path = hass.config.path("www/llmvision")
-            await hass.loop.run_in_executor(None, delete_files, llmvision_path, filenames)
-
     # Register services
     hass.services.register(
         DOMAIN, "image_analyzer", image_analyzer,
@@ -616,9 +593,6 @@ def setup(hass, config):
     )
     hass.services.register(
         DOMAIN, "remember", remember,
-    )
-    hass.services.register(
-        DOMAIN, "cleanup", cleanup,
     )
 
     return True

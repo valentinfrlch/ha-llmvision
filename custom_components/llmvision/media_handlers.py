@@ -8,6 +8,7 @@ import time
 import asyncio
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from functools import partial
+from bisect import insort
 from PIL import Image, UnidentifiedImageError
 import numpy as np
 from homeassistant.helpers.network import get_url
@@ -25,7 +26,7 @@ class MediaProcessor:
         self.client = client
         self.base64_images = []
         self.filenames = []
-        self.path = "/config/www/llmvision"
+        self.path = self.hass.config.path(f"www/{DOMAIN}")
         self.key_frame = ""
 
     async def _encode_image(self, img):
@@ -58,11 +59,19 @@ class MediaProcessor:
             img = img.convert('RGB')
         return img
 
-    async def _expose_image(self, frame_name, resized_image, uid):
-        filename = f"/config/www/llmvision/{uid}-" + frame_name
+    async def _expose_image(self, frame_name, image_data, uid, frame_path=None):
+        # ensure /www/llmvision dir exists
+        await self.hass.loop.run_in_executor(None, partial(os.makedirs, self.hass.config.path(f"www/{DOMAIN}"), exist_ok=True))
         if self.key_frame == "":
-            self.key_frame = filename + ".jpg"
-            await self._save_clip(image_data=resized_image, image_path=self.key_frame)
+            filename = self.hass.config.path(
+                f"www/{DOMAIN}/{uid}-{frame_name}.jpg")
+            self.key_frame = filename
+            if image_data is None and frame_path is not None:
+                # open image in hass.loop
+                with await self.hass.loop.run_in_executor(None, Image.open, frame_path) as image:
+                    await self.hass.loop.run_in_executor(None, image.load)
+                    image_data = await self._encode_image(image)
+            await self._save_clip(image_data=image_data, image_path=filename)
 
     def _similarity_score(self, previous_frame, current_frame_gray):
         """
@@ -77,8 +86,8 @@ class MediaProcessor:
         C1 = (K1 * L) ** 2
         C2 = (K2 * L) ** 2
 
-        previous_frame_np = np.array(previous_frame, dtype=np.float64)
-        current_frame_np = np.array(current_frame_gray, dtype=np.float64)
+        previous_frame_np = np.array(previous_frame)
+        current_frame_np = np.array(current_frame_gray)
 
         # Ensure both frames have same dimensions
         if previous_frame_np.shape != current_frame_np.shape:
@@ -88,14 +97,15 @@ class MediaProcessor:
             current_frame_np = current_frame_np[:min_shape[0], :min_shape[1]]
 
         # Calculate mean (mu)
-        mu1 = np.mean(previous_frame_np)
-        mu2 = np.mean(current_frame_np)
+        mu1 = np.mean(previous_frame_np, dtype=np.float64)
+        mu2 = np.mean(current_frame_np, dtype=np.float64)
 
         # Calculate variance (sigma^2) and covariance (sigma12)
-        sigma1_sq = np.var(previous_frame_np)
-        sigma2_sq = np.var(current_frame_np)
+        sigma1_sq = np.var(previous_frame_np, dtype=np.float64, mean=mu1)
+        sigma2_sq = np.var(current_frame_np, dtype=np.float64, mean=mu2)
         sigma12 = np.cov(previous_frame_np.flatten(),
-                         current_frame_np.flatten())[0, 1]
+                         current_frame_np.flatten(),
+                         dtype=np.float64)[0, 1]
 
         # Calculate SSIM
         ssim = ((2 * mu1 * mu2 + C1) * (2 * sigma12 + C2)) / \
@@ -109,6 +119,7 @@ class MediaProcessor:
             # Open the image file
             img = await self.hass.loop.run_in_executor(None, Image.open, image_path)
             with img:
+                await self.hass.loop.run_in_executor(None, img.load)
                 # Check if the image is a GIF and convert if necessary
                 img = self._convert_to_rgb(img)
                 # calculate new height based on aspect ratio
@@ -129,6 +140,7 @@ class MediaProcessor:
             img_byte_arr.write(image_data)
             img = await self.hass.loop.run_in_executor(None, Image.open, img_byte_arr)
             with img:
+                await self.hass.loop.run_in_executor(None, img.load)
                 img = self._convert_to_rgb(img)
                 # calculate new height based on aspect ratio
                 width, height = img.size
@@ -213,29 +225,32 @@ class MediaProcessor:
                     f"Fetched {image_entity} in {fetch_duration:.2f} seconds")
 
                 preprocessing_start_time = time.time()
-                img = await self.hass.loop.run_in_executor(None, Image.open, io.BytesIO(frame_data))
-                current_frame_gray = np.array(img.convert('L'))
 
-                if previous_frame is not None:
-                    score = self._similarity_score(
-                        previous_frame, current_frame_gray)
+                with await self.hass.loop.run_in_executor(None, Image.open, io.BytesIO(frame_data)) as img:
+                    current_frame_gray = np.array(img.convert('L'))
 
-                    # Encode the image back to bytes
-                    buffer = io.BytesIO()
-                    img.save(buffer, format="JPEG")
-                    frame_data = buffer.getvalue()
+                    if previous_frame is not None:
+                        score = self._similarity_score(
+                            previous_frame, current_frame_gray)
 
-                    # Use either entity name or assign number to each camera
-                    frame_label = (image_entity.replace("camera.", "") + " frame " + str(frame_counter)
-                                   if include_filename else "camera " + str(camera_number) + " frame " + str(frame_counter))
-                    frames.update(
-                        {frame_label: {"frame_data": frame_data, "ssim_score": score}})
+                        # Encode the image back to bytes
+                        buffer = io.BytesIO()
+                        img.save(buffer, format="JPEG")
+                        frame_data = buffer.getvalue()
 
-                    frame_counter += 1
-                    previous_frame = current_frame_gray
-                else:
-                    # Initialize previous_frame with the first frame
-                    previous_frame = current_frame_gray
+                        # Use either entity name or assign number to each camera
+                        frame_label = (image_entity.replace("camera.", "") + " frame " + str(frame_counter)
+                                       if include_filename else "camera " + str(camera_number) + " frame " + str(frame_counter))
+                        frames.update(
+                            {frame_label: {"frame_data": frame_data, "ssim_score": score}})
+
+                        frame_counter += 1
+                        previous_frame = current_frame_gray
+                    else:
+                        # Initialize previous_frame with the first frame
+                        previous_frame = current_frame_gray
+                        # First snapshot of the camera, always considered important.
+                        score = -9999
 
                 preprocessing_duration = time.time() - preprocessing_start_time
                 _LOGGER.info(
@@ -271,6 +286,9 @@ class MediaProcessor:
 
         # Select frames with lowest ssim SIM scores
         selected_frames = frames_with_scores[:max_frames]
+
+        # Sort selected frames back into their original chronological order
+        selected_frames.sort(key=lambda x: x[0])
 
         # Add selected frames to client
         for frame_name, frame_data, _ in selected_frames:
@@ -390,74 +408,73 @@ class MediaProcessor:
                         _LOGGER.error(
                             f"Failed to create temp directory {tmp_frames_dir}")
 
-                    interval = 2
-
-                    # Extract frames from video every interval seconds
+                    # Extract iframes from video
+                    # use %05d formatting to enable iteration in sorted order
                     ffmpeg_cmd = [
                         "ffmpeg",
+                        "-hide_banner",
+                        "-hwaccel", "auto",
+                        "-skip_frame", "nokey",
+                        "-an", "-sn", "-dn",
                         "-i", f"'{video_path}'",
-                        "-vf", f"fps=fps='source_fps',select='eq(n\\,0)+not(mod(n\\,{interval}))'",
                         "-fps_mode", "passthrough",
-                        os.path.join(tmp_frames_dir, "frame%d.jpg")
+                        os.path.join(tmp_frames_dir, "frame%05d.jpg")
                     ]
                     # Run ffmpeg command
                     await self.hass.loop.run_in_executor(None, os.system, " ".join(ffmpeg_cmd))
 
-                    frame_counter = 0
-                    previous_frame = None
+                    previous_frame, previous_frame_path = None, None
                     frames = []
 
-                    for frame_file in await self.hass.loop.run_in_executor(None, os.listdir, tmp_frames_dir):
+                    # Iterate over frames in sorted order
+                    for frame_file in sorted(await self.hass.loop.run_in_executor(None, os.listdir, tmp_frames_dir)):
                         _LOGGER.debug(f"Adding frame {frame_file}")
                         frame_path = os.path.join(
                             tmp_frames_dir, frame_file)
                         try:
                             # open image in hass.loop
-                            img = await self.hass.loop.run_in_executor(None, Image.open, frame_path)
-                            # Remove transparency for compatibility
-                            if img.mode == 'RGBA':
-                                img = img.convert('RGB')
-                                await self.hass.loop.run_in_executor(None, img.save, frame_path)
+                            with await self.hass.loop.run_in_executor(None, Image.open, frame_path) as img:
+                                await self.hass.loop.run_in_executor(None, img.load)
+                                # Remove transparency for compatibility
+                                if img.mode == 'RGBA':
+                                    img = img.convert('RGB')
+                                    await self.hass.loop.run_in_executor(None, img.save, frame_path)
 
-                            current_frame_gray = np.array(img.convert('L'))
+                                current_frame_gray = np.array(img.convert('L'))
 
                             # Calculate similarity score
                             if previous_frame is not None:
                                 score = self._similarity_score(
                                     previous_frame, current_frame_gray)
-                                frames.append((frame_path, score))
-                                frame_counter += 1
-                                previous_frame = current_frame_gray
-                            else:
-                                # Initialize previous_frame with the first frame
-                                previous_frame = current_frame_gray
+                                # Insert the new frame, maintain sorted order
+                                insort(frames, (previous_frame_path,
+                                       score), key=lambda x: x[1])
+                                if len(frames) > max_frames:
+                                    # Keep only max_frames many frames with lowest SSIM scores
+                                    frames.pop()
+                            previous_frame = current_frame_gray
+                            previous_frame_path = frame_path
                         except UnidentifiedImageError:
                             _LOGGER.error(
                                 f"Cannot identify image file {frame_path}")
                             continue
 
-                    # Keep only max_frames many frames with lowest SSIM scores
-                    sorted_frames = sorted(frames, key=lambda x: x[1])[
-                        :max_frames]
+                    if len(frames) == 0 and previous_frame_path is not None:
+                        frames.append((previous_frame_path, 0))
 
-                    # Ensure at least one frame is present
-                    if not sorted_frames and frames:
-                        sorted_frames.append(frames[0])
+                    if expose_images:
+                        # Expose images with original size, keep SSIM score order
+                        for (frame_path, _) in frames:
+                            frame_name = os.path.splitext(os.path.basename(frame_path))[
+                                0].replace("frame", "")
+                            await self._expose_image(frame_name, None, current_event_id[:8], frame_path)
 
-                    # Add frames to client
-                    for counter, (frame_path, _) in enumerate(sorted_frames, start=1):
+                    # Add frames to client, sorted by frame number instead of SSIM score
+                    for counter, (frame_path, _) in enumerate(sorted(frames, key=lambda x: x[0]), start=1):
                         resized_image = await self.resize_image(image_path=frame_path, target_width=target_width)
-
-                        if expose_images:
-                            frame_name = frame_path.split(
-                                '/')[-1].split('.')[-2].replace("frame", "")
-                            await self._expose_image(
-                                frame_name, resized_image, current_event_id[:8])
-
                         self.client.add_frame(
                             base64_image=resized_image,
-                            filename=video_path.split('/')[-1].split('.')[-2] + " (frame " + str(
-                                counter) + ")" if include_filename else "Video frame " + str(counter)
+                            filename=f"{os.path.splitext(os.path.basename(video_path))[0]} (frame {counter})" if include_filename else f"Video frame {counter}"
                         )
 
                 else:

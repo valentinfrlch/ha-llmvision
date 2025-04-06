@@ -12,7 +12,6 @@ from homeassistant.components.calendar import (
     CalendarEntityFeature,
     EVENT_DESCRIPTION,
     EVENT_END,
-    EVENT_LOCATION,
     EVENT_START,
     EVENT_SUMMARY,
 )
@@ -40,10 +39,12 @@ class Timeline(CalendarEntity):
 
         # Path to the JSON file where events are stored
         self._db_path = os.path.join(
-            self.hass.config.path("llmvision"), "events.db"
+            self.hass.config.path(DOMAIN), "events.db"
         )
+        self._file_path = self.hass.config.path(f"www/{DOMAIN}")
         # Ensure the directory exists
         os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
+        os.makedirs(self._file_path, exist_ok=True)
 
         self.hass.loop.create_task(self.async_update())
         self.hass.async_create_task(self._migrate())  # Run migration if needed
@@ -76,7 +77,7 @@ class Timeline(CalendarEntity):
 
         # v1 -> v2: Migrate events from events.json to events.db
         old_db_path = os.path.join(
-            self.hass.config.path("llmvision"), "events.json"
+            self.hass.config.path(DOMAIN), "events.json"
         )
         if os.path.exists(old_db_path):
             _LOGGER.info("Migrating events from events.json to events.db")
@@ -165,6 +166,22 @@ class Timeline(CalendarEntity):
     async def async_update(self) -> None:
         """Loads events from database"""
         await self._initialize_db()
+
+        # calculate the cutoff date for retention
+        if self._retention_time is not None:
+            cutoff_date = dt_util.utcnow() - datetime.timedelta(days=self._retention_time)
+
+            # find events older than retention time and delete them
+            async with aiosqlite.connect(self._db_path) as db:
+                async with db.execute('SELECT uid, start FROM events') as cursor:
+                    rows = await cursor.fetchall()
+                    for row in rows:
+                        event_uid = row[0]
+                        event_start = dt_util.parse_datetime(row[1])
+                        if event_start < cutoff_date:
+                            await self.async_delete_event(event_uid)
+
+        # load events
         async with aiosqlite.connect(self._db_path) as db:
             async with db.execute('SELECT * FROM events') as cursor:
                 rows = await cursor.fetchall()
@@ -270,7 +287,7 @@ class Timeline(CalendarEntity):
         recurrence_id: str | None = None,
         recurrence_range: str | None = None,
     ) -> None:
-        """Deletes an event on the calendar."""
+        """Deletes an event from the calendar."""
         _LOGGER.info(f"Deleting event with UID: {uid}")
         await self._delete_image(uid)
         await self._delete_event_from_db(uid)
@@ -281,19 +298,37 @@ class Timeline(CalendarEntity):
             async with aiosqlite.connect(self._db_path) as db:
                 await db.execute('DELETE FROM events WHERE uid = ?', (uid,))
                 await db.commit()
-                await self.async_update()
         except aiosqlite.Error as e:
             _LOGGER.error(f"Error deleting event from database: {e}")
 
-    async def _delete_image(self, event_id: str):
+    async def _delete_image(self, uid: str):
         """Deletes the image associated with the event"""
-        for event in self._events:
-            if event.uid == event_id:
-                image_path = event.location.split(",")[0]
-                _LOGGER.info(f"Image path: {image_path}")
-                if os.path.exists(image_path) and "/llmvision/" in image_path:
-                    os.remove(image_path)
-                    _LOGGER.info(f"Deleted image: {image_path}")
+        try:
+            async with aiosqlite.connect(self._db_path) as db:
+                async with db.execute('SELECT key_frame FROM events WHERE uid = ?', (uid,)) as cursor:
+                    key_frame = await cursor.fetchone()
+                    if key_frame:
+                        key_frame = key_frame[0]
+                        if os.path.exists(key_frame) and f"/{DOMAIN}/" in key_frame:
+                            os.remove(key_frame)
+                            _LOGGER.info(f"Deleted image: {key_frame}")
+        except aiosqlite.Error as e:
+            _LOGGER.error(f"Error deleting image: {e}")
+
+    async def _cleanup(self):
+        """Deletes images not associated with any events"""
+        def delete_files(path, filenames=[]):
+            """Helper function to run in executor"""
+            for file in os.listdir(path):
+                if file not in filenames:
+                    file_path = os.path.join(path, file)
+                    # ensure only files are removed
+                    if os.path.isfile(file_path):
+                        _LOGGER.info(f"[CLEANUP] Removing {file}")
+                        os.remove(file_path)
+        
+        filenames = await self.linked_images
+        await self.hass.loop.run_in_executor(None, delete_files, self._file_path, filenames)
 
     async def get_summaries(self, start: datetime, end: datetime):
         """Generates a summary of events between start and end"""

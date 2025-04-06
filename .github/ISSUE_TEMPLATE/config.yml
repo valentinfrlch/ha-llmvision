@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Feature Requests
+    url: https://github.com/valentinfrlch/ha-llmvision/discussions/new?category=ideas
+    about: Have an idea for a new feature? Please post it in the 'ideas' section in the discussions tab.
   - name: Questions
     url: https://community.home-assistant.io/t/llm-vision-let-home-assistant-see/729241
-    about: Please ask and answer questions in the community. For more technical questions, post them in discussions.
+    about: Please ask and answer questions in the community. For more technical questions, post them in the discussion tab under 'Q&A'.
