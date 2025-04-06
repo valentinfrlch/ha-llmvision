@@ -17,6 +17,13 @@ blueprint:
       default: false
       selector:
         boolean:
+    importance_prompt:
+      name: Prompt for "important" classification
+      description: Model prompt for the image classification as important or not (only "passive" when not important is used).
+      default: "Classify the security event based on this image. Choose from the following options: "passive" for unimportant events, "time-sensitive" for notable but non-critical events such as a person at the front door, and "critical" only for potential burglaries or highly suspicious activity. Respond with one of these options exactly, without additional explanation."
+      selector:
+        text:
+          multiline: true
     remember:
       name: Remember
       description: Stores this event in the Timeline so you can ask about it. If important is enabled, only events classified as Normal or Critical will be saved.
@@ -217,9 +224,8 @@ variables:
   label: Motion detected
   camera: >
     {{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize }}
-  importance_prompt: >
-    Classify the security event based on this image. Choose from the following options: "passive" for unimportant events, "time-sensitive" for notable but non-critical events such as a person at the front door, and "critical" only for potential burglaries or highly suspicious activity. Respond with one of these options exactly, without additional explanation.
-
+  importance_prompt: !input importance_prompt
+    
 max_exceeded: silent
 mode: single
 
