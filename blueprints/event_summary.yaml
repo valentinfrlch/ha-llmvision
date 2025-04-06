@@ -1,5 +1,5 @@
 blueprint:
-  name: AI Event Summary (v1.4.1)
+  name: AI Event Summary (v1.4.2)
   author: valentinfrlch
   description: >
     AI-powered summaries for security camera events.
@@ -13,7 +13,7 @@ blueprint:
         Use AI to classify events as Critical, Normal or Low.
         Notifications are sent only for events classified as Normal or higher.
         Critical events override 'Do Not Disturb' settings.
-        Use with caution: AI can make mistakes.
+        Use with caution: AI can make mistakes, and this will introduce 2-3 seconds of delay before analysing the video.
       default: false
       selector:
         boolean:

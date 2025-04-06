@@ -566,6 +566,3 @@ remember:
       example: '2022-02-22 13:30:00'
       selector:
         datetime:
-cleanup:
-  name: 'Cleanup'
-  description: 'Deletes images not associated with an event in /www/llmvision/. If Timeline is not configured, this action will delete all files in /www/llmvision.'
