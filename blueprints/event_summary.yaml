@@ -1,5 +1,5 @@
 blueprint:
-  name: AI Event Summary (v1.4.2)
+  name: AI Event Summary (v1.4.2.2)
   author: valentinfrlch
   description: >
     AI-powered summaries for security camera events.
@@ -17,18 +17,45 @@ blueprint:
       default: false
       selector:
         boolean:
+    importance_prompt:
+      name: Prompt for 'important' classification
+      description: Model prompt for the image classification as important or not (only 'passive' when not important is used).
+      default: "Classify the security event based on this image. Choose from the following options: 'passive' for unimportant events, 'time-sensitive' for notable but non-critical events such as a person at the front door, and 'critical' only for potential burglaries or highly suspicious activity. Respond with one of these options exactly, without additional explanation."
+      selector:
+        text:
+          multiline: true
     remember:
       name: Remember
       description: Stores this event in the Timeline so you can ask about it. If important is enabled, only events classified as Normal or Critical will be saved.
       default: false
       selector:
         boolean:
+    generate_title:
+      name: Generate Title
+      description: Generate a title for the event (additional call to LLM).
+      default: false
+      selector:
+        boolean:
+    generate_title_prompt:
+      name: Prompt for title generation
+      description: Model prompt for the event title generation, based on the sequence description result
+      default: "Create a title for this text: "
+      selector:
+        text:
+          multiline: true
     use_memory:
       name: Use Memory
       description: 'Use information stored in memory to provide additional context. Memory must be set up.'
       default: false
       selector:
         boolean:
+    message_header_prompt:
+      name: Prompt
+      description: Model prompt 'header' for the video_analyzer action (sent as an introduction to the images)
+      default: "The attached images are frames from a live camera feed. "
+      selector:
+        text:
+          multiline: true
     message:
       name: Prompt
       description: Model prompt for the video_analyzer action
@@ -168,6 +195,7 @@ blueprint:
 variables:
   important: !input important
   remember: !input remember
+  generate_title: !input generate_title
   cooldown: !input cooldown
   preview_mode: !input preview_mode
   notify_devices: !input notify_device
@@ -196,9 +224,8 @@ variables:
   label: Motion detected
   camera: >
     {{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize }}
-  importance_prompt: >
-    Classify the security event based on this image. Choose from the following options: "passive" for unimportant events, "time-sensitive" for notable but non-critical events such as a person at the front door, and "critical" only for potential burglaries or highly suspicious activity. Respond with one of these options exactly, without additional explanation.
-
+  importance_prompt: !input importance_prompt
+    
 max_exceeded: silent
 mode: single
 
@@ -274,10 +301,12 @@ action:
       provider: !input provider
       model: !input model
       message: !input message
+      message_header_prompt: !input message_header_prompt
       use_memory: !input use_memory
       remember: !input remember
       expose_images: "{{preview_mode == 'Snapshot' or remember}}"
-      generate_title: !input remember
+      generate_title: !input generate_title
+      generate_title_prompt: !input generate_title_prompt
       include_filename: true
       max_frames: !input max_frames
       target_width: !input target_width

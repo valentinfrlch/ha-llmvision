@@ -34,6 +34,7 @@ from .const import (
     CONF_OPENWEBUI_API_KEY,
     CONF_OPENWEBUI_DEFAULT_MODEL,
     MESSAGE,
+    MESSAGE_HEADER_PROMPT,
     REMEMBER,
     USE_MEMORY,
     MODEL,
@@ -53,6 +54,7 @@ from .const import (
     INCLUDE_FILENAME,
     EXPOSE_IMAGES,
     GENERATE_TITLE,
+    GENERATE_TITLE_PROMPT,
     SENSOR_ENTITY,
     DATA_EXTRACTION_PROMPT,
 )
@@ -328,7 +330,11 @@ class ServiceCallData:
         self.provider = str(data_call.data.get(PROVIDER))
         self.model = str(data_call.data.get(
             MODEL))
+        # Stream Analyzer prompts
+        self.message_header_prompt = str(data_call.data.get(MESSAGE_HEADER_PROMPT, "")[0:2000])
         self.message = str(data_call.data.get(MESSAGE, "")[0:2000])
+        self.generate_title_prompt = str(data_call.data.get(GENERATE_TITLE_PROMPT, "")[0:2000])
+
         self.remember = data_call.data.get(REMEMBER, False)
         self.use_memory = data_call.data.get(USE_MEMORY, False)
         self.image_paths = data_call.data.get(IMAGE_FILE, "").split(
@@ -449,7 +455,12 @@ def setup(hass, config):
         """Handle the service call to analyze a stream"""
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
-        call.message = "The attached images are frames from a live camera feed. " + call.message
+
+        if call.message_header_prompt != "":
+            call.message = call.message_header_prompt + " " + call.message
+        else:
+            call.message = "The attached images are frames from a live camera feed. " + call.message
+        
         request = Request(hass,
                           message=call.message,
                           max_tokens=call.max_tokens,
@@ -464,9 +475,11 @@ def setup(hass, config):
                                               include_filename=call.include_filename,
                                               expose_images=call.expose_images,
                                               )
-
-        call.memory = Memory(hass)
-        await call.memory._update_memory()
+        
+        # Let's use memory only if requested (and potentially setup)
+        if call.use_memory:
+            call.memory = Memory(hass)
+            await call.memory._update_memory()
 
         response = await request.call(call)
         # Add processor.key_frame to response if it exists
@@ -526,9 +539,11 @@ def setup(hass, config):
                                                   include_filename=call.include_filename,
                                                   expose_images=call.expose_images,
                                                   )
-
-        call.memory = Memory(hass, system_prompt=DATA_EXTRACTION_PROMPT)
-        await call.memory._update_memory()
+        
+        # Let's use memory only if requested (and potentially setup)
+        if call.use_memory:
+            call.memory = Memory(hass, system_prompt=DATA_EXTRACTION_PROMPT)
+            await call.memory._update_memory()
 
         response = await request.call(call)
         # Add processor.key_frame to response if it exists

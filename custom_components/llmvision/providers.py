@@ -246,7 +246,16 @@ class Request:
         response_text = await provider_instance.vision_request(call)
 
         if call.generate_title:
-            call.message = call.memory.title_prompt + "Create a title for this text: " + response_text
+            # Memory object exist only is initiation has been done, following instructions from service call
+            if call.use_memory:
+                memory_title_prompt = call.memory.title_prompt
+            else:
+                memory_title_prompt = ""
+            # Use custom title prompt if defined
+            if call.generate_title_prompt != "":
+                call.message = memory_title_prompt + call.generate_title_prompt + response_text
+            else:
+                call.message = memory_title_prompt + "Create a title for this text: " + response_text
             gen_title = await provider_instance.title_request(call)
 
             return {"title": re.sub(r'[^a-zA-Z0-9ŽžÀ-ÿ\s]', '', gen_title), "response_text": response_text}
@@ -686,8 +695,9 @@ class Groq(Provider):
             "model": call.model
         }
 
-        system_prompt = call.memory.system_prompt
-        payload["messages"].insert(0, {"role": "user", "content": "System Prompt:" + system_prompt})
+        if call.use_memory:
+            system_prompt = call.memory.system_prompt
+            payload["messages"].insert(0, {"role": "user", "content": "System Prompt:" + system_prompt})
 
         return payload
 
