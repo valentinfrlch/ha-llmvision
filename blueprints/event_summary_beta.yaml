@@ -57,6 +57,22 @@ blueprint:
               multiple: true
               filter:
                 domain: binary_sensor
+        duration:
+          name: Duration
+          description: Duration to record for analysis (in seconds).
+          default: 5
+          selector:
+            number:
+              min: 1
+              max: 60
+        max_frames:
+          name: Max Frames
+          description: How many frames to analyze. Picks frames with the most movement.
+          default: 3
+          selector:
+            number:
+              min: 1
+              max: 60
     # AI Section
     ai_section:
       name: AI Settings
@@ -361,28 +377,6 @@ blueprint:
           default: false
           selector:
             boolean: {}
-    stream_section:
-      name: Stream Settings
-      description: Settings for the stream analysis.
-      icon: mdi:video
-      collapsed: true
-      input:
-        duration:
-          name: Duration
-          description: Duration to record for analysis (in seconds).
-          default: 5
-          selector:
-            number:
-              min: 1
-              max: 60
-        max_frames:
-          name: Max Frames
-          description: How many frames to analyze. Picks frames with the most movement.
-          default: 3
-          selector:
-            number:
-              min: 1
-              max: 60
     # Experimental Section
     experimental_section:
       name: Experimental Settings
@@ -526,6 +520,7 @@ action:
                 - condition: template
                   value_template: "{{ notification_delivery == 'Dynamic' }}"
               sequence:
+              # Save Camera Snapshot to file to send to Android devices for Dynamic Mode, perhaps make optional?
               - service: camera.snapshot
                 entity_id: !input camera_snapshot
                 data:
@@ -539,17 +534,12 @@ action:
                         title: "{{ label }}"
                         message: "{{camera}} has detected activity."
                         data:
-                          # Send a snapshot of the event to Android devices
-                          image: "{{snapshot_access_file_path}}"
-                          entity_id: "{{camera_entity}}"
                           url: !input tap_navigate #iOS
                           clickAction: !input tap_navigate #Android
                           tag: "{{tag}}"
                           group: "{{group}}"
                           alert_once: true
-                          push:
-                            interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
-                          # My custom options
+                          # Priority options
                           ttl: 0
                           priority: high
                           # Android only
@@ -557,8 +547,12 @@ action:
                           color: !input notification_color
                           notification_icon: !input notification_icon
                           sticky: !input notification_sticky
+                          # Send a snapshot of the event to Android devices
+                          image: "{{snapshot_access_file_path}}"
+                          entity_id: "{{camera_entity}}"
                           # iOS only
                           push:
+                            interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
                             sound:
                               name: !input notification_sound
                               volume: !input notification_volume
@@ -620,9 +614,7 @@ action:
                           tag: "{{tag}}"
                           group: "{{group}}"
                           alert_once: true
-                          push:
-                            interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
-                          # My custom options
+                          # Priority options
                           ttl: 0
                           priority: high
                           # Android only
@@ -632,6 +624,7 @@ action:
                           sticky: !input notification_sticky
                           # iOS only
                           push:
+                            interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
                             sound:
                               name: !input notification_sound
                               volume: !input notification_volume
