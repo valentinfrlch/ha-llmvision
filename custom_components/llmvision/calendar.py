@@ -168,7 +168,7 @@ class Timeline(CalendarEntity):
         await self._initialize_db()
 
         # calculate the cutoff date for retention
-        if self._retention_time is not None:
+        if self._retention_time is not None and self._retention_time > 0:
             cutoff_date = dt_util.utcnow() - datetime.timedelta(days=self._retention_time)
 
             # find events older than retention time and delete them
