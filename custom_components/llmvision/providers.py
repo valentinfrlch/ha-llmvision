@@ -19,6 +19,7 @@ from .const import (
     CONF_GOOGLE_API_KEY,
     CONF_GOOGLE_DEFAULT_MODEL,
     CONF_GROQ_API_KEY,
+    CONF_GROQ_DEFAULT_MODEL,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
     CONF_LOCALAI_HTTPS,
@@ -658,7 +659,7 @@ class Google(Provider):
 class Groq(Provider):
     def __init__(self, hass, api_key=""):
         super().__init__(hass, api_key)
-        self.default_model = CONF_OLLAMA_DEFAULT_MODEL
+        self.default_model = CONF_GROQ_DEFAULT_MODEL
 
     def _generate_headers(self) -> dict:
         return {'Content-type': 'application/json', 'Authorization': 'Bearer ' + self.api_key}
