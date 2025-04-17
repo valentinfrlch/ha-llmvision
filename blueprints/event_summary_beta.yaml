@@ -520,43 +520,77 @@ action:
                 - condition: template
                   value_template: "{{ notification_delivery == 'Dynamic' }}"
               sequence:
-              # Save Camera Snapshot to file to send to Android devices for Dynamic Mode, perhaps make optional?
-              - service: camera.snapshot
-                entity_id: !input camera_snapshot
-                data:
-                  filename: !input file_path
-              - alias: "Send instant notification to notify devices"
-                repeat:
-                  for_each: "{{device_name_map}}"
-                  sequence:
-                    - action: "notify.{{ repeat.item }}"
-                      data:
-                        title: "{{ label }}"
-                        message: "{{camera}} has detected activity."
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ preview_mode=='Snapshot' }}"
+                    sequence:
+
+                      # Save Camera Snapshot to file to send to Android devices for Dynamic Mode, perhaps make optional?
+                      - service: camera.snapshot
+                        entity_id: !input camera_snapshot
                         data:
-                          url: !input tap_navigate #iOS
-                          clickAction: !input tap_navigate #Android
-                          tag: "{{tag}}"
-                          group: "{{group}}"
-                          alert_once: true
-                          # Priority options
-                          ttl: 0
-                          priority: high
-                          # Android only
-                          channel: !input notification_channel
-                          color: !input notification_color
-                          notification_icon: !input notification_icon
-                          sticky: !input notification_sticky
-                          # Send a snapshot of the event to Android devices
-                          image: "{{snapshot_access_file_path}}"
-                          entity_id: "{{camera_entity}}"
-                          # iOS only
-                          push:
-                            interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
-                            sound:
-                              name: !input notification_sound
-                              volume: !input notification_volume
-                              critical: '{{ notification_critical }}'
+                          filename: !input file_path
+
+                      - alias: "Send instant notification to notify devices"
+                        repeat:
+                          for_each: "{{device_name_map}}"
+                          sequence:
+                            - action: "notify.{{ repeat.item }}"
+                              data:
+                                title: "{{ label }}"
+                                message: "{{camera}} has detected activity."
+                                data:
+                                  url: !input tap_navigate #iOS
+                                  clickAction: !input tap_navigate #Android
+                                  tag: "{{tag}}"
+                                  group: "{{group}}"
+                                  alert_once: true
+                                  # Priority options
+                                  ttl: 0
+                                  priority: high
+                                  # Android only
+                                  channel: !input notification_channel
+                                  color: !input notification_color
+                                  notification_icon: !input notification_icon
+                                  sticky: !input notification_sticky
+                                  # Send a snapshot of the event to Android devices
+                                  image: "{{snapshot_access_file_path}}"
+                                  # iOS only
+                                  push:
+                                    interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
+                                    sound:
+                                      name: !input notification_sound
+                                      volume: !input notification_volume
+                                      critical: '{{ notification_critical }}'
+
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ preview_mode=='Live Preview' }}"
+                    sequence:
+
+                      - alias: "Send Live Feed to notify devices"
+                        repeat:
+                          for_each: "{{device_name_map}}"
+                          sequence:
+                            - action: "notify.{{ repeat.item }}"
+                              data:
+                                title: "{{ label }}"
+                                message: "{{camera}} has detected activity."
+                                data:
+                                  url: !input tap_navigate
+                                  tag: "{{tag}}"
+                                  group: "{{group}}"
+                                  alert_once: true
+                                  push:
+                                    interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
+                                    sound:
+                                      name: !input notification_sound
+                                      volume: !input notification_volume
+                                      critical: '{{ notification_critical }}'
+                                  # Priority options
+                                  ttl: 0
+                                  priority: high
 
   - alias: "Analyze event"
     action: llmvision.stream_analyzer
@@ -594,11 +628,11 @@ action:
           value_template: '{{ not this.attributes.last_triggered or (now() - this.attributes.last_triggered).seconds
             > delay_notification }}'
         then:
-        - choose:
-            - conditions:
-                - condition: template
-                  value_template: "{{ preview_mode=='Snapshot' }}"
-              sequence:
+        # - choose:
+        #     - conditions:
+        #         - condition: template
+        #           value_template: "{{ preview_mode=='Snapshot' }}"
+        #       sequence:
               - alias: "(Snapshot) Update notification on notify devices"
                 repeat:
                   for_each: "{{device_name_map}}"
@@ -629,46 +663,46 @@ action:
                               name: !input notification_sound
                               volume: !input notification_volume
                               critical: '{{ notification_critical }}'
-            - conditions:
-                - condition: template
-                  value_template: "{{ preview_mode=='Live Preview' }}"
-              sequence:
-              - alias: "(Live Preview) Update notification on notify devices"
-                repeat:
-                  for_each: "{{device_name_map}}"
-                  sequence:
-                    - action: "notify.{{ repeat.item }}"
-                      data:
-                        title: "{{ label }}"
-                        message: "{{response.response_text}}"
-                        data:
-                          entity_id: "{{camera_entity}}"
-                          url: !input tap_navigate #iOS
-                          clickAction: !input tap_navigate #Android
-                          tag: "{{tag}}"
-                          group: "{{group}}"
-                          push:
-                            interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
+            # - conditions:
+            #     - condition: template
+            #       value_template: "{{ preview_mode=='Live Preview' }}"
+            #   sequence:
+            #   - alias: "(Live Preview) Update notification on notify devices"
+            #     repeat:
+            #       for_each: "{{device_name_map}}"
+            #       sequence:
+            #         - action: "notify.{{ repeat.item }}"
+            #           data:
+            #             title: "{{ label }}"
+            #             message: "{{response.response_text}}"
+            #             data:
+            #               entity_id: "{{camera_entity}}"
+            #               url: !input tap_navigate #iOS
+            #               clickAction: !input tap_navigate #Android
+            #               tag: "{{tag}}"
+            #               group: "{{group}}"
+            #               push:
+            #                 interruption-level: "{{'passive' if notification_delivery=='Dynamic' else 'active'}}"
 
+      - if:
+        - condition: template
+          value_template: '{{ tts_notification }}'
+        then:
         - if:
-          - condition: template
-            value_template: '{{ tts_notification }}'
+          - condition: !input condition_notify_tts
           then:
-          - if:
-            - condition: !input condition_notify_tts
-            then:
-            - alias: "TTS notification on notify devices"
-              repeat:
-                for_each: "{{device_name_map}}"
-                sequence:
-                  - action: "notify.{{ repeat.item }}"
+          - alias: "TTS notification on notify devices"
+            repeat:
+              for_each: "{{device_name_map}}"
+              sequence:
+                - action: "notify.{{ repeat.item }}"
+                  data:
+                    message: TTS
                     data:
-                      message: TTS
-                      data:
-                        ttl: 0
-                        priority: high
-                        media_stream: !input tts_volume
-                        tts_text: "{{response.response_text}}"
+                      ttl: 0
+                      priority: high
+                      media_stream: !input tts_volume
+                      tts_text: "{{response.response_text}}"
 
   # Add Customized Actions
   - choose: []
