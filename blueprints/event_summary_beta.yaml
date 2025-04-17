@@ -305,7 +305,7 @@ blueprint:
         #       - camera
         #       multiple: false
         file_path:
-          name: File Path - Needed for Android Devices in Dynamic Mode
+          name: File Path - To send snapshot in Dynamic Mode with Snapshot Preview Mode
           description: "The file path to store the most current snapshot for the FIRST camera if using multiple camera entities.\n\nDefaults
             to `/media/local/snapshots/{{ camera_file_path }}/last_motion.jpg` that references **/media/snapshots/<CAMERA_NAME>/last_motion.jpg** \n\n Try `/local/snapshots/{{ camera_file_path }}/last_motion.jpg` that references **/config/www/snapshots/{{ camera_file_path }}/last_motion.jpg** if you are having issues ***Note that this is unsecured and exposes the images to the web.***
             \n\nYOU MUST ADD `/local` with the `/media` folder so -> `/media/local` or replace `/config/www` with `/local`."
