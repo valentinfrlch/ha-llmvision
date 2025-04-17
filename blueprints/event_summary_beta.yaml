@@ -1,5 +1,5 @@
 blueprint:
-  name: AI Event Summary (v1.4.2)
+  name: AI Event Summary (v1.4.2.2)
   author: valentinfrlch
   description: >
     AI-powered summaries for security camera events.
@@ -296,21 +296,20 @@ blueprint:
                 value: '{{ camera }} snapshot'
               - label: Alarm
                 value: alarm_stream
-        camera_snapshot:
-          name: Android Instant Snapshot
-          description: The camera which creates the snapshot
-          selector:
-            entity:
-              domain:
-              - camera
-              multiple: false
+        # camera_snapshot:
+        #   name: Android Instant Snapshot
+        #   description: The camera which creates the snapshot
+        #   selector:
+        #     entity:
+        #       domain:
+        #       - camera
+        #       multiple: false
         file_path:
-          name: File Path - Needed for Android Instant Snapshot
-          description: "The file path to store the most current snapshot. \n\nDO NOT ADD `/local`, the blueprint with do that automaticaly with `/media` -> `/media/local`. \n\nDefaults
-            to **/media/snapshots/<camera_name>** `/media/snapshots/{{ states[camera].object_id
-            }}/last_motion.jpg`\n\n Try `/config/www/snapshots/{{ states[camera].object_id
-            }}/last_motion.jpg` if you are having issues"
-          default: /media/snapshots/{{ states[camera_snapshot].object_id }}/last_motion.jpg
+          name: File Path - Needed for Android Devices in Dynamic Mode
+          description: "The file path to store the most current snapshot for the FIRST camera if using multiple camera entities.\n\nDefaults
+            to `/media/local/snapshots/{{ camera_file_path }}/last_motion.jpg` that references **/media/snapshots/<CAMERA_NAME>/last_motion.jpg** \n\n Try `/local/snapshots/{{ camera_file_path }}/last_motion.jpg` that references **/config/www/snapshots/{{ camera_file_path }}/last_motion.jpg** if you are having issues ***Note that this is unsecured and exposes the images to the web.***
+            \n\nYOU MUST ADD `/local` with the `/media` folder so -> `/media/local` or replace `/config/www` with `/local`."
+          default: /media/local/snapshots/{{ camera_file_path }}/last_motion.jpg
         # TTS Notification
         tts_notification:
           name: Use Text-to-Speech (TTS) on your device to speak the notification. Android Only
@@ -424,11 +423,8 @@ variables:
   notify: !input notify
   condition_notify: !input condition_notify
   delay_notification: !input delay_notification
-  camera_snapshot: !input camera_snapshot
-  camera_name: '{{ states[camera_snapshot].name.replace(" ", "_") }}'
-  file_path: !input file_path
-  snapshot_access_file_path: '{{ file_path | replace(''/config/www'',
-    ''/local'') | replace(''/media'', ''/media/local'') }}'
+  # camera_snapshot: !input camera_snapshot
+  # camera_name: '{{ states[camera_snapshot].name.replace(" ", "_") }}'
   device_name_map: >
     {% set ns = namespace(device_names=[]) %}
     {% for device_id in notify_devices %}
@@ -457,6 +453,9 @@ variables:
     {{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize }}
   importance_prompt: >
     Classify the security event based on this image. Choose from the following options: "passive" for unimportant events, "time-sensitive" for notable but non-critical events such as a person at the front door, and "critical" only for potential burglaries or highly suspicious activity. Respond with one of these options exactly, without additional explanation.
+  camera_file_path: >
+    {{ camera_entity_snapshot.replace("camera.", "")}}
+  file_path: !input file_path
 
 max_exceeded: silent
 mode: single
@@ -528,7 +527,8 @@ action:
 
                       # Save Camera Snapshot to file to send to Android devices for Dynamic Mode, perhaps make optional?
                       - service: camera.snapshot
-                        entity_id: !input camera_snapshot
+                        target:
+                          entity_id: !input camera_entities
                         data:
                           filename: !input file_path
 
@@ -555,7 +555,7 @@ action:
                                   notification_icon: !input notification_icon
                                   sticky: !input notification_sticky
                                   # Send a snapshot of the event to Android devices
-                                  image: "{{snapshot_access_file_path}}"
+                                  image: "{{ file_path }}"
                                   # iOS only
                                   push:
                                     interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
