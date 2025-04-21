@@ -185,6 +185,20 @@ blueprint:
               options:
                 - Snapshot
                 - Live Preview
+        file_path:
+          name: File Path - To send snapshot in Dynamic Mode with Snapshot Preview Mode
+          description: "The file path to store the most current snapshot for the FIRST camera if using multiple camera entities.\n\nDefaults
+            to `/media/local/snapshots/{{ camera_file_path }}/last_motion.jpg` that references **/media/snapshots/<CAMERA_NAME>/last_motion.jpg** \n\n Try `/local/snapshots/{{ camera_file_path }}/last_motion.jpg` that references **/config/www/snapshots/{{ camera_file_path }}/last_motion.jpg** if you are having issues ***Note that this is unsecured and exposes the images to the web.***
+            \n\nYOU MUST ADD `/local` with the `/media` folder so -> `/media/local` or replace `/config/www` with `/local`."
+          default: Media Folder - Secured
+          selector:
+            select:
+              options:
+                - label: Media Folder - Secured
+                  value: /media/local/snapshots/{{ camera_file_path }}/last_motion.jpg
+                - label: Public Folder - Unsecured
+                  value: /config/www/snapshots/{{ camera_file_path }}/last_motion.jpg
+              custom_value: true
         tap_navigate:
           name: Tap Navigate
           description: >-
@@ -304,12 +318,6 @@ blueprint:
         #       domain:
         #       - camera
         #       multiple: false
-        file_path:
-          name: File Path - To send snapshot in Dynamic Mode with Snapshot Preview Mode
-          description: "The file path to store the most current snapshot for the FIRST camera if using multiple camera entities.\n\nDefaults
-            to `/media/local/snapshots/{{ camera_file_path }}/last_motion.jpg` that references **/media/snapshots/<CAMERA_NAME>/last_motion.jpg** \n\n Try `/local/snapshots/{{ camera_file_path }}/last_motion.jpg` that references **/config/www/snapshots/{{ camera_file_path }}/last_motion.jpg** if you are having issues ***Note that this is unsecured and exposes the images to the web.***
-            \n\nYOU MUST ADD `/local` with the `/media` folder so -> `/media/local` or replace `/config/www` with `/local`."
-          default: /media/local/snapshots/{{ camera_file_path }}/last_motion.jpg
         # TTS Notification
         tts_notification:
           name: Use Text-to-Speech (TTS) on your device to speak the notification. Android Only
@@ -578,6 +586,7 @@ action:
                                 title: "{{ label }}"
                                 message: "{{camera}} has detected activity."
                                 data:
+                                  entity_id: "{{camera_entity}}"
                                   url: !input tap_navigate
                                   tag: "{{tag}}"
                                   group: "{{group}}"
