@@ -172,6 +172,14 @@ video_analyzer:
       selector:
         text:
           multiline: true
+    frigate_remote_host:
+      name: Frigate Remote Host
+      required: false
+      description: 'Leave blank if running frigate as an HA addon. If frigate is hosted standalone and not as an HA addon, provide the IP or hostname (e.g. http://frigate.local:5000).'
+      example: http://<frigate-ip>:5000
+      selector:
+        text:
+          multiline: false
     frigate_retry_attempts:
       name: Frigate Retry Attempts
       description: How many times to retry fetching the video clip from Frigate. Clips are not always available from Frigate as soon as the event has ended.  
