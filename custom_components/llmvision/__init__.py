@@ -44,6 +44,7 @@ from .const import (
     IMAGE_ENTITY,
     VIDEO_FILE,
     EVENT_ID,
+    FRIGATE_REMOTE_HOST,
     FRIGATE_RETRY_ATTEMPTS,
     FRIGATE_RETRY_SECONDS,
     INTERVAL,
@@ -340,6 +341,7 @@ class ServiceCallData:
             "\n") if data_call.data.get(EVENT_ID) else None
         self.interval = int(data_call.data.get(INTERVAL, 2))
         self.duration = int(data_call.data.get(DURATION, 10))
+        self.frigate_remote_host = str(data_call.data.get(FRIGATE_REMOTE_HOST, ""))
         self.frigate_retry_attempts = int(
             data_call.data.get(FRIGATE_RETRY_ATTEMPTS, 2))
         self.frigate_retry_seconds = int(
@@ -427,6 +429,7 @@ def setup(hass, config):
                                              target_width=call.target_width,
                                              include_filename=call.include_filename,
                                              expose_images=call.expose_images,
+                                             frigate_remote_host=call.frigate_remote_host,
                                              frigate_retry_attempts=call.frigate_retry_attempts,
                                              frigate_retry_seconds=call.frigate_retry_seconds
                                              )
