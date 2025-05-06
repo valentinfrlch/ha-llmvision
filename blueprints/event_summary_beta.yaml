@@ -1,5 +1,5 @@
 blueprint:
-  name: AI Event Summary (v1.4.2.2)
+  name: AI Event Summary (v1.4.3)
   author: valentinfrlch
   description: >
     AI-powered summaries for security camera events.
@@ -108,7 +108,6 @@ blueprint:
         model:
           name: Model
           description: Which model to use. Depends on chosen provider.
-          default: "gpt-4o-mini"
           selector:
             text:
               multiline: false
