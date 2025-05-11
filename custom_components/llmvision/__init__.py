@@ -1,3 +1,5 @@
+from datetime import datetime
+
 # Declare variables
 from .const import (
     DOMAIN,
@@ -359,13 +361,38 @@ class ServiceCallData:
         self.image_path = data_call.data.get("image_path", "")
         self.camera_entity = data_call.data.get("camera_entity", "")
         self.start_time = data_call.data.get("start_time", dt_util.now())
+        self.start_time = self._convert_time_input_to_datetime(self.start_time)
         self.end_time = data_call.data.get(
             "end_time", self.start_time + timedelta(minutes=1))
+        self.end_time = self._convert_time_input_to_datetime(self.end_time)
 
         # ------------ Added during call ------------
         # self.base64_images : List[str] = []
         # self.filenames : List[str] = []
 
+    def _convert_time_input_to_datetime(self, time_input) -> datetime:
+        """Convert time input to datetime object"""
+
+        if isinstance(time_input, datetime):
+            return time_input
+        if isinstance(time_input, (int, float)):
+            # Assume it's a Unix timestamp (seconds since epoch)
+            return datetime.fromtimestamp(time_input)
+        if isinstance(time_input, str):
+            # Try parsing ISO format first
+            try:
+                return datetime.fromisoformat(time_input)
+            except ValueError:
+                pass
+            # Try parsing as timestamp string
+            try:
+                return datetime.fromtimestamp(float(time_input))
+            except Exception:
+                pass
+            raise ValueError(f"Unsupported date string format: {time_input}")
+        raise TypeError(f"Unsupported type for time_input: {type(time_input)}")
+        
+        
     def get_service_call_data(self):
         return self
 
