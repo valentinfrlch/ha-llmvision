@@ -77,7 +77,7 @@
                     "aws_access_key_id": "Clé d'accès",
                     "aws_secret_access_key": "Secret",
                     "aws_region_name": "Nom de la région",
-                    "aws_default_model": "odèle par défaut à utiliser"
+                    "aws_default_model": "Modèle par défaut à utiliser"
                 }
             },
             "openwebui": {
