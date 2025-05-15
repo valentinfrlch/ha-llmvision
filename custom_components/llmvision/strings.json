@@ -11,7 +11,10 @@
                 "data": {
                     "localai_ip": "IP address",
                     "localai_port": "Port",
-                    "localai_https": "HTTPS"
+                    "localai_https": "HTTPS",
+                    "localai_default_model": "Default model",
+                    "localai_default_temperature": "Temperature",
+                    "localai_default_top_p": "Top P"
                 }
             },
             "ollama": {
@@ -20,45 +23,63 @@
                 "data": {
                     "ollama_ip": "IP address",
                     "ollama_port": "Port",
-                    "ollama_https": "HTTPS"
+                    "ollama_https": "HTTPS",
+                    "ollama_default_model": "Default model",
+                    "ollama_default_temperature": "Temperature",
+                    "ollama_default_top_p": "Top P"
                 }
             },
             "openai": {
                 "title": "Configure OpenAI",
                 "description": "Provide a valid OpenAI API key.",
                 "data": {
-                    "openai_api_key": "Your API key"
+                    "openai_api_key": "API key",
+                    "openai_default_model": "Default model",
+                    "openai_default_temperature": "Default temperature",
+                    "openai_default_top_p": "Top P"
                 }
             },
             "azure": {
                 "title": "Configure Azure",
                 "description": "Provide a valid Azure API key, base URL, deployment and API version.\nThe Base URL must be in the format `https://domain.openai.azure.com/` including the trailing slash.",
                 "data": {
-                    "azure_api_key": "Your API key",
+                    "azure_api_key": "API key",
                     "azure_base_url": "Base URL",
                     "azure_deployment": "Deployment",
-                    "azure_version": "API Version"
+                    "azure_version": "API Version",
+                    "azure_default_model": "Default model",
+                    "azure_default_temperature": "Temperature",
+                    "azure_default_top_p": "Top P"
                 }
             },
             "anthropic": {
                 "title": "Configure Anthropic Claude",
                 "description": "Provide a valid Anthropic API key.",
                 "data": {
-                    "anthropic_api_key": "Your API key"
+                    "anthropic_api_key": "API key",
+                    "anthropic_default_model": "Default model",
+                    "anthropic_default_temperature": "Temperature",
+                    "anthropic_default_top_p": "Top P"
                 }
             },
             "google": {
                 "title": "Configure Google Gemini",
                 "description": "Provide a valid Google Gemini API key.",
                 "data": {
-                    "google_api_key": "Your API key"
+                    "google_api_key": "API key",
+                    "google_default_model": "Default model",
+                    "google_default_temperature": "Temperature",
+                    "google_default_top_p": "Top P"
                 }
             },
             "groq": {
                 "title": "Configure Groq",
                 "description": "Provide a valid Groq API key.",
                 "data": {
-                    "groq_api_key": "Your API key"
+                    "groq_api_key": "Your API key",
+                    "groq_default_model": "Default model",
+                    "groq_default_temperature": "Temperature",
+                    "groq_default_top_p": "Top P"
                 }
             },
             "custom_openai": {
@@ -66,18 +87,22 @@
                 "description": "**Important**: Only works if the API is compatible with OpenAI's API. If the API doesn't require an API key, enter a dummy value. The endpoint must have the following format: `http(s)://baseURL(:port)/some/endpoint`",
                 "data": {
                     "custom_openai_endpoint": "Custom Endpoint",
-                    "custom_openai_api_key": "Your API key",
-                    "custom_openai_default_model": "Default model to use, e.g. gpt-4o-mini"
+                    "custom_openai_api_key": "API key",
+                    "custom_openai_default_model": "Default model",
+                    "custom_openai_default_temperature": "Temperature",
+                    "custom_openai_default_top_p": "Top P"
                 }
             },
             "aws_bedrock": {
                 "title": "Configure AWS Bedrock provider",
                 "description": "**Important**: This currently only supports the following models: Nova, Anthropic Claude",
                 "data": {
-                    "aws_access_key_id": "Your Access Key",
-                    "aws_secret_access_key": "Your Secret Key",
-                    "aws_region_name": "The region string",
-                    "aws_default_model": "The default model to use"
+                    "aws_access_key_id": "Access Key",
+                    "aws_secret_access_key": "Secret Key",
+                    "aws_region_name": "Region string",
+                    "aws_default_model": "Default model",
+                    "aws_default_temperature": "Temperature",
+                    "aws_default_top_p": "Top P"
                 }
             },
             "openwebui": {
@@ -88,7 +113,9 @@
                     "openwebui_ip": "IP Address",
                     "openwebui_port": "Port",
                     "openwebui_https": "Use HTTPS",
-                    "openwebui_default_model": "Default model"
+                    "openwebui_default_model": "Default model",
+                    "openwebui_default_temperature": "Temperature",
+                    "openwebui_default_top_p": "Top P"
                 }
             },
             "timeline": {

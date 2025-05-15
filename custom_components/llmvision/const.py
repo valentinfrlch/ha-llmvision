@@ -3,44 +3,41 @@
 # Global constants
 DOMAIN = "llmvision"
 
-# Configuration values from setup
-CONF_OPENAI_API_KEY = 'openai_api_key'
-CONF_AZURE_API_KEY = 'azure_api_key'
+# CONFIGURABLE VARIABLES FOR SETUP
+CONF_PROVIDER = 'conf_provider'
+CONF_API_KEY = 'api_key'
+CONF_IP_ADDRESS= 'ip_address'
+CONF_PORT = 'port'
+CONF_HTTPS = 'https'
+CONF_DEFAULT_MODEL = 'default_model'
+CONF_TEMPERATURE = 'temperature'
+CONF_TOP_P = 'top_p'
+
+# Azure specific
 CONF_AZURE_BASE_URL = 'azure_base_url'
 CONF_AZURE_DEPLOYMENT = 'azure_deployment'
 CONF_AZURE_VERSION = 'azure_version'
-CONF_ANTHROPIC_API_KEY = 'anthropic_api_key'
-CONF_GOOGLE_API_KEY = 'google_api_key'
-CONF_GOOGLE_DEFAULT_MODEL = 'gemini-2.0-flash'
-CONF_GROQ_API_KEY = 'groq_api_key'
-CONF_GROQ_DEFAULT_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
-CONF_LOCALAI_IP_ADDRESS = 'localai_ip'
-CONF_LOCALAI_PORT = 'localai_port'
-CONF_LOCALAI_HTTPS = 'localai_https'
-CONF_OLLAMA_IP_ADDRESS = 'ollama_ip'
-CONF_OLLAMA_PORT = 'ollama_port'
-CONF_OLLAMA_HTTPS = 'ollama_https'
-CONF_OLLAMA_DEFAULT_MODEL = 'llama-3.2-11b-vision-preview'
+
+# AWS specific
+CONF_AWS_ACCESS_KEY_ID = 'aws_access_key_id'
+CONF_AWS_SECRET_ACCESS_KEY = 'aws_secret_access_key'
+CONF_AWS_REGION_NAME = 'aws_region_name'
+
+# Custom OpenAI specific
 CONF_CUSTOM_OPENAI_ENDPOINT = 'custom_openai_endpoint'
-CONF_CUSTOM_OPENAI_API_KEY = 'custom_openai_api_key'
-CONF_CUSTOM_OPENAI_DEFAULT_MODEL = 'custom_openai_default_model'
+
+# Timeline
 CONF_RETENTION_TIME = 'retention_time'
+
+# Memory
 CONF_MEMORY_PATHS = 'memory_paths'
 CONG_MEMORY_IMAGES_ENCODED = 'memory_images_encoded'
 CONF_MEMORY_STRINGS = 'memory_strings'
 CONF_SYSTEM_PROMPT = 'system_prompt'
 CONF_TITLE_PROMPT = 'title_prompt'
-CONF_AWS_ACCESS_KEY_ID = 'aws_access_key_id'
-CONF_AWS_SECRET_ACCESS_KEY = 'aws_secret_access_key'
-CONF_AWS_REGION_NAME = 'aws_region_name'
-CONF_AWS_DEFAULT_MODEL = 'aws_default_model'
-CONF_OPENWEBUI_IP_ADDRESS = 'openwebui_ip'
-CONF_OPENWEBUI_PORT = 'openwebui_port'
-CONF_OPENWEBUI_HTTPS = 'openwebui_https'
-CONF_OPENWEBUI_API_KEY = 'openwebui_api_key'
-CONF_OPENWEBUI_DEFAULT_MODEL = 'openwebui_default_model'
 
-# service call constants
+
+# SERVICE CALL CONSTANTS
 MESSAGE = 'message'
 REMEMBER = 'remember'
 USE_MEMORY = 'use_memory'
@@ -57,7 +54,6 @@ DURATION = 'duration'
 FRIGATE_RETRY_ATTEMPTS = 'frigate_retry_attempts'
 FRIGATE_RETRY_SECONDS = 'frigate_retry_seconds'
 MAX_FRAMES = 'max_frames'
-TEMPERATURE = 'temperature'
 INCLUDE_FILENAME = 'include_filename'
 EXPOSE_IMAGES = 'expose_images'
 GENERATE_TITLE = 'generate_title'
@@ -77,6 +73,18 @@ VERSION_ANTHROPIC = "2023-06-01"
 DEFAULT_SYSTEM_PROMPT = "Your task is to analyze a series of images and provide a concise event description based on user instructions. Focus on identifying and describing the actions of people, pet and dynamic objects (e.g., vehicles) rather than static background details. When multiple images are provided, track and summarize movements or changes over time (e.g., 'A person walks to the front door' or 'A car pulls out of the driveway'). Keep responses brief objective, and aligned with the user's prompt. Avoid speculation and prioritize observable activity. The length of the summary must be less than 255 characters, so you must summarise it to the best readability within 255 chaaracters."
 DEFAULT_TITLE_PROMPT = "Provide a short and concise event title based on the description provided. The title should summarize the key actions or events captured in the images and be suitable for use in a notification or alert. Keep the title clear, relevant to the content of the images and shorter than 6 words. Avoid unnecessary details or subjective interpretations. The title should be in the format: '<Object> seen at <location>. For example: 'Person seen at front door'. Ensure the title accurately reflects the content of the images, can include names."
 DATA_EXTRACTION_PROMPT = "You are an advanced image analysis assistant specializing in extracting precise data from images captured by a home security camera. Your task is to analyze one or more images and extract specific information as requested by the user (e.g., the number of cars or a license plate). Provide only the requested information in your response, with no additional text or commentary. Your response must be a {data_format} Ensure the extracted data is accurate and reflects the content of the images."
+
+# Models
+DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
+DEFAULT_ANTHROPIC_MODEL = "claude-3-5-sonnet-latest"
+DEFAULT_AZURE_MODEL = "gpt-4o-mini"
+DEFAULT_GOOGLE_MODEL = "gemini-2.0-flash"
+DEFAULT_GROQ_MODEL = "llama-3.2-11b-vision-preview"
+DEFAULT_LOCALAI_MODEL = "llava"
+DEFAULT_OLLAMA_MODEL = "gemma3:4b"
+DEFAULT_CUSTOM_OPENAI_MODEL = "gpt-4o-mini"
+DEFAULT_AWS_MODEL = "us.amazon.nova-pro-v1:0"
+DEFAULT_OPENWEBUI_MODEL = "gemma3:4b"
 
 
 # API Endpoints
