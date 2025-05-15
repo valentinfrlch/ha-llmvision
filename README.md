@@ -4,7 +4,7 @@
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Default-orange.svg>
 <img src="https://img.shields.io/maintenance/yes/2025.svg">
-<img src=https://img.shields.io/badge/version-1.4.1-blue>
+<img src=https://img.shields.io/badge/version-1.4.3-blue>
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-llmvision?color=0088ff">
 <img alt="Static Badge" src="https://img.shields.io/badge/support-buymeacoffee?logo=buymeacoffee&logoColor=black&color=%23FFDD00&link=https%3A%2F%2Fbuymeacoffee.com%2Fvalentinfrlch">
     <p align=center style="font-weight:bold">
@@ -42,7 +42,9 @@
 <br>
 
 See the [website](https://llmvision.org) for the latest features as well as examples.
-![features](https://github.com/user-attachments/assets/5edd11d6-79b9-4736-9387-8d22405c53b8)
+<img width="1122" alt="bento-board" src="https://github.com/user-attachments/assets/a87091a4-314e-42e3-b068-51e8d6a97f1b" />
+
+
 
 <br>
 

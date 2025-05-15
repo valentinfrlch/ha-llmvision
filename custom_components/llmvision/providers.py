@@ -17,13 +17,16 @@ from .const import (
     CONF_AZURE_VERSION,
     CONF_ANTHROPIC_API_KEY,
     CONF_GOOGLE_API_KEY,
+    CONF_GOOGLE_DEFAULT_MODEL,
     CONF_GROQ_API_KEY,
+    CONF_GROQ_DEFAULT_MODEL,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
     CONF_LOCALAI_HTTPS,
     CONF_OLLAMA_IP_ADDRESS,
     CONF_OLLAMA_PORT,
     CONF_OLLAMA_HTTPS,
+    CONF_OLLAMA_DEFAULT_MODEL,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_API_KEY,
     CONF_AWS_ACCESS_KEY_ID,
@@ -212,6 +215,8 @@ class Request:
 
         elif provider == 'Google':
             api_key = config.get(CONF_GOOGLE_API_KEY)
+            model = call.model if call.model and call.model != "None" else CONF_GOOGLE_DEFAULT_MODEL
+
             provider_instance = Google(self.hass, api_key=api_key, endpoint={
                                        'base_url': ENDPOINT_GOOGLE, 'model': call.model})
 
@@ -629,20 +634,25 @@ class Anthropic(Provider):
 
 
 class Google(Provider):
-    def __init__(self, hass, api_key, model, endpoint={'base_url': ENDPOINT_GOOGLE, 'model': ""}):
-        super().__init__(hass, api_key, model, endpoint)
+    def __init__(self, hass, api_key="", endpoint={'base_url': ENDPOINT_GOOGLE, 'model': CONF_GOOGLE_DEFAULT_MODEL}):
+        super().__init__(hass, api_key, endpoint)
+        self.default_model = endpoint['model']
 
     def _generate_headers(self) -> dict:
         return {'content-type': 'application/json'}
 
     async def _make_request(self, data) -> str:
-        endpoint = self.endpoint.get('base_url').format(
+        try:
+            endpoint = self.endpoint.get('base_url').format(
             model=self.endpoint.get('model'), api_key=self.api_key)
 
-        headers = self._generate_headers()
-        response = await self._post(url=endpoint, headers=headers, data=data)
-        response_text = response.get("candidates")[0].get(
-            "content").get("parts")[0].get("text")
+            headers = self._generate_headers()
+            response = await self._post(url=endpoint, headers=headers, data=data)
+            response_text = response.get("candidates")[0].get(
+                "content").get("parts")[0].get("text")
+        except Exception as e:
+            _LOGGER.error(f"Error: {e}")
+            return "Event Detected" # this would still make the automation succeed, but the user will see an error in log, and event calendar will show the event has no further summary.
         return response_text
 
     def _prepare_vision_data(self, call) -> dict:
