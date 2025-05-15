@@ -289,9 +289,6 @@ class MediaProcessor:
         # Sort selected frames back into their original chronological order
         selected_frames.sort(key=lambda x: x[0])
 
-        # Sort selected frames back into their original chronological order
-        selected_frames.sort(key=lambda x: x[0])
-
         # Add selected frames to client
         for frame_name, frame_data, _ in selected_frames:
             resized_image = await self.resize_image(target_width=target_width, image_data=frame_data)
