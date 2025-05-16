@@ -1,5 +1,6 @@
 from homeassistant import config_entries
 from homeassistant.helpers.selector import selector
+from homeassistant.data_entry_flow import section
 from homeassistant.exceptions import ServiceValidationError
 from .providers import (
     OpenAI,
@@ -57,7 +58,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
-    VERSION = 3
+    VERSION = 4
     MINOR_VERSION = 0
 
     async def handle_provider(self, provider):
@@ -85,7 +86,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required("provider", default="Timeline"): selector({
+            vol.Required(CONF_PROVIDER, default="Timeline"): selector({
                 "select": {
                     # Azure removed until fixed
                     "options": ["Timeline", "Memory", "Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI"],
@@ -98,7 +99,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             self.init_info = user_input
-            provider = user_input["provider"]
+            provider = user_input[CONF_PROVIDER]
             return await self.handle_provider(provider)
 
         return self.async_show_form(
@@ -109,12 +110,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_localai(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_IP_ADDRESS): str,
-            vol.Required(CONF_PORT, default=8080): int,
-            vol.Required(CONF_HTTPS, default=False): bool,
-            vol.Optional(CONF_DEFAULT_MODEL, default=DEFAULT_LOCALAI_MODEL): str,
-            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-            vol.Optional(CONF_TOP_P, default=0.9): float,
+            vol.Optional("connection_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_IP_ADDRESS): str,
+                    vol.Required(CONF_PORT, default=8080): int,
+                    vol.Required(CONF_HTTPS, default=False): bool,
+                }),
+                {"collapsed": False},
+            ),
+            vol.Optional("model_section"): section(
+                vol.Schema({
+                    vol.Optional(CONF_DEFAULT_MODEL, default=DEFAULT_LOCALAI_MODEL): str,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                }),
+                {"collapsed": False},
+            ),
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -126,14 +137,18 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             # save provider to user_input
-            user_input["provider"] = self.init_info["provider"]
-            # user_input[CONF_PROVIDER] = 'localai'
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            # flatten dict to remove nested keys
+            user_input = flatten_dict(user_input)
             try:
-                localai = LocalAI(self.hass, endpoint={
-                    'ip_address': user_input[CONF_IP_ADDRESS],
-                    'port': user_input[CONF_PORT],
-                    'https': user_input[CONF_HTTPS]
-                })
+                localai = LocalAI(self.hass,
+                                  api_key="",
+                                  model=user_input[CONF_DEFAULT_MODEL],
+                                  endpoint={
+                                      'ip_address': user_input[CONF_IP_ADDRESS],
+                                      'port': user_input[CONF_PORT],
+                                      'https': user_input[CONF_HTTPS]
+                                  })
                 await localai.validate()
                 # add the mode to user_input
                 if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -160,12 +175,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_ollama(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_IP_ADDRESS): str,
-            vol.Required(CONF_PORT, default=11434): int,
-            vol.Required(CONF_HTTPS, default=False): bool,
-            vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_OLLAMA_MODEL): str,
-            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-            vol.Optional(CONF_TOP_P, default=0.9): float,
+            vol.Optional("connection_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_IP_ADDRESS): str,
+                    vol.Required(CONF_PORT, default=11434): int,
+                    vol.Required(CONF_HTTPS, default=False): bool,
+                }),
+                {"collapsed": False},
+            ),
+            vol.Optional("model_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_OLLAMA_MODEL): str,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                }),
+                {"collapsed": False},
+            ),
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -177,14 +202,18 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             # save provider to user_input
-            user_input["provider"] = self.init_info["provider"]
-            # user_input[CONF_PROVIDER] = 'ollama'
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            # flatten dict to remove nested keys
+            user_input = flatten_dict(user_input)
             try:
-                ollama = Ollama(self.hass, endpoint={
-                    'ip_address': user_input[CONF_IP_ADDRESS],
-                    'port': user_input[CONF_PORT],
-                    'https': user_input[CONF_HTTPS]
-                })
+                ollama = Ollama(self.hass,
+                                api_key="",
+                                model=user_input[CONF_DEFAULT_MODEL],
+                                endpoint={
+                                    'ip_address': user_input[CONF_IP_ADDRESS],
+                                    'port': user_input[CONF_PORT],
+                                    'https': user_input[CONF_HTTPS]
+                                })
                 await ollama.validate()
                 # add the mode to user_input
                 if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -211,13 +240,27 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_openwebui(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_API_KEY): str,
-            vol.Required(CONF_IP_ADDRESS): str,
-            vol.Required(CONF_PORT, default=3000): int,
-            vol.Required(CONF_HTTPS, default=False): bool,
-            vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_OPENWEBUI_MODEL): str,
-            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-            vol.Optional(CONF_TOP_P, default=0.9): float,
+            vol.Optional("connection_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_API_KEY): selector({
+                        "text": {
+                            "type": "password"
+                        }
+                    }),
+                    vol.Required(CONF_IP_ADDRESS): str,
+                    vol.Required(CONF_PORT, default=3000): int,
+                    vol.Required(CONF_HTTPS, default=False): bool,
+                }),
+                {"collapsed": False},
+            ),
+            vol.Optional("model_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_OPENWEBUI_MODEL): str,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                }),
+                {"collapsed": False},
+            ),
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -229,8 +272,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             # save provider to user_input
-            user_input["provider"] = self.init_info["provider"]
-            # user_input[CONF_PROVIDER] = 'openwebui'
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            # flatten dict to remove nested keys
+            user_input = flatten_dict(user_input)
             try:
                 endpoint = ENDPOINT_OPENWEBUI.format(
                     ip_address=user_input[CONF_IP_ADDRESS],
@@ -239,8 +283,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
                 openwebui = OpenAI(hass=self.hass,
                                    api_key=user_input[CONF_API_KEY],
-                                   default_model=user_input[CONF_DEFAULT_MODEL],
-                                   endpoint={'base_url': endpoint})
+                                   model=user_input[CONF_DEFAULT_MODEL],
+                                   endpoint={
+                                       'base_url': endpoint
+                                   })
                 await openwebui.validate()
                 # add the mode to user_input
                 if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -267,10 +313,24 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_openai(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_API_KEY): str,
-            vol.Optional(CONF_DEFAULT_MODEL, default=DEFAULT_OPENAI_MODEL): str,
-            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-            vol.Optional(CONF_TOP_P, default=0.9): float,
+            vol.Optional("connection_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_API_KEY): selector({
+                        "text": {
+                            "type": "password"
+                        }
+                    })
+                }),
+                {"collapsed": False},
+            ),
+            vol.Optional("model_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_OPENAI_MODEL): str,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                }),
+                {"collapsed": False},
+            ),
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -282,14 +342,17 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             # save provider to user_input
-            user_input["provider"] = self.init_info["provider"]
-            #user_input[CONF_PROVIDER] = 'openai'
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            # flatten dict to remove nested keys
+            user_input = flatten_dict(user_input)
             try:
-                openai = OpenAI(
-                    self.hass, api_key=user_input[CONF_API_KEY])
+                openai = OpenAI(self.hass,
+                                api_key=user_input[CONF_API_KEY],
+                                model=[CONF_DEFAULT_MODEL]
+                                )
                 await openai.validate()
                 # add the mode to user_input
-                user_input["provider"] = self.init_info["provider"]
+                user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
                 if self.source == config_entries.SOURCE_RECONFIGURE:
                     # we're reconfiguring an existing config
                     return self.async_update_reload_and_abort(
@@ -314,13 +377,27 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_azure(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_API_KEY): str,
-            vol.Required(CONF_AZURE_BASE_URL, default="https://domain.openai.azure.com/"): str,
-            vol.Required(CONF_AZURE_DEPLOYMENT, default="deployment"): str,
-            vol.Required(CONF_AZURE_VERSION, default="2024-10-01-preview"): str,
-            vol.Optional(CONF_DEFAULT_MODEL, default=DEFAULT_AZURE_MODEL): str,
-            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-            vol.Optional(CONF_TOP_P, default=0.9): float,
+            vol.Optional("connection_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_API_KEY): selector({
+                        "text": {
+                            "type": "password"
+                        }
+                    }),
+                    vol.Required(CONF_AZURE_BASE_URL, default="https://domain.openai.azure.com/"): str,
+                    vol.Required(CONF_AZURE_DEPLOYMENT, default="deployment"): str,
+                    vol.Required(CONF_AZURE_VERSION, default="2024-10-01-preview"): str,
+                }),
+                {"collapsed": False},
+            ),
+            vol.Optional("model_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_AZURE_MODEL): str,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                }),
+                {"collapsed": False},
+            )
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -332,18 +409,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             # save provider to user_input
-            user_input["provider"] = self.init_info["provider"]
-            # user_input[CONF_PROVIDER] = 'azure'
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            # flatten dict to remove nested keys
+            user_input = flatten_dict(user_input)
             try:
-                azure = AzureOpenAI(self.hass, api_key=user_input[CONF_API_KEY], endpoint={
-                    'base_url': ENDPOINT_AZURE,
-                    'endpoint': user_input[CONF_AZURE_BASE_URL],
-                    'deployment': user_input[CONF_AZURE_DEPLOYMENT],
-                    'api_version': user_input[CONF_AZURE_VERSION]
-                })
+                azure = AzureOpenAI(self.hass,
+                                    api_key=user_input[CONF_API_KEY],
+                                    model=user_input[CONF_DEFAULT_MODEL],
+                                    endpoint={
+                                        'base_url': ENDPOINT_AZURE,
+                                        'endpoint': user_input[CONF_AZURE_BASE_URL],
+                                        'deployment': user_input[CONF_AZURE_DEPLOYMENT],
+                                        'api_version': user_input[CONF_AZURE_VERSION]
+                                    })
                 await azure.validate()
                 # add the mode to user_input
-                user_input["provider"] = self.init_info["provider"]
+                user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
                 if self.source == config_entries.SOURCE_RECONFIGURE:
                     # we're reconfiguring an existing config
                     return self.async_update_reload_and_abort(
@@ -368,10 +449,24 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_anthropic(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_API_KEY): str,
-            vol.Optional(CONF_DEFAULT_MODEL, default=DEFAULT_ANTHROPIC_MODEL): str,
-            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-            vol.Optional(CONF_TOP_P, default=0.9): float,
+            vol.Optional("connection_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_API_KEY): selector({
+                        "text": {
+                            "type": "password"
+                        }
+                    })
+                }),
+                {"collapsed": False},
+            ),
+            vol.Optional("model_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_ANTHROPIC_MODEL): str,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                }),
+                {"collapsed": False},
+            )
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -383,14 +478,17 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             # save provider to user_input
-            user_input["provider"] = self.init_info["provider"]
-            # user_input[CONF_PROVIDER] = 'anthropic'
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            # flatten dict to remove nested keys
+            user_input = flatten_dict(user_input)
             try:
-                anthropic = Anthropic(
-                    self.hass, api_key=user_input[CONF_API_KEY])
+                anthropic = Anthropic(self.hass,
+                                      api_key=user_input[CONF_API_KEY],
+                                      model=user_input[CONF_DEFAULT_MODEL]
+                                      )
                 await anthropic.validate()
                 # add the mode to user_input
-                user_input["provider"] = self.init_info["provider"]
+                user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
                 if self.source == config_entries.SOURCE_RECONFIGURE:
                     # we're reconfiguring an existing config
                     return self.async_update_reload_and_abort(
@@ -415,10 +513,24 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_google(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_API_KEY): str,
-            vol.Optional(CONF_DEFAULT_MODEL, default=DEFAULT_GOOGLE_MODEL): str,
-            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-            vol.Optional(CONF_TOP_P, default=0.9): float,
+            vol.Optional("connection_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_API_KEY): selector({
+                        "text": {
+                            "type": "password"
+                        }
+                    })
+                }),
+                {"collapsed": False},
+            ),
+            vol.Optional("model_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_GOOGLE_MODEL): str,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                }),
+                {"collapsed": False},
+            )
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -430,14 +542,17 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             # save provider to user_input
-            user_input["provider"] = self.init_info["provider"]
-            # user_input[CONF_PROVIDER] = 'google'
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            # flatten dict to remove nested keys
+            user_input = flatten_dict(user_input)
             try:
-                google = Google(
-                    self.hass, api_key=user_input[CONF_API_KEY])
+                google = Google(self.hass,
+                                api_key=user_input[CONF_API_KEY],
+                                model=user_input[CONF_DEFAULT_MODEL],
+                                )
                 await google.validate()
                 # add the mode to user_input
-                user_input["provider"] = self.init_info["provider"]
+                user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
                 if self.source == config_entries.SOURCE_RECONFIGURE:
                     # we're reconfiguring an existing config
                     return self.async_update_reload_and_abort(
@@ -462,10 +577,24 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_groq(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_API_KEY): str,
-            vol.Optional(CONF_DEFAULT_MODEL, default=DEFAULT_GROQ_MODEL): str,
-            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-            vol.Optional(CONF_TOP_P, default=0.9): float,
+            vol.Optional("connection_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_API_KEY): selector({
+                        "text": {
+                            "type": "password"
+                        }
+                    })
+                }),
+                {"collapsed": False},
+            ),
+            vol.Optional("model_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_GROQ_MODEL): str,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                }),
+                {"collapsed": False},
+            )
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -477,13 +606,17 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             # save provider to user_input
-            user_input["provider"] = self.init_info["provider"]
-            # user_input[CONF_PROVIDER] = 'groq'
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            # flatten dict to remove nested keys
+            user_input = flatten_dict(user_input)
             try:
-                groq = Groq(self.hass, api_key=user_input[CONF_API_KEY])
+                groq = Groq(self.hass,
+                            api_key=user_input[CONF_API_KEY],
+                            model=user_input[CONF_DEFAULT_MODEL]
+                            )
                 await groq.validate()
                 # add the mode to user_input
-                user_input["provider"] = self.init_info["provider"]
+                user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
                 if self.source == config_entries.SOURCE_RECONFIGURE:
                     # we're reconfiguring an existing config
                     return self.async_update_reload_and_abort(
@@ -508,11 +641,25 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_custom_openai(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_CUSTOM_OPENAI_ENDPOINT, default="http://replace.with.your.host.com/v1/chat/completions"): str,
-            vol.Required(CONF_API_KEY): str,
-            vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_CUSTOM_OPENAI_MODEL): str,
-            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-            vol.Optional(CONF_TOP_P, default=0.9): float
+            vol.Optional("connection_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_API_KEY): selector({
+                        "text": {
+                            "type": "password"
+                        }
+                    }),
+                    vol.Required(CONF_CUSTOM_OPENAI_ENDPOINT, default="http://replace.with.your.host.com/v1/chat/completions"): str,
+                }),
+                {"collapsed": False},
+            ),
+            vol.Optional("model_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_CUSTOM_OPENAI_MODEL): str,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                }),
+                {"collapsed": False},
+            )
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -524,18 +671,19 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             # save provider to user_input
-            user_input["provider"] = self.init_info["provider"]
-            # user_input[CONF_PROVIDER] = 'custom_openai'
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            # flatten dict to remove nested keys
+            user_input = flatten_dict(user_input)
             try:
                 custom_openai = OpenAI(self.hass,
                                        api_key=user_input[CONF_API_KEY],
+                                       model=user_input[CONF_DEFAULT_MODEL],
                                        endpoint={
-                                           'base_url': user_input[CONF_CUSTOM_OPENAI_ENDPOINT]},
-                                       default_model=user_input[CONF_DEFAULT_MODEL],
-                                       )
+                                           'base_url': user_input[CONF_CUSTOM_OPENAI_ENDPOINT]
+                                       })
                 await custom_openai.validate()
                 # add the mode to user_input
-                user_input["provider"] = self.init_info["provider"]
+                user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
                 if self.source == config_entries.SOURCE_RECONFIGURE:
                     # we're reconfiguring an existing config
                     return self.async_update_reload_and_abort(
@@ -560,12 +708,30 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_aws_bedrock(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Required(CONF_AWS_REGION_NAME, default="us-east-1"): str,
-            vol.Required(CONF_AWS_ACCESS_KEY_ID): str,
-            vol.Required(CONF_AWS_SECRET_ACCESS_KEY): str,
-            vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_AWS_MODEL): str,
-            vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-            vol.Optional(CONF_TOP_P, default=0.9): float,
+            vol.Optional("connection_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_AWS_ACCESS_KEY_ID): selector({
+                        "text": {
+                            "type": "password"
+                        }
+                    }),
+                    vol.Required(CONF_AWS_SECRET_ACCESS_KEY): selector({
+                        "text": {
+                            "type": "password"
+                        }
+                    }),
+                    vol.Required(CONF_AWS_REGION_NAME, default="us-east-1"): str,
+                }),
+                {"collapsed": False},
+            ),
+            vol.Optional("model_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_AWS_MODEL): str,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
+                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                }),
+                {"collapsed": False},
+            )
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -577,10 +743,11 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             # save provider to user_input
-            user_input["provider"] = self.init_info["provider"]
-            # user_input[CONF_PROVIDER] = 'aws'
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            # flatten dict to remove nested keys
+            user_input = flatten_dict(user_input)
             try:
-                aws_bedrock = AWSBedrock(self.hass,
+                aws_bedrock = AWSBedrock(hass=self.hass,
                                          aws_access_key_id=user_input[CONF_AWS_ACCESS_KEY_ID],
                                          aws_secret_access_key=user_input[CONF_AWS_SECRET_ACCESS_KEY],
                                          aws_region_name=user_input[CONF_AWS_REGION_NAME],
@@ -588,7 +755,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                          )
                 await aws_bedrock.validate()
                 # add the mode to user_input
-                user_input["provider"] = self.init_info["provider"]
+                user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
                 if self.source == config_entries.SOURCE_RECONFIGURE:
                     # we're reconfiguring an existing config
                     return self.async_update_reload_and_abort(
@@ -624,8 +791,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         if user_input is not None:
-            user_input["provider"] = self.init_info["provider"]
-
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
             try:
                 for uid in self.hass.data[DOMAIN]:
                     if 'retention_time' in self.hass.data[DOMAIN][uid]:
@@ -684,7 +850,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         if user_input is not None:
-            user_input["provider"] = self.init_info["provider"]
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
 
             try:
                 for uid in self.hass.data[DOMAIN]:
@@ -724,5 +890,17 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reconfigure(self, user_input):
         data = self._get_reconfigure_entry().data
-        provider = data["provider"]
+        provider = data[CONF_PROVIDER]
         return await self.handle_provider(provider)
+
+
+# Helper functions
+def flatten_dict(data: dict) -> dict:
+    """Flatten one level of nested dicts (from section fields) into the top-level dict."""
+    flat = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            flat.update(value)
+        else:
+            flat[key] = value
+    return flat

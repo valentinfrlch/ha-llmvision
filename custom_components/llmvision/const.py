@@ -4,7 +4,7 @@
 DOMAIN = "llmvision"
 
 # CONFIGURABLE VARIABLES FOR SETUP
-CONF_PROVIDER = 'conf_provider'
+CONF_PROVIDER = 'provider'
 CONF_API_KEY = 'api_key'
 CONF_IP_ADDRESS= 'ip_address'
 CONF_PORT = 'port'
@@ -31,7 +31,7 @@ CONF_RETENTION_TIME = 'retention_time'
 
 # Memory
 CONF_MEMORY_PATHS = 'memory_paths'
-CONG_MEMORY_IMAGES_ENCODED = 'memory_images_encoded'
+CONF_MEMORY_IMAGES_ENCODED = 'memory_images_encoded'
 CONF_MEMORY_STRINGS = 'memory_strings'
 CONF_SYSTEM_PROMPT = 'system_prompt'
 CONF_TITLE_PROMPT = 'title_prompt'

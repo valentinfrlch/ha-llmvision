@@ -3,92 +3,227 @@
         "step": {
             "user": {
                 "title": "LLM Vision Setup",
-                "description": "Select a provider to set up"
+                "description": "Select what you want to set up"
             },
             "localai": {
                 "title": "Connect to your LocalAI server",
                 "description": "Provide the IP address and port of your LocalAI server.",
                 "data": {
-                    "localai_ip": "IP address",
-                    "localai_port": "Port",
-                    "localai_https": "HTTPS"
+                    "ip_address": "IP address",
+                    "port": "Port",
+                    "https": "HTTPS",
+                    "default_model": "Default model",
+                    "temperature": "Temperature",
+                    "top_p": "Top P"
                 }
             },
             "ollama": {
                 "title": "Configure Ollama",
                 "description": "Provide the IP address and port of your Ollama server.",
-                "data": {
-                    "ollama_ip": "IP address",
-                    "ollama_port": "Port",
-                    "ollama_https": "HTTPS"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Manage server connection",
+                        "data": {
+                            "ip_address": "IP address",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        }
+                    }
                 }
             },
             "openai": {
                 "title": "Configure OpenAI",
                 "description": "Provide a valid OpenAI API key.",
-                "data": {
-                    "openai_api_key": "API key"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Manage OpenAI authentication",
+                        "data": {
+                            "api_key": "API key"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        }
+                    }
                 }
             },
             "azure": {
                 "title": "Configure Azure",
                 "description": "Provide a valid Azure API key, base URL, deployment and API version.\nThe Base URL must be in the format `https://domain.openai.azure.com/` including the trailing slash.",
-                "data": {
-                    "azure_api_key": "API key",
-                    "azure_base_url": "Base URL",
-                    "azure_deployment": "Deployment",
-                    "azure_version": "API Version"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Manage Azure authentication",
+                        "data": {
+                            "api_key": "API key",
+                            "azure_base_url": "Base URL",
+                            "azure_deployment": "Deployment",
+                            "azure_version": "API Version"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        }
+                    }
                 }
             },
             "anthropic": {
                 "title": "Configure Anthropic Claude",
                 "description": "Provide a valid Anthropic API key.",
-                "data": {
-                    "anthropic_api_key": "API key"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Manage Anthropic authentication",
+                        "data": {
+                            "api_key": "API key"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        }
+                    }
                 }
             },
             "google": {
                 "title": "Configure Google Gemini",
                 "description": "Provide a valid Google Gemini API key.",
-                "data": {
-                    "google_api_key": "API key"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Manage Google authentication",
+                        "data": {
+                            "api_key": "API key"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        }
+                    }
                 }
             },
             "groq": {
                 "title": "Configure Groq",
                 "description": "Provide a valid Groq API key.",
-                "data": {
-                    "groq_api_key": "API key"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Manage Groq authentication",
+                        "data": {
+                            "api_key": "API key"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        }
+                    }
                 }
             },
             "custom_openai": {
                 "title": "Configure Custom OpenAI provider",
                 "description": "**Important**: Only works if the API is compatible with OpenAI's API. If the API doesn't require an API key, enter a dummy value. The endpoint must have the following format: `http(s)://baseURL(:port)/some/endpoint`",
-                "data": {
-                    "custom_openai_endpoint": "Custom Endpoint",
-                    "custom_openai_api_key": "API key",
-                    "custom_openai_default_model": "Default model to use, e.g. gpt-4o-mini"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Manage Custom OpenAI authentication",
+                        "data": {
+                            "custom_openai_endpoint": "Custom Endpoint",
+                            "api_key": "API key"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        }
+                    }
                 }
             },
             "aws_bedrock": {
                 "title": "Configure AWS Bedrock provider",
                 "description": "**Important**: This currently only supports the following models: Nova, Anthropic Claude",
-                "data": {
-                    "aws_access_key_id": "Access Key",
-                    "aws_secret_access_key": "Secret",
-                    "aws_region_name": "The region string",
-                    "aws_default_model": "The default model to use"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Manage AWS authentication",
+                        "data": {
+                            "aws_access_key_id": "Access Key",
+                            "aws_secret_access_key": "Secret Key",
+                            "aws_region_name": "Region string"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        }
+                    }
                 }
             },
             "openwebui": {
                 "title": "Configure Open WebUI provider",
                 "description": "Provide API key (JWT token), IP Address, Port, HTTP(S) and default model.",
-                "data": {
-                    "openwebui_api_key": "API Key (JWT token)",
-                    "openwebui_ip": "IP Address",
-                    "openwebui_port": "Port",
-                    "openwebui_https": "Use HTTPS",
-                    "openwebui_default_model": "Default model"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Manage Open WebUI authentication",
+                        "data": {
+                            "api_key": "API Key (JWT token)",
+                            "ip_address": "IP Address",
+                            "port": "Port",
+                            "https": "Use HTTPS"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        }
+                    }
                 }
             },
             "timeline": {
@@ -113,6 +248,7 @@
             "handshake_failed": "Could not connect to the server. Check you API key or IP and port",
             "empty_api_key": "Invalid API key",
             "invalid_provider": "Invalid provider selected",
+            "memory_not_supported": "This provider does not support memory",
             "invalid_image_path": "One or more image paths are invalid",
             "mismatched_lengths": "The number of image paths and descriptions must match"
         },

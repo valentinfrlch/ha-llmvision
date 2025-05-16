@@ -1,5 +1,17 @@
 from datetime import datetime
-
+import json
+from .calendar import Timeline
+from .providers import Request
+from .memory import Memory
+from .media_handlers import MediaProcessor
+import re
+import os
+from datetime import timedelta
+from homeassistant.util import dt as dt_util
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import SupportsResponse
+from homeassistant.exceptions import ServiceValidationError
+import logging
 # Declare variables
 from .const import (
     DOMAIN,
@@ -10,14 +22,14 @@ from .const import (
     CONF_HTTPS,
     CONF_DEFAULT_MODEL,
     CONF_TEMPERATURE,
-    CONF_DEFAULT_TOP_P,
+    CONF_TOP_P,
     CONF_AZURE_VERSION,
     CONF_AZURE_BASE_URL,
     CONF_AZURE_DEPLOYMENT,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_RETENTION_TIME,
     CONF_MEMORY_PATHS,
-    CONG_MEMORY_IMAGES_ENCODED,
+    CONF_MEMORY_IMAGES_ENCODED,
     CONF_MEMORY_STRINGS,
     CONF_SYSTEM_PROMPT,
     CONF_TITLE_PROMPT,
@@ -45,104 +57,72 @@ from .const import (
     GENERATE_TITLE,
     SENSOR_ENTITY,
     DATA_EXTRACTION_PROMPT,
+    DEFAULT_OPENAI_MODEL,
+    DEFAULT_ANTHROPIC_MODEL,
+    DEFAULT_AZURE_MODEL,
+    DEFAULT_GOOGLE_MODEL,
+    DEFAULT_GROQ_MODEL,
+    DEFAULT_LOCALAI_MODEL,
+    DEFAULT_OLLAMA_MODEL,
+    DEFAULT_CUSTOM_OPENAI_MODEL,
+    DEFAULT_AWS_MODEL,
+    DEFAULT_OPENWEBUI_MODEL,
 )
-from .calendar import Timeline
-from .providers import Request
-from .memory import Memory
-from .media_handlers import MediaProcessor
-import re
-import os
-from datetime import timedelta
-from homeassistant.util import dt as dt_util
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import SupportsResponse
-from homeassistant.exceptions import ServiceValidationError
-import logging
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry):
-    """Save config entry to hass.data"""
-    # Use the entry_id from the config entry as the UID
+    """Save config entry to hass.data in a standardized way (generic keys, by entry_uid)."""
     entry_uid = entry.entry_id
 
-    provider = entry.data.get(CONF_PROVIDER)
-    api_key = entry.data.get(CONF_API_KEY)
-    ip_address = entry.data.get(CONF_IP_ADDRESS)
-    port = entry.data.get(CONF_PORT)
-    https = entry.data.get(CONF_HTTPS)
-    default_model = entry.data.get(CONF_DEFAULT_MODEL)
-    default_temperature = entry.data.get(CONF_TEMPERATURE)
-    default_top_p = entry.data.get(CONF_DEFAULT_TOP_P)
+    # Build a standardized config dict with only generic keys
+    provider_config = {
+        CONF_PROVIDER: entry.data.get(CONF_PROVIDER),
+        CONF_API_KEY: entry.data.get(CONF_API_KEY),
+        CONF_IP_ADDRESS: entry.data.get(CONF_IP_ADDRESS),
+        CONF_PORT: entry.data.get(CONF_PORT),
+        CONF_HTTPS: entry.data.get(CONF_HTTPS),
+        CONF_DEFAULT_MODEL: entry.data.get(CONF_DEFAULT_MODEL),
+        CONF_TEMPERATURE: entry.data.get(CONF_TEMPERATURE),
+        CONF_TOP_P: entry.data.get(CONF_TOP_P),
+        # Azure specific
+        CONF_AZURE_BASE_URL: entry.data.get(CONF_AZURE_BASE_URL),
+        CONF_AZURE_DEPLOYMENT: entry.data.get(CONF_AZURE_DEPLOYMENT),
+        CONF_AZURE_VERSION: entry.data.get(CONF_AZURE_VERSION),
+        # Custom OpenAI specific
+        CONF_CUSTOM_OPENAI_ENDPOINT: entry.data.get(CONF_CUSTOM_OPENAI_ENDPOINT),
+        # AWS specific
+        CONF_AWS_ACCESS_KEY_ID: entry.data.get(CONF_AWS_ACCESS_KEY_ID),
+        CONF_AWS_SECRET_ACCESS_KEY: entry.data.get(CONF_AWS_SECRET_ACCESS_KEY),
+        CONF_AWS_REGION_NAME: entry.data.get(CONF_AWS_REGION_NAME),
+        # Timeline
+        CONF_RETENTION_TIME: entry.data.get(CONF_RETENTION_TIME),
+        # Memory
+        CONF_MEMORY_PATHS: entry.data.get(CONF_MEMORY_PATHS),
+        CONF_MEMORY_IMAGES_ENCODED: entry.data.get(CONF_MEMORY_IMAGES_ENCODED),
+        CONF_MEMORY_STRINGS: entry.data.get(CONF_MEMORY_STRINGS),
+        CONF_SYSTEM_PROMPT: entry.data.get(CONF_SYSTEM_PROMPT),
+        CONF_TITLE_PROMPT: entry.data.get(CONF_TITLE_PROMPT),
+    }
 
-    # Azure specific
-    azure_base_url = entry.data.get(CONF_AZURE_BASE_URL)
-    azure_deployment = entry.data.get(CONF_AZURE_DEPLOYMENT)
-    azure_version = entry.data.get(CONF_AZURE_VERSION)
-
-    # Custom OpenAI specific
-    custom_openai_endpoint = entry.data.get(CONF_CUSTOM_OPENAI_ENDPOINT)
-    
-    # AWS specific
-    aws_access_key_id = entry.data.get(CONF_AWS_ACCESS_KEY_ID)
-    aws_secret_access_key = entry.data.get(CONF_AWS_SECRET_ACCESS_KEY)
-    aws_region_name = entry.data.get(CONF_AWS_REGION_NAME)
-    
-    # Timeline
-    retention_time = entry.data.get(CONF_RETENTION_TIME)
-
-    # Memory
-    memory_paths = entry.data.get(CONF_MEMORY_PATHS)
-    memory_images_encoded = entry.data.get(CONG_MEMORY_IMAGES_ENCODED)
-    memory_strings = entry.data.get(CONF_MEMORY_STRINGS)
-    system_prompt = entry.data.get(CONF_SYSTEM_PROMPT)
-    title_prompt = entry.data.get(CONF_TITLE_PROMPT)
+    # Filter out None values
+    filtered_provider_config = {
+        key: value for key, value in provider_config.items() if value is not None}
 
     # Ensure DOMAIN exists in hass.data
     if DOMAIN not in hass.data:
         hass.data[DOMAIN] = {}
 
-    # Create a dictionary for the entry data
-    entry_data = {
-        CONF_PROVIDER: provider,
-        CONF_API_KEY: api_key,
-        CONF_IP_ADDRESS: ip_address,
-        CONF_PORT: port,
-        CONF_HTTPS: https,
-        CONF_DEFAULT_MODEL: default_model,
-        CONF_TEMPERATURE: default_temperature,
-        CONF_DEFAULT_TOP_P: default_top_p,
-        CONF_AZURE_BASE_URL: azure_base_url,
-        CONF_AZURE_DEPLOYMENT: azure_deployment,
-        CONF_AZURE_VERSION: azure_version,
-        CONF_CUSTOM_OPENAI_ENDPOINT: custom_openai_endpoint,
-        CONF_AWS_ACCESS_KEY_ID: aws_access_key_id,
-        CONF_AWS_SECRET_ACCESS_KEY: aws_secret_access_key,
-        CONF_AWS_REGION_NAME: aws_region_name,
-        CONF_RETENTION_TIME: retention_time,
-        CONF_MEMORY_PATHS: memory_paths,
-        CONG_MEMORY_IMAGES_ENCODED: memory_images_encoded,
-        CONF_MEMORY_STRINGS: memory_strings,
-        CONF_SYSTEM_PROMPT: system_prompt,
-        CONF_TITLE_PROMPT: title_prompt,
-    }
+    # Store the filtered config under the entry_uid (subdict per entry)
+    hass.data[DOMAIN][entry_uid] = filtered_provider_config
 
-    # Filter out None values
-    filtered_entry_data = {key: value for key,
-                           value in entry_data.items() if value is not None}
-
-    # Store the filtered entry data under the entry_id
-    hass.data[DOMAIN][entry_uid] = filtered_entry_data
-
-    # check if the entry is the calendar entry (has entry rentention_time)
-    if filtered_entry_data.get(CONF_RETENTION_TIME) is not None:
-        # forward the calendar entity to the platform for setup
+    # If this is the Timeline entry, set up the calendar and run cleanup
+    if filtered_provider_config.get(CONF_RETENTION_TIME) is not None:
         await hass.config_entries.async_forward_entry_setups(entry, ["calendar"])
-        # Run cleanup
         timeline = Timeline(hass, entry)
         await timeline._cleanup()
-    
+
     return True
 
 
@@ -156,7 +136,7 @@ async def async_remove_entry(hass, entry):
         await async_unload_entry(hass, entry)
         hass.data[DOMAIN].pop(entry_uid)
         # Check if entry is the timeline entry
-        if entry.data["provider"] == 'Timeline':
+        if entry.data[CONF_PROVIDER] == 'Timeline':
             # Check if "/llmvision/events.db" exists
             db_path = os.path.join(
                 hass.config.path("llmvision"), "events.db"
@@ -182,32 +162,228 @@ async def async_unload_entry(hass, entry) -> bool:
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
     _LOGGER.debug(
-        f"{config_entry.title} version: {config_entry.version}.{config_entry.minor_version}")
-    if config_entry.version == 2 and config_entry.data["provider"] == "Event Calendar":
-        # Change Provider name to Timeline
-        new_data = config_entry.data.copy()
-        new_data["provider"] = "Timeline"
+        f"{config_entry.title} provider v{config_entry.version}.{config_entry.minor_version}")
 
-        # Update the config entry
+    new_data = config_entry.data.copy()
+    updated = False
+
+    # v2 -> v3: Rename "Event Calendar" to "Timeline"
+    if config_entry.version == 2 and new_data.get(CONF_PROVIDER) == "Event Calendar":
+        new_data[CONF_PROVIDER] = "Timeline"
         hass.config_entries.async_update_entry(
             config_entry, title="LLM Vision Timeline", data=new_data, version=3, minor_version=0
         )
         return True
-    if config_entry.version == 3:        
-        new_data = config_entry.data.copy()
 
-        if config_entry.data.get(PROVIDER) is "OpenAI":
-            new_data[CONF_API_KEY] = new_data.pop("openai_api_key")
-            new_data[CONF_DEFAULT_MODEL] = DEFAULT_MODEL_OPENAI
-            new_data[CONF_TEMPERATURE] = DEFAULT_TEMPERATURE_OPENAI
-            new_data[CONF_DEFAULT_TOP_P] = DEFAULT_TOP_P_OPENAI
-        
-            
-    else:
+    # v3 -> v4: Standardize keys for all providers
+    if config_entry.version == 3:
+        provider = new_data.get(PROVIDER) or new_data.get(CONF_PROVIDER)
+        # Example for OpenAI, add similar logic for other providers if needed
+        if provider == "OpenAI":
+            # Migrate old provider-specific keys to generic keys
+            if "openai_api_key" in new_data:
+                new_data[CONF_API_KEY] = new_data.pop("openai_api_key")
+                updated = True
+            if CONF_DEFAULT_MODEL not in new_data:
+                new_data[CONF_DEFAULT_MODEL] = DEFAULT_OPENAI_MODEL
+                updated = True
+            if "openai_temperature" not in new_data:
+                new_data[CONF_TEMPERATURE] = 0.5
+                updated = True
+            if "openai_top_p" in new_data:
+                new_data[CONF_TOP_P] = 0.9
+                updated = True
+        if provider == "Anthropic":
+            if "anthropic_api_key" in new_data:
+                new_data[CONF_API_KEY] = new_data.pop("anthropic_api_key")
+                updated = True
+            if CONF_DEFAULT_MODEL not in new_data:
+                new_data[CONF_DEFAULT_MODEL] = DEFAULT_ANTHROPIC_MODEL
+                updated = True
+            if CONF_TEMPERATURE not in new_data:
+                new_data[CONF_TEMPERATURE] = 0.5
+                updated = True
+            if CONF_TOP_P not in new_data:
+                new_data[CONF_TOP_P] = 0.9
+                updated = True
+        # Azure
+        if provider == "Azure":
+            if "azure_api_key" in new_data:
+                new_data[CONF_API_KEY] = new_data.pop("azure_api_key")
+                updated = True
+            if "azure_base_url" in new_data:
+                new_data[CONF_AZURE_BASE_URL] = new_data.pop("azure_base_url")
+                updated = True
+            if "azure_deployment" in new_data:
+                new_data[CONF_AZURE_DEPLOYMENT] = new_data.pop(
+                    "azure_deployment")
+                updated = True
+            if "azure_version" in new_data:
+                new_data[CONF_AZURE_VERSION] = new_data.pop("azure_version")
+                updated = True
+            if CONF_DEFAULT_MODEL not in new_data:
+                new_data[CONF_DEFAULT_MODEL] = DEFAULT_AZURE_MODEL
+                updated = True
+            if CONF_TEMPERATURE not in new_data:
+                new_data[CONF_TEMPERATURE] = 0.5
+                updated = True
+            if CONF_TOP_P not in new_data:
+                new_data[CONF_TOP_P] = 0.9
+                updated = True
+        # Groq
+        if provider == "Groq":
+            if "groq_api_key" in new_data:
+                new_data[CONF_API_KEY] = new_data.pop("groq_api_key")
+                updated = True
+            if CONF_DEFAULT_MODEL not in new_data:
+                new_data[CONF_DEFAULT_MODEL] = DEFAULT_GROQ_MODEL
+                updated = True
+            if CONF_TEMPERATURE not in new_data:
+                new_data[CONF_TEMPERATURE] = 0.5
+                updated = True
+            if CONF_TOP_P not in new_data:
+                new_data[CONF_TOP_P] = 0.9
+                updated = True
+        # Google
+        if provider == "Google":
+            if "google_api_key" in new_data:
+                new_data[CONF_API_KEY] = new_data.pop("google_api_key")
+                updated = True
+            if CONF_DEFAULT_MODEL not in new_data:
+                new_data[CONF_DEFAULT_MODEL] = DEFAULT_GOOGLE_MODEL
+                updated = True
+            if CONF_TEMPERATURE not in new_data:
+                new_data[CONF_TEMPERATURE] = 0.5
+                updated = True
+            if CONF_TOP_P not in new_data:
+                new_data[CONF_TOP_P] = 0.9
+                updated = True
+        # LocalAI
+        if provider == "LocalAI":
+            if "localai_api_key" in new_data:
+                new_data[CONF_API_KEY] = new_data.pop("localai_api_key")
+                updated = True
+            if "localai_ip_address" in new_data:
+                new_data[CONF_IP_ADDRESS] = new_data.pop("localai_ip_address")
+                updated = True
+            if "localai_port" in new_data:
+                new_data[CONF_PORT] = new_data.pop("localai_port")
+                updated = True
+            if "localai_https" in new_data:
+                new_data[CONF_HTTPS] = new_data.pop("localai_https")
+                updated = True
+            if CONF_DEFAULT_MODEL not in new_data:
+                new_data[CONF_DEFAULT_MODEL] = DEFAULT_LOCALAI_MODEL
+                updated = True
+            if CONF_TEMPERATURE not in new_data:
+                new_data[CONF_TEMPERATURE] = 0.5
+                updated = True
+            if CONF_TOP_P not in new_data:
+                new_data[CONF_TOP_P] = 0.9
+                updated = True
+        # Ollama
+        if provider == "Ollama":
+            if "ollama_api_key" in new_data:
+                new_data[CONF_API_KEY] = new_data.pop("ollama_api_key")
+                updated = True
+            if "ollama_ip_address" in new_data:
+                new_data[CONF_IP_ADDRESS] = new_data.pop("ollama_ip_address")
+                updated = True
+            if "ollama_port" in new_data:
+                new_data[CONF_PORT] = new_data.pop("ollama_port")
+                updated = True
+            if "ollama_https" in new_data:
+                new_data[CONF_HTTPS] = new_data.pop("ollama_https")
+                updated = True
+            if CONF_DEFAULT_MODEL not in new_data:
+                new_data[CONF_DEFAULT_MODEL] = DEFAULT_OLLAMA_MODEL
+                updated = True
+            if CONF_TEMPERATURE not in new_data:
+                new_data[CONF_TEMPERATURE] = 0.5
+                updated = True
+            if CONF_TOP_P not in new_data:
+                new_data[CONF_TOP_P] = 0.9
+                updated = True
+        # Custom OpenAI
+        if provider == "Custom OpenAI":
+            if "custom_openai_api_key" in new_data:
+                new_data[CONF_API_KEY] = new_data.pop("custom_openai_api_key")
+                updated = True
+            if "custom_openai_endpoint" in new_data:
+                new_data[CONF_CUSTOM_OPENAI_ENDPOINT] = new_data.pop(
+                    "custom_openai_endpoint")
+                updated = True
+            if CONF_DEFAULT_MODEL not in new_data:
+                new_data[CONF_DEFAULT_MODEL] = DEFAULT_CUSTOM_OPENAI_MODEL
+                updated = True
+            if CONF_TEMPERATURE not in new_data:
+                new_data[CONF_TEMPERATURE] = 0.5
+                updated = True
+            if CONF_TOP_P not in new_data:
+                new_data[CONF_TOP_P] = 0.9
+                updated = True
+        # AWS
+        if provider == "AWS":
+            if "aws_access_key_id" in new_data:
+                new_data[CONF_AWS_ACCESS_KEY_ID] = new_data.pop(
+                    "aws_access_key_id")
+                updated = True
+            if "aws_secret_access_key" in new_data:
+                new_data[CONF_AWS_SECRET_ACCESS_KEY] = new_data.pop(
+                    "aws_secret_access_key")
+                updated = True
+            if "aws_region_name" in new_data:
+                new_data[CONF_AWS_REGION_NAME] = new_data.pop(
+                    "aws_region_name")
+                updated = True
+            if CONF_DEFAULT_MODEL not in new_data:
+                new_data[CONF_DEFAULT_MODEL] = DEFAULT_AWS_MODEL
+                updated = True
+            if CONF_TEMPERATURE not in new_data:
+                new_data[CONF_TEMPERATURE] = 0.5
+                updated = True
+            if CONF_TOP_P not in new_data:
+                new_data[CONF_TOP_P] = 0.9
+                updated = True
+        # OpenWebUI
+        if provider == "OpenWebUI":
+            if "openwebui_api_key" in new_data:
+                new_data[CONF_API_KEY] = new_data.pop("openwebui_api_key")
+                updated = True
+            if "openwebui_ip_address" in new_data:
+                new_data[CONF_IP_ADDRESS] = new_data.pop(
+                    "openwebui_ip_address")
+                updated = True
+            if "openwebui_port" in new_data:
+                new_data[CONF_PORT] = new_data.pop("openwebui_port")
+                updated = True
+            if "openwebui_https" in new_data:
+                new_data[CONF_HTTPS] = new_data.pop("openwebui_https")
+                updated = True
+            if CONF_DEFAULT_MODEL not in new_data:
+                new_data[CONF_DEFAULT_MODEL] = DEFAULT_OPENWEBUI_MODEL
+                updated = True
+            if CONF_TEMPERATURE not in new_data:
+                new_data[CONF_TEMPERATURE] = 0.5
+                updated = True
+            if CONF_TOP_P not in new_data:
+                new_data[CONF_TOP_P] = 0.9
+                updated = True
+
+        if updated:
+            hass.config_entries.async_update_entry(
+                config_entry, data=new_data, version=4, minor_version=0
+            )
+            return True
+
+    # If not already migrated, bump version to 4
+    if config_entry.version < 4:
         hass.config_entries.async_update_entry(
-            config_entry, version=4, minor_version=0
+            config_entry, data=new_data, version=4, minor_version=0
         )
         return True
+
+    return True
 
 
 async def _remember(hass, call, start, response, key_frame) -> None:
@@ -216,7 +392,7 @@ async def _remember(hass, call, start, response, key_frame) -> None:
         config_entry = None
         for entry in hass.config_entries.async_entries(DOMAIN):
             # Check if the config entry is empty
-            if entry.data["provider"] == "Timeline":
+            if entry.data[CONF_PROVIDER] == "Timeline":
                 config_entry = entry
                 break
 
@@ -372,8 +548,7 @@ class ServiceCallData:
                 pass
             raise ValueError(f"Unsupported date string format: {time_input}")
         raise TypeError(f"Unsupported type for time_input: {type(time_input)}")
-        
-        
+
     def get_service_call_data(self):
         return self
 
@@ -493,13 +668,13 @@ def setup(hass, config):
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
         sensor_entity = data_call.data.get("sensor_entity")
-        _LOGGER.info(f"Sensor entity: {sensor_entity}")
+        _LOGGER.debug(f"Sensor entity: {sensor_entity}")
 
         # get current value to determine data type
         state = hass.states.get(sensor_entity).state
         sensor_type = sensor_entity.split(".")[0]
-        _LOGGER.info(f"Current state: {state}")
-        _LOGGER.info(f"Sensor type: {sensor_type}")
+        _LOGGER.debug(f"Current state: {state}")
+        _LOGGER.debug(f"Sensor type: {sensor_type}")
 
         if state == "unavailable":
             raise ServiceValidationError("Sensor entity is unavailable")
@@ -549,8 +724,8 @@ def setup(hass, config):
                         response=response,
                         key_frame=processor.key_frame)
 
-        _LOGGER.info(f"Response: {response}")
-        _LOGGER.info(f"Sensor type: {type}")
+        _LOGGER.debug(f"Response: {response}")
+        _LOGGER.debug(f"Sensor type: {type}")
         await _update_sensor(hass, sensor_entity, response["response_text"], type)
         return response
 
@@ -563,7 +738,7 @@ def setup(hass, config):
         config_entry = None
         for entry in hass.config_entries.async_entries(DOMAIN):
             # Check if the config entry is empty
-            if entry.data["provider"] == "Timeline":
+            if entry.data[CONF_PROVIDER] == "Timeline":
                 config_entry = entry
                 break
 
