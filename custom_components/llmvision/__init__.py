@@ -67,6 +67,8 @@ from .const import (
     DEFAULT_CUSTOM_OPENAI_MODEL,
     DEFAULT_AWS_MODEL,
     DEFAULT_OPENWEBUI_MODEL,
+    CONF_CONTEXT_WINDOW,
+    CONF_KEEP_ALIVE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -86,6 +88,8 @@ async def async_setup_entry(hass, entry):
         CONF_DEFAULT_MODEL: entry.data.get(CONF_DEFAULT_MODEL),
         CONF_TEMPERATURE: entry.data.get(CONF_TEMPERATURE),
         CONF_TOP_P: entry.data.get(CONF_TOP_P),
+        CONF_CONTEXT_WINDOW: entry.data.get(CONF_CONTEXT_WINDOW), # Ollama
+        CONF_KEEP_ALIVE: entry.data.get(CONF_KEEP_ALIVE), # Ollama
         # Azure specific
         CONF_AZURE_BASE_URL: entry.data.get(CONF_AZURE_BASE_URL),
         CONF_AZURE_DEPLOYMENT: entry.data.get(CONF_AZURE_DEPLOYMENT),
@@ -179,6 +183,9 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
     if config_entry.version == 3:
         provider = new_data.get(PROVIDER) or new_data.get(CONF_PROVIDER)
         # Example for OpenAI, add similar logic for other providers if needed
+        if provider == "Memory":
+            # Change the provider name to "Settings"
+            new_data[CONF_PROVIDER] = "Settings"
         if provider == "OpenAI":
             # Migrate old provider-specific keys to generic keys
             if "openai_api_key" in new_data:
@@ -485,8 +492,8 @@ class ServiceCallData:
     """Store service call data and set default values"""
 
     def __init__(self, data_call):
-        self.provider = str(data_call.data.get(PROVIDER))
-        self.model = data_call.data.get(MODEL)
+        self.provider = str(data_call.data.get(PROVIDER)) # This is the config entry id
+        self.model = data_call.data.get(MODEL) # If not set, the conf_default_model will be set in providers.py
         self.message = str(data_call.data.get(MESSAGE, "")[0:2000])
         self.remember = data_call.data.get(REMEMBER, False)
         self.use_memory = data_call.data.get(USE_MEMORY, False)
@@ -557,6 +564,11 @@ def setup(hass, config):
     async def image_analyzer(data_call):
         """Handle the service call to analyze an image with LLM Vision"""
         start = dt_util.now()
+
+        # Log the service call data
+        _LOGGER.debug(f"Service call data: {data_call.data}")
+        # Log the provider
+        _LOGGER.debug(f"Provider: {data_call.data.get(PROVIDER)}")
 
         # Initialize call object with service call data
         call = ServiceCallData(data_call).get_service_call_data()

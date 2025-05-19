@@ -15,6 +15,7 @@ from .const import (
     CONF_IP_ADDRESS,
     CONF_PORT,
     CONF_HTTPS,
+    CONF_DEFAULT_MODEL,
     CONF_AZURE_BASE_URL,
     CONF_AZURE_DEPLOYMENT,
     CONF_AZURE_VERSION,
@@ -44,6 +45,10 @@ from .const import (
     DEFAULT_CUSTOM_OPENAI_MODEL,
     DEFAULT_AWS_MODEL,
     DEFAULT_OPENWEBUI_MODEL,
+    CONF_KEEP_ALIVE,
+    CONF_CONTEXT_WINDOW,
+    CONF_TEMPERATURE,
+    CONF_TOP_P,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -85,42 +90,34 @@ class Request:
 
         return entry_data.get(CONF_PROVIDER)
 
-    @staticmethod
-    def _get_default_model(provider):
-        _LOGGER.debug(f"Returning default model for provider: {provider}")
-        if provider == "OpenAI":
-            return DEFAULT_OPENAI_MODEL
-        elif provider == "Azure":
-            return DEFAULT_AZURE_MODEL
-        elif provider == "Anthropic":
-            return DEFAULT_ANTHROPIC_MODEL
-        elif provider == "Google":
-            return DEFAULT_GOOGLE_MODEL
-        elif provider == "Groq":
-            return DEFAULT_GROQ_MODEL
-        elif provider == "LocalAI":
-            return DEFAULT_LOCALAI_MODEL
-        elif provider == "Ollama":
-            return DEFAULT_OLLAMA_MODEL
-        elif provider == "Custom OpenAI":
-            return DEFAULT_CUSTOM_OPENAI_MODEL
-        elif provider == "AWS":
-            return DEFAULT_AWS_MODEL
-        elif provider == "Open WebUI":
-            return DEFAULT_OPENWEBUI_MODEL
-        else:
-            return
+    def get_default_model(self, provider):
+        """Get default model from config entry"""
+        config_entry = self.hass.data.get(DOMAIN).get(provider)
+        provider_name = self.get_provider(self.hass, provider)
+        if config_entry:
+            default_model = config_entry.get(CONF_DEFAULT_MODEL)
+            if default_model:
+                return default_model
+
+        return {
+            "OpenAI": DEFAULT_OPENAI_MODEL,
+            "Azure": DEFAULT_AZURE_MODEL,
+            "Anthropic": DEFAULT_ANTHROPIC_MODEL,
+            "Google": DEFAULT_GOOGLE_MODEL,
+            "Groq": DEFAULT_GROQ_MODEL,
+            "LocalAI": DEFAULT_LOCALAI_MODEL,
+            "Ollama": DEFAULT_OLLAMA_MODEL,
+            "Custom OpenAI": DEFAULT_CUSTOM_OPENAI_MODEL,
+            "AWS": DEFAULT_AWS_MODEL,
+            "Open WebUI": DEFAULT_OPENWEBUI_MODEL,
+        }.get(provider_name)
 
     def validate(self, call) -> None | ServiceValidationError:
         """Validate call data"""
 
         # if not call.model set default model for provider
         if not call.model:
-            call.model = Request._get_default_model(
-                self.get_provider(self.hass, call.provider))
-
-        _LOGGER.info(f"Using model: {call.model}")
-
+            call.model = self._get_default_model(call.provider)
         # Check image input
         if not call.base64_images:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
@@ -148,6 +145,11 @@ class Request:
         config = self.hass.data.get(DOMAIN).get(entry_id)
 
         provider = Request.get_provider(self.hass, entry_id)
+        api_key = config.get(CONF_API_KEY)
+        call.model = call.model if call.model else self.get_default_model(
+            entry_id)
+        call.temperature = config.get(CONF_TEMPERATURE, 0.5)
+        call.top_p = config.get(CONF_TOP_P, 0.9)
         call.base64_images = self.base64_images
         call.filenames = self.filenames
 
@@ -218,7 +220,9 @@ class Request:
                                        endpoint={
                                            'ip_address': ip_address,
                                            'port': port,
-                                           'https': https
+                                           'https': https,
+                                           'keep_alive': config.get(CONF_KEEP_ALIVE, 5),
+                                           'context_window': config.get(CONF_CONTEXT_WINDOW, 2048)
                                        })
 
         elif provider == 'Custom OpenAI':
@@ -329,6 +333,8 @@ class Provider(ABC):
         self.api_key = api_key
         self.model = model
         self.endpoint = endpoint
+        _LOGGER.debug(
+            f"Provider initialized: {self.__class__.__name__.title()}(model={self.model}, endpoint={self.endpoint})")
 
     @abstractmethod
     async def _make_request(self, data: dict) -> str:
@@ -346,12 +352,23 @@ class Provider(ABC):
     async def validate(self) -> None | ServiceValidationError:
         pass
 
+    def _get_default_parameters(self, call: dict) -> dict:
+        """Get default parameters from config entry"""
+        entry_id = call.provider
+        config = self.hass.data.get(DOMAIN).get(entry_id)
+        default_parameters = {
+            'temperature': config.get(CONF_TEMPERATURE, 0.5),
+            'top_p': config.get(CONF_TOP_P, 0.9),
+            'keep_alive': config.get(CONF_KEEP_ALIVE, 5),
+            'context_window': config.get(CONF_CONTEXT_WINDOW, 2048)
+        }
+        return default_parameters
+
     async def vision_request(self, call: dict) -> str:
         data = self._prepare_vision_data(call)
         return await self._make_request(data)
 
     async def title_request(self, call: dict) -> str:
-        call.temperature = 0.1
         call.max_tokens = 10
         data = self._prepare_text_data(call)
         return await self._make_request(data)
@@ -417,10 +434,12 @@ class OpenAI(Provider):
         return response_text
 
     def _prepare_vision_data(self, call: dict) -> list:
+        default_parameters = self._get_default_parameters(call)
         payload = {"model": self.model,
                    "messages": [{"role": "user", "content": []}],
                    "max_tokens": call.max_tokens,
-                   "temperature": call.temperature
+                   "temperature": default_parameters.get('temperature'),
+                   "top_p": default_parameters.get('top_p'),
                    }
 
         for image, filename in zip(call.base64_images, call.filenames):
@@ -448,11 +467,13 @@ class OpenAI(Provider):
         return payload
 
     def _prepare_text_data(self, call: dict) -> list:
+        default_parameters = self._get_default_parameters(call)
         return {
             "model": self.model,
             "messages": [{"role": "user", "content": [{"type": "text", "text": call.message}]}],
             "max_tokens": call.max_tokens,
-            "temperature": call.temperature
+            "temperature": default_parameters.get('temperature'),
+            "top_p": default_parameters.get('top_p')
         }
 
     async def validate(self) -> None | ServiceValidationError:
@@ -491,9 +512,11 @@ class AzureOpenAI(Provider):
         return response_text
 
     def _prepare_vision_data(self, call: dict) -> list:
+        default_parameters = self._get_default_parameters(call)
         payload = {"messages": [{"role": "user", "content": []}],
                    "max_tokens": call.max_tokens,
-                   "temperature": call.temperature,
+                   "temperature": default_parameters.get('temperature'),
+                   "top_p": default_parameters.get('top_p'),
                    "stream": False
                    }
         for image, filename in zip(call.base64_images, call.filenames):
@@ -519,9 +542,11 @@ class AzureOpenAI(Provider):
         return payload
 
     def _prepare_text_data(self, call: dict) -> list:
+        default_parameters = self._get_default_parameters(call)
         return {"messages": [{"role": "user", "content": [{"type": "text", "text": call.message}]}],
                 "max_tokens": call.max_tokens,
-                "temperature": call.temperature,
+                "temperature": default_parameters.get('temperature'),
+                "top_p": default_parameters.get('top_p'),
                 "stream": False
                 }
 
@@ -561,11 +586,13 @@ class Anthropic(Provider):
         return response_text
 
     def _prepare_vision_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         payload = {
             "model": self.model,
             "messages": [{"role": "user", "content": []}],
             "max_tokens": call.max_tokens,
-            "temperature": call.temperature
+            "temperature": default_parameters.get('temperature'),
+            "top_p": default_parameters.get('top_p')
         }
         for image, filename in zip(call.base64_images, call.filenames):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
@@ -590,11 +617,13 @@ class Anthropic(Provider):
         return payload
 
     def _prepare_text_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         return {
             "model": self.model,
             "messages": [{"role": "user", "content": [{"type": "text", "text": call.message}]}],
             "max_tokens": call.max_tokens,
-            "temperature": call.temperature
+            "temperature": default_parameters.get('temperature'),
+            "top_p": default_parameters.get('top_p')
         }
 
     async def validate(self) -> None | ServiceValidationError:
@@ -636,8 +665,9 @@ class Google(Provider):
         return response_text
 
     def _prepare_vision_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         payload = {"contents": [{"role": "user", "parts": []}], "generationConfig": {
-            "maxOutputTokens": call.max_tokens, "temperature": call.temperature}}
+            "maxOutputTokens": call.max_tokens, "temperature": default_parameters.get('temperature'), "topP": default_parameters.get('top_p')}}
         for image, filename in zip(call.base64_images, call.filenames):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename
@@ -660,9 +690,10 @@ class Google(Provider):
         return payload
 
     def _prepare_text_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         return {
             "contents": [{"role": "user", "parts": [{"text": call.message + ":"}]}],
-            "generationConfig": {"maxOutputTokens": call.max_tokens, "temperature": call.temperature}
+            "generationConfig": {"maxOutputTokens": call.max_tokens, "temperature": default_parameters.get('temperature'), "topP": default_parameters.get('top_p')}
         }
 
     async def validate(self) -> None | ServiceValidationError:
@@ -692,6 +723,7 @@ class Groq(Provider):
         return response_text
 
     def _prepare_vision_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         first_image = call.base64_images[0]
         payload = {
             "messages": [
@@ -704,7 +736,10 @@ class Groq(Provider):
                     ]
                 }
             ],
-            "model": self.model
+            "model": self.model,
+            "max_completion_tokens": call.max_tokens,
+            "temperature": default_parameters.get('temperature'),
+            "top_p": default_parameters.get('top_p')
         }
 
         system_prompt = call.memory.system_prompt
@@ -714,6 +749,7 @@ class Groq(Provider):
         return payload
 
     def _prepare_text_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         return {
             "messages": [
                 {
@@ -723,7 +759,10 @@ class Groq(Provider):
                     ]
                 }
             ],
-            "model": self.model
+            "model": self.model,
+            "max_completion_tokens": call.max_tokens,
+            "temperature": default_parameters.get('temperature'),
+            "top_p": default_parameters.get('top_p')
         }
 
     async def validate(self) -> None | ServiceValidationError:
@@ -758,8 +797,9 @@ class LocalAI(Provider):
         return response_text
 
     def _prepare_vision_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         payload = {"model": self.model, "messages": [{"role": "user", "content": [
-        ]}], "max_tokens": call.max_tokens, "temperature": call.temperature}
+        ]}], "max_tokens": call.max_tokens, "temperature": default_parameters.get('temperature'), "top_p": default_parameters.get('top_p')}
         for image, filename in zip(call.base64_images, call.filenames):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename
@@ -784,11 +824,13 @@ class LocalAI(Provider):
         return payload
 
     def _prepare_text_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         return {
             "model": self.model,
             "messages": [{"role": "user", "content": [{"type": "text", "text": call.message}]}],
             "max_tokens": call.max_tokens,
-            "temperature": call.temperature
+            "temperature": default_parameters.get('temperature'),
+            "top_p": default_parameters.get('top_p')
         }
 
     async def validate(self) -> None | ServiceValidationError:
@@ -808,7 +850,13 @@ class LocalAI(Provider):
 
 
 class Ollama(Provider):
-    def __init__(self, hass: object, api_key: str, model: str, endpoint={'ip_address': "0.0.0.0", 'port': "11434", 'https': False}):
+    def __init__(self,
+                 hass: object,
+                 api_key: str,
+                 model: str,
+                 endpoint={
+                     'ip_address': "0.0.0.0", 'port': "11434", 'https': False
+                 }):
         super().__init__(hass, api_key, model, endpoint)
 
     async def _make_request(self, data: dict) -> str:
@@ -827,8 +875,9 @@ class Ollama(Provider):
         return response_text
 
     def _prepare_vision_data(self, call: dict) -> dict:
-        payload = {"model": self.model, "messages": [], "stream": False, "options": {
-            "num_predict": call.max_tokens, "temperature": call.temperature}}
+        default_parameters = self._get_default_parameters(call)
+        payload = {"model": self.model, "messages": [], "stream": False, "keep_alive": default_parameters.get('keep_alive'), "options": {
+            "num_predict": call.max_tokens, "temperature": default_parameters.get('temperature'), "num_ctx": default_parameters.get('context_window')}}
 
         if call.use_memory:
             memory_content = call.memory._get_memory_images(
@@ -851,11 +900,16 @@ class Ollama(Provider):
         return payload
 
     def _prepare_text_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         return {
             "model": self.model,
             "messages": [{"role": "user", "content": call.message}],
             "stream": False,
-            "options": {"num_predict": call.max_tokens, "temperature": call.temperature}
+            "keep_alive": default_parameters.get('keep_alive'),
+            "options": {"num_predict": call.max_tokens,
+                        "temperature": default_parameters.get('temperature'),
+                        "num_ctx": default_parameters.get('context_window')
+                        },
         }
 
     async def validate(self) -> None | ServiceValidationError:
@@ -943,7 +997,7 @@ class AWSBedrock(Provider):
             tokens_in = token_usage.get("inputTokens")
             tokens_out = token_usage.get("outputTokens")
             tokens_total = token_usage.get("totalTokens")
-            _LOGGER.info(
+            _LOGGER.debug(
                 f"AWS Bedrock call latency: {latency}ms inputTokens: {tokens_in} outputTokens: {tokens_out} totalTokens: {tokens_total}")
             response_data = response.get("output")
             _LOGGER.debug(f"AWS Bedrock call response data: {response_data}")
@@ -951,12 +1005,13 @@ class AWSBedrock(Provider):
 
     def _prepare_vision_data(self, call: dict) -> list:
         _LOGGER.debug(f"Found model type `{self.model}` for AWS Bedrock call.")
+        default_parameters = self._get_default_parameters(call)
         # We need to generate the correct format for the respective models
         payload = {
             "messages": [{"role": "user", "content": []}],
             "inferenceConfig": {
                 "maxTokens": call.max_tokens,
-                "temperature": call.temperature
+                "temperature": default_parameters.get('temperature'),
             }
         }
 

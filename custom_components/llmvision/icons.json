@@ -29,7 +29,8 @@
             "ollama": {
                 "sections": {
                     "connection_section": "mdi:connection",
-                    "model_section": "mdi:brain"
+                    "model_section": "mdi:brain",
+                    "advanced_section": "mdi:cog-outline"
                 }
             },
             "google": {
@@ -44,10 +45,28 @@
                     "model_section": "mdi:brain"
                 }
             },
-            "aws": {
+            "aws_bedrock": {
                 "sections": {
                     "connection_section": "mdi:connection",
                     "model_section": "mdi:brain"
+                }
+            },
+            "custom_openai": {
+                "sections": {
+                    "connection_section": "mdi:connection",
+                    "model_section": "mdi:brain"
+                }
+            },
+            "openwebui": {
+                "sections": {
+                    "connection_section": "mdi:connection",
+                    "model_section": "mdi:brain"
+                }
+            },
+            "settings": {
+                "sections": {
+                    "fallback_section": "mdi:cog-outline",
+                    "memory_section": "mdi:head-snowflake-outline"
                 }
             }
         }

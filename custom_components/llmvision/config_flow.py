@@ -1,3 +1,6 @@
+import voluptuous as vol
+import os
+import logging
 from homeassistant import config_entries
 from homeassistant.helpers.selector import selector
 from homeassistant.data_entry_flow import section
@@ -27,6 +30,7 @@ from .const import (
     CONF_AZURE_DEPLOYMENT,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_RETENTION_TIME,
+    CONF_FALLBACK_PROVIDER,
     CONF_MEMORY_PATHS,
     CONF_MEMORY_STRINGS,
     CONF_SYSTEM_PROMPT,
@@ -47,11 +51,10 @@ from .const import (
     DEFAULT_AWS_MODEL,
     DEFAULT_OPENWEBUI_MODEL,
     ENDPOINT_OPENWEBUI,
-    ENDPOINT_AZURE
+    ENDPOINT_AZURE,
+    CONF_CONTEXT_WINDOW,
+    CONF_KEEP_ALIVE
 )
-import voluptuous as vol
-import os
-import logging
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -64,7 +67,6 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def handle_provider(self, provider):
         provider_steps = {
             "Timeline": self.async_step_timeline,
-            "Memory": self.async_step_memory,
             "Anthropic": self.async_step_anthropic,
             "AWS Bedrock": self.async_step_aws_bedrock,
             "Azure": self.async_step_azure,
@@ -85,11 +87,23 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="unknown_provider")
 
     async def async_step_user(self, user_input=None):
+        # Check if "Settings" provider is already configured
+        settings_configured = False
+        for entry in self.hass.config_entries.async_entries(DOMAIN):
+            if entry.data.get(CONF_PROVIDER) == "Settings":
+                settings_configured = True
+                break
+        _LOGGER.debug(f"Settings configured flag: {settings_configured}")
+        if not settings_configured:
+            self.init_info = {CONF_PROVIDER: "Settings"}
+            _LOGGER.debug(f"user_info: {self.init_info}")
+            return await self.async_step_settings()
+
         data_schema = vol.Schema({
             vol.Required(CONF_PROVIDER, default="Timeline"): selector({
                 "select": {
                     # Azure removed until fixed
-                    "options": ["Timeline", "Memory", "Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI"],
+                    "options": ["Timeline", "Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI"],
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -131,8 +145,21 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
+            # Re-nest the flat config entry data into sections
+            suggested = {
+                "connection_section": {
+                    CONF_IP_ADDRESS: self.init_info.get(CONF_IP_ADDRESS),
+                    CONF_PORT: self.init_info.get(CONF_PORT, 11434),
+                    CONF_HTTPS: self.init_info.get(CONF_HTTPS, False),
+                },
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(CONF_DEFAULT_MODEL, DEFAULT_LOCALAI_MODEL),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
+                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                },
+            }
             data_schema = self.add_suggested_values_to_schema(
-                data_schema, self.init_info
+                data_schema, suggested
             )
 
         if user_input is not None:
@@ -191,13 +218,38 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }),
                 {"collapsed": False},
             ),
+            vol.Optional("advanced_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_CONTEXT_WINDOW, default=2048): int,
+                    vol.Optional(CONF_KEEP_ALIVE, default=5): int,
+                }),
+                {"collapsed": True},
+            ),
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
+
+            # Re-nest the flat config entry data into sections
+            suggested = {
+                "connection_section": {
+                    CONF_IP_ADDRESS: self.init_info.get(CONF_IP_ADDRESS),
+                    CONF_PORT: self.init_info.get(CONF_PORT, 11434),
+                    CONF_HTTPS: self.init_info.get(CONF_HTTPS, False),
+                },
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(CONF_DEFAULT_MODEL, DEFAULT_OLLAMA_MODEL),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
+                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                },
+                "advanced_section": {
+                    CONF_CONTEXT_WINDOW: self.init_info.get(CONF_CONTEXT_WINDOW, 2048),
+                    CONF_KEEP_ALIVE: self.init_info.get(CONF_KEEP_ALIVE, 5),
+                }
+            }
             data_schema = self.add_suggested_values_to_schema(
-                data_schema, self.init_info
+                data_schema, suggested
             )
 
         if user_input is not None:
@@ -212,7 +264,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 endpoint={
                                     'ip_address': user_input[CONF_IP_ADDRESS],
                                     'port': user_input[CONF_PORT],
-                                    'https': user_input[CONF_HTTPS]
+                                    'https': user_input[CONF_HTTPS],
+                                    'keep_alive': user_input[CONF_KEEP_ALIVE],
+                                    'context_window': user_input[CONF_CONTEXT_WINDOW]
                                 })
                 await ollama.validate()
                 # add the mode to user_input
@@ -266,8 +320,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
+            # Re-nest the flat config entry data into sections
+            suggested = {
+                "connection_section": {
+                    CONF_API_KEY: self.init_info.get(CONF_API_KEY),
+                    CONF_IP_ADDRESS: self.init_info.get(CONF_IP_ADDRESS),
+                    CONF_PORT: self.init_info.get(CONF_PORT, 3000),
+                    CONF_HTTPS: self.init_info.get(CONF_HTTPS, False),
+                },
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(CONF_DEFAULT_MODEL, DEFAULT_OPENWEBUI_MODEL),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
+                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                }
+            }
             data_schema = self.add_suggested_values_to_schema(
-                data_schema, self.init_info
+                data_schema, suggested
             )
 
         if user_input is not None:
@@ -336,8 +404,19 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
+            # Re-nest the flat config entry data into sections
+            suggested = {
+                "connection_section": {
+                    CONF_API_KEY: self.init_info.get(CONF_API_KEY)
+                },
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(CONF_DEFAULT_MODEL, DEFAULT_OPENAI_MODEL),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
+                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                }
+            }
             data_schema = self.add_suggested_values_to_schema(
-                data_schema, self.init_info
+                data_schema, suggested
             )
 
         if user_input is not None:
@@ -403,8 +482,19 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
+            # Re-nest the flat config entry data into sections
+            suggested = {
+                "connection_section": {
+                    CONF_API_KEY: self.init_info.get(CONF_API_KEY)
+                },
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(CONF_DEFAULT_MODEL, DEFAULT_AZURE_MODEL),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
+                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                }
+            }
             data_schema = self.add_suggested_values_to_schema(
-                data_schema, self.init_info
+                data_schema, suggested
             )
 
         if user_input is not None:
@@ -472,8 +562,19 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
+            # Re-nest the flat config entry data into sections
+            suggested = {
+                "connection_section": {
+                    CONF_API_KEY: self.init_info.get(CONF_API_KEY)
+                },
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(CONF_DEFAULT_MODEL, DEFAULT_ANTHROPIC_MODEL),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
+                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                }
+            }
             data_schema = self.add_suggested_values_to_schema(
-                data_schema, self.init_info
+                data_schema, suggested
             )
 
         if user_input is not None:
@@ -536,8 +637,19 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
+            # Re-nest the flat config entry data into sections
+            suggested = {
+                "connection_section": {
+                    CONF_API_KEY: self.init_info.get(CONF_API_KEY)
+                },
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(CONF_DEFAULT_MODEL, DEFAULT_GOOGLE_MODEL),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
+                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                }
+            }
             data_schema = self.add_suggested_values_to_schema(
-                data_schema, self.init_info
+                data_schema, suggested
             )
 
         if user_input is not None:
@@ -600,8 +712,19 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
+            # Re-nest the flat config entry data into sections
+            suggested = {
+                "connection_section": {
+                    CONF_API_KEY: self.init_info.get(CONF_API_KEY)
+                },
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(CONF_DEFAULT_MODEL, DEFAULT_GROQ_MODEL),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
+                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                }
+            }
             data_schema = self.add_suggested_values_to_schema(
-                data_schema, self.init_info
+                data_schema, suggested
             )
 
         if user_input is not None:
@@ -665,8 +788,19 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
+            # Re-nest the flat config entry data into sections
+            suggested = {
+                "connection_section": {
+                    CONF_API_KEY: self.init_info.get(CONF_API_KEY)
+                },
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(CONF_DEFAULT_MODEL, DEFAULT_CUSTOM_OPENAI_MODEL),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
+                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                }
+            }
             data_schema = self.add_suggested_values_to_schema(
-                data_schema, self.init_info
+                data_schema, suggested
             )
 
         if user_input is not None:
@@ -737,8 +871,21 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
+            # Re-nest the flat config entry data into sections
+            suggested = {
+                "connection_section": {
+                    CONF_AWS_ACCESS_KEY_ID: self.init_info.get(CONF_AWS_ACCESS_KEY_ID),
+                    CONF_AWS_SECRET_ACCESS_KEY: self.init_info.get(CONF_AWS_SECRET_ACCESS_KEY),
+                    CONF_AWS_REGION_NAME: self.init_info.get(CONF_AWS_REGION_NAME, "us-east-1"),
+                },
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(CONF_DEFAULT_MODEL, DEFAULT_AWS_MODEL),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
+                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                }
+            }
             data_schema = self.add_suggested_values_to_schema(
-                data_schema, self.init_info
+                data_schema, suggested
             )
 
         if user_input is not None:
@@ -814,39 +961,72 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=data_schema,
         )
 
-    async def async_step_memory(self, user_input=None):
+    async def async_step_settings(self, user_input=None):
         data_schema = vol.Schema({
-            vol.Optional(CONF_MEMORY_PATHS, default="/config/llmvision/memory/example.jpg"): selector({
-                "text": {
-                    "multiline": False,
-                    "multiple": True
-                }
-            }),
-            vol.Optional(CONF_MEMORY_STRINGS, default="This an example"): selector({
-                "text": {
-                    "multiline": False,
-                    "multiple": True
-                }
-            }),
-            vol.Optional(CONF_SYSTEM_PROMPT, default=DEFAULT_SYSTEM_PROMPT): selector({
-                "text": {
-                    "multiline": True,
-                    "multiple": False
-                }
-            }),
-            vol.Optional(CONF_TITLE_PROMPT, default=DEFAULT_TITLE_PROMPT): selector({
-                "text": {
-                    "multiline": True,
-                    "multiple": False
-                }
-            }),
+            vol.Optional("general_section"): section(
+                # Dropdown for selecting fallback provider (fetch any existing providers)
+                vol.Schema({
+                    vol.Optional(CONF_FALLBACK_PROVIDER, default=""): selector({
+                        "select": {
+                            "options": [
+                                {"label": self.hass.data[DOMAIN][provider].get(
+                                    "provider", provider), "value": provider}
+                                for provider in (self.hass.data.get(DOMAIN) or {}).keys()
+                                if provider != self.init_info[CONF_PROVIDER]
+                            ]}
+                    })
+                }),
+                {"collapsed": False},
+            ),
+            vol.Optional("memory_section"): section(
+                vol.Schema({
+                    vol.Optional(CONF_MEMORY_PATHS): selector({
+                        "text": {
+                            "multiline": False,
+                            "multiple": True
+                        }
+                    }),
+                    vol.Optional(CONF_MEMORY_STRINGS): selector({
+                        "text": {
+                            "multiline": False,
+                            "multiple": True
+                        }
+                    }),
+                    vol.Optional(CONF_SYSTEM_PROMPT, default=DEFAULT_SYSTEM_PROMPT): selector({
+                        "text": {
+                            "multiline": True,
+                            "multiple": False
+                        }
+                    }),
+                    vol.Optional(CONF_TITLE_PROMPT, default=DEFAULT_TITLE_PROMPT): selector({
+                        "text": {
+                            "multiline": True,
+                            "multiple": False
+                        }
+                    }),
+                }),
+                {"collapsed": True},
+            )
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
+            # Re-nest the flat config entry data into sections
+            suggested = {
+                "general_section": {
+                    CONF_FALLBACK_PROVIDER: self.init_info.get(
+                        CONF_FALLBACK_PROVIDER, "")
+                },
+                "memory_section": {
+                    CONF_MEMORY_PATHS: self.init_info.get(CONF_MEMORY_PATHS),
+                    CONF_MEMORY_STRINGS: self.init_info.get(CONF_MEMORY_STRINGS),
+                    CONF_SYSTEM_PROMPT: self.init_info.get(CONF_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT),
+                    CONF_TITLE_PROMPT: self.init_info.get(CONF_TITLE_PROMPT, DEFAULT_TITLE_PROMPT),
+                }
+            }
             data_schema = self.add_suggested_values_to_schema(
-                data_schema, self.init_info
+                data_schema, suggested
             )
 
         if user_input is not None:
@@ -869,7 +1049,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             if errors:
                 return self.async_show_form(
-                    step_id="memory",
+                    step_id="settings",
                     data_schema=data_schema,
                     errors=errors
                 )
@@ -881,10 +1061,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
             else:
                 # New config entry
-                return self.async_create_entry(title="LLM Vision Memory", data=user_input)
+                return self.async_create_entry(title="LLM Vision Settings", data=user_input)
 
         return self.async_show_form(
-            step_id="memory",
+            step_id="settings",
             data_schema=data_schema,
         )
 

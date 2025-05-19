@@ -8,22 +8,10 @@
             "localai": {
                 "title": "Connect to your LocalAI server",
                 "description": "Provide the IP address and port of your LocalAI server.",
-                "data": {
-                    "ip_address": "IP address",
-                    "port": "Port",
-                    "https": "HTTPS",
-                    "default_model": "Default model",
-                    "temperature": "Temperature",
-                    "top_p": "Top P"
-                }
-            },
-            "ollama": {
-                "title": "Configure Ollama",
-                "description": "Provide the IP address and port of your Ollama server.",
                 "sections": {
                     "connection_section": {
                         "name": "Connection",
-                        "description": "Manage server connection",
+                        "description": "Server connection",
                         "data": {
                             "ip_address": "IP address",
                             "port": "Port",
@@ -37,6 +25,52 @@
                             "default_model": "Default model",
                             "temperature": "Temperature",
                             "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
+                }
+            },
+            "ollama": {
+                "title": "Configure Ollama",
+                "description": "Provide the IP address and port of your Ollama server.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Server connection",
+                        "data": {
+                            "ip_address": "IP address",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Advanced",
+                        "description": "Advanced model parameters",
+                        "data": {
+                            "context_window": "Context length",
+                            "keep_alive": "Keep alive (in minutes)"
+                        },
+                        "data_description": {
+                            "context_window": "Sets the size of the context window used to generate the next token.",
+                            "keep_alive": "Controls how long the model will stay loaded into memory following the request. -1 to keep in memory indefinitely, 0 to unload immediately."
                         }
                     }
                 }
@@ -47,7 +81,7 @@
                 "sections": {
                     "connection_section": {
                         "name": "Connection",
-                        "description": "Manage OpenAI authentication",
+                        "description": "OpenAI authentication",
                         "data": {
                             "api_key": "API key"
                         }
@@ -59,6 +93,11 @@
                             "default_model": "Default model",
                             "temperature": "Temperature",
                             "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
                         }
                     }
                 }
@@ -69,7 +108,7 @@
                 "sections": {
                     "connection_section": {
                         "name": "Connection",
-                        "description": "Manage Azure authentication",
+                        "description": "Azure authentication",
                         "data": {
                             "api_key": "API key",
                             "azure_base_url": "Base URL",
@@ -84,6 +123,11 @@
                             "default_model": "Default model",
                             "temperature": "Temperature",
                             "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
                         }
                     }
                 }
@@ -94,7 +138,7 @@
                 "sections": {
                     "connection_section": {
                         "name": "Connection",
-                        "description": "Manage Anthropic authentication",
+                        "description": "Anthropic authentication",
                         "data": {
                             "api_key": "API key"
                         }
@@ -106,6 +150,11 @@
                             "default_model": "Default model",
                             "temperature": "Temperature",
                             "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
                         }
                     }
                 }
@@ -116,7 +165,7 @@
                 "sections": {
                     "connection_section": {
                         "name": "Connection",
-                        "description": "Manage Google authentication",
+                        "description": "Google authentication",
                         "data": {
                             "api_key": "API key"
                         }
@@ -128,6 +177,11 @@
                             "default_model": "Default model",
                             "temperature": "Temperature",
                             "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
                         }
                     }
                 }
@@ -138,7 +192,7 @@
                 "sections": {
                     "connection_section": {
                         "name": "Connection",
-                        "description": "Manage Groq authentication",
+                        "description": "Groq authentication",
                         "data": {
                             "api_key": "API key"
                         }
@@ -150,6 +204,11 @@
                             "default_model": "Default model",
                             "temperature": "Temperature",
                             "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
                         }
                     }
                 }
@@ -160,7 +219,7 @@
                 "sections": {
                     "connection_section": {
                         "name": "Connection",
-                        "description": "Manage Custom OpenAI authentication",
+                        "description": "Custom OpenAI authentication",
                         "data": {
                             "custom_openai_endpoint": "Custom Endpoint",
                             "api_key": "API key"
@@ -173,6 +232,11 @@
                             "default_model": "Default model",
                             "temperature": "Temperature",
                             "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
                         }
                     }
                 }
@@ -183,7 +247,7 @@
                 "sections": {
                     "connection_section": {
                         "name": "Connection",
-                        "description": "Manage AWS authentication",
+                        "description": "AWS authentication",
                         "data": {
                             "aws_access_key_id": "Access Key",
                             "aws_secret_access_key": "Secret Key",
@@ -197,6 +261,11 @@
                             "default_model": "Default model",
                             "temperature": "Temperature",
                             "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
                         }
                     }
                 }
@@ -207,7 +276,7 @@
                 "sections": {
                     "connection_section": {
                         "name": "Connection",
-                        "description": "Manage Open WebUI authentication",
+                        "description": "Open WebUI authentication",
                         "data": {
                             "api_key": "API Key (JWT token)",
                             "ip_address": "IP Address",
@@ -222,6 +291,11 @@
                             "default_model": "Default model",
                             "temperature": "Temperature",
                             "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
                         }
                     }
                 }
@@ -233,14 +307,36 @@
                     "retention_time": "Auto delete events after (days)"
                 }
             },
-            "memory": {
-                "title": "Memory",
-                "description": "Content in memory syncs across providers and is used to provide additional context to the model.\nNote: If `use_memory` is enabled, all images in memory are sent to the provider with every call. Having lots of images in memory can increase processing time and increase cost!   \n\n **Image file paths**: Provide the path to the image file. \n **Image descriptions**: Provide a description of the image (e.g.: 'This is Cookie, my dog'). \n Images and descriptions must be in the same order, and there must be as many descriptions as images. \n\n **System Prompt**: Use the system prompt to change how the model behaves and responds. \n **Title Prompt**: The instruction given to the model to generate a title.",
-                "data": {
-                    "memory_paths": "Image file path",
-                    "memory_strings": "Image description",
-                    "system_prompt": "System prompt",
-                    "title_prompt": "Title prompt"
+            "settings": {
+                "title": "Settings",
+                "description": "Configure the LLM Vision integration. This entry is required before setting up other providers. If you wish to use the default settings, just press 'Submit'.",
+                "sections": {
+                    "general_section": {
+                        "name": "General",
+                        "description": "Set preferred provider to use when the selected provider is unavailable.",
+                        "data": {
+                            "fallback_provider": "Fallback provider"
+                        },
+                        "data_description": {
+                            "fallback_provider": "LLM will retry the request with the selected provider if the current provider fails."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Memory",
+                        "description": "Content in memory syncs across providers and is used to provide additional context to the model.",
+                        "data": {
+                            "memory_paths": "Image file path",
+                            "memory_strings": "Image description",
+                            "system_prompt": "System prompt",
+                            "title_prompt": "Title prompt"
+                        },
+                        "data_description": {
+                            "memory_paths": "Provide the path to the image file.",
+                            "memory_strings": "Provide a description of the image (e.g.: 'This is Cookie, my dog'). Images and descriptions must be in the same order, and there must be as many descriptions as images.",
+                            "system_prompt": "Use the system prompt to change how the model behaves and responds.",
+                            "title_prompt": "The instruction given to the model to generate a title."
+                        }
+                    }
                 }
             }
         },

@@ -12,6 +12,8 @@ CONF_HTTPS = 'https'
 CONF_DEFAULT_MODEL = 'default_model'
 CONF_TEMPERATURE = 'temperature'
 CONF_TOP_P = 'top_p'
+CONF_CONTEXT_WINDOW = 'context_window' #(ollama: num_ctx)
+CONF_KEEP_ALIVE = 'keep_alive'
 
 # Azure specific
 CONF_AZURE_BASE_URL = 'azure_base_url'
@@ -29,12 +31,13 @@ CONF_CUSTOM_OPENAI_ENDPOINT = 'custom_openai_endpoint'
 # Timeline
 CONF_RETENTION_TIME = 'retention_time'
 
-# Memory
+# Settings
+CONF_FALLBACK_PROVIDER = 'fallback_provider'
+CONF_SYSTEM_PROMPT = 'system_prompt'
+CONF_TITLE_PROMPT = 'title_prompt'
 CONF_MEMORY_PATHS = 'memory_paths'
 CONF_MEMORY_IMAGES_ENCODED = 'memory_images_encoded'
 CONF_MEMORY_STRINGS = 'memory_strings'
-CONF_SYSTEM_PROMPT = 'system_prompt'
-CONF_TITLE_PROMPT = 'title_prompt'
 
 
 # SERVICE CALL CONSTANTS
