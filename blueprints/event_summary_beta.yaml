@@ -1,6 +1,6 @@
 # Snooze blueprint or notifications
 blueprint:
-  name: AI Event Summary (v1.4.3)
+  name: AI Event Summary (v1.4.4)
   author: valentinfrlch
   homeassistant:
     min_version: 2024.10.0
@@ -184,9 +184,9 @@ blueprint:
                 - Live Preview
         file_path:
           name: File Path - To send snapshot in Dynamic Mode with Snapshot Preview Mode
-          description: "The file path to store the most current snapshot for the FIRST camera if using multiple camera entities.\n\nDefaults
+          description: "The file path to store the most current snapshot for the FIRST camera if using multiple camera entities. You can specifiy a custom location as well.\n\nDefaults
             to `Media Folder - Secured` that references **/media/snapshots/<CAMERA_NAME>/last_motion.jpg** \n\n Try the `Public Folder - Unsecured` option that references **/config/www/snapshots/{{ camera_file_path }}/last_motion.jpg** if you are having issues ***Note that this is unsecured and exposes the images to the web.***"
-          default: Media Folder - Secured
+          default: '/media/snapshots/{{ camera_file_path }}/last_motion.jpg'
           selector:
             select:
               options:
@@ -198,7 +198,7 @@ blueprint:
         tap_navigate:
           name: Tap Navigate
           description: >-
-            Home Assistant dashboard to navigate to when notification is opened (e.g. /lovelace/cameras).
+            Home Assistant dashboard to navigate to when notification is opened (e.g. /lovelace/cameras)(default: Home Dashboard == /lovelace/0).
           default: /lovelace/0
           selector:
             text:
@@ -298,23 +298,14 @@ blueprint:
             Use `Alarm` to use the device's loud alarm notification sound.
             [Learn More](https://companion.home-assistant.io/docs/notifications/notification-commands/#volume-level)
             (default = Camera Name == {{ camera }} Snapshot). 
-          default: '{{ camera }} Snapshot'
+          default: '{{ camera_entity_snapshot }} snapshot'
           selector:
             select:
               options:
               - label: Camera Name
-                value: '{{ camera }} snapshot'
+                value: '{{ camera_entity_snapshot }} snapshot'
               - label: Alarm
                 value: alarm_stream
-        # camera_snapshot:
-        #   name: Android Instant Snapshot
-        #   description: The camera which creates the snapshot
-        #   selector:
-        #     entity:
-        #       domain:
-        #       - camera
-        #       multiple: false
-        # TTS Notification
         tts_notification:
           name: Use Text-to-Speech (TTS) on your device to speak the notification. Android Only
           description: Enable TTS notification.
@@ -324,7 +315,7 @@ blueprint:
         tts_volume:
           name: TTS Volume
           description: Set TTS volume to device's current alarm volume or Max volume. ALARM VOLUME WILL IGNORE DO NOT DISTURB! Android Only
-          default: 'notification_stream'
+          default: notification_stream
           selector:
             select:
               options:
