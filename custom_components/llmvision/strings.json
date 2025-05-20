@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "LLM Vision Setup",
-                "description": "Select what you want to set up"
+                "description": "Select the provider you want to set up."
             },
             "localai": {
                 "title": "Connect to your LocalAI server",

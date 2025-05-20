@@ -67,6 +67,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def handle_provider(self, provider):
         provider_steps = {
             "Timeline": self.async_step_timeline,
+            "Settings": self.async_step_settings,
             "Anthropic": self.async_step_anthropic,
             "AWS Bedrock": self.async_step_aws_bedrock,
             "Azure": self.async_step_azure,
@@ -1102,11 +1103,12 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_settings(self, user_input=None):
+        _LOGGER.debug("Settings step")
         data_schema = vol.Schema({
             vol.Optional("general_section"): section(
                 # Dropdown for selecting fallback provider (fetch any existing providers)
                 vol.Schema({
-                    vol.Optional(CONF_FALLBACK_PROVIDER, default="No Fallback"): selector({
+                    vol.Optional(CONF_FALLBACK_PROVIDER, default=""): selector({
                         "select": {
                             "options": (
                                 [{"label": "No Fallback", "value": ""}] +
@@ -1154,6 +1156,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
+            _LOGGER.debug("Reconfigure Settings step")
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
             # Re-nest the flat config entry data into sections
@@ -1215,6 +1218,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_reconfigure(self, user_input):
         data = self._get_reconfigure_entry().data
         provider = data[CONF_PROVIDER]
+        self.init_info = data
         return await self.handle_provider(provider)
 
 
