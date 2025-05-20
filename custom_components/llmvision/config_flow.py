@@ -135,8 +135,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional("model_section"): section(
                 vol.Schema({
                     vol.Optional(CONF_DEFAULT_MODEL, default=DEFAULT_LOCALAI_MODEL): str,
-                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
+                    vol.Optional(CONF_TOP_P, default=0.9): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
                 }),
                 {"collapsed": False},
             ),
@@ -213,8 +227,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional("model_section"): section(
                 vol.Schema({
                     vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_OLLAMA_MODEL): str,
-                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
+                    vol.Optional(CONF_TOP_P, default=0.9): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
                 }),
                 {"collapsed": False},
             ),
@@ -310,8 +338,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional("model_section"): section(
                 vol.Schema({
                     vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_OPENWEBUI_MODEL): str,
-                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
+                    vol.Optional(CONF_TOP_P, default=0.9): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
                 }),
                 {"collapsed": False},
             ),
@@ -394,8 +436,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional("model_section"): section(
                 vol.Schema({
                     vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_OPENAI_MODEL): str,
-                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
+                    vol.Optional(CONF_TOP_P, default=0.9): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
                 }),
                 {"collapsed": False},
             ),
@@ -472,8 +528,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional("model_section"): section(
                 vol.Schema({
                     vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_AZURE_MODEL): str,
-                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
+                    vol.Optional(CONF_TOP_P, default=0.9): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
                 }),
                 {"collapsed": False},
             )
@@ -552,8 +622,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional("model_section"): section(
                 vol.Schema({
                     vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_ANTHROPIC_MODEL): str,
-                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
+                    vol.Optional(CONF_TOP_P, default=0.9): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
                 }),
                 {"collapsed": False},
             )
@@ -627,8 +711,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional("model_section"): section(
                 vol.Schema({
                     vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_GOOGLE_MODEL): str,
-                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
+                    vol.Optional(CONF_TOP_P, default=0.9): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
                 }),
                 {"collapsed": False},
             )
@@ -702,8 +800,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional("model_section"): section(
                 vol.Schema({
                     vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_GROQ_MODEL): str,
-                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
+                    vol.Optional(CONF_TOP_P, default=0.9): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
                 }),
                 {"collapsed": False},
             )
@@ -778,8 +890,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional("model_section"): section(
                 vol.Schema({
                     vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_CUSTOM_OPENAI_MODEL): str,
-                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
+                    vol.Optional(CONF_TOP_P, default=0.9): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
                 }),
                 {"collapsed": False},
             )
@@ -861,8 +987,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional("model_section"): section(
                 vol.Schema({
                     vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_AWS_MODEL): str,
-                    vol.Optional(CONF_TEMPERATURE, default=0.5): float,
-                    vol.Optional(CONF_TOP_P, default=0.9): float,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
+                    vol.Optional(CONF_TOP_P, default=0.9): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
                 }),
                 {"collapsed": False},
             )
@@ -966,14 +1106,18 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional("general_section"): section(
                 # Dropdown for selecting fallback provider (fetch any existing providers)
                 vol.Schema({
-                    vol.Optional(CONF_FALLBACK_PROVIDER, default=""): selector({
+                    vol.Optional(CONF_FALLBACK_PROVIDER, default="No Fallback"): selector({
                         "select": {
-                            "options": [
-                                {"label": self.hass.data[DOMAIN][provider].get(
-                                    "provider", provider), "value": provider}
-                                for provider in (self.hass.data.get(DOMAIN) or {}).keys()
-                                if provider != self.init_info[CONF_PROVIDER]
-                            ]}
+                            "options": (
+                                [{"label": "No Fallback", "value": ""}] +
+                                [
+                                    {"label": self.hass.data[DOMAIN][provider].get(
+                                        "provider", provider), "value": provider}
+                                    for provider in (self.hass.data.get(DOMAIN) or {}).keys()
+                                    if provider != self.init_info[CONF_PROVIDER]
+                                ]
+                            )
+                        }
                     })
                 }),
                 {"collapsed": False},
