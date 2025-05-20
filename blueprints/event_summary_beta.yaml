@@ -292,12 +292,15 @@ blueprint:
               placeholder: mdi:cctv
         notification_channel:
           name: Custom Notification Channel or Alarm Mode - Android Only
-          description: Create a new channel for notifications to allow custom notification
+          description: 
+            "Create a new channel for notifications to allow custom notification
             sounds, vibration patterns, and override Do Not Disturb mode. Configured
             directly on the Android device -> Home Assistant App Setting -> Notifications.
-            Use `Alarm` to use the device's loud alarm notification sound.
-            [Learn More](https://companion.home-assistant.io/docs/notifications/notification-commands/#volume-level)
-            (default = Camera Name == {{ camera }} Snapshot). 
+            
+            Use `Alarm` to use the device's loud alarm notification sound. 
+            [Learn More](https://companion.home-assistant.io/docs/notifications/notification-commands/#volume-level)\n\n
+            Default = Camera Name == {{ camera }} Snapshot. This will take the name
+            of the first camera entity when using multiple cameras. You can specify your own channel name as well."
           default: '{{ camera_entity_snapshot }} snapshot'
           selector:
             select:
@@ -306,6 +309,7 @@ blueprint:
                 value: '{{ camera_entity_snapshot }} snapshot'
               - label: Alarm
                 value: alarm_stream
+              custom_value: true
         tts_notification:
           name: Use Text-to-Speech (TTS) on your device to speak the notification. Android Only
           description: Enable TTS notification.
@@ -351,8 +355,6 @@ blueprint:
               - label: Morgan Freeman Motion Detected
                 value: US-EN-Morgan-Freeman-Motion-Detected.wav
               custom_value: true
-              sort: false
-              multiple: false
         notification_volume:
           name: Volume Sound - iOS Only
           description: Specify a sound level %
