@@ -16,6 +16,9 @@
                             "ip_address": "IP address",
                             "port": "Port",
                             "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Use HTTPS for secure connections"
                         }
                     },
                     "model_section": {
@@ -45,6 +48,9 @@
                             "ip_address": "IP address",
                             "port": "Port",
                             "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Use HTTPS for secure connections"
                         }
                     },
                     "model_section": {
@@ -70,7 +76,7 @@
                         },
                         "data_description": {
                             "context_window": "Sets the size of the context window used to generate the next token.",
-                            "keep_alive": "Controls how long the model will stay loaded into memory following the request. -1 to keep in memory indefinitely, 0 to unload immediately."
+                            "keep_alive": "Controls how long the model will stay loaded into memory following the request. -1: keep in memory indefinitely, 0: unload immediately"
                         }
                     }
                 }
@@ -84,6 +90,9 @@
                         "description": "OpenAI authentication",
                         "data": {
                             "api_key": "API key"
+                        },
+                        "data_description": {
+                            "api_key": "Make sure to add credit to your OpenAI account."
                         }
                     },
                     "model_section": {
@@ -141,6 +150,9 @@
                         "description": "Anthropic authentication",
                         "data": {
                             "api_key": "API key"
+                        },
+                        "data_description": {
+                            "api_key": "Make sure to add credit to your Anthropic account."
                         }
                     },
                     "model_section": {
@@ -223,6 +235,10 @@
                         "data": {
                             "custom_openai_endpoint": "Custom Endpoint",
                             "api_key": "API key"
+                        },
+                        "data_description": {
+                            "endpoint": "The API enpoint following this format: http(s)://baseURL(:port)/some/endpoint",
+                            "api_key": "API key or 'openai', if none is required."
                         }
                     },
                     "model_section": {
@@ -282,6 +298,9 @@
                             "ip_address": "IP Address",
                             "port": "Port",
                             "https": "Use HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Use HTTPS for secure connections if your server supports it."
                         }
                     },
                     "model_section": {
@@ -349,7 +368,8 @@
             "mismatched_lengths": "The number of image paths and descriptions must match"
         },
         "abort": {
-            "unknown_provider": "Unknown provider"
+            "unknown_provider": "Unknown provider",
+            "reconfigure_successful": "Saved settings successfully"
         }
     }
 }

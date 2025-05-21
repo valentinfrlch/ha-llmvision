@@ -3,121 +3,373 @@
         "step": {
             "user": {
                 "title": "LLM Vision Konfiguration",
-                "description": "Wähle einen Anbieter zum konfigurieren"
+                "description": "Wähle den Anbieter, den du einrichten möchtest."
             },
             "localai": {
                 "title": "LocalAI konfigurieren",
                 "description": "Gib die IP-Adresse und den Port deines LocalAI Servers an.",
-                "data": {
-                    "localai_ip": "IP-Adresse",
-                    "localai_port": "Port",
-                    "localai_https": "HTTPS"
+                "sections": {
+                    "connection_section": {
+                        "name": "Verbindung",
+                        "description": "LocalAI Server Verbindung",
+                        "data": {
+                            "ip_address": "IP-Adresse",
+                            "port": "Port",
+                            "https": "HTTPS verwenden"
+                        },
+                        "data_description": {
+                            "https": "Aktiviere diese Option, wenn dein Server HTTPS verwendet."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Standardmodell-Parameter festlegen",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
+                            "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                        }
+                    }
                 }
             },
             "ollama": {
                 "title": "Ollama konfigurieren",
                 "description": "Gib die IP-Adresse und den Port deines Ollama Servers an.",
-                "data": {
-                    "ollama_ip": "IP-Addresse",
-                    "ollama_port": "Port",
-                    "ollama_https": "HTTPS"
+                "sections": {
+                    "connection_section": {
+                        "name": "Verbindung",
+                        "description": "Ollama Server Verbindung",
+                        "data": {
+                            "ip_address": "IP-Adresse",
+                            "port": "Port",
+                            "https": "HTTPS verwenden"
+                        },
+                        "data_description": {
+                            "https": "Aktiviere diese Option, wenn dein Server HTTPS verwendet."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Standardmodell-Parameter festlegen",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
+                            "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Erweiterte Optionen",
+                        "description": "Erweiterte Modell-Parameter",
+                        "data": {
+                            "context_window": "Kontextfenster",
+                            "keep_alive": "Keep alive (in Minuten)"
+                        },
+                        "data_description": {
+                            "context_window": "Setzt das Kontextfenster für das Modell zum generieren des nächsten Tokens.",
+                            "keep_alive": "Konfiguriert wie lange das Modell nach der Antwort geladen bleibt. -1: Modell bleibt im RAM, 0: Modell wird sofort geschlossen"
+                        }
+                    }
                 }
             },
             "openai": {
                 "title": "OpenAI konfigurieren",
-                "description": "Gib einen gültigen OpenAI API-key ein.",
-                "data": {
-                    "openai_api_key": "API-key"
+                "description": "Gib einen gültigen OpenAI API-Key ein.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Verbindung",
+                        "description": "OpenAI Authentifizierung",
+                        "data": {
+                            "api_key": "API-Key"
+                        },
+                        "data_description": {
+                            "api_key": "Stell sicher, dass dein OpenAI-Konto über Guthaben verfügt."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Standardmodell-Parameter festlegen",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
+                            "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                        }
+                    }
                 }
             },
             "azure": {
                 "title": "Azure konfigurieren",
-                "description": "Gib einen gültigen Azure API-key, die Base URL, den Namen des Deployments und die API-Version an.\nDie Base URL muss dieses Format haben: `https://domain.openai.azure.com/` (einschliesslich des abschliessenden '/')",
-                "data": {
-                    "azure_api_key": "API key",
-                    "azure_base_url": "Base URL",
-                    "azure_deployment": "Deployment",
-                    "azure_version": "API Version"
+                "description": "Gib einen gültigen Azure API-Key, die Base URL, den Namen des Deployments und die API-Version an.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Verbindung",
+                        "description": "Azure OpenAI Authentifizierung",
+                        "data": {
+                            "api_key": "API-Key",
+                            "base_url": "Base URL",
+                            "deployment": "Deployment",
+                            "version": "API-Version"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Standardmodell-Parameter festlegen",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
+                            "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                        }
+                    }
                 }
             },
             "anthropic": {
                 "title": "Anthropic Claude konfigurieren",
-                "description": "Gib einen gültigen Anthropic API-key ein.",
-                "data": {
-                    "anthropic_api_key": "API-key"
+                "description": "Gib einen gültigen Anthropic API-Key ein.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Verbindung",
+                        "description": "Anthropic Authentifizierung",
+                        "data": {
+                            "api_key": "API-Key"
+                        },
+                        "data_description": {
+                            "api_key": "Stell sicher, dass dein Anthropic-Konto über Guthaben verfügt."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Standardmodell-Parameter festlegen",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
+                            "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                        }
+                    }
                 }
             },
             "google": {
                 "title": "Google Gemini konfigurieren",
-                "description": "Gib einen gültigen Google Gemini API-key ein.",
-                "data": {
-                    "google_api_key": "API-key"
+                "description": "Gib einen gültigen Google Gemini API-Key ein.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Verbindung",
+                        "description": "Google Gemini Authentifizierung",
+                        "data": {
+                            "api_key": "API-Key"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Standardmodell-Parameter festlegen",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
+                            "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                        }
+                    }
                 }
             },
             "groq": {
                 "title": "Groq konfigurieren",
-                "description": "Gib einen gültigen Groq API-key an.",
-                "data": {
-                    "groq_api_key": "API-key"
+                "description": "Gib einen gültigen Groq API-Key an.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Verbindung",
+                        "description": "Groq Authentifizierung",
+                        "data": {
+                            "api_key": "API-Key"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Standardmodell-Parameter festlegen",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
+                            "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                        }
+                    }
                 }
             },
             "custom_openai": {
-                "title": "OpenAI kompatiblen Provider konfigurieren",
-                "description": "**Wichtig**: Funktioniert nur wenn die API kompatibel mit der von OpenAI ist. Wenn deine API keinen Schlüssel benötigt, gib 'openai' ein. Der API Endpoint muss das folgende Format besitzen: `http(s)://baseURL(:port)/some/endpoint`",
-                "data": {
-                    "custom_openai_endpoint": "Endpoint",
-                    "custom_openai_api_key": "API-key",
-                    "custom_openai_default_model": "Standartmodell, zum Beispiel 'gpt-4o-mini'"
+                "title": "OpenAI-kompatiblen Provider konfigurieren",
+                "description": "Funktioniert nur, wenn die API kompatibel mit der von OpenAI ist.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Verbindung",
+                        "description": "Custom OpenAI Authentifizierung",
+                        "data": {
+                            "endpoint": "Endpoint",
+                            "api_key": "API-Key"
+                        },
+                        "data_description": {
+                            "endpoint": "Der API Endpoint im Format: http(s)://baseURL(:port)/some/endpoint",
+                            "api_key": "API-Key oder 'openai', falls keiner benötigt wird."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Standardmodell-Parameter festlegen",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
+                            "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                        }
+                    }
                 }
             },
             "aws_bedrock": {
                 "title": "AWS Bedrock konfigurieren",
-                "description": "**Wichtig**: Unterstützt derzeit nur die Modelle Nova und Anthropic Claude.",
-                "data": {
-                    "aws_access_key_id": "API-key",
-                    "aws_secret_access_key": "Secret",
-                    "aws_region_name": "Region",
-                    "aws_default_model": "Standartmodell"
+                "description": "Unterstützt derzeit nur die Modelle Nova und Anthropic Claude.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Verbindung",
+                        "description": "AWS Authentifizierung",
+                        "data": {
+                            "access_key_id": "API-Key",
+                            "secret_access_key": "Secret",
+                            "region_name": "Region"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Standardmodell-Parameter festlegen",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
+                            "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                        }
+                    }
                 }
             },
             "openwebui": {
                 "title": "OpenWebUI konfigurieren",
-                "description": "Gib einen gültigen OpenWebUI API-key, die IP-Adresse, den Port, das Standardmodell und ob HTTPS verwendet werden soll an.",
-                "data": {
-                    "openwebui_api_key": "API Key (JWT token)",
-                    "openwebui_ip": "IP Addresse",
-                    "openwebui_port": "Port",
-                    "openwebui_https": "HTTPS verwenden",
-                    "openwebui_default_model": "Standardmodell"
+                "description": "Gib einen gültigen OpenWebUI API-Key, die IP-Adresse, den Port, das Standardmodell und ob HTTPS verwendet werden soll an.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Verbindung",
+                        "description": "OpenWebUI Authentifizierung",
+                        "data": {
+                            "api_key": "API-Key (JWT Token)",
+                            "ip": "IP-Adresse",
+                            "port": "Port",
+                            "https": "HTTPS verwenden"
+                        },
+                        "data_description": {
+                            "https": "Aktiviere diese Option, wenn dein Server HTTPS verwendet."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Standardmodell-Parameter festlegen",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
+                            "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                        }
+                    }
                 }
             },
             "timeline": {
                 "title": "Timeline",
-                "description": "Konfiguriere wie viele Tage Events gespeichert werden, danach werden sie automatisch gelöscht. Events werden nur lokal gespeichert und können in der Kalenderansicht gelöscht werden. (0 deaktiviert auto delete)",
+                "description": "Set how many days events will be remembered for. Events will automatically be deleted after this time. Events are stored locally and can be deleted manually in the calendar view. (0 disables auto delete)",
                 "data": {
-                    "retention_time": "Automatisch löschen nach (in Tagen)"
+                    "retention_time": "Auto delete events after (days)"
                 }
             },
-            "memory": {
-                "title": "Erinnerungen",
-                "description": "Erinnerungen sind providerübergreifend und werden verwended um dem Modell mehr kontext zur Verfügung zu stellen.\nWenn `use_memory` aktiviert ist, werden alle Erinnerungen mitgesendet. Dies kann zu längeren Ladezeiten und höheren Kosten führen. \n\n **Image file paths**: Provide the path to the image file. \n **Image descriptions**: Provide a description of the image (e.g.: 'This is Cookie, my dog'). \n Images and descriptions must be in the same order, and there must be as many descriptions as images. \n\n **System Prompt**: Benutze den System Prompt um zu verändern wie das Modell sich verhält und antwortet. \n **Title Prompt**: Die Anweisung die dem Modell gegeben wird um einen Titel zu generieren.",
-                "data": {
-                    "memory_paths": "Bildpfad",
-                    "memory_strings": "Bildbeschreibung",
-                    "system_prompt": "System Prompt",
-                    "title_prompt": "Title prompt"
+            "settings": {
+                "title": "Settings",
+                "description": "Configure the LLM Vision integration. This entry is required before setting up other providers. If you wish to use the default settings, just press 'Submit'.",
+                "sections": {
+                    "general_section": {
+                        "name": "General",
+                        "description": "Set preferred provider to use when the selected provider is unavailable.",
+                        "data": {
+                            "fallback_provider": "Fallback provider"
+                        },
+                        "data_description": {
+                            "fallback_provider": "LLM will retry the request with the selected provider if the current provider fails."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Memory",
+                        "description": "Content in memory syncs across providers and is used to provide additional context to the model.",
+                        "data": {
+                            "memory_paths": "Image file path",
+                            "memory_strings": "Image description",
+                            "system_prompt": "System prompt",
+                            "title_prompt": "Title prompt"
+                        },
+                        "data_description": {
+                            "memory_paths": "Provide the path to the image file.",
+                            "memory_strings": "Provide a description of the image (e.g.: 'This is Cookie, my dog'). Images and descriptions must be in the same order, and there must be as many descriptions as images.",
+                            "system_prompt": "Use the system prompt to change how the model behaves and responds.",
+                            "title_prompt": "The instruction given to the model to generate a title."
+                        }
+                    }
                 }
             }
         },
         "error": {
-            "handshake_failed": "Verbindung zum Server konnte nicht hergestellt werden. Überprüfe deinen API-key oder IP und Port",
-            "empty_api_key": "Ungültiger API-key",
-            "invalid_provider": "Ungültiger Provider ausgewählt",
-            "invalid_image_path": "Ein oder mehrere Bildpfade sind ungültig",
-            "mismatched_lengths": "Die Anzahl der Bildpfade und Beschreibungen muss übereinstimmen"
+            "handshake_failed": "Verbindung zum Server konnte nicht hergestellt werden. Überprüfe deinen API-Key oder IP und Port.",
+            "empty_api_key": "Ungültiger API-Key",
+            "invalid_provider": "Ungültiger Anbieter ausgewählt",
+            "memory_not_supported": "Dieser Anbieter unterstützt keine Erinnerungen.",
+            "invalid_image_path": "Ein oder mehrere Bildpfade sind ungültig.",
+            "mismatched_lengths": "Die Anzahl der Bildpfade und Beschreibungen muss übereinstimmen."
         },
         "abort": {
-            "unknown_provider": "Unbekannter Anbieter"
+            "unknown_provider": "Unbekannter Anbieter",
+            "reconfigure_successful": "Einstellungen erfolgreich gespeichert."
         }
     }
 }
