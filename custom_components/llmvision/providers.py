@@ -303,7 +303,7 @@ class Request:
     async def _resolve_error(self, response, provider):
         """Translate response status to error message"""
         full_response_text = await response.text()
-        _LOGGER.info(f"[INFO] Full Response: {full_response_text}")
+        _LOGGER.debug(f"[INFO] Full Response: {full_response_text}")
 
         try:
             response_json = json.loads(full_response_text)
@@ -378,10 +378,10 @@ class Provider(ABC):
 
     async def _post(self, url, headers, data) -> dict:
         """Post data to url and return response data"""
-        _LOGGER.info(f"Request data: {Request.sanitize_data(data)}")
+        _LOGGER.debug(f"Request data: {Request.sanitize_data(data)}")
 
         try:
-            _LOGGER.info(f"Posting to {url}")
+            _LOGGER.debug(f"Posting to {url}")
             response = await self.session.post(url, headers=headers, json=data)
         except Exception as e:
             raise ServiceValidationError(f"Request failed: {e}")
@@ -393,13 +393,13 @@ class Provider(ABC):
             raise ServiceValidationError(parsed_response)
         else:
             response_data = await response.json()
-            _LOGGER.info(f"Response data: {response_data}")
+            _LOGGER.debug(f"Response data: {response_data}")
             return response_data
 
     async def _resolve_error(self, response, provider) -> str:
         """Translate response status to error message"""
         full_response_text = await response.text()
-        _LOGGER.info(f"[INFO] Full Response: {full_response_text}")
+        _LOGGER.debug(f"[INFO] Full Response: {full_response_text}")
 
         try:
             response_json = json.loads(full_response_text)
@@ -890,7 +890,7 @@ class Ollama(Provider):
             _LOGGER.info(
                 f"Checking connection to {protocol}://{ip_address}:{port}")
             response = await session.get(f"{protocol}://{ip_address}:{port}/api/tags", headers={})
-            _LOGGER.info(f"Response: {response}")
+            _LOGGER.debug(f"Response: {response}")
             if response.status != 200:
                 raise ServiceValidationError('handshake_failed')
         except Exception as e:
