@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from tenacity import retry, wait_random_exponential, before_sleep_log
 import boto3
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -641,7 +642,9 @@ class Google(Provider):
     def _generate_headers(self) -> dict:
         return {'content-type': 'application/json'}
 
-    async def _make_request(self, data) -> str:
+   @retry(wait=wait_random_exponential(multiplier=1, max=60), 
+          before_sleep=before_sleep_log(_LOGGER, logging.ERROR))
+   async def _make_request(self, data) -> str:
         try:
             endpoint = self.endpoint.get('base_url').format(
             model=self.endpoint.get('model'), api_key=self.api_key)
@@ -652,7 +655,8 @@ class Google(Provider):
                 "content").get("parts")[0].get("text")
         except Exception as e:
             _LOGGER.error(f"Error: {e}")
-            return "Event Detected" # this would still make the automation succeed, but the user will see an error in log, and event calendar will show the event has no further summary.
+            raise e
+            # return "Event Detected" # this would still make the automation succeed, but the user will see an error in log, and event calendar will show the event has no further summary.
         return response_text
 
     def _prepare_vision_data(self, call) -> dict:
