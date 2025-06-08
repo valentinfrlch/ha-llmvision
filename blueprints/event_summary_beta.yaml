@@ -1,4 +1,6 @@
-# Snooze blueprint or notifications
+# Fix Group and Channel to First Camera Entity, user edits - DONE
+# Add time to notificaion title or message, with user choose between 12/24h - DONE
+# Take snapshot of triggered camera entity if using multiple cameras (? help needed)
 blueprint:
   name: AI Event Summary (v1.4.4)
   author: valentinfrlch
@@ -175,13 +177,24 @@ blueprint:
                 - Consolidated
         preview_mode:
           name: Preview Mode
-          description: "Choose between a live preview or a snapshot of the event. \n\n **Important:** Live Preview is only supported on iOS."
+          description: "Choose between a live preview or a snapshot of the event. The Snapshot of the last camera, if using multiple Camera Entities, will be used but the notification will be udated with the camera view that triggered the automation. \n\n **Important:** Live Preview is only supported on iOS."
           default: Snapshot
           selector:
             select:
               options:
                 - Snapshot
                 - Live Preview
+        notification_time:
+          name: Notification Time
+          description: "Choose between 12-hour or 24-hour time format for the notification title."
+          default: '{{ now().strftime("%I:%M %p") }}'
+          selector:
+            select:
+              options:
+                - label: 12 Hour
+                  value: '{{ now().strftime("%I:%M %p") }}'
+                - label: 24 Hour
+                  value: '{{ now().strftime("%H:%M") }}'
         file_path:
           name: File Path - To send snapshot in Dynamic Mode with Snapshot Preview Mode
           description: "The file path to store the most current snapshot for the FIRST camera if using multiple camera entities. You can specifiy a custom location as well.\n\nDefaults
@@ -191,14 +204,14 @@ blueprint:
             select:
               options:
                 - label: Media Folder - Secured
-                  value: /media/snapshots/{{ camera_file_path }}/last_motion.jpg
+                  value: '/media/snapshots/{{ camera_file_path }}/last_motion.jpg'
                 - label: Public Folder - Unsecured
-                  value: /config/www/snapshots/{{ camera_file_path }}/last_motion.jpg
+                  value: '/config/www/snapshots/{{ camera_file_path }}/last_motion.jpg'
               custom_value: true
         tap_navigate:
           name: Tap Navigate
           description: >-
-            Home Assistant dashboard to navigate to when notification is opened (e.g. /lovelace/cameras)(default: Home Dashboard == /lovelace/0).
+            Home Assistant dashboard to navigate to when notification is opened (e.g. /lovelace/cameras).
           default: /lovelace/0
           selector:
             text:
@@ -292,24 +305,22 @@ blueprint:
               placeholder: mdi:cctv
         notification_channel:
           name: Custom Notification Channel or Alarm Mode - Android Only
-          description: 
-            "Create a new channel for notifications to allow custom notification
-            sounds, vibration patterns, and override Do Not Disturb mode. Configured
+          description: Create a new channel for notifications to allow custom notification
+            sounds, vibration patterns, and override Do Not Disturb mode. Camera Name uses first Camera Entity if using multiple cameras. Configured
             directly on the Android device -> Home Assistant App Setting -> Notifications.
-            
-            Use `Alarm` to use the device's loud alarm notification sound. 
-            [Learn More](https://companion.home-assistant.io/docs/notifications/notification-commands/#volume-level)\n\n
-            Default = Camera Name == {{ camera }} Snapshot. This will take the name
-            of the first camera entity when using multiple cameras. You can specify your own channel name as well."
-          default: '{{ camera_entity_snapshot }} snapshot'
+            Use `Alarm` to use the device's loud alarm notification sound. You can also type in your own channel name.
+            [Learn More](https://companion.home-assistant.io/docs/notifications/notification-commands/#volume-level)
+            (default = Camera Name == {{ camera_entity_snapshot }} Snapshot). 
+          default: '{{ camera }} Snapshot'
           selector:
             select:
               options:
               - label: Camera Name
-                value: '{{ camera_entity_snapshot }} snapshot'
+                value: '{{ camera }} Snapshot'
               - label: Alarm
                 value: alarm_stream
               custom_value: true
+        # TTS Notification
         tts_notification:
           name: Use Text-to-Speech (TTS) on your device to speak the notification. Android Only
           description: Enable TTS notification.
@@ -319,7 +330,7 @@ blueprint:
         tts_volume:
           name: TTS Volume
           description: Set TTS volume to device's current alarm volume or Max volume. ALARM VOLUME WILL IGNORE DO NOT DISTURB! Android Only
-          default: notification_stream
+          default: 'notification_stream'
           selector:
             select:
               options:
@@ -355,6 +366,8 @@ blueprint:
               - label: Morgan Freeman Motion Detected
                 value: US-EN-Morgan-Freeman-Motion-Detected.wav
               custom_value: true
+              sort: false
+              multiple: false
         notification_volume:
           name: Volume Sound - iOS Only
           description: Specify a sound level %
@@ -441,11 +454,9 @@ variables:
     {% endif %}
   tag: >
     {{ camera_entity + int(as_timestamp(now()))|string }}
-  group: >
-    {{ camera_entity }}
   label: Motion detected
   camera: >
-    {{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize }}
+    {{ camera_entities_list[0].replace("camera.", "").replace("_", " ") | title }}
   importance_prompt: >
     Classify the security event based on this image. Choose from the following options: "passive" for unimportant events, "time-sensitive" for notable but non-critical events such as a person at the front door, and "critical" only for potential burglaries or highly suspicious activity. Respond with one of these options exactly, without additional explanation.
   camera_entity_snapshot: >
@@ -455,6 +466,7 @@ variables:
   file_path: !input file_path
   snapshot_access_file_path: '{{ file_path | replace(''/config/www'',
     ''/local'') | replace(''/media'', ''/media/local'') }}'
+  notification_time: !input notification_time
 
 max_exceeded: silent
 mode: single
@@ -524,7 +536,7 @@ action:
                         value_template: "{{ preview_mode=='Snapshot' }}"
                     sequence:
 
-                      # Save Camera Snapshot to file to send to Android devices for Dynamic Mode, perhaps make optional?
+                      # Save Camera Snapshot to file to send to Android devices for Dynamic Mode
                       - service: camera.snapshot
                         entity_id: !input camera_entities
                         data:
@@ -536,13 +548,13 @@ action:
                           sequence:
                             - action: "notify.{{ repeat.item }}"
                               data:
-                                title: "{{ label }}"
+                                title: "{{ label }} at {{ notification_time }}"
                                 message: "{{camera}} has detected activity."
                                 data:
                                   url: !input tap_navigate #iOS
                                   clickAction: !input tap_navigate #Android
                                   tag: "{{tag}}"
-                                  group: "{{group}}"
+                                  group: !input notification_channel
                                   alert_once: true
                                   # Priority options
                                   ttl: 0
@@ -575,13 +587,13 @@ action:
                           sequence:
                             - action: "notify.{{ repeat.item }}"
                               data:
-                                title: "{{ label }}"
+                                title: "{{ label }} at {{ notification_time }}"
                                 message: "{{camera}} has detected activity."
                                 data:
                                   entity_id: "{{camera_entity}}"
                                   url: !input tap_navigate
                                   tag: "{{tag}}"
-                                  group: "{{group}}"
+                                  group: !input notification_channel
                                   alert_once: true
                                   push:
                                     interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
@@ -635,14 +647,14 @@ action:
                   sequence:
                     - action: "notify.{{ repeat.item }}"
                       data:
-                        title: "{{ label }}"
+                        title: "{{ label }} at {{ notification_time }}"
                         message: "{{response.response_text}}"
                         data:
                           image: "{{response.key_frame.replace('/config/www/','/local/') }}"
                           url: !input tap_navigate #iOS
                           clickAction: !input tap_navigate #Android
                           tag: "{{tag}}"
-                          group: "{{group}}"
+                          group: !input notification_channel
                           alert_once: true
                           # Priority options
                           ttl: 0
