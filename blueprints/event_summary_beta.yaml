@@ -107,7 +107,6 @@ blueprint:
         model:
           name: Model
           description: Which model to use. Depends on chosen provider.
-          default: "gpt-4o-mini"
           selector:
             text:
               multiline: false
