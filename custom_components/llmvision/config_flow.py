@@ -31,6 +31,8 @@ from .const import (
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_RETENTION_TIME,
     CONF_FALLBACK_PROVIDER,
+    CONF_TIMELINE_TODAY_SUMMARY,
+    CONF_TIMELINE_SUMMARY_PROMPT,
     CONF_MEMORY_PATHS,
     CONF_MEMORY_STRINGS,
     CONF_SYSTEM_PROMPT,
@@ -54,6 +56,7 @@ from .const import (
     ENDPOINT_AZURE,
     CONF_CONTEXT_WINDOW,
     CONF_KEEP_ALIVE
+    DEFAULT_SUMMARY_PROMPT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -1069,6 +1072,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_timeline(self, user_input=None):
         data_schema = vol.Schema({
             vol.Required(CONF_RETENTION_TIME, default=7): int,
+            vol.Required(CONF_TIMELINE_TODAY_SUMMARY, default=True): bool,
+            vol.Optional(CONF_TIMELINE_SUMMARY_PROMPT, default=DEFAULT_SUMMARY_PROMPT): selector({
+                "text": {
+                    "multiline": True,
+                    "multiple": False
+                }
+            }),
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:

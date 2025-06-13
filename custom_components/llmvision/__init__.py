@@ -393,7 +393,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
     return True
 
 
-async def _remember(hass, call, start, response, key_frame) -> None:
+async def _remember(hass, call, start, response, key_frame, today_summary) -> None:
     if call.remember:
         # Find timeline config
         config_entry = None
@@ -428,7 +428,8 @@ async def _remember(hass, call, start, response, key_frame) -> None:
             label=title,
             summary=response["response_text"],
             key_frame=key_frame,
-            camera_name=camera_name
+            camera_name=camera_name,
+            today_summary=today_summary
         )
 
 
@@ -593,15 +594,19 @@ def setup(hass, config):
 
         # Validate configuration, input data and make the call
         response = await request.call(call)
+        _LOGGER.info(f"Response: {response}")
         # Add processor.key_frame to response if it exists
         if processor.key_frame:
+            _LOGGER.info(f"Key frame: {processor.key_frame}")
             response["key_frame"] = processor.key_frame
 
         await _remember(hass=hass,
                         call=call,
                         start=start,
                         response=response,
-                        key_frame=processor.key_frame)
+                        key_frame=processor.key_frame,
+                        today_summary=response.get("today_summary", "")
+                        )
         return response
 
     async def video_analyzer(data_call):
@@ -637,7 +642,8 @@ def setup(hass, config):
                         call=call,
                         start=start,
                         response=response,
-                        key_frame=processor.key_frame)
+                        key_frame=processor.key_frame,
+                        today_summary=response.get("today_summary", ""))
         return response
 
     async def stream_analyzer(data_call):
@@ -672,7 +678,8 @@ def setup(hass, config):
                         call=call,
                         start=start,
                         response=response,
-                        key_frame=processor.key_frame)
+                        key_frame=processor.key_frame,
+                        today_summary=response.get("today_summary", ""))
         return response
 
     async def data_analyzer(data_call):

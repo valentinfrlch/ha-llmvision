@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from tenacity import retry, wait_random_exponential, before_sleep_log
 import boto3
+from datetime import datetime
+from .calendar import Timeline
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from functools import partial
@@ -24,6 +26,15 @@ from .const import (
     CONF_AWS_ACCESS_KEY_ID,
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
+    CONF_AWS_DEFAULT_MODEL,
+    CONF_OPENWEBUI_IP_ADDRESS,
+    CONF_OPENWEBUI_PORT,
+    CONF_OPENWEBUI_HTTPS,
+    CONF_OPENWEBUI_API_KEY,
+    CONF_OPENWEBUI_DEFAULT_MODEL,
+    CONF_TIMELINE_TODAY_SUMMARY,
+    CONF_TIMELINE_SUMMARY_PROMPT,
+    DEFAULT_SUMMARY_PROMPT,
     VERSION_ANTHROPIC,
     ENDPOINT_OPENAI,
     ENDPOINT_AZURE,
@@ -154,7 +165,7 @@ class Request:
         call.base64_images = self.base64_images
         call.filenames = self.filenames
 
-        self.validate(call)
+        self.validate(call)  # TODO: Skip validation for text only requests
 
         # Get fallback provider from settings
         settings_entry = None
