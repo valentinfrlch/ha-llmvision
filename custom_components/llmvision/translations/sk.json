@@ -1,0 +1,123 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Konfigurácia LLM Vision",
+                "description": "Vyberte poskytovateľa, ktorého chcete konfigurovať"
+            },
+            "localai": {
+                "title": "Pripojte sa k vášmu LocalAI serveru",
+                "description": "Zadajte IP adresu a port vášho servera LocalAI.",
+                "data": {
+                    "localai_ip": "IP adresa",
+                    "localai_port": "Port",
+                    "localai_https": "HTTPS"
+                }
+            },
+            "ollama": {
+                "title": "Konfigurovať Ollama",
+                "description": "Zadajte IP adresu a port vášho servera Ollama.",
+                "data": {
+                    "ollama_ip": "IP adresa",
+                    "ollama_port": "Port",
+                    "ollama_https": "HTTPS"
+                }
+            },
+            "openai": {
+                "title": "Konfigurovať OpenAI",
+                "description": "Zadajte platný API kľúč pre OpenAI.",
+                "data": {
+                    "openai_api_key": "API kľúč"
+                }
+            },
+            "azure": {
+                "title": "Konfigurovať Azure",
+                "description": "Zadajte platný API kľúč pre Azure, základnú URL adresu, názov inštalácie (deployment) a verziu API.\nZákladná URL adresa musí byť vo formáte `https://domena.openai.azure.com/` vrátane lomky na konci.",
+                "data": {
+                    "azure_api_key": "API kľúč",
+                    "azure_base_url": "Základná URL",
+                    "azure_deployment": "Inštalácia (deployment)",
+                    "azure_version": "Verzia API"
+                }
+            },
+            "anthropic": {
+                "title": "Konfigurovať Anthropic Claude",
+                "description": "Zadajte platný API kľúč pre Anthropic.",
+                "data": {
+                    "anthropic_api_key": "API kľúč"
+                }
+            },
+            "google": {
+                "title": "Konfigurovať Google Gemini",
+                "description": "Zadajte platný API kľúč pre Google Gemini.",
+                "data": {
+                    "google_api_key": "API kľúč"
+                }
+            },
+            "groq": {
+                "title": "Konfigurovať Groq",
+                "description": "Zadajte platný API kľúč pre Groq.",
+                "data": {
+                    "groq_api_key": "API kľúč"
+                }
+            },
+            "custom_openai": {
+                "title": "Konfigurovať vlastného poskytovateľa OpenAI",
+                "description": "**Dôležité**: Funguje iba vtedy, ak je API kompatibilné s API OpenAI. Ak API nevyžaduje kľúč, zadajte hodnotu 'openai'. Endpoint musí byť v tomto formáte: `http(s)://zakladna_url_adresa(:port)/nejaky/endpoint`",
+                "data": {
+                    "custom_openai_endpoint": "Vlastný endpoint",
+                    "custom_openai_api_key": "API kľúč",
+                    "custom_openai_default_model": "Predvolený model, ktorý sa má používať, napr. gpt-4o-mini"
+                }
+            },
+            "aws_bedrock": {
+                "title": "Konfigurovať poskytovateľa AWS Bedrock",
+                "description": "**Dôležité**: Momentálne sú podporované iba tieto modely: Nova, Anthropic Claude",
+                "data": {
+                    "aws_access_key_id": "Prístupový kľúč",
+                    "aws_secret_access_key": "Heslo (secret)",
+                    "aws_region_name": "Región",
+                    "aws_default_model": "Predvolený model"
+                }
+            },
+            "openwebui": {
+                "title": "Nastaviť poskytovateľa Open WebUI",
+                "description": "Zadajte API kľúč (JWT token), IP adresu, port, http(s) a predvolený model.",
+                "data": {
+                    "openwebui_api_key": "API kľúč (JWT token)",
+                    "openwebui_ip": "IP adresa",
+                    "openwebui_port": "Port",
+                    "openwebui_https": "Používať https",
+                    "openwebui_default_model": "Predvolený model"
+                }
+            },
+            "timeline": {
+                "title": "Timeline",
+                "description": "Nastavte, koľko dní budú v pamäti držané udalosti. Po uplynutí tohto času budú udalosti vymazané. Udalosti sú ukladané lokálne a môžete ich odstrániť ručne v kalendári. (0 vypne automatické odstraňovanie)",
+                "data": {
+                    "retention_time": "Automaticky odstraňovať udalosti po (dni)"
+                }
+            },
+            "memory": {
+                "title": "Pamäť",
+                "description": "Obsah v pamäti je synchronizovaný medzi poskytovateľmi a používa sa pre poskytnutie dodatočného kontextu modelu.\nPoznámka: Pri zapnutej voľbe `use_memory` sa pri každom volaní odosielajú poskytovateľovi všetky obrázky. Ak máte v pamäti veľa obrázkov, môže sa zvýšiť čas spracovania a zároveň môžu stúpnuť vaše náklady!   \n\n **Cesty k súborom obrázkov**: Zadajte cestu k súboru s obrázkom. \n **Popisy obrázkov**: Zadajte popis obrázku (napr: 'Toto je Pejko, môj pes'). \n Obrázky a popisy musia byť v rovnakom poradí a počet popisov a obrázkov musí sedieť. \n\n **Systémový prompt**: Použite systémový prompt na zmenu toho, ako sa model správa a ako odpovedá. \n **Prompt pre titulok**: Inštrukcie, pomocou ktorých má model vygenerovať titulok.",
+                "data": {
+                    "memory_paths": "Cesty k súboru s obrázkom",
+                    "memory_strings": "Popis obrázku",
+                    "system_prompt": "Systémový prompt",
+                    "title_prompt": "Prompt pre titulok"
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "Nepodarilo sa pripojiť k serveru. Skontrolujte váš API kľúč, IP adresu a port",
+            "empty_api_key": "Neplatný API kľúč",
+            "invalid_provider": "Vybrali ste neplatného poskytovateľa",
+            "invalid_image_path": "Aspoň jedna cesta k súboru obrázka je neplatná",
+            "mismatched_lengths": "Počet ciest k obrázkom a popisov musí byť rovnaký"
+        },
+        "abort": {
+            "unknown_provider": "Neznámy poskytovateľ"
+        }
+    }
+}

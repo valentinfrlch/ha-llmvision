@@ -28,7 +28,7 @@ image_analyzer:
     remember:
       name: Remember
       required: false
-      description: 'Remember this event so you can ask about it later'
+      description: 'Store this event in the timeline'
       example: true
       default: false
       selector:
@@ -86,17 +86,6 @@ image_analyzer:
         number:
           min: 1
           max: 300
-    temperature:
-      name: Temperature
-      required: true
-      description: 'Randomness. Lower is more accurate, higher is more creative'
-      example: 0.2
-      default: 0.2
-      selector:
-        number:
-          min: 0.1
-          max: 1.0
-          step: 0.1
     generate_title:
       name: Generate Title
       required: false
@@ -106,7 +95,7 @@ image_analyzer:
         boolean:
     expose_images:
       name: Expose Images
-      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response. (Only works for entity input).
+      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response.
       required: false
       example: false
       default: false
@@ -143,7 +132,7 @@ video_analyzer:
     remember:
       name: Remember
       required: false
-      description: 'Remember this event so you can ask about it later'
+      description: 'Store this event in the timeline'
       example: true
       default: false
       selector:
@@ -235,17 +224,6 @@ video_analyzer:
         number:
           min: 1
           max: 300
-    temperature:
-      name: Temperature
-      required: true
-      description: 'Randomness. Lower is more accurate, higher is more creative'
-      example: 0.2
-      default: 0.2
-      selector:
-        number:
-          min: 0.0
-          max: 1.0
-          step: 0.1
     generate_title:
       name: Generate Title
       required: false
@@ -255,7 +233,7 @@ video_analyzer:
         boolean:
     expose_images:
       name: Expose Images
-      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response. (Only works for entity input).
+      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response.
       required: false
       example: false
       default: false
@@ -292,7 +270,7 @@ stream_analyzer:
     remember:
       name: Remember
       required: false
-      description: 'Remember this event so you can ask about it later'
+      description: 'Store this event in the timeline'
       example: true
       default: false
       selector:
@@ -363,17 +341,6 @@ stream_analyzer:
         number:
           min: 1
           max: 300
-    temperature:
-      name: Temperature
-      required: true
-      description: 'Randomness. Lower is more accurate, higher is more creative'
-      example: 0.2
-      default: 0.2
-      selector:
-        number:
-          min: 0.1
-          max: 1.0
-          step: 0.1
     generate_title:
       name: Generate Title
       required: false
@@ -383,7 +350,7 @@ stream_analyzer:
         boolean:
     expose_images:
       name: Expose Images
-      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response. (Only works for entity input).
+      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response.
       required: false
       example: false
       default: false
@@ -418,6 +385,14 @@ data_analyzer:
       selector:
         text:
           multiline: true
+    remember:
+      name: Remember
+      required: false
+      description: 'Store this event in the timeline'
+      example: true
+      default: false
+      selector:
+        boolean:
     use_memory:
       name: Use Memory
       required: false
@@ -480,17 +455,21 @@ data_analyzer:
         number:
           min: 1
           max: 50
-    temperature:
-      name: Temperature
-      required: true
-      description: 'Randomness. Lower is more accurate, higher is more creative. 0.1 is recommended for best accuracy.'
-      example: 0.1
-      default: 0.1
+    generate_title:
+      name: Generate Title
+      required: false
+      description: Generate a title. (Used for notifications and remembered events)
+      default: false
       selector:
-        number:
-          min: 0.1
-          max: 1.0
-          step: 0.1
+        boolean:
+    expose_images:
+      name: Expose Images
+      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response.
+      required: false
+      example: false
+      default: false
+      selector:
+        boolean:
 
 remember:
   name: Remember
@@ -543,6 +522,3 @@ remember:
       example: '2022-02-22 13:30:00'
       selector:
         datetime:
-cleanup:
-  name: 'Cleanup'
-  description: 'Deletes images not associated with an event in /www/llmvision/. If Timeline is not configured, this action will delete all files in /www/llmvision.'

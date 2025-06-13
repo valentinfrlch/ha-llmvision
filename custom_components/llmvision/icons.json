@@ -4,7 +4,71 @@
         "video_analyzer": "mdi:movie-search",
         "stream_analyzer": "mdi:video-wireless",
         "data_analyzer": "mdi:database-search",
-        "remember": "mdi:timeline-text",
-        "cleanup": "mdi:delete-sweep"
+        "remember": "mdi:timeline-text"
+    },
+    "config": {
+        "step": {
+            "openai": {
+                "sections": {
+                    "connection_section": "mdi:connection",
+                    "model_section": "mdi:brain"
+                }
+            },
+            "azure": {
+                "sections": {
+                    "connection_section": "mdi:connection",
+                    "model_section": "mdi:brain"
+                }
+            },
+            "localai": {
+                "sections": {
+                    "connection_section": "mdi:connection",
+                    "model_section": "mdi:brain"
+                }
+            },
+            "ollama": {
+                "sections": {
+                    "connection_section": "mdi:connection",
+                    "model_section": "mdi:brain",
+                    "advanced_section": "mdi:cog-outline"
+                }
+            },
+            "google": {
+                "sections": {
+                    "connection_section": "mdi:connection",
+                    "model_section": "mdi:brain"
+                }
+            },
+            "anthropic": {
+                "sections": {
+                    "connection_section": "mdi:connection",
+                    "model_section": "mdi:brain"
+                }
+            },
+            "aws_bedrock": {
+                "sections": {
+                    "connection_section": "mdi:connection",
+                    "model_section": "mdi:brain"
+                }
+            },
+            "custom_openai": {
+                "sections": {
+                    "connection_section": "mdi:connection",
+                    "model_section": "mdi:brain"
+                }
+            },
+            "openwebui": {
+                "sections": {
+                    "connection_section": "mdi:connection",
+                    "model_section": "mdi:brain"
+                }
+            },
+            "settings": {
+                "sections": {
+                    "fallback_section": "mdi:cog-outline",
+                    "memory_section": "mdi:head-snowflake-outline"
+                }
+            }
+        }
     }
 }

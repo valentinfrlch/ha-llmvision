@@ -1,0 +1,123 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Configuration de LLM Vision",
+                "description": "Sélectionnez un fournisseur à configurer"
+            },
+            "localai": {
+                "title": "Connectez-vous à votre serveur LocalAI",
+                "description": "Fournissez l'adresse IP et le port de votre serveur LocalAI.",
+                "data": {
+                    "localai_ip": "Adresse IP",
+                    "localai_port": "Port",
+                    "localai_https": "HTTPS"
+                }
+            },
+            "ollama": {
+                "title": "Configurer Ollama",
+                "description": "Fournissez l'adresse IP et le port de votre serveur Ollama.",
+                "data": {
+                    "ollama_ip": "Adresse IP",
+                    "ollama_port": "Port",
+                    "ollama_https": "HTTPS"
+                }
+            },
+            "openai": {
+                "title": "Configurer OpenAI",
+                "description": "Fournissez une clé d'API OpenAI valide.",
+                "data": {
+                    "openai_api_key": "Clé d'API"
+                }
+            },
+            "azure": {
+                "title": "Configurer Azure",
+                "description": "Fournissez une clé d'API Azure valide, une URL de base, un déploiement et une version de l'API.\nL'URL de base doit être au format `https://domain.openai.azure.com/` incluant le slash final.",
+                "data": {
+                    "azure_api_key": "Clé d'API",
+                    "azure_base_url": "URL de base",
+                    "azure_deployment": "Déploiement",
+                    "azure_version": "Version de l'API"
+                }
+            },
+            "anthropic": {
+                "title": "Configurer Anthropic Claude",
+                "description": "Fournissez une clé d'API Anthropic valide.",
+                "data": {
+                    "anthropic_api_key": "Clé d'API"
+                }
+            },
+            "google": {
+                "title": "Configurer Google Gemini",
+                "description": "Fournissez une clé d'API Google Gemini valide.",
+                "data": {
+                    "google_api_key": "Clé d'API"
+                }
+            },
+            "groq": {
+                "title": "Configurer Groq",
+                "description": "Fournissez une clé d'API Groq valide.",
+                "data": {
+                    "groq_api_key": "Clé d'API"
+                }
+            },
+            "custom_openai": {
+                "title": "Configurer un fournisseur OpenAI personnalisé",
+                "description": "**Important** : Fonctionne uniquement si l'API est compatible avec l'API d'OpenAI. Si l'API ne nécessite pas de clé d'API, entrez une valeur fictive. Le point de terminaison doit avoir le format suivant : `http(s)://baseURL(:port)/some/endpoint`",
+                "data": {
+                    "custom_openai_endpoint": "Point de terminaison personnalisé",
+                    "custom_openai_api_key": "Clé d'API",
+                    "custom_openai_default_model": "Modèle par défaut à utiliser, ex. : gpt-4o-mini"
+                }
+            },
+            "aws_bedrock": {
+                "title": "Configurer le fournisseur AWS Bedrock",
+                "description": "**Important** : Actuellement, seuls les modèles suivants sont pris en charge : Nova, Anthropic Claude",
+                "data": {
+                    "aws_access_key_id": "Clé d'accès",
+                    "aws_secret_access_key": "Secret",
+                    "aws_region_name": "Nom de la région",
+                    "aws_default_model": "Modèle par défaut à utiliser"
+                }
+            },
+            "openwebui": {
+                "title": "Configurer le fournisseur Open WebUI",
+                "description": "Fournissez une clé d'API (jeton JWT), une adresse IP, un port, HTTP(S) et un modèle par défaut.",
+                "data": {
+                    "openwebui_api_key": "Clé d'API (Jeton JWT)",
+                    "openwebui_ip": "Addresse IP",
+                    "openwebui_port": "Port",
+                    "openwebui_https": "Utiliser HTTPS",
+                    "openwebui_default_model": "Modèle par défaut"
+                }
+            },
+            "timeline": {
+                "title": "Chronologie",
+                "description": "Définissez combien de jours les événements seront mémorisés. Les événements seront automatiquement supprimés après ce délai. Les événements sont stockés localement et peuvent être supprimés manuellement dans la vue calendrier. (0 désactive la suppression automatique)",
+                "data": {
+                    "retention_time": "Supprimer automatiquement les événements après (jours)"
+                }
+            },
+            "memory": {
+                "title": "Mémoire",
+                "description": "Le contenu de la mémoire est synchronisé entre les fournisseurs et est utilisé pour fournir un contexte supplémentaire au modèle.\nRemarque : si `use_memory` est activé, toutes les images en mémoire sont envoyées au fournisseur à chaque appel. Avoir beaucoup d'images en mémoire peut augmenter le temps de traitement et le coût !   \n\n **Chemins des fichiers image** : Fournissez le chemin du fichier image. \n **Descriptions des images** : Fournissez une description de l'image (ex. : 'Voici Biscuit, mon chien'). \n Les images et les descriptions doivent être dans le même ordre, et il doit y avoir autant de descriptions que d'images. \n\n **Invite système** : Utilisez l'invite système pour modifier le comportement et les réponses du modèle. \n **Invite de titre** : L'instruction donnée au modèle pour générer un titre.",
+                "data": {
+                    "memory_paths": "Chemin du fichier image",
+                    "memory_strings": "Description de l'image",
+                    "system_prompt": "Invite système",
+                    "title_prompt": "Invite de titre"
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "Impossible de se connecter au serveur. Vérifiez votre clé d'API ou l'IP et le port",
+            "empty_api_key": "Clé d'API invalide",
+            "invalid_provider": "Fournisseur sélectionné invalide",
+            "invalid_image_path": "Un ou plusieurs chemins d'image sont invalides",
+            "mismatched_lengths": "Le nombre de chemins d'image et de descriptions doit correspondre"
+        },
+        "abort": {
+            "unknown_provider": "Fournisseur inconnu"
+        }
+    }
+}
