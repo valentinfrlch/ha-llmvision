@@ -186,15 +186,17 @@ blueprint:
                 - Live Preview
         notification_time:
           name: Notification Time
-          description: "Choose between 12-hour or 24-hour time format for the notification title."
-          default: '{{ now().strftime("%I:%M %p") }}'
+          description: "Add time to Notification Title and choose between 12-hour or 24-hour time format for the notification title."
+          default: ''
           selector:
             select:
               options:
+                - label:  No Time Added
+                  value: ''
                 - label: 12 Hour
-                  value: '{{ now().strftime("%I:%M %p") }}'
+                  value: 'at {{ now().strftime("%I:%M %p") }}'
                 - label: 24 Hour
-                  value: '{{ now().strftime("%H:%M") }}'
+                  value: 'at {{ now().strftime("%H:%M") }}'
         file_path:
           name: File Path - To send snapshot in Dynamic Mode with Snapshot Preview Mode
           description: "The file path to store the most current snapshot for the FIRST camera if using multiple camera entities. You can specifiy a custom location as well.\n\nDefaults
@@ -548,7 +550,7 @@ action:
                           sequence:
                             - action: "notify.{{ repeat.item }}"
                               data:
-                                title: "{{ label }} at {{ notification_time }}"
+                                title: "{{ label }} {{ notification_time }}"
                                 message: "{{camera}} has detected activity."
                                 data:
                                   url: !input tap_navigate #iOS
@@ -587,7 +589,7 @@ action:
                           sequence:
                             - action: "notify.{{ repeat.item }}"
                               data:
-                                title: "{{ label }} at {{ notification_time }}"
+                                title: "{{ label }} {{ notification_time }}"
                                 message: "{{camera}} has detected activity."
                                 data:
                                   entity_id: "{{camera_entity}}"
@@ -647,7 +649,7 @@ action:
                   sequence:
                     - action: "notify.{{ repeat.item }}"
                       data:
-                        title: "{{ label }} at {{ notification_time }}"
+                        title: "{{ label }} {{ notification_time }}"
                         message: "{{response.response_text}}"
                         data:
                           image: "{{response.key_frame.replace('/config/www/','/local/') }}"
@@ -698,3 +700,17 @@ action:
 
   # - delay: '00:{{cooldown|int}}:00'
   - delay: !input cooldown
+
+
+
+
+
+
+
+
+
+
+
+
+
+
