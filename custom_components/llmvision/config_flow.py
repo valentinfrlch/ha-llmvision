@@ -69,7 +69,6 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def handle_provider(self, provider):
         provider_steps = {
-            "Timeline": self.async_step_timeline,
             "Settings": self.async_step_settings,
             "Anthropic": self.async_step_anthropic,
             "AWS Bedrock": self.async_step_aws_bedrock,
@@ -104,10 +103,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_settings()
 
         data_schema = vol.Schema({
-            vol.Required(CONF_PROVIDER, default="Timeline"): selector({
+            vol.Required(CONF_PROVIDER): selector({
                 "select": {
                     # Azure removed until fixed
-                    "options": ["Timeline", "Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI"],
+                    "options": ["Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI"],
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -1069,64 +1068,22 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=data_schema,
         )
 
-    async def async_step_timeline(self, user_input=None):
-        data_schema = vol.Schema({
-            vol.Required(CONF_RETENTION_TIME, default=7): int,
-            vol.Required(CONF_TIMELINE_TODAY_SUMMARY, default=True): bool,
-            vol.Optional(CONF_TIMELINE_SUMMARY_PROMPT, default=DEFAULT_SUMMARY_PROMPT): selector({
-                "text": {
-                    "multiline": True,
-                    "multiple": False
-                }
-            }),
-        })
-
-        if self.source == config_entries.SOURCE_RECONFIGURE:
-            # load existing configuration and add it to the dialog
-            self.init_info = self._get_reconfigure_entry().data
-            data_schema = self.add_suggested_values_to_schema(
-                data_schema, self.init_info
-            )
-
-        if user_input is not None:
-            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
-            try:
-                for uid in self.hass.data[DOMAIN]:
-                    if 'retention_time' in self.hass.data[DOMAIN][uid]:
-                        self.async_abort(reason="already_configured")
-            except KeyError:
-                # no existing configuration, continue
-                pass
-            if self.source == config_entries.SOURCE_RECONFIGURE:
-                # we're reconfiguring an existing config
-                return self.async_update_reload_and_abort(
-                    self._get_reconfigure_entry(),
-                    data_updates=user_input,
-                )
-            else:
-                # New config entry
-                return self.async_create_entry(title="LLM Vision Timeline", data=user_input)
-
-        return self.async_show_form(
-            step_id="timeline",
-            data_schema=data_schema,
-        )
-
     async def async_step_settings(self, user_input=None):
         _LOGGER.debug("Settings step")
         data_schema = vol.Schema({
             vol.Optional("general_section"): section(
                 # Dropdown for selecting fallback provider (fetch any existing providers)
                 vol.Schema({
-                    vol.Optional(CONF_FALLBACK_PROVIDER, default=""): selector({
+                    vol.Optional(CONF_FALLBACK_PROVIDER, default="no_fallback"): selector({
                         "select": {
                             "options": (
-                                [{"label": "No Fallback", "value": ""}] +
+                                [{"label": "No Fallback", "value": "no_fallback"}] +
                                 [
-                                    {"label": self.hass.data[DOMAIN][provider].get(
-                                        "provider", provider), "value": provider}
+                                    {"label": self.hass.data[DOMAIN].get(provider, {}).get(
+                                        CONF_PROVIDER, provider), "value": provider}
                                     for provider in (self.hass.data.get(DOMAIN) or {}).keys()
-                                    if provider != self.init_info[CONF_PROVIDER]
+                                    if self.hass.data[DOMAIN].get(provider, {}).get(
+                                        CONF_PROVIDER, provider) not in ("Settings", "Timeline")
                                 ]
                             )
                         }
@@ -1134,20 +1091,8 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }),
                 {"collapsed": False},
             ),
-            vol.Optional("memory_section"): section(
+            vol.Optional("prompt_section"): section(
                 vol.Schema({
-                    vol.Optional(CONF_MEMORY_PATHS): selector({
-                        "text": {
-                            "multiline": False,
-                            "multiple": True
-                        }
-                    }),
-                    vol.Optional(CONF_MEMORY_STRINGS): selector({
-                        "text": {
-                            "multiline": False,
-                            "multiple": True
-                        }
-                    }),
                     vol.Optional(CONF_SYSTEM_PROMPT, default=DEFAULT_SYSTEM_PROMPT): selector({
                         "text": {
                             "multiline": True,
@@ -1162,40 +1107,85 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     }),
                 }),
                 {"collapsed": True},
-            )
+            ),
+            vol.Optional("timeline_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_RETENTION_TIME, default=7): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 30,
+                            "step": 1,
+                            "mode": "slider"
+                        }
+                    }),
+                    vol.Optional(CONF_TIMELINE_TODAY_SUMMARY, default=False): selector({
+                        "boolean": {}
+                    }),
+                    vol.Optional(CONF_TIMELINE_SUMMARY_PROMPT, default=DEFAULT_SUMMARY_PROMPT): selector({
+                        "text": {
+                            "multiline": True,
+                            "multiple": False
+                        }
+                    }),
+                }),
+                {"collapsed": True},
+            ),
+            vol.Optional("memory_section"): section(
+                vol.Schema({
+                    vol.Optional(CONF_MEMORY_PATHS): selector({
+                        "text": {
+                            "multiline": False,
+                            "multiple": True
+                        }
+                    }),
+                    vol.Optional(CONF_MEMORY_STRINGS): selector({
+                        "text": {
+                            "multiline": False,
+                            "multiple": True
+                        }
+                    })
+                }),
+                {"collapsed": True},
+            ),
         })
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
             _LOGGER.debug("Reconfigure Settings step")
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
-            # Re-nest the flat config entry data into sections
-            suggested = {
-                "general_section": {
-                    CONF_FALLBACK_PROVIDER: self.init_info.get(
-                        CONF_FALLBACK_PROVIDER, "")
-                },
-                "memory_section": {
-                    CONF_MEMORY_PATHS: self.init_info.get(CONF_MEMORY_PATHS),
-                    CONF_MEMORY_STRINGS: self.init_info.get(CONF_MEMORY_STRINGS),
-                    CONF_SYSTEM_PROMPT: self.init_info.get(CONF_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT),
-                    CONF_TITLE_PROMPT: self.init_info.get(CONF_TITLE_PROMPT, DEFAULT_TITLE_PROMPT),
-                }
+        else:
+            self.init_info = self.init_info if hasattr(
+                self, 'init_info') else {}
+
+        suggested = {
+            "general_section": {
+                CONF_FALLBACK_PROVIDER: self.init_info.get(
+                    CONF_FALLBACK_PROVIDER, "no_fallback")
+            },
+            "prompt_section": {
+                CONF_SYSTEM_PROMPT: self.init_info.get(CONF_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT),
+                CONF_TITLE_PROMPT: self.init_info.get(
+                    CONF_TITLE_PROMPT, DEFAULT_TITLE_PROMPT)
+            },
+            "timeline_section": {
+                CONF_RETENTION_TIME: self.init_info.get(CONF_RETENTION_TIME, 7),
+                CONF_TIMELINE_TODAY_SUMMARY: self.init_info.get(CONF_TIMELINE_TODAY_SUMMARY, False),
+                CONF_TIMELINE_SUMMARY_PROMPT: self.init_info.get(
+                    CONF_TIMELINE_SUMMARY_PROMPT, DEFAULT_SUMMARY_PROMPT),
+            },
+            "memory_section": {
+                CONF_MEMORY_PATHS: self.init_info.get(CONF_MEMORY_PATHS),
+                CONF_MEMORY_STRINGS: self.init_info.get(CONF_MEMORY_STRINGS),
             }
-            data_schema = self.add_suggested_values_to_schema(
-                data_schema, suggested
-            )
+        }
+        data_schema = self.add_suggested_values_to_schema(
+            data_schema, suggested
+        )
 
         if user_input is not None:
             user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
-
-            try:
-                for uid in self.hass.data[DOMAIN]:
-                    if 'system_prompt' in self.hass.data[DOMAIN][uid]:
-                        self.async_abort(reason="already_configured")
-            except KeyError:
-                # no existing configuration, continue
-                pass
+            # flatten dict to remove nested keys
+            user_input = flatten_dict(user_input)
 
             errors = {}
             if len(user_input.get(CONF_MEMORY_PATHS, [])) != len(user_input.get(CONF_MEMORY_STRINGS, [])):

@@ -88,8 +88,8 @@ async def async_setup_entry(hass, entry):
         CONF_DEFAULT_MODEL: entry.data.get(CONF_DEFAULT_MODEL),
         CONF_TEMPERATURE: entry.data.get(CONF_TEMPERATURE),
         CONF_TOP_P: entry.data.get(CONF_TOP_P),
-        CONF_CONTEXT_WINDOW: entry.data.get(CONF_CONTEXT_WINDOW), # Ollama
-        CONF_KEEP_ALIVE: entry.data.get(CONF_KEEP_ALIVE), # Ollama
+        CONF_CONTEXT_WINDOW: entry.data.get(CONF_CONTEXT_WINDOW),  # Ollama
+        CONF_KEEP_ALIVE: entry.data.get(CONF_KEEP_ALIVE),  # Ollama
         # Azure specific
         CONF_AZURE_BASE_URL: entry.data.get(CONF_AZURE_BASE_URL),
         CONF_AZURE_DEPLOYMENT: entry.data.get(CONF_AZURE_DEPLOYMENT),
@@ -121,12 +121,11 @@ async def async_setup_entry(hass, entry):
     # Store the filtered config under the entry_uid (subdict per entry)
     hass.data[DOMAIN][entry_uid] = filtered_provider_config
 
-    # If this is the Timeline entry, set up the calendar and run cleanup
-    if filtered_provider_config.get(CONF_RETENTION_TIME) is not None:
+    # If this is the Settings entry, set up the calendar and run cleanup
+    if filtered_provider_config.get(CONF_PROVIDER) == 'Settings':
         await hass.config_entries.async_forward_entry_setups(entry, ["calendar"])
         timeline = Timeline(hass, entry)
         await timeline._cleanup()
-
     return True
 
 
@@ -140,7 +139,7 @@ async def async_remove_entry(hass, entry):
         await async_unload_entry(hass, entry)
         hass.data[DOMAIN].pop(entry_uid)
         # Check if entry is the timeline entry
-        if entry.data[CONF_PROVIDER] == 'Timeline':
+        if entry.data[CONF_PROVIDER] == 'Settings':
             # Check if "/llmvision/events.db" exists
             db_path = os.path.join(
                 hass.config.path("llmvision"), "events.db"
@@ -179,13 +178,16 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
         )
         return True
 
-    # v3 -> v4: Standardize keys for all providers
+    # v3 -> v4: Standardize keys for all providers, Memory, Timeline merge into Settings
     if config_entry.version == 3:
         provider = new_data.get(PROVIDER) or new_data.get(CONF_PROVIDER)
         # Example for OpenAI, add similar logic for other providers if needed
         if provider == "Memory":
             # Change the provider name to "Settings"
             new_data[CONF_PROVIDER] = "Settings"
+        if provider == "Timeline":
+            # remove timeline config entry
+            await async_unload_entry(hass, config_entry)
         if provider == "OpenAI":
             # Migrate old provider-specific keys to generic keys
             if "openai_api_key" in new_data:
@@ -399,13 +401,13 @@ async def _remember(hass, call, start, response, key_frame, today_summary) -> No
         config_entry = None
         for entry in hass.config_entries.async_entries(DOMAIN):
             # Check if the config entry is empty
-            if entry.data[CONF_PROVIDER] == "Timeline":
+            if entry.data[CONF_PROVIDER] == "Settings":
                 config_entry = entry
                 break
 
         if config_entry is None:
             raise ServiceValidationError(
-                f"Config entry not found. Please create the 'Timeline' config entry first.")
+                f"Settings config entry not found. Please set up LLM Vision first.")
 
         timeline = Timeline(hass, config_entry)
 
@@ -493,8 +495,10 @@ class ServiceCallData:
     """Store service call data and set default values"""
 
     def __init__(self, data_call):
-        self.provider = str(data_call.data.get(PROVIDER)) # This is the config entry id
-        self.model = data_call.data.get(MODEL) # If not set, the conf_default_model will be set in providers.py
+        # This is the config entry id
+        self.provider = str(data_call.data.get(PROVIDER))
+        # If not set, the conf_default_model will be set in providers.py
+        self.model = data_call.data.get(MODEL)
         self.message = str(data_call.data.get(MESSAGE, "")[0:2000])
         self.remember = data_call.data.get(REMEMBER, False)
         self.use_memory = data_call.data.get(USE_MEMORY, False)
@@ -757,13 +761,13 @@ def setup(hass, config):
         config_entry = None
         for entry in hass.config_entries.async_entries(DOMAIN):
             # Check if the config entry is empty
-            if entry.data[CONF_PROVIDER] == "Timeline":
+            if entry.data[CONF_PROVIDER] == "Settings":
                 config_entry = entry
                 break
 
         if config_entry is None:
             raise ServiceValidationError(
-                f"Config entry not found. Please create the 'Timeline' config entry first.")
+                f"Config entry not found. Please create the 'Settings' config entry first.")
 
         timeline = Timeline(hass, config_entry)
 

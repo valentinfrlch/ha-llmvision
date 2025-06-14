@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from tenacity import retry, wait_random_exponential, before_sleep_log
 import boto3
-from datetime import datetime
-from .calendar import Timeline
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from functools import partial
@@ -26,15 +24,6 @@ from .const import (
     CONF_AWS_ACCESS_KEY_ID,
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
-    CONF_AWS_DEFAULT_MODEL,
-    CONF_OPENWEBUI_IP_ADDRESS,
-    CONF_OPENWEBUI_PORT,
-    CONF_OPENWEBUI_HTTPS,
-    CONF_OPENWEBUI_API_KEY,
-    CONF_OPENWEBUI_DEFAULT_MODEL,
-    CONF_TIMELINE_TODAY_SUMMARY,
-    CONF_TIMELINE_SUMMARY_PROMPT,
-    DEFAULT_SUMMARY_PROMPT,
     VERSION_ANTHROPIC,
     ENDPOINT_OPENAI,
     ENDPOINT_AZURE,
@@ -513,7 +502,7 @@ class OpenAI(Provider):
         if self.api_key:
             headers = self._generate_headers()
             data = {
-                "model": self.default_model,
+                "model": DEFAULT_OPENAI_MODEL,
                 "messages": [{"role": "user", "content": [{"type": "text", "text": "Hi"}]}],
                 "max_tokens": 1,
                 "temperature": 0.5
@@ -665,7 +654,7 @@ class Anthropic(Provider):
 
         header = self._generate_headers()
         payload = {
-            "model": "claude-3-haiku-20240307",
+            "model": DEFAULT_ANTHROPIC_MODEL,
             "messages": [
                   {"role": "user", "content": "Hi"}
             ],
@@ -741,7 +730,7 @@ class Google(Provider):
             "contents": [{"role": "user", "parts": [{"text": "Hi"}]}],
             "generationConfig": {"maxOutputTokens": 1, "temperature": 0.5}
         }
-        await self._post(url=self.endpoint.get('base_url').format(model=self.model, api_key=self.api_key), headers=headers, data=data)
+        await self._post(url=self.endpoint.get('base_url').format(model=DEFAULT_GOOGLE_MODEL, api_key=self.api_key), headers=headers, data=data)
 
 
 class Groq(Provider):
@@ -806,7 +795,7 @@ class Groq(Provider):
             raise ServiceValidationError("empty_api_key")
         headers = self._generate_headers()
         data = {
-            "model": self.model,
+            "model": DEFAULT_GROQ_MODEL,
             "messages": [{
                 "role": "user",
                 "content": "Hi"
@@ -1091,4 +1080,4 @@ class AWSBedrock(Provider):
             "messages": [{"role": "user", "content": [{"text": "Hi"}]}],
             "inferenceConfig": {"maxTokens": 10, "temperature": 0.5}
         }
-        await self.invoke_bedrock(model=self.model, data=data)
+        await self.invoke_bedrock(model=DEFAULT_AWS_MODEL, data=data)

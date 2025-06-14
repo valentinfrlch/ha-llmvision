@@ -66,6 +66,7 @@
             "settings": {
                 "sections": {
                     "fallback_section": "mdi:cog-outline",
+                    "timeline_section": "mdi:timeline-text",
                     "memory_section": "mdi:head-snowflake-outline"
                 }
             }

@@ -28,12 +28,12 @@ class Timeline(CalendarEntity):
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry):
         """Initialize the calendar"""
         self.hass = hass
-        self._attr_name = config_entry.title
-        self._attr_unique_id = config_entry.entry_id
+        self._attr_name = "LLM Vision Timeline"
+        self._attr_unique_id = "llm_vision_timeline"
         self._events = []
         self._today_summary = ""
         self._retention_time = self.hass.data.get(DOMAIN).get(
-            self._attr_unique_id).get(CONF_RETENTION_TIME)
+            config_entry.entry_id).get('timeline_section', {}).get(CONF_RETENTION_TIME)
         self._current_event = None
         self._attr_supported_features = (CalendarEntityFeature.DELETE_EVENT)
 
@@ -326,7 +326,7 @@ class Timeline(CalendarEntity):
                     if os.path.isfile(file_path):
                         _LOGGER.info(f"[CLEANUP] Removing {file}")
                         os.remove(file_path)
-        
+
         filenames = await self.linked_images
         await self.hass.loop.run_in_executor(None, delete_files, self._file_path, filenames)
 
