@@ -19,6 +19,7 @@ from .const import (
     CONF_GOOGLE_API_KEY,
     CONF_GOOGLE_DEFAULT_MODEL,
     CONF_GROQ_API_KEY,
+    CONF_GROQ_DEFAULT_MODEL,
     CONF_LOCALAI_IP_ADDRESS,
     CONF_LOCALAI_PORT,
     CONF_LOCALAI_HTTPS,
@@ -28,16 +29,13 @@ from .const import (
     CONF_OLLAMA_DEFAULT_MODEL,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_CUSTOM_OPENAI_API_KEY,
-    CONF_CUSTOM_OPENAI_DEFAULT_MODEL,
     CONF_AWS_ACCESS_KEY_ID,
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
-    CONF_AWS_DEFAULT_MODEL,
     CONF_OPENWEBUI_IP_ADDRESS,
     CONF_OPENWEBUI_PORT,
     CONF_OPENWEBUI_HTTPS,
     CONF_OPENWEBUI_API_KEY,
-    CONF_OPENWEBUI_DEFAULT_MODEL,
     VERSION_ANTHROPIC,
     ENDPOINT_OPENAI,
     ENDPOINT_AZURE,
@@ -49,7 +47,18 @@ from .const import (
     ENDPOINT_GROQ,
     ERROR_NOT_CONFIGURED,
     ERROR_GROQ_MULTIPLE_IMAGES,
-    ERROR_NO_IMAGE_INPUT,
+    ERROR_NO_IMAGE_INPUT, 
+    DEFAULT_OPENAI_MODEL,
+    DEFAULT_ANTHROPIC_MODEL,
+    DEFAULT_AZURE_MODEL,
+    DEFAULT_GOOGLE_MODEL,
+    DEFAULT_GROQ_MODEL,
+    DEFAULT_LOCALAI_MODEL,
+    DEFAULT_OLLAMA_MODEL,
+    DEFAULT_CUSTOM_OPENAI_MODEL,
+    DEFAULT_AWS_MODEL,
+    DEFAULT_OPENWEBUI_MODEL,
+
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -109,11 +118,44 @@ class Request:
             return "AWS Bedrock"
         elif CONF_OPENWEBUI_API_KEY in entry_data:
             return "OpenWebUI"
-
-        return None
+        else:
+            return None
+    
+    @staticmethod
+    def _get_default_model(provider):
+        _LOGGER.debug(f"Returning default model for provider: {provider}")
+        if provider == "OpenAI":
+            return DEFAULT_OPENAI_MODEL
+        elif provider == "Azure":
+            return DEFAULT_AZURE_MODEL
+        elif provider == "Anthropic":
+            return DEFAULT_ANTHROPIC_MODEL
+        elif provider == "Google":
+            return DEFAULT_GOOGLE_MODEL
+        elif provider == "Groq":
+            return DEFAULT_GROQ_MODEL
+        elif provider == "LocalAI":
+            return DEFAULT_LOCALAI_MODEL
+        elif provider == "Ollama":
+            return DEFAULT_OLLAMA_MODEL
+        elif provider == "Custom OpenAI":
+            return DEFAULT_CUSTOM_OPENAI_MODEL
+        elif provider == "AWS":
+            return DEFAULT_AWS_MODEL
+        elif provider == "Open WebUI":
+            return DEFAULT_OPENWEBUI_MODEL
+        else:
+            return
 
     def validate(self, call) -> None | ServiceValidationError:
         """Validate call data"""
+
+        # if not call.model set default model for provider
+        if not call.model:
+            call.model = Request._get_default_model(self.get_provider(self.hass, call.provider))
+
+        _LOGGER.info(f"Using model: {call.model}")
+
         # Check image input
         if not call.base64_images:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
@@ -148,7 +190,8 @@ class Request:
 
         if provider == 'OpenAI':
             api_key = config.get(CONF_OPENAI_API_KEY)
-            provider_instance = OpenAI(hass=self.hass, api_key=api_key)
+            provider_instance = OpenAI(
+                hass=self.hass, api_key=api_key, model=call.model)
 
         elif provider == 'Azure':
             api_key = config.get(CONF_AZURE_API_KEY)
@@ -163,21 +206,23 @@ class Request:
                                                 'endpoint': endpoint,
                                                 'deployment': deployment,
                                                 'api_version': version
-                                            })
+                                            },
+                                            model=call.model)
 
         elif provider == 'Anthropic':
             api_key = config.get(CONF_ANTHROPIC_API_KEY)
-            provider_instance = Anthropic(self.hass, api_key=api_key)
+            provider_instance = Anthropic(self.hass, api_key=api_key, model=call.model)
 
         elif provider == 'Google':
             api_key = config.get(CONF_GOOGLE_API_KEY)
             model = call.model if call.model and call.model != "None" else CONF_GOOGLE_DEFAULT_MODEL
+
             provider_instance = Google(self.hass, api_key=api_key, endpoint={
-                                       'base_url': ENDPOINT_GOOGLE, 'model': model})
+                                       'base_url': ENDPOINT_GOOGLE, 'model': call.model})
 
         elif provider == 'Groq':
             api_key = config.get(CONF_GROQ_API_KEY)
-            provider_instance = Groq(self.hass, api_key=api_key)
+            provider_instance = Groq(self.hass, api_key=api_key, model=call.model)
 
         elif provider == 'LocalAI':
             ip_address = config.get(CONF_LOCALAI_IP_ADDRESS)
@@ -188,7 +233,8 @@ class Request:
                 'ip_address': ip_address,
                 'port': port,
                 'https': https
-            })
+            },
+                model=call.model)
 
         elif provider == 'Ollama':
             ip_address = config.get(CONF_OLLAMA_IP_ADDRESS)
@@ -199,19 +245,17 @@ class Request:
                 'ip_address': ip_address,
                 'port': port,
                 'https': https
-            })
+            },
+            model=call.model)
 
         elif provider == 'Custom OpenAI':
             api_key = config.get(CONF_CUSTOM_OPENAI_API_KEY)
             endpoint = config.get(
                 CONF_CUSTOM_OPENAI_ENDPOINT)
-            default_model = config.get(CONF_CUSTOM_OPENAI_DEFAULT_MODEL)
             provider_instance = OpenAI(
-                self.hass, api_key=api_key, endpoint={'base_url': endpoint}, default_model=default_model)
+                self.hass, api_key=api_key, endpoint={'base_url': endpoint}, model=call.model)
 
         elif provider == 'AWS Bedrock':
-            model = call.model if call.model and call.model != "None" else config.get(
-                CONF_AWS_DEFAULT_MODEL)
             provider_instance = AWSBedrock(self.hass,
                                            aws_access_key_id=config.get(
                                                CONF_AWS_ACCESS_KEY_ID),
@@ -219,7 +263,7 @@ class Request:
                                                CONF_AWS_SECRET_ACCESS_KEY),
                                            aws_region_name=config.get(
                                                CONF_AWS_REGION_NAME),
-                                           model=model
+                                           model=call.model
                                            )
 
         elif provider == 'OpenWebUI':
@@ -227,7 +271,6 @@ class Request:
             port = config.get(CONF_OPENWEBUI_PORT)
             https = config.get(CONF_OPENWEBUI_HTTPS, False)
             api_key = config.get(CONF_OPENWEBUI_API_KEY)
-            default_model = config.get(CONF_OPENWEBUI_DEFAULT_MODEL)
 
             endpoint = ENDPOINT_OPENWEBUI.format(
                 ip_address=ip_address,
@@ -236,17 +279,17 @@ class Request:
             )
 
             provider_instance = OpenAI(
-                self.hass, api_key=api_key, endpoint={'base_url': endpoint}, default_model=default_model)
+                self.hass, api_key=api_key, endpoint={'base_url': endpoint}, model=call.model)
 
         else:
             raise ServiceValidationError("invalid_provider")
 
         # Make call to provider
-        call.model = call.model if call.model and call.model != 'None' else provider_instance.default_model
         response_text = await provider_instance.vision_request(call)
 
         if call.generate_title:
-            call.message = call.memory.title_prompt + "Create a title for this text: " + response_text
+            call.message = call.memory.title_prompt + \
+                "Create a title for this text: " + response_text
             gen_title = await provider_instance.title_request(call)
 
             return {"title": re.sub(r'[^a-zA-Z0-9ŽžÀ-ÿ\s]', '', gen_title), "response_text": response_text}
@@ -290,7 +333,8 @@ class Provider(ABC):
 
     def __init__(self,
                  hass,
-                 api_key="",
+                 api_key,
+                 model,
                  endpoint={
                      'base_url': "",
                      'deployment': "",
@@ -303,6 +347,7 @@ class Provider(ABC):
         self.hass = hass
         self.session = async_get_clientsession(hass)
         self.api_key = api_key
+        self.model = model
         self.endpoint = endpoint
 
     @abstractmethod
@@ -373,9 +418,8 @@ class Provider(ABC):
 
 
 class OpenAI(Provider):
-    def __init__(self, hass, api_key="", endpoint={'base_url': ENDPOINT_OPENAI}, default_model="gpt-4o-mini"):
-        super().__init__(hass, api_key, endpoint=endpoint)
-        self.default_model = default_model
+    def __init__(self, hass, api_key, model, endpoint={'base_url': ENDPOINT_OPENAI}):
+        super().__init__(hass, api_key, model, endpoint=endpoint)
 
     def _generate_headers(self) -> dict:
         return {'Content-type': 'application/json',
@@ -393,7 +437,7 @@ class OpenAI(Provider):
         return response_text
 
     def _prepare_vision_data(self, call) -> list:
-        payload = {"model": call.model,
+        payload = {"model": self.model,
                    "messages": [{"role": "user", "content": []}],
                    "max_tokens": call.max_tokens,
                    "temperature": call.temperature
@@ -425,7 +469,7 @@ class OpenAI(Provider):
 
     def _prepare_text_data(self, call) -> list:
         return {
-            "model": call.model,
+            "model": self.model,
             "messages": [{"role": "user", "content": [{"type": "text", "text": call.message}]}],
             "max_tokens": call.max_tokens,
             "temperature": call.temperature
@@ -446,9 +490,8 @@ class OpenAI(Provider):
 
 
 class AzureOpenAI(Provider):
-    def __init__(self, hass, api_key="", endpoint={'base_url': ENDPOINT_AZURE, 'endpoint': "", 'deployment': "", 'api_version': ""}):
-        super().__init__(hass, api_key, endpoint)
-        self.default_model = "gpt-4o-mini"
+    def __init__(self, hass, api_key, model, endpoint={'base_url': ENDPOINT_AZURE, 'endpoint': "", 'deployment': "", 'api_version': ""}):
+        super().__init__(hass, api_key, model, endpoint)
 
     def _generate_headers(self) -> dict:
         return {'Content-type': 'application/json',
@@ -521,9 +564,8 @@ class AzureOpenAI(Provider):
 
 
 class Anthropic(Provider):
-    def __init__(self, hass, api_key=""):
-        super().__init__(hass, api_key)
-        self.default_model = "claude-3-5-sonnet-latest"
+    def __init__(self, hass, api_key, model):
+        super().__init__(hass, api_key, model)
 
     def _generate_headers(self) -> dict:
         return {
@@ -540,7 +582,7 @@ class Anthropic(Provider):
 
     def _prepare_vision_data(self, call) -> dict:
         payload = {
-            "model": call.model,
+            "model": self.model,
             "messages": [{"role": "user", "content": []}],
             "max_tokens": call.max_tokens,
             "temperature": call.temperature
@@ -569,7 +611,7 @@ class Anthropic(Provider):
 
     def _prepare_text_data(self, call) -> dict:
         return {
-            "model": call.model,
+            "model": self.model,
             "messages": [{"role": "user", "content": [{"type": "text", "text": call.message}]}],
             "max_tokens": call.max_tokens,
             "temperature": call.temperature
@@ -656,9 +698,8 @@ class Google(Provider):
 
 
 class Groq(Provider):
-    def __init__(self, hass, api_key=""):
-        super().__init__(hass, api_key)
-        self.default_model = CONF_OLLAMA_DEFAULT_MODEL
+    def __init__(self, hass, api_key, model):
+        super().__init__(hass, api_key, model)
 
     def _generate_headers(self) -> dict:
         return {'Content-type': 'application/json', 'Authorization': 'Bearer ' + self.api_key}
@@ -683,11 +724,12 @@ class Groq(Provider):
                     ]
                 }
             ],
-            "model": call.model
+            "model": self.model
         }
 
         system_prompt = call.memory.system_prompt
-        payload["messages"].insert(0, {"role": "user", "content": "System Prompt:" + system_prompt})
+        payload["messages"].insert(
+            0, {"role": "user", "content": "System Prompt:" + system_prompt})
 
         return payload
 
@@ -701,7 +743,7 @@ class Groq(Provider):
                     ]
                 }
             ],
-            "model": call.model
+            "model": self.model
         }
 
     async def validate(self) -> None | ServiceValidationError:
@@ -709,7 +751,7 @@ class Groq(Provider):
             raise ServiceValidationError("empty_api_key")
         headers = self._generate_headers()
         data = {
-            "model": self.default_model,
+            "model": self.model,
             "messages": [{
                 "role": "user",
                 "content": "Hi"
@@ -719,9 +761,8 @@ class Groq(Provider):
 
 
 class LocalAI(Provider):
-    def __init__(self, hass, api_key="", endpoint={'ip_address': "", 'port': "", 'https': False}):
-        super().__init__(hass, api_key, endpoint)
-        self.default_model = "gpt-4-vision-preview"
+    def __init__(self, hass, api_key, model, endpoint={'ip_address': "", 'port': "", 'https': False}):
+        super().__init__(hass, api_key, model, endpoint)
 
     async def _make_request(self, data) -> str:
         endpoint = ENDPOINT_LOCALAI.format(
@@ -737,7 +778,7 @@ class LocalAI(Provider):
         return response_text
 
     def _prepare_vision_data(self, call) -> dict:
-        payload = {"model": call.model, "messages": [{"role": "user", "content": [
+        payload = {"model": self.model, "messages": [{"role": "user", "content": [
         ]}], "max_tokens": call.max_tokens, "temperature": call.temperature}
         for image, filename in zip(call.base64_images, call.filenames):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
@@ -764,7 +805,7 @@ class LocalAI(Provider):
 
     def _prepare_text_data(self, call) -> dict:
         return {
-            "model": call.model,
+            "model": self.model,
             "messages": [{"role": "user", "content": [{"type": "text", "text": call.message}]}],
             "max_tokens": call.max_tokens,
             "temperature": call.temperature
@@ -787,9 +828,8 @@ class LocalAI(Provider):
 
 
 class Ollama(Provider):
-    def __init__(self, hass, api_key="", endpoint={'ip_address': "0.0.0.0", 'port': "11434", 'https': False}):
-        super().__init__(hass, api_key, endpoint)
-        self.default_model = "minicpm-v"
+    def __init__(self, hass, api_key, model, endpoint={'ip_address': "0.0.0.0", 'port': "11434", 'https': False}):
+        super().__init__(hass, api_key, model, endpoint)
 
     async def _make_request(self, data) -> str:
         https = self.endpoint.get("https")
@@ -807,9 +847,9 @@ class Ollama(Provider):
         return response_text
 
     def _prepare_vision_data(self, call) -> dict:
-        payload = {"model": call.model, "messages": [], "stream": False, "options": {
+        payload = {"model": self.model, "messages": [], "stream": False, "options": {
             "num_predict": call.max_tokens, "temperature": call.temperature}}
-        
+
         if call.use_memory:
             memory_content = call.memory._get_memory_images(
                 memory_type="Ollama")
@@ -818,7 +858,7 @@ class Ollama(Provider):
                 payload["messages"].extend(memory_content)
             if system_prompt:
                 payload["system"] = system_prompt
-        
+
         for image, filename in zip(call.base64_images, call.filenames):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename
@@ -832,7 +872,7 @@ class Ollama(Provider):
 
     def _prepare_text_data(self, call) -> dict:
         return {
-            "model": call.model,
+            "model": self.model,
             "messages": [{"role": "user", "content": call.message}],
             "stream": False,
             "options": {"num_predict": call.max_tokens, "temperature": call.temperature}
@@ -860,8 +900,7 @@ class Ollama(Provider):
 
 class AWSBedrock(Provider):
     def __init__(self, hass, aws_access_key_id, aws_secret_access_key, aws_region_name, model):
-        super().__init__(hass, )
-        self.default_model = model
+        super().__init__(hass, "", model)
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
         self.aws_region = aws_region_name
@@ -871,7 +910,7 @@ class AWSBedrock(Provider):
                 'Authorization': 'Bearer ' + self.api_key}
 
     async def _make_request(self, data) -> str:
-        response = await self.invoke_bedrock(model=self.default_model, data=data)
+        response = await self.invoke_bedrock(model=self.model, data=data)
         response_text = response.get("message").get("content")[0].get("text")
         return response_text
 
@@ -926,7 +965,7 @@ class AWSBedrock(Provider):
             return response_data
 
     def _prepare_vision_data(self, call) -> list:
-        _LOGGER.debug(f"Found model type `{call.model}` for AWS Bedrock call.")
+        _LOGGER.debug(f"Found model type `{self.model}` for AWS Bedrock call.")
         # We need to generate the correct format for the respective models
         payload = {
             "messages": [{"role": "user", "content": []}],
@@ -976,4 +1015,4 @@ class AWSBedrock(Provider):
             "messages": [{"role": "user", "content": [{"text": "Hi"}]}],
             "inferenceConfig": {"maxTokens": 10, "temperature": 0.5}
         }
-        await self.invoke_bedrock(model=self.default_model, data=data)
+        await self.invoke_bedrock(model=self.model, data=data)
