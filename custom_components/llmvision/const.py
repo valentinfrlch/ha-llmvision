@@ -4,7 +4,7 @@
 DOMAIN = "llmvision"
 
 # CONFIGURABLE VARIABLES FOR SETUP
-CONF_PROVIDER = 'conf_provider'
+CONF_PROVIDER = 'provider'
 CONF_API_KEY = 'api_key'
 CONF_IP_ADDRESS= 'ip_address'
 CONF_PORT = 'port'
@@ -12,6 +12,8 @@ CONF_HTTPS = 'https'
 CONF_DEFAULT_MODEL = 'default_model'
 CONF_TEMPERATURE = 'temperature'
 CONF_TOP_P = 'top_p'
+CONF_CONTEXT_WINDOW = 'context_window' #(ollama: num_ctx)
+CONF_KEEP_ALIVE = 'keep_alive'
 
 # Azure specific
 CONF_AZURE_BASE_URL = 'azure_base_url'
@@ -29,12 +31,18 @@ CONF_CUSTOM_OPENAI_ENDPOINT = 'custom_openai_endpoint'
 # Timeline
 CONF_RETENTION_TIME = 'retention_time'
 
-# Memory
+# Settings
+CONF_FALLBACK_PROVIDER = 'fallback_provider'
+CONF_TIMELINE_TODAY_SUMMARY = 'timeline_today_summary'
+CONF_TIMELINE_SUMMARY_PROMPT = 'timeline_summary_prompt'
 CONF_MEMORY_PATHS = 'memory_paths'
 CONG_MEMORY_IMAGES_ENCODED = 'memory_images_encoded'
 CONF_MEMORY_STRINGS = 'memory_strings'
 CONF_SYSTEM_PROMPT = 'system_prompt'
 CONF_TITLE_PROMPT = 'title_prompt'
+CONF_MEMORY_PATHS = 'memory_paths'
+CONF_MEMORY_IMAGES_ENCODED = 'memory_images_encoded'
+CONF_MEMORY_STRINGS = 'memory_strings'
 
 
 # SERVICE CALL CONSTANTS
@@ -86,6 +94,7 @@ DEFAULT_CUSTOM_OPENAI_MODEL = "gpt-4o-mini"
 DEFAULT_AWS_MODEL = "us.amazon.nova-pro-v1:0"
 DEFAULT_OPENWEBUI_MODEL = "gemma3:4b"
 
+DEFAULT_SUMMARY_PROMPT = "Provide a brief summary for the following titles. Focus on the key actions or changes that occurred over time and avoid unnecessary details or subjective interpretations. The summary should be concise, objective, and relevant to the content of the images. Keep the summary under 50 words and ensure it captures the main events or activities described in the descriptions. Here are the descriptions:\n "
 
 # API Endpoints
 ENDPOINT_OPENAI = "https://api.openai.com/v1/chat/completions"

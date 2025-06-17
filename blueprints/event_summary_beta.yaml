@@ -1,6 +1,7 @@
 # Fix Group and Channel to First Camera Entity, user edits - DONE
 # Add time to notificaion title or message, with user choose between 12/24h - DONE
 # Take snapshot of triggered camera entity if using multiple cameras (? help needed)
+# Snooze blueprint or notifications
 blueprint:
   name: AI Event Summary (v1.4.4)
   author: valentinfrlch
@@ -206,6 +207,7 @@ blueprint:
               options:
                 - label: Media Folder - Secured
                   value: '/media/snapshots/{{ camera_file_path }}/last_motion.jpg'
+
                 - label: Public Folder - Unsecured
                   value: '/config/www/snapshots/{{ camera_file_path }}/last_motion.jpg'
               custom_value: true
