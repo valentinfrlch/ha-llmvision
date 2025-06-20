@@ -360,7 +360,7 @@
                         }
                     },
                     "memory_section": {
-                        "name": "Memory",
+                        "name": "Memory (Beta)",
                         "description": "Content in memory syncs across providers and is used to provide additional context to the model.",
                         "data": {
                             "memory_paths": "Image file path",

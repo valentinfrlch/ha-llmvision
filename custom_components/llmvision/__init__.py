@@ -176,18 +176,37 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
         hass.config_entries.async_update_entry(
             config_entry, title="LLM Vision Timeline", data=new_data, version=3, minor_version=0
         )
-        return True
 
     # v3 -> v4: Standardize keys for all providers, Memory, Timeline merge into Settings
     if config_entry.version == 3:
         provider = new_data.get(PROVIDER) or new_data.get(CONF_PROVIDER)
         # Example for OpenAI, add similar logic for other providers if needed
+        if provider == "Timeline":
+            retention_time = config_entry.data.get(CONF_RETENTION_TIME)
+            # Try to find the config entry that will become "Settings"
+            target_entry = None
+            for entry in hass.config_entries.async_entries(DOMAIN):
+                if (entry.entry_id != config_entry.entry_id and
+                    entry.data.get(CONF_PROVIDER) == "Memory" or
+                        entry.data.get(CONF_PROVIDER) == "Settings"):
+                    target_entry = entry
+                    break
+            if target_entry:
+                # Prepare to migrate retention_time to this entry
+                new_data = dict(target_entry.data)
+                new_data[CONF_RETENTION_TIME] = retention_time
+                hass.config_entries.async_update_entry(
+                    target_entry, data=new_data)
+            # Now remove the Timeline config entry
+            await async_remove_entry(hass, config_entry)
         if provider == "Memory":
             # Change the provider name to "Settings"
             new_data[CONF_PROVIDER] = "Settings"
-        if provider == "Timeline":
-            # remove timeline config entry
-            await async_unload_entry(hass, config_entry)
+            new_data[CONF_RETENTION_TIME] = retention_time
+            # Update the title to "LLM Vision Settings"
+            hass.config_entries.async_update_entry(
+                config_entry, title="LLM Vision Settings", data=new_data, version=4, minor_version=0
+            )
         if provider == "OpenAI":
             # Migrate old provider-specific keys to generic keys
             if "openai_api_key" in new_data:
@@ -390,7 +409,6 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
         hass.config_entries.async_update_entry(
             config_entry, data=new_data, version=4, minor_version=0
         )
-        return True
 
     return True
 

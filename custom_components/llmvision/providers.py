@@ -196,9 +196,9 @@ class Request:
                 api_key = config.get(CONF_API_KEY)
                 provider_instance = Google(self.hass,
                                            api_key=api_key,
+                                           model=call.model,
                                            endpoint={
-                                               'base_url': ENDPOINT_GOOGLE,
-                                               'model': call.model
+                                               'base_url': ENDPOINT_GOOGLE
                                            })
 
             elif provider == 'Groq':
