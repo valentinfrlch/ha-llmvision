@@ -459,7 +459,7 @@ class OpenAI(Provider):
         default_parameters = self._get_default_parameters(call)
         payload = {"model": self.model,
                    "messages": [{"role": "user", "content": []}],
-                   "max_tokens": call.max_tokens,
+                   "max_completion_tokens": call.max_tokens,
                    "temperature": default_parameters.get('temperature'),
                    "top_p": default_parameters.get('top_p'),
                    }
@@ -493,7 +493,7 @@ class OpenAI(Provider):
         return {
             "model": self.model,
             "messages": [{"role": "user", "content": [{"type": "text", "text": call.message}]}],
-            "max_tokens": call.max_tokens,
+            "max_completion_tokens": call.max_tokens,
             "temperature": default_parameters.get('temperature'),
             "top_p": default_parameters.get('top_p')
         }
@@ -504,7 +504,7 @@ class OpenAI(Provider):
             data = {
                 "model": DEFAULT_OPENAI_MODEL,
                 "messages": [{"role": "user", "content": [{"type": "text", "text": "Hi"}]}],
-                "max_tokens": 1,
+                "max_completion_tokens": 1,
                 "temperature": 0.5
             }
             await self._post(url=self.endpoint.get('base_url'), headers=headers, data=data)
