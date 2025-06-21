@@ -346,8 +346,8 @@
                         }
                     },
                     "timeline_section": {
-                        "name": "Timeline Summary",
-                        "description": "Timeline summary provides a summary of today's events.",
+                        "name": "Timeline",
+                        "description": "Timeline stores today's events to display using LLM Vision Card on your dashboard.",
                         "data": {
                             "retention_time": "Retention time",
                             "timeline_today_summary": "Timeline Summary",

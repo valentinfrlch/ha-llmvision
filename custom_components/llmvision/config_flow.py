@@ -1118,15 +1118,15 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             "mode": "slider"
                         }
                     }),
-                    vol.Optional(CONF_TIMELINE_TODAY_SUMMARY, default=False): selector({
-                        "boolean": {}
-                    }),
-                    vol.Optional(CONF_TIMELINE_SUMMARY_PROMPT, default=DEFAULT_SUMMARY_PROMPT): selector({
-                        "text": {
-                            "multiline": True,
-                            "multiple": False
-                        }
-                    }),
+                    # vol.Optional(CONF_TIMELINE_TODAY_SUMMARY, default=False): selector({
+                    #     "boolean": {}
+                    # }),
+                    # vol.Optional(CONF_TIMELINE_SUMMARY_PROMPT, default=DEFAULT_SUMMARY_PROMPT): selector({
+                    #     "text": {
+                    #         "multiline": True,
+                    #         "multiple": False
+                    #     }
+                    # }),
                 }),
                 {"collapsed": True},
             ),
@@ -1169,9 +1169,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
             "timeline_section": {
                 CONF_RETENTION_TIME: self.init_info.get(CONF_RETENTION_TIME, 7),
-                CONF_TIMELINE_TODAY_SUMMARY: self.init_info.get(CONF_TIMELINE_TODAY_SUMMARY, False),
-                CONF_TIMELINE_SUMMARY_PROMPT: self.init_info.get(
-                    CONF_TIMELINE_SUMMARY_PROMPT, DEFAULT_SUMMARY_PROMPT),
+                # CONF_TIMELINE_TODAY_SUMMARY: self.init_info.get(CONF_TIMELINE_TODAY_SUMMARY, False),
+                # CONF_TIMELINE_SUMMARY_PROMPT: self.init_info.get(
+                #     CONF_TIMELINE_SUMMARY_PROMPT, DEFAULT_SUMMARY_PROMPT),
             },
             "memory_section": {
                 CONF_MEMORY_PATHS: self.init_info.get(CONF_MEMORY_PATHS),
