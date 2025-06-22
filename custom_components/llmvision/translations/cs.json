@@ -319,13 +319,6 @@
                     }
                 }
             },
-            "timeline": {
-                "title": "Timeline",
-                "description": "Nastavte, kolik dní budou v paměti drženy události. Po uplynutí této doby budou události vymazané. Události jsou ukládané lokálně a můžete je ručně ostranit v kalendáři. (0 vypne automatické mazání)",
-                "data": {
-                    "retention_time": "Automaticky mazat události po (dnech)"
-                }
-            },
             "settings": {
                 "title": "Nastavení",
                 "description": "Nastavení LLM Vision integrace. Tento vstup je vyžadován předtím než se nastaví další poskytovatel. Pokud si přejete použít předvolené nastavení, stačí stisknout 'Potvrdit'.",
@@ -340,20 +333,42 @@
                             "fallback_provider": "LLM bude opakovat požadavek na vybraného poskytovatele, pokud aktuání poskytovatel selže."
                         }
                     },
+                    "prompt_section": {
+                        "name": "Systémové prompty",
+                        "description": "Systémové prompty slouží ke změně chování a odpovědí modelu.",
+                        "data": {
+                            "system_prompt": "Systémový prompt",
+                            "title_prompt": "Prompt pro název"
+                        },
+                        "data_description": {
+                            "system_prompt": "Použijte systémový prompt pro změnu chování a odpovědí modelu.",
+                            "title_prompt": "Instrukce pro model k vygenerování názvu."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Časová osa",
+                        "description": "Časová osa ukládá dnešní události pro zobrazení pomocí LLM Vision karty na vaší nástěnce.",
+                        "data": {
+                            "retention_time": "Doba uchování",
+                            "timeline_today_summary": "Souhrn dne",
+                            "timeline_summary_prompt": "Prompt pro souhrn dne"
+                        },
+                        "data_description": {
+                            "retention_time": "Automaticky smazat události po (dnech). Nastavte na 0 pro vypnutí automatického mazání.",
+                            "timeline_today_summary": "Povolit souhrn dne pro automatické generování souhrnu dnešních událostí.",
+                            "timeline_summary_prompt": "Instrukce pro model k vygenerování souhrnu dnešních událostí."
+                        }
+                    },
                     "memory_section": {
-                        "name": "Paměť",
+                        "name": "Paměť (beta)",
                         "description": "Obsah v paměti je synchronizovaný napříč poskytovately a používá se pro poskytnutí dodatečného kontextu v modelu.",
                         "data": {
                             "memory_paths": "Cesta k souboru obrázku",
-                            "memory_strings": "Popis obrázku",
-                            "system_prompt": "Systémový prompt",
-                            "title_prompt": "Prompt pro titulek"
+                            "memory_strings": "Popis obrázku"
                         },
                         "data_description": {
                             "memory_paths": "Zadejte cestu k souboru s obrázkem.",
-                            "memory_strings": "Zadejte popis obrázku (např.: 'Toto je Falco, můj létající pes'). Obrázky a popisy musí být ve stejném pořadí a počet obrázků a popisů musí být stejný.",
-                            "system_prompt": "Use the system prompt to change how the model behaves and responds.",
-                            "title_prompt": "Instrukce, pomocí kterých model vygeneruje titulek."
+                            "memory_strings": "Zadejte popis obrázku (např.: 'Toto je Falco, můj pes'). Obrázky a popisy musí být ve stejném pořadí a počet obrázků a popisů musí být stejný."
                         }
                     }
                 }

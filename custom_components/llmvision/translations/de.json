@@ -319,13 +319,6 @@
                     }
                 }
             },
-            "timeline": {
-                "title": "Timeline",
-                "description": "Set how many days events will be remembered for. Events will automatically be deleted after this time. Events are stored locally and can be deleted manually in the calendar view. (0 disables auto delete)",
-                "data": {
-                    "retention_time": "Auto delete events after (days)"
-                }
-            },
             "settings": {
                 "title": "Settings",
                 "description": "Configure the LLM Vision integration. This entry is required before setting up other providers. If you wish to use the default settings, just press 'Submit'.",
@@ -340,20 +333,42 @@
                             "fallback_provider": "LLM will retry the request with the selected provider if the current provider fails."
                         }
                     },
-                    "memory_section": {
-                        "name": "Memory",
-                        "description": "Content in memory syncs across providers and is used to provide additional context to the model.",
+                    "prompt_section": {
+                        "name": "System Prompts",
+                        "description": "System Prompts ändern wie das Modell antwortet und sich verhält.",
                         "data": {
-                            "memory_paths": "Image file path",
-                            "memory_strings": "Image description",
                             "system_prompt": "System prompt",
                             "title_prompt": "Title prompt"
                         },
                         "data_description": {
-                            "memory_paths": "Provide the path to the image file.",
-                            "memory_strings": "Provide a description of the image (e.g.: 'This is Cookie, my dog'). Images and descriptions must be in the same order, and there must be as many descriptions as images.",
-                            "system_prompt": "Use the system prompt to change how the model behaves and responds.",
-                            "title_prompt": "The instruction given to the model to generate a title."
+                            "system_prompt": "Nutze System Prompts um das Verhalten des Modells zu verändern.",
+                            "title_prompt": "Die Instruktionen die dem Modell gegeben werden, um einen Titel zu generieren."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Timeline",
+                        "description": "Die Timeline speichert Ereignisse für die LLM Vision Card auf deinem Dashboard.",
+                        "data": {
+                            "retention_time": "Aufbewahrungsdauer",
+                            "timeline_today_summary": "Timeline-Zusammenfassung",
+                            "timeline_summary_prompt": "Zusammenfassungs-Prompt für heute"
+                        },
+                        "data_description": {
+                            "retention_time": "Ereignisse nach (Tagen) automatisch löschen. 0 deaktiviert das automatische Löschen.",
+                            "timeline_today_summary": "Aktiviere die Timeline-Zusammenfassung, um automatisch eine Zusammenfassung der heutigen Ereignisse zu erstellen.",
+                            "timeline_summary_prompt": "Die Anweisung, die dem Modell gegeben wird, um eine Zusammenfassung der heutigen Ereignisse zu generieren."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Memory (Beta)",
+                        "description": "Inhalte können Anbieterübergreifend genutzt werden, um dem Modell mehr Kontext zu geben.",
+                        "data": {
+                            "memory_paths": "Bildpfade",
+                            "memory_strings": "Bildbeschreibungen"
+                        },
+                        "data_description": {
+                            "memory_paths": "Gib einen oder mehrere Pfade zu Bildern an, die gespeichert werden sollen.",
+                            "memory_strings": "Gib die Beschreibungen der Bilder an, die gespeichert werden sollen. Diese müssen in der gleichen Reihenfolge wie die Bildpfade angegeben werden."
                         }
                     }
                 }

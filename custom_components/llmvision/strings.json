@@ -330,7 +330,7 @@
                             "fallback_provider": "Fallback provider"
                         },
                         "data_description": {
-                            "fallback_provider": "LLM will retry the request with the selected provider if the current provider fails."
+                            "fallback_provider": "LLM Vision will retry the request with the selected provider if the current provider fails."
                         }
                     },
                     "prompt_section": {

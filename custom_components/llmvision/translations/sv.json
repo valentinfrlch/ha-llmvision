@@ -2,110 +2,375 @@
     "config": {
         "step": {
             "user": {
-                "title": "LLM Vision Setup",
-                "description": "Välj en leverantör att konfigurera"
+                "title": "LLM Vision-installation",
+                "description": "Välj leverantör du vill konfigurera."
             },
             "localai": {
-                "title": "Anslut till din lokala AI server",
-                "description": "Ange IP-adressen och porten för din lokala AI server.",
-                "data": {
-                    "localai_ip": "IP adress",
-                    "localai_port": "Port",
-                    "localai_https": "HTTPS"
+                "title": "Anslut till din LocalAI-server",
+                "description": "Ange IP-adress och port för din LocalAI-server.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Anslutning",
+                        "description": "Serveranslutning",
+                        "data": {
+                            "ip_address": "IP-adress",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Använd HTTPS för säkra anslutningar"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Ställ in standardmodellparametrar",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen som används om ingen annan anges.",
+                            "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                        }
+                    }
                 }
             },
             "ollama": {
                 "title": "Konfigurera Ollama",
-                "description": "Ange IP-adressen och porten för din Ollama server.",
-                "data": {
-                    "ollama_ip": "IP adress",
-                    "ollama_port": "Port",
-                    "ollama_https": "HTTPS"
+                "description": "Ange IP-adress och port för din Ollama-server.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Anslutning",
+                        "description": "Serveranslutning",
+                        "data": {
+                            "ip_address": "IP-adress",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Använd HTTPS för säkra anslutningar"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Ställ in standardmodellparametrar",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen som används om ingen annan anges.",
+                            "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Avancerat",
+                        "description": "Avancerade modellparametrar",
+                        "data": {
+                            "context_window": "Kontextlängd",
+                            "keep_alive": "Håll vid liv (i minuter)"
+                        },
+                        "data_description": {
+                            "context_window": "Anger storleken på kontextfönstret som används för att generera nästa token.",
+                            "keep_alive": "Styr hur länge modellen hålls i minnet efter en förfrågan. -1: håll i minnet obegränsat, 0: ladda ur direkt"
+                        }
+                    }
                 }
             },
             "openai": {
                 "title": "Konfigurera OpenAI",
                 "description": "Ange en giltig OpenAI API-nyckel.",
-                "data": {
-                    "openai_api_key": "API-nyckel"
+                "sections": {
+                    "connection_section": {
+                        "name": "Anslutning",
+                        "description": "OpenAI-autentisering",
+                        "data": {
+                            "api_key": "API-nyckel"
+                        },
+                        "data_description": {
+                            "api_key": "Se till att du har saldo på ditt OpenAI-konto."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Ställ in standardmodellparametrar",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen som används om ingen annan anges.",
+                            "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                        }
+                    }
                 }
             },
             "azure": {
                 "title": "Konfigurera Azure",
-                "description": "Ange en giltig Azure API-nyckel, bas URL, implementering och API version.\nBas URL måste vara i formatet 'https://domain.openai.azure.com/', inklusive det avslutande snedstrecket.",
-                "data": {
-                    "azure_api_key": "API-nyckel",
-                    "azure_base_url": "Bas URL",
-                    "azure_deployment": "Distribution",
-                    "azure_version": "API Version"
+                "description": "Ange en giltig Azure API-nyckel, bas-URL, deployment och API-version.\nBas-URL måste ha formatet `https://domain.openai.azure.com/` inklusive snedstreck på slutet.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Anslutning",
+                        "description": "Azure-autentisering",
+                        "data": {
+                            "api_key": "API-nyckel",
+                            "azure_base_url": "Bas-URL",
+                            "azure_deployment": "Deployment",
+                            "azure_version": "API-version"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Ställ in standardmodellparametrar",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen som används om ingen annan anges.",
+                            "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                        }
+                    }
                 }
             },
             "anthropic": {
                 "title": "Konfigurera Anthropic Claude",
                 "description": "Ange en giltig Anthropic API-nyckel.",
-                "data": {
-                    "anthropic_api_key": "API-nyckel"
+                "sections": {
+                    "connection_section": {
+                        "name": "Anslutning",
+                        "description": "Anthropic-autentisering",
+                        "data": {
+                            "api_key": "API-nyckel"
+                        },
+                        "data_description": {
+                            "api_key": "Se till att du har saldo på ditt Anthropic-konto."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Ställ in standardmodellparametrar",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen som används om ingen annan anges.",
+                            "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                        }
+                    }
                 }
             },
             "google": {
                 "title": "Konfigurera Google Gemini",
                 "description": "Ange en giltig Google Gemini API-nyckel.",
-                "data": {
-                    "google_api_key": "API-nyckel"
+                "sections": {
+                    "connection_section": {
+                        "name": "Anslutning",
+                        "description": "Google-autentisering",
+                        "data": {
+                            "api_key": "API-nyckel"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Ställ in standardmodellparametrar",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen som används om ingen annan anges.",
+                            "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                        }
+                    }
                 }
             },
             "groq": {
                 "title": "Konfigurera Groq",
                 "description": "Ange en giltig Groq API-nyckel.",
-                "data": {
-                    "groq_api_key": "API-nyckel"
+                "sections": {
+                    "connection_section": {
+                        "name": "Anslutning",
+                        "description": "Groq-autentisering",
+                        "data": {
+                            "api_key": "API-nyckel"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Ställ in standardmodellparametrar",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen som används om ingen annan anges.",
+                            "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                        }
+                    }
                 }
             },
             "custom_openai": {
-                "title": "Konfigurera anpassad OpenAI leverantör",
-                "description": "**Viktigt**: Fungerar endast om API:et är kompatibelt med OpenAI:s API. Om API:et inte kräver en API-nyckel, ange ett dummy-värde. Slutpunkten måste ha följande format: `http(s)://basURL(:port)/någon/slutpunkt`",
-                "data": {
-                    "custom_openai_endpoint": "Anpassad slutpunkt",
-                    "custom_openai_api_key": "API-nyckel",
-                    "custom_openai_default_model": "Standardmodell att använda, t.ex. gpt-4o-mini"
+                "title": "Konfigurera anpassad OpenAI-leverantör",
+                "description": "**Viktigt**: Fungerar endast om API:et är kompatibelt med OpenAI:s API. Om API:et inte kräver en API-nyckel, ange ett påhittat värde. Slutpunkten måste ha följande format: `http(s)://baseURL(:port)/some/endpoint`",
+                "sections": {
+                    "connection_section": {
+                        "name": "Anslutning",
+                        "description": "Anpassad OpenAI-autentisering",
+                        "data": {
+                            "custom_openai_endpoint": "Anpassad slutpunkt",
+                            "api_key": "API-nyckel"
+                        },
+                        "data_description": {
+                            "endpoint": "API-slutpunkt enligt formatet: http(s)://baseURL(:port)/some/endpoint",
+                            "api_key": "API-nyckel eller 'openai' om ingen krävs."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Ställ in standardmodellparametrar",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen som används om ingen annan anges.",
+                            "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                        }
+                    }
                 }
             },
             "aws_bedrock": {
-                "title": "Konfigurera AWS Bedrock leverantör",
-                "description": "**Viktigt**: Detta stöder för närvarande endast följande modeller: Nova, Anthropic Claude",
-                "data": {
-                    "aws_access_key_id": "Åtkomstnyckel",
-                    "aws_secret_access_key": "Hemlighet",
-                    "aws_region_name": "Regionsträngen",
-                    "aws_default_model": "Standardmodellen att använda"
+                "title": "Konfigurera AWS Bedrock-leverantör",
+                "description": "**Viktigt**: Stöder för närvarande endast följande modeller: Nova, Anthropic Claude",
+                "sections": {
+                    "connection_section": {
+                        "name": "Anslutning",
+                        "description": "AWS-autentisering",
+                        "data": {
+                            "aws_access_key_id": "Access Key",
+                            "aws_secret_access_key": "Secret Key",
+                            "aws_region_name": "Regionsträng"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Ställ in standardmodellparametrar",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen som används om ingen annan anges.",
+                            "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                        }
+                    }
                 }
             },
             "openwebui": {
-                "title": "Konfigurera Open WebUI leverantör",
-                "description": "Ange API-nyckel (JWT-token), IP-adress, Port, HTTP(S) och standardmodell.",
-                "data": {
-                    "openwebui_api_key": "API-nyckel (JWT-token)",
-                    "openwebui_ip": "IP-adress",
-                    "openwebui_port": "Port",
-                    "openwebui_https": "Använd HTTPS",
-                    "openwebui_default_model": "Standardmodell"
+                "title": "Konfigurera Open WebUI-leverantör",
+                "description": "Ange API-nyckel (JWT-token), IP-adress, port, HTTP(S) och standardmodell.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Anslutning",
+                        "description": "Open WebUI-autentisering",
+                        "data": {
+                            "api_key": "API-nyckel (JWT-token)",
+                            "ip_address": "IP-adress",
+                            "port": "Port",
+                            "https": "Använd HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Använd HTTPS för säkra anslutningar om din server stöder det."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Ställ in standardmodellparametrar",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen som används om ingen annan anges.",
+                            "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                        }
+                    }
                 }
             },
-            "timeline": {
-                "title": "Tidslinje",
-                "description": "Ange hur många dagar händelser kommer att sparas. Händelser kommer automatiskt att raderas efter denna tid. Händelser lagras lokalt och kan raderas manuellt i kalendervyn. (0 inaktiverar automatisk radering)",
-                "data": {
-                    "retention_time": "Ta bort händelser automatiskt efter (dagar)"
-                }
-            },
-            "memory": {
-                "title": "Minne",
-                "description": "Innehåll i minnet synkroniseras mellan leverantörer och används för att ge ytterligare kontext till modellen.\nObservera: Om `use_memory` är aktiverat, skickas alla bilder i minnet till leverantören vid varje anrop. Att ha många bilder i minnet kan öka bearbetningstiden och öka kostnaden!   \n\n **Bildsökvägar**: Ange sökvägen till bildfilen. \n **Bildbeskrivningar**: Ange en beskrivning av bilden (t.ex.: 'Detta är Cookie, min hund'). \n Bilder och beskrivningar måste vara i samma ordning, och det måste finnas lika många beskrivningar som bilder. \n\n **Systemprompt**: Använd systemprompt för att ändra hur modellen beter sig och svarar. \n **Titelprompt**: Instruktionen som ges till modellen för att generera en titel.",
-                "data": {
-                    "memory_paths": "Bildsökväg",
-                    "memory_strings": "Bildbeskrivning",
-                    "system_prompt": "Systemprompt",
-                    "title_prompt": "Titelprompt"
+            "settings": {
+                "title": "Inställningar",
+                "description": "Konfigurera LLM Vision-integrationen. Detta måste göras innan du lägger till andra leverantörer. Om du vill använda standardinställningarna, tryck bara på 'Skicka'.",
+                "sections": {
+                    "general_section": {
+                        "name": "Allmänt",
+                        "description": "Ställ in föredragen leverantör att använda när vald leverantör inte är tillgänglig.",
+                        "data": {
+                            "fallback_provider": "Reservleverantör"
+                        },
+                        "data_description": {
+                            "fallback_provider": "LLM Vision försöker igen med vald leverantör om nuvarande leverantör misslyckas."
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "Systemprompter",
+                        "description": "Systemprompter används för att ändra hur modellen beter sig och svarar.",
+                        "data": {
+                            "system_prompt": "Systemprompt",
+                            "title_prompt": "Titelprompt"
+                        },
+                        "data_description": {
+                            "system_prompt": "Använd systemprompten för att ändra hur modellen beter sig och svarar.",
+                            "title_prompt": "Instruktionen som ges till modellen för att generera en titel."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Tidslinje",
+                        "description": "Tidslinjen lagrar dagens händelser för att visas med LLM Vision-kortet på din dashboard.",
+                        "data": {
+                            "retention_time": "Behållningstid",
+                            "timeline_today_summary": "Tidslinjesammanfattning",
+                            "timeline_summary_prompt": "Dagens sammanfattningsprompt"
+                        },
+                        "data_description": {
+                            "retention_time": "Radera händelser automatiskt efter (dagar). Sätt till 0 för att inaktivera automatisk radering.",
+                            "timeline_today_summary": "Aktivera tidslinjesammanfattning för att automatiskt generera en sammanfattning av dagens händelser.",
+                            "timeline_summary_prompt": "Instruktionen som ges till modellen för att generera en sammanfattning av dagens händelser."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Minne (Beta)",
+                        "description": "Innehåll i minnet synkroniseras mellan leverantörer och används för att ge modellen ytterligare kontext.",
+                        "data": {
+                            "memory_paths": "Bildfilssökväg",
+                            "memory_strings": "Bildbeskrivning"
+                        },
+                        "data_description": {
+                            "memory_paths": "Ange sökvägen till bildfilen.",
+                            "memory_strings": "Ange en beskrivning av bilden (t.ex.: 'Detta är Cookie, min hund'). Bilder och beskrivningar måste vara i samma ordning, och det måste finnas lika många beskrivningar som bilder."
+                        }
+                    }
                 }
             }
         },
@@ -113,11 +378,13 @@
             "handshake_failed": "Kunde inte ansluta till servern. Kontrollera din API-nyckel eller IP och port",
             "empty_api_key": "Ogiltig API-nyckel",
             "invalid_provider": "Ogiltig leverantör vald",
+            "memory_not_supported": "Denna leverantör stöder inte minne",
             "invalid_image_path": "En eller flera bildsökvägar är ogiltiga",
-            "mismatched_lengths": "Antalet bildsökvägar och beskrivningar måste matcha"
+            "mismatched_lengths": "Antalet bildsökvägar och beskrivningar måste stämma överens"
         },
         "abort": {
-            "unknown_provider": "Okänd leverantör"
+            "unknown_provider": "Okänd leverantör",
+            "reconfigure_successful": "Inställningarna sparades"
         }
     }
 }
