@@ -127,9 +127,9 @@ async def async_setup_entry(hass, entry):
         timeline = Timeline(hass, entry)
         await timeline._cleanup()
 
-    if filtered_provider_config.get(CONF_PROVIDER) == 'Timeline':
-        # Remove the config entry from hass.data if it exists
-        await async_remove_entry(hass, entry)
+    # Print the config entry data for debugging
+    _LOGGER.debug(
+        f"Config entry {entry.title} data: {filtered_provider_config}")
     return True
 
 
@@ -183,22 +183,25 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
         # Example for OpenAI, add similar logic for other providers if needed
         if provider == "Timeline":
             retention_time = config_entry.data.get(CONF_RETENTION_TIME, 7)
-            # Find the Memory entry (not Settings)
+            # Find the Memory entry
             target_entry = None
             for entry in hass.config_entries.async_entries(DOMAIN):
-                if (
-                    entry.entry_id != config_entry.entry_id
-                    and entry.data.get(CONF_PROVIDER) == "Memory"
-                ):
+                if (entry.data.get(CONF_PROVIDER) == "Memory"):
                     target_entry = entry
                     break
             if target_entry:
-                # Prepare to migrate retention_time to this entry
+                # Migrate retention_time to this entry
                 new_data = dict(target_entry.data)
                 new_data[CONF_RETENTION_TIME] = retention_time
                 hass.config_entries.async_update_entry(
                     target_entry, data=new_data
                 )
+            # Log hass.data[DOMAIN] for debugging
+            _LOGGER.debug(f"hass.data[DOMAIN]: {hass.data.get(DOMAIN, {})}")
+            # Remove the Timeline entry
+            _LOGGER.info(
+                f"Removing old Timeline config entry {config_entry.title} from hass.data")
+            await async_remove_entry(hass, config_entry)
         if provider == "Memory":
             # Change the provider name to "Settings"
             new_data[CONF_PROVIDER] = "Settings"
@@ -402,12 +405,6 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
                 config_entry, data=new_data, version=4, minor_version=0
             )
             return True
-
-    # If not already migrated, bump version to 4
-    if config_entry.version < 4:
-        hass.config_entries.async_update_entry(
-            config_entry, data=new_data, version=4, minor_version=0
-        )
 
     return True
 
