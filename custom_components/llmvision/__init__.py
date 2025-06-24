@@ -196,8 +196,9 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
                     target_entry, data=new_data
                 )
             # Now remove the Timeline config entry
-            await hass.config_entries.async_remove(config_entry.entry_id) if provider == "Memory":
-                # Change the provider name to "Settings"
+            await hass.config_entries.async_remove(config_entry.entry_id)
+        if provider == "Memory":
+            # Change the provider name to "Settings"
             new_data[CONF_PROVIDER] = "Settings"
             # Update the title to "LLM Vision Settings"
             hass.config_entries.async_update_entry(
