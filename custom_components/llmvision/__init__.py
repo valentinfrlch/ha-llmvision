@@ -195,8 +195,6 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
                 hass.config_entries.async_update_entry(
                     target_entry, data=new_data
                 )
-            # Now remove the Timeline config entry
-            await hass.config_entries.async_remove(config_entry.entry_id)
         if provider == "Memory":
             # Change the provider name to "Settings"
             new_data[CONF_PROVIDER] = "Settings"
@@ -204,6 +202,18 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
             hass.config_entries.async_update_entry(
                 config_entry, title="LLM Vision Settings", data=new_data, version=4, minor_version=0
             )
+            # Find the Timeline entry
+            target_entry = None
+            for entry in hass.config_entries.async_entries(DOMAIN):
+                if (
+                    entry.entry_id != config_entry.entry_id
+                    and entry.data.get(CONF_PROVIDER) == "Timeline"
+                ):
+                    target_entry = entry
+                    break
+            if target_entry:
+                # Remove the Timeline entry
+                await async_remove_entry(hass, target_entry)
         if provider == "OpenAI":
             # Migrate old provider-specific keys to generic keys
             if "openai_api_key" in new_data:
