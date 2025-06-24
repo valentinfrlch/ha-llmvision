@@ -88,8 +88,9 @@ async def async_setup_entry(hass, entry):
         CONF_DEFAULT_MODEL: entry.data.get(CONF_DEFAULT_MODEL),
         CONF_TEMPERATURE: entry.data.get(CONF_TEMPERATURE),
         CONF_TOP_P: entry.data.get(CONF_TOP_P),
-        CONF_CONTEXT_WINDOW: entry.data.get(CONF_CONTEXT_WINDOW),  # Ollama
-        CONF_KEEP_ALIVE: entry.data.get(CONF_KEEP_ALIVE),  # Ollama
+        # Ollama specific
+        CONF_CONTEXT_WINDOW: entry.data.get(CONF_CONTEXT_WINDOW),
+        CONF_KEEP_ALIVE: entry.data.get(CONF_KEEP_ALIVE),
         # Azure specific
         CONF_AZURE_BASE_URL: entry.data.get(CONF_AZURE_BASE_URL),
         CONF_AZURE_DEPLOYMENT: entry.data.get(CONF_AZURE_DEPLOYMENT),
@@ -100,9 +101,8 @@ async def async_setup_entry(hass, entry):
         CONF_AWS_ACCESS_KEY_ID: entry.data.get(CONF_AWS_ACCESS_KEY_ID),
         CONF_AWS_SECRET_ACCESS_KEY: entry.data.get(CONF_AWS_SECRET_ACCESS_KEY),
         CONF_AWS_REGION_NAME: entry.data.get(CONF_AWS_REGION_NAME),
-        # Timeline
+        # Settings
         CONF_RETENTION_TIME: entry.data.get(CONF_RETENTION_TIME),
-        # Memory
         CONF_MEMORY_PATHS: entry.data.get(CONF_MEMORY_PATHS),
         CONF_MEMORY_IMAGES_ENCODED: entry.data.get(CONF_MEMORY_IMAGES_ENCODED),
         CONF_MEMORY_STRINGS: entry.data.get(CONF_MEMORY_STRINGS),
@@ -126,6 +126,10 @@ async def async_setup_entry(hass, entry):
         await hass.config_entries.async_forward_entry_setups(entry, ["calendar"])
         timeline = Timeline(hass, entry)
         await timeline._cleanup()
+
+    if filtered_provider_config.get(CONF_PROVIDER) == 'Timeline':
+        # Remove the config entry from hass.data if it exists
+        await async_remove_entry(hass, entry)
     return True
 
 
@@ -202,18 +206,6 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
             hass.config_entries.async_update_entry(
                 config_entry, title="LLM Vision Settings", data=new_data, version=4, minor_version=0
             )
-            # Find the Timeline entry
-            target_entry = None
-            for entry in hass.config_entries.async_entries(DOMAIN):
-                if (
-                    entry.entry_id != config_entry.entry_id
-                    and entry.data.get(CONF_PROVIDER) == "Timeline"
-                ):
-                    target_entry = entry
-                    break
-            if target_entry:
-                # Remove the Timeline entry
-                await async_remove_entry(hass, target_entry)
         if provider == "OpenAI":
             # Migrate old provider-specific keys to generic keys
             if "openai_api_key" in new_data:
