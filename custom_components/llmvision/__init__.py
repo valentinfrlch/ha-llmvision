@@ -131,16 +131,12 @@ async def async_setup_entry(hass, entry):
 
 async def async_remove_entry(hass, entry):
     """Remove config entry from hass.data"""
-    # Use the entry_id from the config entry as the UID
     entry_uid = entry.entry_id
-    if entry_uid in hass.data[DOMAIN]:
-        # Remove the entry from hass.data
+    if DOMAIN in hass.data and entry_uid in hass.data[DOMAIN]:
         _LOGGER.info(f"Removing {entry.title} from hass.data")
         await async_unload_entry(hass, entry)
         hass.data[DOMAIN].pop(entry_uid)
-        # Check if entry is the timeline entry
         if entry.data[CONF_PROVIDER] == 'Settings':
-            # Check if "/llmvision/events.db" exists
             db_path = os.path.join(
                 hass.config.path("llmvision"), "events.db"
             )
@@ -180,10 +176,9 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
     # v3 -> v4: Standardize keys for all providers, Memory, Timeline merge into Settings
     if config_entry.version == 3:
         provider = new_data.get(PROVIDER) or new_data.get(CONF_PROVIDER)
-        retention_time = 7  # Default retention time in days
         # Example for OpenAI, add similar logic for other providers if needed
         if provider == "Timeline":
-            retention_time = config_entry.data.get(CONF_RETENTION_TIME)
+            retention_time = config_entry.data.get(CONF_RETENTION_TIME, 7)
             # Find the Memory entry (not Settings)
             target_entry = None
             for entry in hass.config_entries.async_entries(DOMAIN):
@@ -197,15 +192,13 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
                 # Prepare to migrate retention_time to this entry
                 new_data = dict(target_entry.data)
                 new_data[CONF_RETENTION_TIME] = retention_time
-                hass.config_entries.async_update_entry(
+                await hass.config_entries.async_update_entry(
                     target_entry, data=new_data
                 )
             # Now remove the Timeline config entry
-            await async_remove_entry(hass, config_entry)
-        if provider == "Memory":
-            # Change the provider name to "Settings"
+            await hass.config_entries.async_remove(config_entry.entry_id) if provider == "Memory":
+                # Change the provider name to "Settings"
             new_data[CONF_PROVIDER] = "Settings"
-            new_data[CONF_RETENTION_TIME] = retention_time
             # Update the title to "LLM Vision Settings"
             hass.config_entries.async_update_entry(
                 config_entry, title="LLM Vision Settings", data=new_data, version=4, minor_version=0
@@ -801,7 +794,7 @@ def setup(hass, config):
             camera_name=call.camera_entity
         )
 
-    # Register services
+    # Register actions
     hass.services.register(
         DOMAIN, "image_analyzer", image_analyzer,
         supports_response=SupportsResponse.ONLY
