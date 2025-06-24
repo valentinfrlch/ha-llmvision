@@ -201,7 +201,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
             # Remove the Timeline entry
             _LOGGER.info(
                 f"Removing old Timeline config entry {config_entry.title} from hass.data")
-            hass.config_entries.async_remove(config_entry.entry_id)
+            await hass.config_entries.async_remove(config_entry.entry_id)
         if provider == "Memory":
             # Change the provider name to "Settings"
             new_data[CONF_PROVIDER] = "Settings"
