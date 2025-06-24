@@ -192,7 +192,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
                 # Prepare to migrate retention_time to this entry
                 new_data = dict(target_entry.data)
                 new_data[CONF_RETENTION_TIME] = retention_time
-                await hass.config_entries.async_update_entry(
+                hass.config_entries.async_update_entry(
                     target_entry, data=new_data
                 )
             # Now remove the Timeline config entry
