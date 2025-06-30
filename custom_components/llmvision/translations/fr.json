@@ -72,7 +72,7 @@
                         "description": "Paramètres avancés du modèle",
                         "data": {
                             "context_window": "Longueur du contexte",
-                            "keep_alive": "Garder en mémoire (en minutes)"
+                            "keep_alive": "Garder en mémoire"
                         },
                         "data_description": {
                             "context_window": "Définit la taille de la fenêtre de contexte utilisée pour générer le prochain jeton.",

@@ -72,11 +72,11 @@
                         "description": "Erweiterte Modell-Parameter",
                         "data": {
                             "context_window": "Kontextfenster",
-                            "keep_alive": "Keep alive (in Minuten)"
+                            "keep_alive": "Keep alive"
                         },
                         "data_description": {
                             "context_window": "Setzt das Kontextfenster für das Modell zum generieren des nächsten Tokens.",
-                            "keep_alive": "Konfiguriert wie lange das Modell nach der Antwort geladen bleibt. -1: Modell bleibt im RAM, 0: Modell wird sofort geschlossen"
+                            "keep_alive": "Konfiguriert wie lange das Modell nach der Antwort geladen bleibt. Standard: 5m (5 Minuten), -1: Modell bleibt im RAM, 0: Modell wird sofort geschlossen"
                         }
                     }
                 }

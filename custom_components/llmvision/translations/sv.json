@@ -72,7 +72,7 @@
                         "description": "Avancerade modellparametrar",
                         "data": {
                             "context_window": "Kontextlängd",
-                            "keep_alive": "Håll vid liv (i minuter)"
+                            "keep_alive": "Håll vid liv"
                         },
                         "data_description": {
                             "context_window": "Anger storleken på kontextfönstret som används för att generera nästa token.",

@@ -72,7 +72,7 @@
                         "description": "高级模型参数",
                         "data": {
                             "context_window": "上下文长度",
-                            "keep_alive": "保持活动（分钟）"
+                            "keep_alive": "保持活动"
                         },
                         "data_description": {
                             "context_window": "设置用于生成下一个标记的上下文窗口大小。",

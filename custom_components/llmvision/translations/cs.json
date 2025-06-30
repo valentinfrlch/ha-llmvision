@@ -72,7 +72,7 @@
                         "description": "Pokročilé parametry modelu",
                         "data": {
                             "context_window": "Délka kontextu",
-                            "keep_alive": "Držet naživu (v minutách)"
+                            "keep_alive": "Držet naživu"
                         },
                         "data_description": {
                             "context_window": "Nastavit velikost kontextového okna používaného na generování následného tokenu.",
