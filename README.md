@@ -1,10 +1,13 @@
 <p align="center">
-<img src="https://github.com/user-attachments/assets/bebd92b8-765e-4d63-bb3d-47e1bb8b51ad" width=500px>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./logos/dark_logo@2x.png">
+  <img alt="LLM Vision Logo" src="./logos/logo@2x.png" width="512">
+</picture>
 </p>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Default-orange.svg>
 <img src="https://img.shields.io/maintenance/yes/2025.svg">
-<img src=https://img.shields.io/badge/version-1.4.3-blue>
+<img src=https://img.shields.io/badge/version-1.5.0-blue>
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-llmvision?color=0088ff">
 <img alt="Static Badge" src="https://img.shields.io/badge/support-buymeacoffee?logo=buymeacoffee&logoColor=black&color=%23FFDD00&link=https%3A%2F%2Fbuymeacoffee.com%2Fvalentinfrlch">
     <p align=center style="font-weight:bold">
@@ -15,9 +18,9 @@
   <p align="center">
     <a href="#features">🌟 Features </a>
     ·
-    <a href="#resources">📖 Resources</a>
+    <a href="#quick-start-guide">⬇️ Quick Start Guide</a>
     ·
-    <a href="#installation">⬇️ Installation</a>
+    <a href="#resources">📖 Resources</a>
     ·
     <a href="#how-to-report-a-bug-or-request-a-feature">🪲 How to report Bugs</a>
     ·
@@ -33,20 +36,34 @@
 </p>
 
 ## Features
-- Compatible with OpenAI, Anthropic Claude, Google Gemini, AWS Bedrock, Groq, [LocalAI](https://github.com/mudler/LocalAI), [Ollama](https://ollama.com/), [Open WebUI](https://github.com/open-webui/open-webui) and providers with OpenAI compatible enpoints.
+- Compatible with OpenAI, Anthropic Claude, Google Gemini, AWS Bedrock, Groq, [Ollama](https://ollama.com/), [Open WebUI](https://github.com/open-webui/open-webui), [LocalAI](https://github.com/mudler/LocalAI) and providers with OpenAI compatible enpoints.
 - Analyzes images and video files, live camera feeds and Frigate events
-- Can remembers people, pets and objects
-- Maintains a timeline of camera events, so you can display them on your dashboard as well as ask about them later
-- Seamlessly updates sensors based on image input
+- Remembers people, pets and objects
+- Maintains a timeline of camera events, so you can display them on your dashboard and ask Assist about them
+- Seamlessly updates sensors based on data extracted from camera streams, images or videos
 
 <br>
 
 See the [website](https://llmvision.org) for the latest features as well as examples.
-<img width="1122" alt="bento-board" src="https://github.com/user-attachments/assets/a87091a4-314e-42e3-b068-51e8d6a97f1b" />
+<img width="1027" alt="Bentoboard" src="https://github.com/user-attachments/assets/68af19b0-7000-4e5f-a3d3-c180ec2905f2" />
+
 
 
 
 <br>
+
+## Quick Start Guide
+>[!TIP]
+>LLM Vision is available in the default HACS repository. You can install it directly through HACS or click the button below to open it there.
+
+[![Open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=valentinfrlch&repository=ha-llmvision&category=Integration)
+1. **Install `LLM Vision`** from HACS
+2. **Restart** Home Assistant
+3. **Search for `LLM Vision`** in Home Assistant Settings/Devices & services
+4. **Press submit** to continue setup with default settings
+5. **Press 'Add Entry'** to add your first AI Provider
+
+Detailed setup instructions and documentation is available here: [LLM Vision Documentation](https://llm-vision.gitbook.io/getting-started/setup/providers)
 
 ## Blueprint
 With the easy to use blueprint, you'll get camera event notifications intelligently summarized by AI. LLM Vision can also store events in a timeline, so you can see what happened on your dashboard.
@@ -66,18 +83,6 @@ Check the docs for detailed instructions on how to set up LLM Vision and each of
 
 For technical questions see the discussions tab.
 
-
-## Installation
->[!TIP]
->LLM Vision is available in the default HACS repository. You can install it directly through HACS or click the button below to open it there.
-
-[![Open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=valentinfrlch&repository=ha-llmvision&category=Integration)
-1. Install `LLM Vision` from HACS
-2. Search for `LLM Vision` in Home Assistant Settings/Devices & services
-3. Select your provider
-4. Follow the instructions to add your AI providers.
-
-Continue with setup here: https://llm-vision.gitbook.io/getting-started/setup/providers
 
 ## How to report a bug or request a feature
 > [!IMPORTANT]
