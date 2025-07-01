@@ -410,7 +410,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
     return True
 
 
-async def _remember(hass, call, start, response, key_frame, today_summary) -> None:
+async def _remember(hass, call: dict, start: datetime, response: dict, key_frame: str, today_summary: str) -> None:
     if call.remember:
         # Find timeline config
         config_entry = None
@@ -698,7 +698,8 @@ def setup(hass, config):
                         start=start,
                         response=response,
                         key_frame=processor.key_frame,
-                        today_summary=response.get("today_summary", ""))
+                        today_summary=response.get("today_summary", "")
+                        )
         return response
 
     async def data_analyzer(data_call):
@@ -760,7 +761,9 @@ def setup(hass, config):
                         call=call,
                         start=start,
                         response=response,
-                        key_frame=processor.key_frame)
+                        key_frame=processor.key_frame,
+                        today_summary=response.get("today_summary", "")
+                        )
 
         _LOGGER.debug(f"Response: {response}")
         _LOGGER.debug(f"Sensor type: {type}")
