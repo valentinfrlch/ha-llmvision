@@ -127,7 +127,7 @@ class Memory:
         memory_entry = None
         for entry in self.hass.config_entries.async_entries(DOMAIN):
             # Check if the config entry is empty
-            if entry.data["provider"] == "Memory":
+            if entry.data["provider"] == "Settings":
                 memory_entry = entry
                 break
 
