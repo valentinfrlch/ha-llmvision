@@ -502,7 +502,7 @@ class OpenAI(Provider):
         if self.api_key:
             headers = self._generate_headers()
             data = {
-                "model": DEFAULT_OPENAI_MODEL,
+                "model": self.model,
                 "messages": [{"role": "user", "content": [{"type": "text", "text": "Hi"}]}],
                 "max_completion_tokens": 1,
                 "temperature": 0.5

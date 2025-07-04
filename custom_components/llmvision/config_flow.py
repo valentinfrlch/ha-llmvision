@@ -920,7 +920,8 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Re-nest the flat config entry data into sections
             suggested = {
                 "connection_section": {
-                    CONF_API_KEY: self.init_info.get(CONF_API_KEY)
+                    CONF_API_KEY: self.init_info.get(CONF_API_KEY),
+                    CONF_CUSTOM_OPENAI_ENDPOINT: self.init_info.get(CONF_CUSTOM_OPENAI_ENDPOINT, "http://replace.with.your.host.com/v1/chat/completions"),
                 },
                 "model_section": {
                     CONF_DEFAULT_MODEL: self.init_info.get(CONF_DEFAULT_MODEL, DEFAULT_CUSTOM_OPENAI_MODEL),
