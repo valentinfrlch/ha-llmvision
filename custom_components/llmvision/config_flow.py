@@ -31,8 +31,6 @@ from .const import (
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_RETENTION_TIME,
     CONF_FALLBACK_PROVIDER,
-    CONF_TIMELINE_TODAY_SUMMARY,
-    CONF_TIMELINE_SUMMARY_PROMPT,
     CONF_MEMORY_PATHS,
     CONF_MEMORY_STRINGS,
     CONF_SYSTEM_PROMPT,
@@ -486,7 +484,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 openai = OpenAI(self.hass,
                                 api_key=user_input[CONF_API_KEY],
-                                model=[CONF_DEFAULT_MODEL]
+                                model=user_input[CONF_DEFAULT_MODEL]
                                 )
                 await openai.validate()
                 # add the mode to user_input
