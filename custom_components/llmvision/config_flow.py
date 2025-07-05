@@ -50,11 +50,12 @@ from .const import (
     DEFAULT_CUSTOM_OPENAI_MODEL,
     DEFAULT_AWS_MODEL,
     DEFAULT_OPENWEBUI_MODEL,
+    DEFAULT_DEEPSEEK_MODEL,
     ENDPOINT_OPENWEBUI,
     ENDPOINT_AZURE,
+    ENDPOINT_DEEPSEEK,
     CONF_CONTEXT_WINDOW,
     CONF_KEEP_ALIVE,
-    DEFAULT_SUMMARY_PROMPT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -72,6 +73,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "AWS Bedrock": self.async_step_aws_bedrock,
             "Azure": self.async_step_azure,
             "Custom OpenAI": self.async_step_custom_openai,
+            "DeepSeek": self.async_step_deepseek,
             "Google": self.async_step_google,
             "Groq": self.async_step_groq,
             "LocalAI": self.async_step_localai,
@@ -104,7 +106,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_PROVIDER): selector({
                 "select": {
                     # Azure removed until fixed
-                    "options": ["Anthropic", "AWS Bedrock", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI"],
+                    "options": ["Anthropic", "AWS Bedrock", "DeepSeek", "Google", "Groq", "LocalAI", "Ollama", "OpenAI", "OpenWebUI", "Custom OpenAI"],
                     "mode": "dropdown",
                     "sort": False,
                     "custom_value": False
@@ -968,6 +970,97 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=data_schema,
         )
 
+    async def async_step_deepseek(self, user_input=None):
+        data_schema = vol.Schema({
+            vol.Optional("connection_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_API_KEY): selector({
+                        "text": {
+                            "type": "password"
+                        }
+                    })
+                }),
+                {"collapsed": False},
+            ),
+            vol.Optional("model_section"): section(
+                vol.Schema({
+                    vol.Required(CONF_DEFAULT_MODEL, default=DEFAULT_DEEPSEEK_MODEL): str,
+                    vol.Optional(CONF_TEMPERATURE, default=0.5): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
+                    vol.Optional(CONF_TOP_P, default=0.9): selector({
+                        "number": {
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.1,
+                            "mode": "slider"
+                        }
+                    }),
+                }),
+                {"collapsed": False},
+            )
+        })
+
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            # Re-nest the flat config entry data into sections
+            suggested = {
+                "connection_section": {
+                    CONF_API_KEY: self.init_info.get(CONF_API_KEY)
+                },
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(CONF_DEFAULT_MODEL, DEFAULT_DEEPSEEK_MODEL),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
+                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                }
+            }
+            data_schema = self.add_suggested_values_to_schema(
+                data_schema, suggested
+            )
+
+        if user_input is not None:
+            # save provider to user_input
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            # flatten dict to remove nested keys
+            user_input = flatten_dict(user_input)
+            try:
+                custom_openai = OpenAI(self.hass,
+                                       api_key=user_input[CONF_API_KEY],
+                                       model=user_input[CONF_DEFAULT_MODEL],
+                                       endpoint={
+                                           'base_url': ENDPOINT_DEEPSEEK
+                                       })
+                await custom_openai.validate()
+                # add the mode to user_input
+                user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    # we're reconfiguring an existing config
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    # New config entry
+                    return self.async_create_entry(title="DeepSeek", data=user_input)
+            except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
+                return self.async_show_form(
+                    step_id="deepseek",
+                    data_schema=data_schema,
+                    errors={"base": "handshake_failed"}
+                )
+
+        return self.async_show_form(
+            step_id="deepseek",
+            data_schema=data_schema,
+        )
+
     async def async_step_aws_bedrock(self, user_input=None):
         data_schema = vol.Schema({
             vol.Optional("connection_section"): section(
@@ -1053,7 +1146,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                 else:
                     # New config entry
-                    return self.async_create_entry(title="AWS Bedrock Provider", data=user_input)
+                    return self.async_create_entry(title="AWS Bedrock", data=user_input)
             except ServiceValidationError as e:
                 _LOGGER.error(f"Validation failed: {e}")
                 return self.async_show_form(
@@ -1169,7 +1262,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "timeline_section": {
                 CONF_RETENTION_TIME: self.init_info.get(CONF_RETENTION_TIME, 7),
                 # CONF_TIMELINE_TODAY_SUMMARY: self.init_info.get(CONF_TIMELINE_TODAY_SUMMARY, False),
-                # CONF_TIMELINE_SUMMARY_PROMPT: self.init_info.get(
+                #  CONF_TIMELINE_SUMMARY_PROMPT: self.init_info.get(
                 #     CONF_TIMELINE_SUMMARY_PROMPT, DEFAULT_SUMMARY_PROMPT),
             },
             "memory_section": {

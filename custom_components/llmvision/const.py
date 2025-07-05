@@ -93,6 +93,7 @@ DEFAULT_OLLAMA_MODEL = "gemma3:4b"
 DEFAULT_CUSTOM_OPENAI_MODEL = "gpt-4o-mini"
 DEFAULT_AWS_MODEL = "us.amazon.nova-pro-v1:0"
 DEFAULT_OPENWEBUI_MODEL = "gemma3:4b"
+DEFAULT_DEEPSEEK_MODEL = "deepseek-chat"
 
 DEFAULT_SUMMARY_PROMPT = "Provide a brief summary for the following titles. Focus on the key actions or changes that occurred over time and avoid unnecessary details or subjective interpretations. The summary should be concise, objective, and relevant to the content of the images. Keep the summary under 50 words and ensure it captures the main events or activities described in the descriptions. Here are the descriptions:\n "
 
@@ -105,3 +106,4 @@ ENDPOINT_LOCALAI = "{protocol}://{ip_address}:{port}/v1/chat/completions"
 ENDPOINT_OLLAMA = "{protocol}://{ip_address}:{port}/api/chat"
 ENDPOINT_OPENWEBUI = "{protocol}://{ip_address}:{port}/api/chat/completions"
 ENDPOINT_AZURE = "{base_url}openai/deployments/{deployment}/chat/completions?api-version={api_version}"
+ENDPOINT_DEEPSEEK = "https://api.deepseek.com/chat/completions"
