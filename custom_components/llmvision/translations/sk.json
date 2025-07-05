@@ -2,122 +2,389 @@
     "config": {
         "step": {
             "user": {
-                "title": "Konfigurácia LLM Vision",
-                "description": "Vyberte poskytovateľa, ktorého chcete konfigurovať"
+                "title": "Nastavenie LLM Vision",
+                "description": "Vyberte poskytovateľa, ktorého chcete nastaviť."
             },
             "localai": {
                 "title": "Pripojte sa k vášmu LocalAI serveru",
-                "description": "Zadajte IP adresu a port vášho servera LocalAI.",
-                "data": {
-                    "localai_ip": "IP adresa",
-                    "localai_port": "Port",
-                    "localai_https": "HTTPS"
+                "description": "Zadajte IP adresu a port vášho LocalAI servera.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Pripojenie",
+                        "description": "Pripojenie k serveru",
+                        "data": {
+                            "ip_address": "IP adresa",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Použiť HTTPS pre bezpečné pripojenie"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavte predvolené parametre modelu",
+                        "data": {
+                            "default_model": "Predvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
+                            "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                        }
+                    }
                 }
             },
             "ollama": {
-                "title": "Konfigurovať Ollama",
-                "description": "Zadajte IP adresu a port vášho servera Ollama.",
-                "data": {
-                    "ollama_ip": "IP adresa",
-                    "ollama_port": "Port",
-                    "ollama_https": "HTTPS"
+                "title": "Konfigurácia Ollama",
+                "description": "Zadajte IP adresu a port vášho Ollama servera.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Pripojenie",
+                        "description": "Pripojenie k serveru",
+                        "data": {
+                            "ip_address": "IP adresa",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Použiť HTTPS pre bezpečné pripojenie"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavte predvolené parametre modelu",
+                        "data": {
+                            "default_model": "Predvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
+                            "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Pokročilé",
+                        "description": "Pokročilé parametre modelu",
+                        "data": {
+                            "context_window": "Dĺžka kontextu",
+                            "keep_alive": "Udržať načítané"
+                        },
+                        "data_description": {
+                            "context_window": "Nastavuje veľkosť kontextového okna použitého na generovanie ďalšieho tokenu.",
+                            "keep_alive": "Určuje, ako dlho zostane model načítaný v pamäti po požiadavke. -1: ponechať v pamäti neobmedzene, 0: okamžite uvoľniť"
+                        }
+                    }
                 }
             },
             "openai": {
-                "title": "Konfigurovať OpenAI",
-                "description": "Zadajte platný API kľúč pre OpenAI.",
-                "data": {
-                    "openai_api_key": "API kľúč"
+                "title": "Konfigurácia OpenAI",
+                "description": "Zadajte platný OpenAI API kľúč.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Pripojenie",
+                        "description": "OpenAI autentifikácia",
+                        "data": {
+                            "api_key": "API kľúč"
+                        },
+                        "data_description": {
+                            "api_key": "Uistite sa, že máte kredit na vašom OpenAI účte."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavte predvolené parametre modelu",
+                        "data": {
+                            "default_model": "Predvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
+                            "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                        }
+                    }
                 }
             },
             "azure": {
-                "title": "Konfigurovať Azure",
-                "description": "Zadajte platný API kľúč pre Azure, základnú URL adresu, názov inštalácie (deployment) a verziu API.\nZákladná URL adresa musí byť vo formáte `https://domena.openai.azure.com/` vrátane lomky na konci.",
-                "data": {
-                    "azure_api_key": "API kľúč",
-                    "azure_base_url": "Základná URL",
-                    "azure_deployment": "Inštalácia (deployment)",
-                    "azure_version": "Verzia API"
+                "title": "Konfigurácia Azure",
+                "description": "Zadajte platný Azure API kľúč, základnú URL, deployment a verziu API.\nZákladná URL musí byť vo formáte `https://domain.openai.azure.com/` vrátane lomky na konci.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Pripojenie",
+                        "description": "Azure autentifikácia",
+                        "data": {
+                            "api_key": "API kľúč",
+                            "azure_base_url": "Základná URL",
+                            "azure_deployment": "Deployment",
+                            "azure_version": "Verzia API"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavte predvolené parametre modelu",
+                        "data": {
+                            "default_model": "Predvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
+                            "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                        }
+                    }
                 }
             },
             "anthropic": {
-                "title": "Konfigurovať Anthropic Claude",
-                "description": "Zadajte platný API kľúč pre Anthropic.",
-                "data": {
-                    "anthropic_api_key": "API kľúč"
+                "title": "Konfigurácia Anthropic Claude",
+                "description": "Zadajte platný Anthropic API kľúč.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Pripojenie",
+                        "description": "Anthropic autentifikácia",
+                        "data": {
+                            "api_key": "API kľúč"
+                        },
+                        "data_description": {
+                            "api_key": "Uistite sa, že máte kredit na vašom Anthropic účte."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavte predvolené parametre modelu",
+                        "data": {
+                            "default_model": "Predvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
+                            "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                        }
+                    }
                 }
             },
             "google": {
-                "title": "Konfigurovať Google Gemini",
-                "description": "Zadajte platný API kľúč pre Google Gemini.",
-                "data": {
-                    "google_api_key": "API kľúč"
+                "title": "Konfigurácia Google Gemini",
+                "description": "Zadajte platný Google Gemini API kľúč.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Pripojenie",
+                        "description": "Google autentifikácia",
+                        "data": {
+                            "api_key": "API kľúč"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavte predvolené parametre modelu",
+                        "data": {
+                            "default_model": "Predvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
+                            "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                        }
+                    }
                 }
             },
             "groq": {
-                "title": "Konfigurovať Groq",
-                "description": "Zadajte platný API kľúč pre Groq.",
-                "data": {
-                    "groq_api_key": "API kľúč"
+                "title": "Konfigurácia Groq",
+                "description": "Zadajte platný Groq API kľúč.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Pripojenie",
+                        "description": "Groq autentifikácia",
+                        "data": {
+                            "api_key": "API kľúč"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavte predvolené parametre modelu",
+                        "data": {
+                            "default_model": "Predvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
+                            "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                        }
+                    }
                 }
             },
             "custom_openai": {
-                "title": "Konfigurovať vlastného poskytovateľa OpenAI",
-                "description": "**Dôležité**: Funguje iba vtedy, ak je API kompatibilné s API OpenAI. Ak API nevyžaduje kľúč, zadajte hodnotu 'openai'. Endpoint musí byť v tomto formáte: `http(s)://zakladna_url_adresa(:port)/nejaky/endpoint`",
-                "data": {
-                    "custom_openai_endpoint": "Vlastný endpoint",
-                    "custom_openai_api_key": "API kľúč",
-                    "custom_openai_default_model": "Predvolený model, ktorý sa má používať, napr. gpt-4o-mini"
+                "title": "Konfigurácia vlastného OpenAI poskytovateľa",
+                "description": "**Dôležité**: Funguje iba ak je API kompatibilné s OpenAI API. Ak API nevyžaduje API kľúč, zadajte ľubovoľnú hodnotu. Endpoint musí mať nasledujúci formát: `http(s)://baseURL(:port)/nejaký/endpoint`",
+                "sections": {
+                    "connection_section": {
+                        "name": "Pripojenie",
+                        "description": "Vlastná OpenAI autentifikácia",
+                        "data": {
+                            "custom_openai_endpoint": "Vlastný endpoint",
+                            "api_key": "API kľúč"
+                        },
+                        "data_description": {
+                            "endpoint": "API endpoint vo formáte: http(s)://baseURL(:port)/nejaký/endpoint",
+                            "api_key": "API kľúč alebo 'openai', ak nie je potrebný."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavte predvolené parametre modelu",
+                        "data": {
+                            "default_model": "Predvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
+                            "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                        }
+                    }
                 }
             },
             "aws_bedrock": {
-                "title": "Konfigurovať poskytovateľa AWS Bedrock",
-                "description": "**Dôležité**: Momentálne sú podporované iba tieto modely: Nova, Anthropic Claude",
-                "data": {
-                    "aws_access_key_id": "Prístupový kľúč",
-                    "aws_secret_access_key": "Heslo (secret)",
-                    "aws_region_name": "Región",
-                    "aws_default_model": "Predvolený model"
+                "title": "Konfigurácia AWS Bedrock poskytovateľa",
+                "description": "**Dôležité**: Momentálne podporuje iba tieto modely: Nova, Anthropic Claude",
+                "sections": {
+                    "connection_section": {
+                        "name": "Pripojenie",
+                        "description": "AWS autentifikácia",
+                        "data": {
+                            "aws_access_key_id": "Prístupový kľúč",
+                            "aws_secret_access_key": "Tajný kľúč",
+                            "aws_region_name": "Región"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavte predvolené parametre modelu",
+                        "data": {
+                            "default_model": "Predvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
+                            "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                        }
+                    }
                 }
             },
             "openwebui": {
-                "title": "Nastaviť poskytovateľa Open WebUI",
-                "description": "Zadajte API kľúč (JWT token), IP adresu, port, http(s) a predvolený model.",
-                "data": {
-                    "openwebui_api_key": "API kľúč (JWT token)",
-                    "openwebui_ip": "IP adresa",
-                    "openwebui_port": "Port",
-                    "openwebui_https": "Používať https",
-                    "openwebui_default_model": "Predvolený model"
+                "title": "Konfigurácia Open WebUI poskytovateľa",
+                "description": "Zadajte API kľúč (JWT token), IP adresu, port, HTTP(S) a predvolený model.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Pripojenie",
+                        "description": "Open WebUI autentifikácia",
+                        "data": {
+                            "api_key": "API kľúč (JWT token)",
+                            "ip_address": "IP adresa",
+                            "port": "Port",
+                            "https": "Použiť HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Použiť HTTPS pre bezpečné pripojenie, ak to váš server podporuje."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavte predvolené parametre modelu",
+                        "data": {
+                            "default_model": "Predvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
+                            "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                        }
+                    }
                 }
             },
-            "timeline": {
-                "title": "Timeline",
-                "description": "Nastavte, koľko dní budú v pamäti držané udalosti. Po uplynutí tohto času budú udalosti vymazané. Udalosti sú ukladané lokálne a môžete ich odstrániť ručne v kalendári. (0 vypne automatické odstraňovanie)",
-                "data": {
-                    "retention_time": "Automaticky odstraňovať udalosti po (dni)"
-                }
-            },
-            "memory": {
-                "title": "Pamäť",
-                "description": "Obsah v pamäti je synchronizovaný medzi poskytovateľmi a používa sa pre poskytnutie dodatočného kontextu modelu.\nPoznámka: Pri zapnutej voľbe `use_memory` sa pri každom volaní odosielajú poskytovateľovi všetky obrázky. Ak máte v pamäti veľa obrázkov, môže sa zvýšiť čas spracovania a zároveň môžu stúpnuť vaše náklady!   \n\n **Cesty k súborom obrázkov**: Zadajte cestu k súboru s obrázkom. \n **Popisy obrázkov**: Zadajte popis obrázku (napr: 'Toto je Pejko, môj pes'). \n Obrázky a popisy musia byť v rovnakom poradí a počet popisov a obrázkov musí sedieť. \n\n **Systémový prompt**: Použite systémový prompt na zmenu toho, ako sa model správa a ako odpovedá. \n **Prompt pre titulok**: Inštrukcie, pomocou ktorých má model vygenerovať titulok.",
-                "data": {
-                    "memory_paths": "Cesty k súboru s obrázkom",
-                    "memory_strings": "Popis obrázku",
-                    "system_prompt": "Systémový prompt",
-                    "title_prompt": "Prompt pre titulok"
+            "settings": {
+                "title": "Nastavenia",
+                "description": "Nakonfigurujte integráciu LLM Vision. Tento záznam je potrebný pred nastavením iných poskytovateľov. Ak chcete použiť predvolené nastavenia, stačí stlačiť 'Odoslať'.",
+                "sections": {
+                    "general_section": {
+                        "name": "Všeobecné",
+                        "description": "Nastavte preferovaného poskytovateľa, ktorý sa použije, ak vybraný poskytovateľ nie je dostupný.",
+                        "data": {
+                            "fallback_provider": "Záložný poskytovateľ"
+                        },
+                        "data_description": {
+                            "fallback_provider": "LLM Vision zopakuje požiadavku s vybraným poskytovateľom, ak aktuálny zlyhá."
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "Systémové výzvy",
+                        "description": "Systémové výzvy menia správanie a odpovede modelu.",
+                        "data": {
+                            "system_prompt": "Systémová výzva",
+                            "title_prompt": "Výzva na titulok"
+                        },
+                        "data_description": {
+                            "system_prompt": "Použite systémovú výzvu na zmenu správania a odpovedí modelu.",
+                            "title_prompt": "Inštrukcia pre model na generovanie titulku."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Časová os",
+                        "description": "Časová os ukladá dnešné udalosti na zobrazenie v LLM Vision karte na vašom paneli.",
+                        "data": {
+                            "retention_time": "Doba uchovania",
+                            "timeline_today_summary": "Súhrn časovej osi",
+                            "timeline_summary_prompt": "Výzva na súhrn dňa"
+                        },
+                        "data_description": {
+                            "retention_time": "Automaticky vymazať udalosti po (dňoch). Nastavte na 0 pre vypnutie automatického mazania.",
+                            "timeline_today_summary": "Povoliť automatické generovanie súhrnu dnešných udalostí.",
+                            "timeline_summary_prompt": "Inštrukcia pre model na generovanie súhrnu dnešných udalostí."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Pamäť (Beta)",
+                        "description": "Obsah v pamäti sa synchronizuje medzi poskytovateľmi a poskytuje modelu dodatočný kontext.",
+                        "data": {
+                            "memory_paths": "Cesta k obrázku",
+                            "memory_strings": "Popis obrázku"
+                        },
+                        "data_description": {
+                            "memory_paths": "Zadajte cestu k súboru s obrázkom.",
+                            "memory_strings": "Zadajte popis obrázka (napr.: 'Toto je Cookie, môj pes'). Obrázky a popisy musia byť v rovnakom poradí a počet popisov sa musí rovnať počtu obrázkov."
+                        }
+                    }
                 }
             }
         },
         "error": {
-            "handshake_failed": "Nepodarilo sa pripojiť k serveru. Skontrolujte váš API kľúč, IP adresu a port",
+            "handshake_failed": "Nepodarilo sa pripojiť k serveru. Skontrolujte API kľúč alebo IP a port",
             "empty_api_key": "Neplatný API kľúč",
-            "invalid_provider": "Vybrali ste neplatného poskytovateľa",
-            "invalid_image_path": "Aspoň jedna cesta k súboru obrázka je neplatná",
-            "mismatched_lengths": "Počet ciest k obrázkom a popisov musí byť rovnaký"
+            "invalid_provider": "Bol vybraný neplatný poskytovateľ",
+            "memory_not_supported": "Tento poskytovateľ nepodporuje pamäť",
+            "invalid_image_path": "Jedna alebo viac ciest k obrázkom je neplatná",
+            "mismatched_lengths": "Počet ciest k obrázkom a popisov sa musí zhodovať"
         },
         "abort": {
-            "unknown_provider": "Neznámy poskytovateľ"
+            "unknown_provider": "Neznámy poskytovateľ",
+            "reconfigure_successful": "Nastavenia boli úspešne uložené"
         }
     }
 }

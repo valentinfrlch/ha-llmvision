@@ -6,118 +6,385 @@
                 "description": "选择要设置的提供者"
             },
             "localai": {
-                "title": "连接到您的 LocalAI 服务器",
-                "description": "提供您的 LocalAI 服务器的 IP 地址和端口。",
-                "data": {
-                    "localai_ip": "IP 地址",
-                    "localai_port": "端口",
-                    "localai_https": "HTTPS"
+                "title": "连接到您的LocalAI服务器",
+                "description": "请输入您的LocalAI服务器的IP地址和端口。",
+                "sections": {
+                    "connection_section": {
+                        "name": "连接",
+                        "description": "服务器连接",
+                        "data": {
+                            "ip_address": "IP地址",
+                            "port": "端口",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "使用HTTPS进行安全连接"
+                        }
+                    },
+                    "model_section": {
+                        "name": "模型",
+                        "description": "设置默认模型参数",
+                        "data": {
+                            "default_model": "默认模型",
+                            "temperature": "温度",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "当未指定其他模型时使用的默认模型。",
+                            "temperature": "控制输出的随机性。较低的值使输出更确定。",
+                            "top_p": "控制输出的多样性。较低的值使输出更集中。"
+                        }
+                    }
                 }
             },
             "ollama": {
-                "title": "配置 Ollama",
-                "description": "提供您的 Ollama 服务器的 IP 地址和端口。",
-                "data": {
-                    "ollama_ip": "IP 地址",
-                    "ollama_port": "端口",
-                    "ollama_https": "HTTPS"
+                "title": "配置Ollama",
+                "description": "请输入您的Ollama服务器的IP地址和端口。",
+                "sections": {
+                    "connection_section": {
+                        "name": "连接",
+                        "description": "服务器连接",
+                        "data": {
+                            "ip_address": "IP地址",
+                            "port": "端口",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "使用HTTPS进行安全连接"
+                        }
+                    },
+                    "model_section": {
+                        "name": "模型",
+                        "description": "设置默认模型参数",
+                        "data": {
+                            "default_model": "默认模型",
+                            "temperature": "温度",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "当未指定其他模型时使用的默认模型。",
+                            "temperature": "控制输出的随机性。较低的值使输出更确定。",
+                            "top_p": "控制输出的多样性。较低的值使输出更集中。"
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "高级",
+                        "description": "高级模型参数",
+                        "data": {
+                            "context_window": "上下文长度",
+                            "keep_alive": "保持活动"
+                        },
+                        "data_description": {
+                            "context_window": "设置用于生成下一个标记的上下文窗口大小。",
+                            "keep_alive": "控制请求后模型在内存中保留的时间。-1：无限期保留，0：立即卸载"
+                        }
+                    }
                 }
             },
             "openai": {
-                "title": "配置 OpenAI",
-                "description": "提供一个有效的 OpenAI API 密钥。",
-                "data": {
-                    "openai_api_key": "API 密钥"
+                "title": "配置OpenAI",
+                "description": "请输入有效的OpenAI API密钥。",
+                "sections": {
+                    "connection_section": {
+                        "name": "连接",
+                        "description": "OpenAI认证",
+                        "data": {
+                            "api_key": "API密钥"
+                        },
+                        "data_description": {
+                            "api_key": "请确保您的OpenAI账户有余额。"
+                        }
+                    },
+                    "model_section": {
+                        "name": "模型",
+                        "description": "设置默认模型参数",
+                        "data": {
+                            "default_model": "默认模型",
+                            "temperature": "温度",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "当未指定其他模型时使用的默认模型。",
+                            "temperature": "控制输出的随机性。较低的值使输出更确定。",
+                            "top_p": "控制输出的多样性。较低的值使输出更集中。"
+                        }
+                    }
                 }
             },
             "azure": {
-                "title": "配置 Azure",
-                "description": "提供一个有效的 Azure API 密钥、基础 URL、部署和 API 版本。\n基础 URL 必须使用格式 `https://domain.openai.azure.com/` 并包含末尾的斜杠。",
-                "data": {
-                    "azure_api_key": "API 密钥",
-                    "azure_base_url": "基础 URL",
-                    "azure_deployment": "部署",
-                    "azure_version": "API 版本"
+                "title": "配置Azure",
+                "description": "请输入有效的Azure API密钥、基础URL、部署和API版本。\n基础URL格式必须为 `https://domain.openai.azure.com/`，包括结尾的斜杠。",
+                "sections": {
+                    "connection_section": {
+                        "name": "连接",
+                        "description": "Azure认证",
+                        "data": {
+                            "api_key": "API密钥",
+                            "azure_base_url": "基础URL",
+                            "azure_deployment": "部署",
+                            "azure_version": "API版本"
+                        }
+                    },
+                    "model_section": {
+                        "name": "模型",
+                        "description": "设置默认模型参数",
+                        "data": {
+                            "default_model": "默认模型",
+                            "temperature": "温度",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "当未指定其他模型时使用的默认模型。",
+                            "temperature": "控制输出的随机性。较低的值使输出更确定。",
+                            "top_p": "控制输出的多样性。较低的值使输出更集中。"
+                        }
+                    }
                 }
             },
             "anthropic": {
-                "title": "配置 Anthropic Claude",
-                "description": "提供一个有效的 Anthropic API 密钥。",
-                "data": {
-                    "anthropic_api_key": "API 密钥"
+                "title": "配置Anthropic Claude",
+                "description": "请输入有效的Anthropic API密钥。",
+                "sections": {
+                    "connection_section": {
+                        "name": "连接",
+                        "description": "Anthropic认证",
+                        "data": {
+                            "api_key": "API密钥"
+                        },
+                        "data_description": {
+                            "api_key": "请确保您的Anthropic账户有余额。"
+                        }
+                    },
+                    "model_section": {
+                        "name": "模型",
+                        "description": "设置默认模型参数",
+                        "data": {
+                            "default_model": "默认模型",
+                            "temperature": "温度",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "当未指定其他模型时使用的默认模型。",
+                            "temperature": "控制输出的随机性。较低的值使输出更确定。",
+                            "top_p": "控制输出的多样性。较低的值使输出更集中。"
+                        }
+                    }
                 }
             },
             "google": {
-                "title": "配置 Google Gemini",
-                "description": "提供一个有效的 Google Gemini API 密钥。",
-                "data": {
-                    "google_api_key": "API 密钥"
+                "title": "配置Google Gemini",
+                "description": "请输入有效的Google Gemini API密钥。",
+                "sections": {
+                    "connection_section": {
+                        "name": "连接",
+                        "description": "Google认证",
+                        "data": {
+                            "api_key": "API密钥"
+                        }
+                    },
+                    "model_section": {
+                        "name": "模型",
+                        "description": "设置默认模型参数",
+                        "data": {
+                            "default_model": "默认模型",
+                            "temperature": "温度",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "当未指定其他模型时使用的默认模型。",
+                            "temperature": "控制输出的随机性。较低的值使输出更确定。",
+                            "top_p": "控制输出的多样性。较低的值使输出更集中。"
+                        }
+                    }
                 }
             },
             "groq": {
-                "title": "配置 Groq",
-                "description": "提供一个有效的 Groq API 密钥。",
-                "data": {
-                    "groq_api_key": "API 密钥"
+                "title": "配置Groq",
+                "description": "请输入有效的Groq API密钥。",
+                "sections": {
+                    "connection_section": {
+                        "name": "连接",
+                        "description": "Groq认证",
+                        "data": {
+                            "api_key": "API密钥"
+                        }
+                    },
+                    "model_section": {
+                        "name": "模型",
+                        "description": "设置默认模型参数",
+                        "data": {
+                            "default_model": "默认模型",
+                            "temperature": "温度",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "当未指定其他模型时使用的默认模型。",
+                            "temperature": "控制输出的随机性。较低的值使输出更确定。",
+                            "top_p": "控制输出的多样性。较低的值使输出更集中。"
+                        }
+                    }
                 }
             },
             "custom_openai": {
-                "title": "配置自定义 OpenAI 提供者",
-                "description": "**重要**：仅在 API 与 OpenAI 的 API 兼容时才有效。如果该 API 不需要 API 密钥，请输入一个虚拟值。该端点必须使用以下格式：`http(s)://baseURL(:port)/some/endpoint`",
-                "data": {
-                    "custom_openai_endpoint": "自定义端点",
-                    "custom_openai_api_key": "API 密钥",
-                    "custom_openai_default_model": "默认使用的模型，例如 gpt-4o-mini"
+                "title": "配置自定义OpenAI提供商",
+                "description": "**重要**：仅当API兼容OpenAI的API时有效。如果API不需要API密钥，请输入任意值。端点必须采用以下格式：`http(s)://baseURL(:port)/some/endpoint`",
+                "sections": {
+                    "connection_section": {
+                        "name": "连接",
+                        "description": "自定义OpenAI认证",
+                        "data": {
+                            "custom_openai_endpoint": "自定义端点",
+                            "api_key": "API密钥"
+                        },
+                        "data_description": {
+                            "endpoint": "API端点，格式为：http(s)://baseURL(:port)/some/endpoint",
+                            "api_key": "API密钥或'openai'，如果不需要密钥。"
+                        }
+                    },
+                    "model_section": {
+                        "name": "模型",
+                        "description": "设置默认模型参数",
+                        "data": {
+                            "default_model": "默认模型",
+                            "temperature": "温度",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "当未指定其他模型时使用的默认模型。",
+                            "temperature": "控制输出的随机性。较低的值使输出更确定。",
+                            "top_p": "控制输出的多样性。较低的值使输出更集中。"
+                        }
+                    }
                 }
             },
             "aws_bedrock": {
-                "title": "配置 AWS Bedrock 提供者",
-                "description": "**重要**：目前仅支持以下模型：Nova，Anthropic Claude",
-                "data": {
-                    "aws_access_key_id": "访问密钥",
-                    "aws_secret_access_key": "密钥",
-                    "aws_region_name": "地区字符串",
-                    "aws_default_model": "默认使用的模型"
+                "title": "配置AWS Bedrock提供商",
+                "description": "**重要**：目前仅支持以下模型：Nova、Anthropic Claude",
+                "sections": {
+                    "connection_section": {
+                        "name": "连接",
+                        "description": "AWS认证",
+                        "data": {
+                            "aws_access_key_id": "访问密钥",
+                            "aws_secret_access_key": "密钥",
+                            "aws_region_name": "区域字符串"
+                        }
+                    },
+                    "model_section": {
+                        "name": "模型",
+                        "description": "设置默认模型参数",
+                        "data": {
+                            "default_model": "默认模型",
+                            "temperature": "温度",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "当未指定其他模型时使用的默认模型。",
+                            "temperature": "控制输出的随机性。较低的值使输出更确定。",
+                            "top_p": "控制输出的多样性。较低的值使输出更集中。"
+                        }
+                    }
                 }
             },
             "openwebui": {
-                "title": "配置 Open WebUI 提供者",
-                "description": "提供 API 密钥（JWT 令牌）、IP 地址、端口、HTTP(S) 和默认模型。",
-                "data": {
-                    "openwebui_api_key": "API 密钥（JWT 令牌）",
-                    "openwebui_ip": "IP 地址",
-                    "openwebui_port": "端口",
-                    "openwebui_https": "使用 HTTPS",
-                    "openwebui_default_model": "默认模型"
+                "title": "配置Open WebUI提供商",
+                "description": "请输入API密钥（JWT令牌）、IP地址、端口、HTTP(S)和默认模型。",
+                "sections": {
+                    "connection_section": {
+                        "name": "连接",
+                        "description": "Open WebUI认证",
+                        "data": {
+                            "api_key": "API密钥（JWT令牌）",
+                            "ip_address": "IP地址",
+                            "port": "端口",
+                            "https": "使用HTTPS"
+                        },
+                        "data_description": {
+                            "https": "如果您的服务器支持，使用HTTPS进行安全连接。"
+                        }
+                    },
+                    "model_section": {
+                        "name": "模型",
+                        "description": "设置默认模型参数",
+                        "data": {
+                            "default_model": "默认模型",
+                            "temperature": "温度",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "当未指定其他模型时使用的默认模型。",
+                            "temperature": "控制输出的随机性。较低的值使输出更确定。",
+                            "top_p": "控制输出的多样性。较低的值使输出更集中。"
+                        }
+                    }
                 }
             },
-            "timeline": {
-                "title": "时间线",
-                "description": "设置事件被记住的天数。到达此时限后，事件将自动删除。事件存储在本地，并可在日历视图中手动删除。（0表示禁用自动删除）",
-                "data": {
-                    "retention_time": "自动删除事件时间（天）"
-                }
-            },
-            "memory": {
-                "title": "记忆",
-                "description": "存储在记忆中的内容会在不同提供者之间同步，用于为模型提供额外的上下文。\n注意：如果启用 `use_memory`，记忆中的所有图像都会在每次调用时发送给提供者。存储大量图像可能会增加处理时间和成本！  \n\n **图像文件路径**：提供图像文件的路径。\n **图像描述**：提供对图像的描述（例如：“这是我的狗 Cookie”）。\n图像和描述必须顺序一致，并且描述数量要与图像数量相同。\n\n **System Prompt**：使用系统提示来改变模型的行为和响应。\n **Title Prompt**：用于生成标题的模型指令。",
-                "data": {
-                    "memory_paths": "图像文件路径",
-                    "memory_strings": "图像描述",
-                    "system_prompt": "系统提示",
-                    "title_prompt": "标题提示"
+            "settings": {
+                "title": "设置",
+                "description": "配置LLM视觉集成。在设置其他提供商之前，必须先完成此项。如果您想使用默认设置，只需点击“提交”。",
+                "sections": {
+                    "general_section": {
+                        "name": "通用",
+                        "description": "设置首选提供商，当所选提供商不可用时使用。",
+                        "data": {
+                            "fallback_provider": "备用提供商"
+                        },
+                        "data_description": {
+                            "fallback_provider": "如果当前提供商失败，LLM视觉将使用所选提供商重试请求。"
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "系统提示词",
+                        "description": "系统提示词用于改变模型的行为和响应方式。",
+                        "data": {
+                            "system_prompt": "系统提示词",
+                            "title_prompt": "标题提示词"
+                        },
+                        "data_description": {
+                            "system_prompt": "使用系统提示词改变模型的行为和响应方式。",
+                            "title_prompt": "用于生成标题的指令。"
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "时间线",
+                        "description": "时间线存储今天的事件，可通过LLM视觉卡片在仪表板上显示。",
+                        "data": {
+                            "retention_time": "保留时间",
+                            "timeline_today_summary": "时间线摘要",
+                            "timeline_summary_prompt": "今日摘要提示词"
+                        },
+                        "data_description": {
+                            "retention_time": "事件自动删除天数。设为0则不自动删除。",
+                            "timeline_today_summary": "启用时间线摘要，自动生成今天事件的摘要。",
+                            "timeline_summary_prompt": "用于生成今天事件摘要的指令。"
+                        }
+                    },
+                    "memory_section": {
+                        "name": "记忆（测试版）",
+                        "description": "记忆中的内容会在各提供商间同步，并为模型提供额外上下文。",
+                        "data": {
+                            "memory_paths": "图片文件路径",
+                            "memory_strings": "图片描述"
+                        },
+                        "data_description": {
+                            "memory_paths": "提供图片文件的路径。",
+                            "memory_strings": "提供图片的描述（例如：“这是我的狗Cookie”）。图片和描述顺序需一致，数量也需相同。"
+                        }
+                    }
                 }
             }
         },
         "error": {
-            "handshake_failed": "无法连接到服务器。请检查您的 API 密钥或 IP 和端口",
-            "empty_api_key": "无效的 API 密钥",
-            "invalid_provider": "选择了无效的提供者",
-            "invalid_image_path": "一个或多个图像路径无效",
-            "mismatched_lengths": "图像路径和描述的数量必须相同"
+            "handshake_failed": "无法连接到服务器。请检查您的API密钥或IP和端口",
+            "empty_api_key": "无效的API密钥",
+            "invalid_provider": "选择了无效的提供商",
+            "memory_not_supported": "该提供商不支持记忆功能",
+            "invalid_image_path": "一个或多个图片路径无效",
+            "mismatched_lengths": "图片路径和描述数量必须一致"
         },
         "abort": {
-            "unknown_provider": "未知的提供者"
+            "unknown_provider": "未知提供商",
+            "reconfigure_successful": "设置保存成功"
         }
     }
 }

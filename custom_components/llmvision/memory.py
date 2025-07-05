@@ -1,7 +1,7 @@
 from .const import (
     DOMAIN,
     CONF_MEMORY_PATHS,
-    CONG_MEMORY_IMAGES_ENCODED,
+    CONF_MEMORY_IMAGES_ENCODED,
     CONF_MEMORY_STRINGS,
     CONF_SYSTEM_PROMPT,
     CONF_TITLE_PROMPT,
@@ -37,7 +37,7 @@ class Memory:
                 CONF_MEMORY_STRINGS, strings)
             self.memory_paths = self.entry.data.get(CONF_MEMORY_PATHS, paths)
             self.memory_images = self.entry.data.get(
-                CONG_MEMORY_IMAGES_ENCODED, [])
+                CONF_MEMORY_IMAGES_ENCODED, [])
 
         _LOGGER.debug(self)
 
@@ -127,7 +127,7 @@ class Memory:
         memory_entry = None
         for entry in self.hass.config_entries.async_entries(DOMAIN):
             # Check if the config entry is empty
-            if entry.data["provider"] == "Memory":
+            if entry.data["provider"] == "Settings":
                 memory_entry = entry
                 break
 

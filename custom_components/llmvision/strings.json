@@ -3,136 +3,374 @@
         "step": {
             "user": {
                 "title": "LLM Vision Setup",
-                "description": "Select what you want to set up"
+                "description": "Select the provider you want to set up."
             },
             "localai": {
                 "title": "Connect to your LocalAI server",
                 "description": "Provide the IP address and port of your LocalAI server.",
-                "data": {
-                    "localai_ip": "IP address",
-                    "localai_port": "Port",
-                    "localai_https": "HTTPS",
-                    "localai_default_model": "Default model",
-                    "localai_default_temperature": "Temperature",
-                    "localai_default_top_p": "Top P"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Server connection",
+                        "data": {
+                            "ip_address": "IP address",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Use HTTPS for secure connections"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
                 }
             },
             "ollama": {
                 "title": "Configure Ollama",
                 "description": "Provide the IP address and port of your Ollama server.",
-                "data": {
-                    "ollama_ip": "IP address",
-                    "ollama_port": "Port",
-                    "ollama_https": "HTTPS",
-                    "ollama_default_model": "Default model",
-                    "ollama_default_temperature": "Temperature",
-                    "ollama_default_top_p": "Top P"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Server connection",
+                        "data": {
+                            "ip_address": "IP address",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Use HTTPS for secure connections"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Advanced",
+                        "description": "Advanced model parameters",
+                        "data": {
+                            "context_window": "Context length",
+                            "keep_alive": "Keep alive"
+                        },
+                        "data_description": {
+                            "context_window": "Sets the size of the context window used to generate the next token.",
+                            "keep_alive": "Controls how long the model will stay loaded into memory following the request. Default: 5m (5 minutes), -1: keep in memory indefinitely, 0: unload immediately"
+                        }
+                    }
                 }
             },
             "openai": {
                 "title": "Configure OpenAI",
                 "description": "Provide a valid OpenAI API key.",
-                "data": {
-                    "openai_api_key": "API key",
-                    "openai_default_model": "Default model",
-                    "openai_default_temperature": "Default temperature",
-                    "openai_default_top_p": "Top P"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "OpenAI authentication",
+                        "data": {
+                            "api_key": "API key"
+                        },
+                        "data_description": {
+                            "api_key": "Make sure to add credit to your OpenAI account."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
                 }
             },
             "azure": {
                 "title": "Configure Azure",
                 "description": "Provide a valid Azure API key, base URL, deployment and API version.\nThe Base URL must be in the format `https://domain.openai.azure.com/` including the trailing slash.",
-                "data": {
-                    "azure_api_key": "API key",
-                    "azure_base_url": "Base URL",
-                    "azure_deployment": "Deployment",
-                    "azure_version": "API Version",
-                    "azure_default_model": "Default model",
-                    "azure_default_temperature": "Temperature",
-                    "azure_default_top_p": "Top P"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Azure authentication",
+                        "data": {
+                            "api_key": "API key",
+                            "azure_base_url": "Base URL",
+                            "azure_deployment": "Deployment",
+                            "azure_version": "API Version"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
                 }
             },
             "anthropic": {
                 "title": "Configure Anthropic Claude",
                 "description": "Provide a valid Anthropic API key.",
-                "data": {
-                    "anthropic_api_key": "API key",
-                    "anthropic_default_model": "Default model",
-                    "anthropic_default_temperature": "Temperature",
-                    "anthropic_default_top_p": "Top P"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Anthropic authentication",
+                        "data": {
+                            "api_key": "API key"
+                        },
+                        "data_description": {
+                            "api_key": "Make sure to add credit to your Anthropic account."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
                 }
             },
             "google": {
                 "title": "Configure Google Gemini",
                 "description": "Provide a valid Google Gemini API key.",
-                "data": {
-                    "google_api_key": "API key",
-                    "google_default_model": "Default model",
-                    "google_default_temperature": "Temperature",
-                    "google_default_top_p": "Top P"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Google authentication",
+                        "data": {
+                            "api_key": "API key"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
                 }
             },
             "groq": {
                 "title": "Configure Groq",
                 "description": "Provide a valid Groq API key.",
-                "data": {
-                    "groq_api_key": "Your API key",
-                    "groq_default_model": "Default model",
-                    "groq_default_temperature": "Temperature",
-                    "groq_default_top_p": "Top P"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Groq authentication",
+                        "data": {
+                            "api_key": "API key"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
                 }
             },
             "custom_openai": {
                 "title": "Configure Custom OpenAI provider",
                 "description": "**Important**: Only works if the API is compatible with OpenAI's API. If the API doesn't require an API key, enter a dummy value. The endpoint must have the following format: `http(s)://baseURL(:port)/some/endpoint`",
-                "data": {
-                    "custom_openai_endpoint": "Custom Endpoint",
-                    "custom_openai_api_key": "API key",
-                    "custom_openai_default_model": "Default model",
-                    "custom_openai_default_temperature": "Temperature",
-                    "custom_openai_default_top_p": "Top P"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Custom OpenAI authentication",
+                        "data": {
+                            "custom_openai_endpoint": "Custom Endpoint",
+                            "api_key": "API key"
+                        },
+                        "data_description": {
+                            "endpoint": "The API enpoint following this format: http(s)://baseURL(:port)/some/endpoint",
+                            "api_key": "API key or 'openai', if none is required."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
                 }
             },
             "aws_bedrock": {
                 "title": "Configure AWS Bedrock provider",
                 "description": "**Important**: This currently only supports the following models: Nova, Anthropic Claude",
-                "data": {
-                    "aws_access_key_id": "Access Key",
-                    "aws_secret_access_key": "Secret Key",
-                    "aws_region_name": "Region string",
-                    "aws_default_model": "Default model",
-                    "aws_default_temperature": "Temperature",
-                    "aws_default_top_p": "Top P"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "AWS authentication",
+                        "data": {
+                            "aws_access_key_id": "Access Key",
+                            "aws_secret_access_key": "Secret Key",
+                            "aws_region_name": "Region string"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
                 }
             },
             "openwebui": {
                 "title": "Configure Open WebUI provider",
                 "description": "Provide API key (JWT token), IP Address, Port, HTTP(S) and default model.",
-                "data": {
-                    "openwebui_api_key": "API Key (JWT token)",
-                    "openwebui_ip": "IP Address",
-                    "openwebui_port": "Port",
-                    "openwebui_https": "Use HTTPS",
-                    "openwebui_default_model": "Default model",
-                    "openwebui_default_temperature": "Temperature",
-                    "openwebui_default_top_p": "Top P"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Open WebUI authentication",
+                        "data": {
+                            "api_key": "API Key (JWT token)",
+                            "ip_address": "IP Address",
+                            "port": "Port",
+                            "https": "Use HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Use HTTPS for secure connections if your server supports it."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
                 }
             },
-            "timeline": {
-                "title": "Timeline",
-                "description": "Set how many days events will be remembered for. Events will automatically be deleted after this time. Events are stored locally and can be deleted manually in the calendar view. (0 disables auto delete)",
-                "data": {
-                    "retention_time": "Auto delete events after (days)"
-                }
-            },
-            "memory": {
-                "title": "Memory",
-                "description": "Content in memory syncs across providers and is used to provide additional context to the model.\nNote: If `use_memory` is enabled, all images in memory are sent to the provider with every call. Having lots of images in memory can increase processing time and increase cost!   \n\n **Image file paths**: Provide the path to the image file. \n **Image descriptions**: Provide a description of the image (e.g.: 'This is Cookie, my dog'). \n Images and descriptions must be in the same order, and there must be as many descriptions as images. \n\n **System Prompt**: Use the system prompt to change how the model behaves and responds. \n **Title Prompt**: The instruction given to the model to generate a title.",
-                "data": {
-                    "memory_paths": "Image file path",
-                    "memory_strings": "Image description",
-                    "system_prompt": "System prompt",
-                    "title_prompt": "Title prompt"
+            "settings": {
+                "title": "Settings",
+                "description": "Configure the LLM Vision integration. This entry is required before setting up other providers. If you wish to use the default settings, just press 'Submit'.",
+                "sections": {
+                    "general_section": {
+                        "name": "General",
+                        "description": "Set preferred provider to use when the selected provider is unavailable.",
+                        "data": {
+                            "fallback_provider": "Fallback provider"
+                        },
+                        "data_description": {
+                            "fallback_provider": "LLM Vision will retry the request with the selected provider if the current provider fails."
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "System Prompts",
+                        "description": "System prompts are used to change how the model behaves and responds.",
+                        "data": {
+                            "system_prompt": "System prompt",
+                            "title_prompt": "Title prompt"
+                        },
+                        "data_description": {
+                            "system_prompt": "Use the system prompt to change how the model behaves and responds.",
+                            "title_prompt": "The instruction given to the model to generate a title."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Timeline",
+                        "description": "Timeline stores today's events to display using LLM Vision Card on your dashboard.",
+                        "data": {
+                            "retention_time": "Retention time",
+                            "timeline_today_summary": "Timeline Summary",
+                            "timeline_summary_prompt": "Today Summary Prompt"
+                        },
+                        "data_description": {
+                            "retention_time": "Auto delete events after (days). Set to 0 to disable auto deletion.",
+                            "timeline_today_summary": "Enable timeline summary to automatically generate a summary of today's events.",
+                            "timeline_summary_prompt": "The instruction given to the model to generate a summary of today's events."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Memory (Beta)",
+                        "description": "Content in memory syncs across providers and is used to provide additional context to the model.",
+                        "data": {
+                            "memory_paths": "Image file path",
+                            "memory_strings": "Image description"
+                        },
+                        "data_description": {
+                            "memory_paths": "Provide the path to the image file.",
+                            "memory_strings": "Provide a description of the image (e.g.: 'This is Cookie, my dog'). Images and descriptions must be in the same order, and there must be as many descriptions as images."
+                        }
+                    }
                 }
             }
         },
@@ -145,7 +383,8 @@
             "mismatched_lengths": "The number of image paths and descriptions must match"
         },
         "abort": {
-            "unknown_provider": "Unknown provider"
+            "unknown_provider": "Unknown provider",
+            "reconfigure_successful": "Saved settings successfully"
         }
     }
 }

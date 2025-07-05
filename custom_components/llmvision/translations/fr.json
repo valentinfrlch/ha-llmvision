@@ -3,121 +3,388 @@
         "step": {
             "user": {
                 "title": "Configuration de LLM Vision",
-                "description": "Sélectionnez un fournisseur à configurer"
+                "description": "Sélectionnez le fournisseur que vous souhaitez configurer."
             },
             "localai": {
                 "title": "Connectez-vous à votre serveur LocalAI",
-                "description": "Fournissez l'adresse IP et le port de votre serveur LocalAI.",
-                "data": {
-                    "localai_ip": "Adresse IP",
-                    "localai_port": "Port",
-                    "localai_https": "HTTPS"
+                "description": "Indiquez l'adresse IP et le port de votre serveur LocalAI.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexion",
+                        "description": "Connexion au serveur",
+                        "data": {
+                            "ip_address": "Adresse IP",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Utiliser HTTPS pour des connexions sécurisées"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modèle",
+                        "description": "Définir les paramètres par défaut du modèle",
+                        "data": {
+                            "default_model": "Modèle par défaut",
+                            "temperature": "Température",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
+                            "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                        }
+                    }
                 }
             },
             "ollama": {
                 "title": "Configurer Ollama",
-                "description": "Fournissez l'adresse IP et le port de votre serveur Ollama.",
-                "data": {
-                    "ollama_ip": "Adresse IP",
-                    "ollama_port": "Port",
-                    "ollama_https": "HTTPS"
+                "description": "Indiquez l'adresse IP et le port de votre serveur Ollama.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexion",
+                        "description": "Connexion au serveur",
+                        "data": {
+                            "ip_address": "Adresse IP",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Utiliser HTTPS pour des connexions sécurisées"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modèle",
+                        "description": "Définir les paramètres par défaut du modèle",
+                        "data": {
+                            "default_model": "Modèle par défaut",
+                            "temperature": "Température",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
+                            "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Avancé",
+                        "description": "Paramètres avancés du modèle",
+                        "data": {
+                            "context_window": "Longueur du contexte",
+                            "keep_alive": "Garder en mémoire"
+                        },
+                        "data_description": {
+                            "context_window": "Définit la taille de la fenêtre de contexte utilisée pour générer le prochain jeton.",
+                            "keep_alive": "Contrôle combien de temps le modèle reste chargé en mémoire après la requête. -1 : garder indéfiniment, 0 : décharger immédiatement"
+                        }
+                    }
                 }
             },
             "openai": {
                 "title": "Configurer OpenAI",
-                "description": "Fournissez une clé d'API OpenAI valide.",
-                "data": {
-                    "openai_api_key": "Clé d'API"
+                "description": "Fournissez une clé API OpenAI valide.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexion",
+                        "description": "Authentification OpenAI",
+                        "data": {
+                            "api_key": "Clé API"
+                        },
+                        "data_description": {
+                            "api_key": "Assurez-vous d'avoir du crédit sur votre compte OpenAI."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modèle",
+                        "description": "Définir les paramètres par défaut du modèle",
+                        "data": {
+                            "default_model": "Modèle par défaut",
+                            "temperature": "Température",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
+                            "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                        }
+                    }
                 }
             },
             "azure": {
                 "title": "Configurer Azure",
-                "description": "Fournissez une clé d'API Azure valide, une URL de base, un déploiement et une version de l'API.\nL'URL de base doit être au format `https://domain.openai.azure.com/` incluant le slash final.",
-                "data": {
-                    "azure_api_key": "Clé d'API",
-                    "azure_base_url": "URL de base",
-                    "azure_deployment": "Déploiement",
-                    "azure_version": "Version de l'API"
+                "description": "Fournissez une clé API Azure valide, l'URL de base, le déploiement et la version de l'API.\nL'URL de base doit être au format `https://domain.openai.azure.com/` avec le slash final.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexion",
+                        "description": "Authentification Azure",
+                        "data": {
+                            "api_key": "Clé API",
+                            "azure_base_url": "URL de base",
+                            "azure_deployment": "Déploiement",
+                            "azure_version": "Version de l'API"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modèle",
+                        "description": "Définir les paramètres par défaut du modèle",
+                        "data": {
+                            "default_model": "Modèle par défaut",
+                            "temperature": "Température",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
+                            "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                        }
+                    }
                 }
             },
             "anthropic": {
                 "title": "Configurer Anthropic Claude",
-                "description": "Fournissez une clé d'API Anthropic valide.",
-                "data": {
-                    "anthropic_api_key": "Clé d'API"
+                "description": "Fournissez une clé API Anthropic valide.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexion",
+                        "description": "Authentification Anthropic",
+                        "data": {
+                            "api_key": "Clé API"
+                        },
+                        "data_description": {
+                            "api_key": "Assurez-vous d'avoir du crédit sur votre compte Anthropic."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modèle",
+                        "description": "Définir les paramètres par défaut du modèle",
+                        "data": {
+                            "default_model": "Modèle par défaut",
+                            "temperature": "Température",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
+                            "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                        }
+                    }
                 }
             },
             "google": {
                 "title": "Configurer Google Gemini",
-                "description": "Fournissez une clé d'API Google Gemini valide.",
-                "data": {
-                    "google_api_key": "Clé d'API"
+                "description": "Fournissez une clé API Google Gemini valide.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexion",
+                        "description": "Authentification Google",
+                        "data": {
+                            "api_key": "Clé API"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modèle",
+                        "description": "Définir les paramètres par défaut du modèle",
+                        "data": {
+                            "default_model": "Modèle par défaut",
+                            "temperature": "Température",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
+                            "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                        }
+                    }
                 }
             },
             "groq": {
                 "title": "Configurer Groq",
-                "description": "Fournissez une clé d'API Groq valide.",
-                "data": {
-                    "groq_api_key": "Clé d'API"
+                "description": "Fournissez une clé API Groq valide.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexion",
+                        "description": "Authentification Groq",
+                        "data": {
+                            "api_key": "Clé API"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modèle",
+                        "description": "Définir les paramètres par défaut du modèle",
+                        "data": {
+                            "default_model": "Modèle par défaut",
+                            "temperature": "Température",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
+                            "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                        }
+                    }
                 }
             },
             "custom_openai": {
                 "title": "Configurer un fournisseur OpenAI personnalisé",
-                "description": "**Important** : Fonctionne uniquement si l'API est compatible avec l'API d'OpenAI. Si l'API ne nécessite pas de clé d'API, entrez une valeur fictive. Le point de terminaison doit avoir le format suivant : `http(s)://baseURL(:port)/some/endpoint`",
-                "data": {
-                    "custom_openai_endpoint": "Point de terminaison personnalisé",
-                    "custom_openai_api_key": "Clé d'API",
-                    "custom_openai_default_model": "Modèle par défaut à utiliser, ex. : gpt-4o-mini"
+                "description": "**Important** : Fonctionne uniquement si l'API est compatible avec l'API OpenAI. Si l'API ne nécessite pas de clé, entrez une valeur factice. L'endpoint doit avoir le format suivant : `http(s)://baseURL(:port)/some/endpoint`",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexion",
+                        "description": "Authentification OpenAI personnalisée",
+                        "data": {
+                            "custom_openai_endpoint": "Endpoint personnalisé",
+                            "api_key": "Clé API"
+                        },
+                        "data_description": {
+                            "endpoint": "L'endpoint de l'API au format : http(s)://baseURL(:port)/some/endpoint",
+                            "api_key": "Clé API ou 'openai' si aucune n'est requise."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modèle",
+                        "description": "Définir les paramètres par défaut du modèle",
+                        "data": {
+                            "default_model": "Modèle par défaut",
+                            "temperature": "Température",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
+                            "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                        }
+                    }
                 }
             },
             "aws_bedrock": {
                 "title": "Configurer le fournisseur AWS Bedrock",
                 "description": "**Important** : Actuellement, seuls les modèles suivants sont pris en charge : Nova, Anthropic Claude",
-                "data": {
-                    "aws_access_key_id": "Clé d'accès",
-                    "aws_secret_access_key": "Secret",
-                    "aws_region_name": "Nom de la région",
-                    "aws_default_model": "Modèle par défaut à utiliser"
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexion",
+                        "description": "Authentification AWS",
+                        "data": {
+                            "aws_access_key_id": "Clé d'accès",
+                            "aws_secret_access_key": "Clé secrète",
+                            "aws_region_name": "Chaîne de région"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modèle",
+                        "description": "Définir les paramètres par défaut du modèle",
+                        "data": {
+                            "default_model": "Modèle par défaut",
+                            "temperature": "Température",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
+                            "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                        }
+                    }
                 }
             },
             "openwebui": {
                 "title": "Configurer le fournisseur Open WebUI",
-                "description": "Fournissez une clé d'API (jeton JWT), une adresse IP, un port, HTTP(S) et un modèle par défaut.",
-                "data": {
-                    "openwebui_api_key": "Clé d'API (Jeton JWT)",
-                    "openwebui_ip": "Addresse IP",
-                    "openwebui_port": "Port",
-                    "openwebui_https": "Utiliser HTTPS",
-                    "openwebui_default_model": "Modèle par défaut"
+                "description": "Fournissez la clé API (jeton JWT), l'adresse IP, le port, HTTP(S) et le modèle par défaut.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexion",
+                        "description": "Authentification Open WebUI",
+                        "data": {
+                            "api_key": "Clé API (jeton JWT)",
+                            "ip_address": "Adresse IP",
+                            "port": "Port",
+                            "https": "Utiliser HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Utiliser HTTPS pour des connexions sécurisées si votre serveur le permet."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modèle",
+                        "description": "Définir les paramètres par défaut du modèle",
+                        "data": {
+                            "default_model": "Modèle par défaut",
+                            "temperature": "Température",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
+                            "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                        }
+                    }
                 }
             },
-            "timeline": {
-                "title": "Chronologie",
-                "description": "Définissez combien de jours les événements seront mémorisés. Les événements seront automatiquement supprimés après ce délai. Les événements sont stockés localement et peuvent être supprimés manuellement dans la vue calendrier. (0 désactive la suppression automatique)",
-                "data": {
-                    "retention_time": "Supprimer automatiquement les événements après (jours)"
-                }
-            },
-            "memory": {
-                "title": "Mémoire",
-                "description": "Le contenu de la mémoire est synchronisé entre les fournisseurs et est utilisé pour fournir un contexte supplémentaire au modèle.\nRemarque : si `use_memory` est activé, toutes les images en mémoire sont envoyées au fournisseur à chaque appel. Avoir beaucoup d'images en mémoire peut augmenter le temps de traitement et le coût !   \n\n **Chemins des fichiers image** : Fournissez le chemin du fichier image. \n **Descriptions des images** : Fournissez une description de l'image (ex. : 'Voici Biscuit, mon chien'). \n Les images et les descriptions doivent être dans le même ordre, et il doit y avoir autant de descriptions que d'images. \n\n **Invite système** : Utilisez l'invite système pour modifier le comportement et les réponses du modèle. \n **Invite de titre** : L'instruction donnée au modèle pour générer un titre.",
-                "data": {
-                    "memory_paths": "Chemin du fichier image",
-                    "memory_strings": "Description de l'image",
-                    "system_prompt": "Invite système",
-                    "title_prompt": "Invite de titre"
+            "settings": {
+                "title": "Paramètres",
+                "description": "Configurez l'intégration LLM Vision. Cette entrée est requise avant de configurer d'autres fournisseurs. Si vous souhaitez utiliser les paramètres par défaut, appuyez simplement sur 'Soumettre'.",
+                "sections": {
+                    "general_section": {
+                        "name": "Général",
+                        "description": "Définir le fournisseur préféré à utiliser lorsque le fournisseur sélectionné n'est pas disponible.",
+                        "data": {
+                            "fallback_provider": "Fournisseur de secours"
+                        },
+                        "data_description": {
+                            "fallback_provider": "LLM Vision réessaiera la requête avec le fournisseur sélectionné si le fournisseur actuel échoue."
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "Prompts système",
+                        "description": "Les prompts système sont utilisés pour modifier le comportement et les réponses du modèle.",
+                        "data": {
+                            "system_prompt": "Prompt système",
+                            "title_prompt": "Prompt de titre"
+                        },
+                        "data_description": {
+                            "system_prompt": "Utilisez le prompt système pour modifier le comportement et les réponses du modèle.",
+                            "title_prompt": "L'instruction donnée au modèle pour générer un titre."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Chronologie",
+                        "description": "La chronologie stocke les événements du jour à afficher via la carte LLM Vision sur votre tableau de bord.",
+                        "data": {
+                            "retention_time": "Durée de conservation",
+                            "timeline_today_summary": "Résumé de la chronologie",
+                            "timeline_summary_prompt": "Prompt de résumé du jour"
+                        },
+                        "data_description": {
+                            "retention_time": "Suppression automatique des événements après (jours). Mettre à 0 pour désactiver la suppression automatique.",
+                            "timeline_today_summary": "Activer le résumé de la chronologie pour générer automatiquement un résumé des événements du jour.",
+                            "timeline_summary_prompt": "L'instruction donnée au modèle pour générer un résumé des événements du jour."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Mémoire (Bêta)",
+                        "description": "Le contenu en mémoire est synchronisé entre les fournisseurs et utilisé pour fournir un contexte supplémentaire au modèle.",
+                        "data": {
+                            "memory_paths": "Chemin du fichier image",
+                            "memory_strings": "Description de l'image"
+                        },
+                        "data_description": {
+                            "memory_paths": "Indiquez le chemin du fichier image.",
+                            "memory_strings": "Fournissez une description de l'image (ex : 'Ceci est Cookie, mon chien'). Les images et descriptions doivent être dans le même ordre, et il doit y avoir autant de descriptions que d'images."
+                        }
+                    }
                 }
             }
         },
         "error": {
-            "handshake_failed": "Impossible de se connecter au serveur. Vérifiez votre clé d'API ou l'IP et le port",
-            "empty_api_key": "Clé d'API invalide",
+            "handshake_failed": "Impossible de se connecter au serveur. Vérifiez votre clé API ou l'adresse IP et le port",
+            "empty_api_key": "Clé API invalide",
             "invalid_provider": "Fournisseur sélectionné invalide",
+            "memory_not_supported": "Ce fournisseur ne prend pas en charge la mémoire",
             "invalid_image_path": "Un ou plusieurs chemins d'image sont invalides",
             "mismatched_lengths": "Le nombre de chemins d'image et de descriptions doit correspondre"
         },
         "abort": {
-            "unknown_provider": "Fournisseur inconnu"
+            "unknown_provider": "Fournisseur inconnu",
+            "reconfigure_successful": "Paramètres enregistrés avec succès"
         }
     }
 }

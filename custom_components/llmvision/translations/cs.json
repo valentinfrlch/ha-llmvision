@@ -1,0 +1,390 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Konfigurace LLM Vision",
+                "description": "Vyberte poskytovatele, kterého chcete nastavit."
+            },
+            "localai": {
+                "title": "Připojte se k vašemu LocalAI serveru",
+                "description": "Zadejte IP adresu a port vašeho LocalAI serveru.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Připojení",
+                        "description": "Připojení k serveru",
+                        "data": {
+                            "ip_address": "IP adresa",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Využít HTTPS pro bezpečné připojení"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavit základní parametry modelu",
+                        "data": {
+                            "default_model": "Předvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
+                            "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup výce deterministický.",
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                        }
+                    }
+                }
+            },
+            "ollama": {
+                "title": "Konfigurace Ollama",
+                "description": "Zadejte IP adresu a port vašeho Ollama serveru.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Připojení",
+                        "description": "Připojení k serveru",
+                        "data": {
+                            "ip_address": "IP adresa",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Využít HTTPS pro bezpečné připojení"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavit základní parametry modelu",
+                        "data": {
+                            "default_model": "Předvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
+                            "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup výce deterministický.",
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Pokročilé",
+                        "description": "Pokročilé parametry modelu",
+                        "data": {
+                            "context_window": "Délka kontextu",
+                            "keep_alive": "Držet naživu"
+                        },
+                        "data_description": {
+                            "context_window": "Nastavit velikost kontextového okna používaného na generování následného tokenu.",
+                            "keep_alive": "Nastaví jak dlouho model zůstane přihlášený v paměti po odeslaném požadavku. -1: ponechat v paměti do nekonečna, 0: smazat ihned"
+                        }
+                    }
+                }
+            },
+            "openai": {
+                "title": "Konfigurace OpenAI",
+                "description": "Zadejte platný API klíč pro OpenAI.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Připojení",
+                        "description": "OpenAI autentifikace",
+                        "data": {
+                            "api_key": "API klíč"
+                        },
+                        "data_description": {
+                            "api_key": "Ujistěte se, že máte na vašem účtu OpenAI nabitý kredit."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavit základní parametry modelu",
+                        "data": {
+                            "default_model": "Předvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
+                            "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup výce deterministický.",
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                        }
+                    }
+                }
+            },
+            "azure": {
+                "title": "Konfigurace Azure",
+                "description": "Zadejte platný API klíč pro Azure, základní URL adresu, název instalace (deployment) a verzi API.\nZákladní URL adresa musí být ve formátu `https://domain.openai.azure.com/` včetně lomítka na konci.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Připojení",
+                        "description": "Azure autentifikace",
+                        "data": {
+                            "api_key": "API klíč",
+                            "azure_base_url": "Základní URL",
+                            "azure_deployment": "Instalace (deployment)",
+                            "azure_version": "Verze API"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavit základní parametry modelu",
+                        "data": {
+                            "default_model": "Předvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
+                            "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup výce deterministický.",
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                        }
+                    }
+                }
+            },
+            "anthropic": {
+                "title": "Konfigurace Anthropic Claude",
+                "description": "Zadejte platný API klíč pro Anthropic.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Připojení",
+                        "description": "Anthropic autentifikace",
+                        "data": {
+                            "api_key": "API klíč"
+                        },
+                        "data_description": {
+                            "api_key": "Ujistěte se, že máte na vašem účtu Anthropic nabitý kredit."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavit základní parametry modelu",
+                        "data": {
+                            "default_model": "Předvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
+                            "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup výce deterministický.",
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                        }
+                    }
+                }
+            },
+            "google": {
+                "title": "Konfigurace Google Gemini",
+                "description": "Zadejte platný API klíč pro Google Gemini.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Připojení",
+                        "description": "Google autentifikace",
+                        "data": {
+                            "api_key": "API klíč"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavit základní parametry modelu",
+                        "data": {
+                            "default_model": "Předvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
+                            "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup výce deterministický.",
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                        }
+                    }
+                }
+            },
+            "groq": {
+                "title": "Konfigurace Groq",
+                "description": "Zadejte platný API klíč pro Groq.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Připojení",
+                        "description": "Groq autentifikace",
+                        "data": {
+                            "api_key": "API klíč"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavit základní parametry modelu",
+                        "data": {
+                            "default_model": "Předvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
+                            "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup výce deterministický.",
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                        }
+                    }
+                }
+            },
+            "custom_openai": {
+                "title": "Konfigurace vlastního OpenAI poskytovatele",
+                "description": "**Důležité**: Funguje jen tehdy, pokud je API kompatibilní s API OpenAI. Pokud API nevyžaduje klíč, zadejte hodnotu 'openai'. Koncový bod musí být v tomto formátu: `http(s)://baseURL(:port)/some/endpoint`",
+                "sections": {
+                    "connection_section": {
+                        "name": "Připojení",
+                        "description": "Vlastní OpenAI autentifikace",
+                        "data": {
+                            "custom_openai_endpoint": "Vlastní koncový bod",
+                            "api_key": "API klíč"
+                        },
+                        "data_description": {
+                            "endpoint": "Koncový bod API podle tohoto formátu: http(s)://baseURL(:port)/some/endpoint",
+                            "api_key": "API klíč nebo 'openai', pokud není vyžadován."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavit základní parametry modelu",
+                        "data": {
+                            "default_model": "Předvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
+                            "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup výce deterministický.",
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                        }
+                    }
+                }
+            },
+            "aws_bedrock": {
+                "title": "Konfigurace poskytovatele AWS Bedrock",
+                "description": "**Důležité**: Momentálně jsou podporované jen tyto modely: Nova, Anthropic Claude",
+                "sections": {
+                    "connection_section": {
+                        "name": "Připojení",
+                        "description": "AWS autentifikace",
+                        "data": {
+                            "aws_access_key_id": "Přístupový klíč",
+                            "aws_secret_access_key": "Secret Key",
+                            "aws_region_name": "Región"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavit základní parametry modelu",
+                        "data": {
+                            "default_model": "Předvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
+                            "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup výce deterministický.",
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                        }
+                    }
+                }
+            },
+            "openwebui": {
+                "title": "Konfigurace poskytovatele Open WebUI",
+                "description": "Zadejte API klíč (JWT token), IP adresu, port, HTTP(S) a předvolený model.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Připojení",
+                        "description": "Open WebUI autentifikace",
+                        "data": {
+                            "api_key": "API klíč (JWT token)",
+                            "ip_address": "IP adresa",
+                            "port": "Port",
+                            "https": "Používat HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Využít HTTPS pro bezpečné připojení, pokud to váš server podporuje."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavit základní parametry modelu",
+                        "data": {
+                            "default_model": "Předvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
+                            "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup výce deterministický.",
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "title": "Nastavení",
+                "description": "Nastavení LLM Vision integrace. Tento vstup je vyžadován předtím než se nastaví další poskytovatel. Pokud si přejete použít předvolené nastavení, stačí stisknout 'Potvrdit'.",
+                "sections": {
+                    "general_section": {
+                        "name": "Obecné",
+                        "description": "Nastavení preferovaného poskytovatele pro použití, pokud vybraný poskytovatel nebude k dispozici.",
+                        "data": {
+                            "fallback_provider": "Záložní poskytovatel"
+                        },
+                        "data_description": {
+                            "fallback_provider": "LLM bude opakovat požadavek na vybraného poskytovatele, pokud aktuání poskytovatel selže."
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "Systémové prompty",
+                        "description": "Systémové prompty slouží ke změně chování a odpovědí modelu.",
+                        "data": {
+                            "system_prompt": "Systémový prompt",
+                            "title_prompt": "Prompt pro název"
+                        },
+                        "data_description": {
+                            "system_prompt": "Použijte systémový prompt pro změnu chování a odpovědí modelu.",
+                            "title_prompt": "Instrukce pro model k vygenerování názvu."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Časová osa",
+                        "description": "Časová osa ukládá dnešní události pro zobrazení pomocí LLM Vision karty na vaší nástěnce.",
+                        "data": {
+                            "retention_time": "Doba uchování",
+                            "timeline_today_summary": "Souhrn dne",
+                            "timeline_summary_prompt": "Prompt pro souhrn dne"
+                        },
+                        "data_description": {
+                            "retention_time": "Automaticky smazat události po (dnech). Nastavte na 0 pro vypnutí automatického mazání.",
+                            "timeline_today_summary": "Povolit souhrn dne pro automatické generování souhrnu dnešních událostí.",
+                            "timeline_summary_prompt": "Instrukce pro model k vygenerování souhrnu dnešních událostí."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Paměť (beta)",
+                        "description": "Obsah v paměti je synchronizovaný napříč poskytovately a používá se pro poskytnutí dodatečného kontextu v modelu.",
+                        "data": {
+                            "memory_paths": "Cesta k souboru obrázku",
+                            "memory_strings": "Popis obrázku"
+                        },
+                        "data_description": {
+                            "memory_paths": "Zadejte cestu k souboru s obrázkem.",
+                            "memory_strings": "Zadejte popis obrázku (např.: 'Toto je Falco, můj pes'). Obrázky a popisy musí být ve stejném pořadí a počet obrázků a popisů musí být stejný."
+                        }
+                    }
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "Nepodařilo se připojit k serveru. Zkontrolujte váš API klíč, nebo IP adresu a port",
+            "empty_api_key": "Neplatný API klíč",
+            "invalid_provider": "Vybrán neplatný poskytovatel",
+            "memory_not_supported": "Tento poskytovatel nepodporuje paměť",
+            "invalid_image_path": "Jedna nebo více cest k obrázkům jsou neplatné",
+            "mismatched_lengths": "Počet cest k obrázkům a počet popisů neodpovídá"
+        },
+        "abort": {
+            "unknown_provider": "Neznámý poskytovatel",
+            "reconfigure_successful": "Nastavení se v pořádku uložilo"
+        }
+    }
+}

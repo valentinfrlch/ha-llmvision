@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from tenacity import retry, wait_random_exponential, before_sleep_log
 import boto3
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -10,32 +11,19 @@ import json
 import base64
 from .const import (
     DOMAIN,
-    CONF_OPENAI_API_KEY,
-    CONF_AZURE_API_KEY,
+    CONF_API_KEY,
+    CONF_PROVIDER,
+    CONF_IP_ADDRESS,
+    CONF_PORT,
+    CONF_HTTPS,
+    CONF_DEFAULT_MODEL,
     CONF_AZURE_BASE_URL,
     CONF_AZURE_DEPLOYMENT,
     CONF_AZURE_VERSION,
-    CONF_ANTHROPIC_API_KEY,
-    CONF_GOOGLE_API_KEY,
-    CONF_GOOGLE_DEFAULT_MODEL,
-    CONF_GROQ_API_KEY,
-    CONF_GROQ_DEFAULT_MODEL,
-    CONF_LOCALAI_IP_ADDRESS,
-    CONF_LOCALAI_PORT,
-    CONF_LOCALAI_HTTPS,
-    CONF_OLLAMA_IP_ADDRESS,
-    CONF_OLLAMA_PORT,
-    CONF_OLLAMA_HTTPS,
-    CONF_OLLAMA_DEFAULT_MODEL,
     CONF_CUSTOM_OPENAI_ENDPOINT,
-    CONF_CUSTOM_OPENAI_API_KEY,
     CONF_AWS_ACCESS_KEY_ID,
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
-    CONF_OPENWEBUI_IP_ADDRESS,
-    CONF_OPENWEBUI_PORT,
-    CONF_OPENWEBUI_HTTPS,
-    CONF_OPENWEBUI_API_KEY,
     VERSION_ANTHROPIC,
     ENDPOINT_OPENAI,
     ENDPOINT_AZURE,
@@ -47,7 +35,7 @@ from .const import (
     ENDPOINT_GROQ,
     ERROR_NOT_CONFIGURED,
     ERROR_GROQ_MULTIPLE_IMAGES,
-    ERROR_NO_IMAGE_INPUT, 
+    ERROR_NO_IMAGE_INPUT,
     DEFAULT_OPENAI_MODEL,
     DEFAULT_ANTHROPIC_MODEL,
     DEFAULT_AZURE_MODEL,
@@ -58,7 +46,10 @@ from .const import (
     DEFAULT_CUSTOM_OPENAI_MODEL,
     DEFAULT_AWS_MODEL,
     DEFAULT_OPENWEBUI_MODEL,
-
+    CONF_KEEP_ALIVE,
+    CONF_CONTEXT_WINDOW,
+    CONF_TEMPERATURE,
+    CONF_TOP_P,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -98,64 +89,36 @@ class Request:
         if not entry_data:
             return None
 
-        if CONF_ANTHROPIC_API_KEY in entry_data:
-            return "Anthropic"
-        elif CONF_AZURE_API_KEY in entry_data:
-            return "Azure"
-        elif CONF_CUSTOM_OPENAI_API_KEY in entry_data:
-            return "Custom OpenAI"
-        elif CONF_GOOGLE_API_KEY in entry_data:
-            return "Google"
-        elif CONF_GROQ_API_KEY in entry_data:
-            return "Groq"
-        elif CONF_LOCALAI_IP_ADDRESS in entry_data:
-            return "LocalAI"
-        elif CONF_OLLAMA_IP_ADDRESS in entry_data:
-            return "Ollama"
-        elif CONF_OPENAI_API_KEY in entry_data:
-            return "OpenAI"
-        elif CONF_AWS_ACCESS_KEY_ID in entry_data:
-            return "AWS Bedrock"
-        elif CONF_OPENWEBUI_API_KEY in entry_data:
-            return "OpenWebUI"
-        else:
-            return None
-    
-    @staticmethod
-    def _get_default_model(provider):
-        _LOGGER.debug(f"Returning default model for provider: {provider}")
-        if provider == "OpenAI":
-            return DEFAULT_OPENAI_MODEL
-        elif provider == "Azure":
-            return DEFAULT_AZURE_MODEL
-        elif provider == "Anthropic":
-            return DEFAULT_ANTHROPIC_MODEL
-        elif provider == "Google":
-            return DEFAULT_GOOGLE_MODEL
-        elif provider == "Groq":
-            return DEFAULT_GROQ_MODEL
-        elif provider == "LocalAI":
-            return DEFAULT_LOCALAI_MODEL
-        elif provider == "Ollama":
-            return DEFAULT_OLLAMA_MODEL
-        elif provider == "Custom OpenAI":
-            return DEFAULT_CUSTOM_OPENAI_MODEL
-        elif provider == "AWS":
-            return DEFAULT_AWS_MODEL
-        elif provider == "Open WebUI":
-            return DEFAULT_OPENWEBUI_MODEL
-        else:
-            return
+        return entry_data.get(CONF_PROVIDER)
+
+    def get_default_model(self, provider):
+        """Get default model from config entry"""
+        config_entry = self.hass.data.get(DOMAIN).get(provider)
+        provider_name = self.get_provider(self.hass, provider)
+        if config_entry:
+            default_model = config_entry.get(CONF_DEFAULT_MODEL)
+            if default_model:
+                return default_model
+
+        return {
+            "OpenAI": DEFAULT_OPENAI_MODEL,
+            "Azure": DEFAULT_AZURE_MODEL,
+            "Anthropic": DEFAULT_ANTHROPIC_MODEL,
+            "Google": DEFAULT_GOOGLE_MODEL,
+            "Groq": DEFAULT_GROQ_MODEL,
+            "LocalAI": DEFAULT_LOCALAI_MODEL,
+            "Ollama": DEFAULT_OLLAMA_MODEL,
+            "Custom OpenAI": DEFAULT_CUSTOM_OPENAI_MODEL,
+            "AWS": DEFAULT_AWS_MODEL,
+            "Open WebUI": DEFAULT_OPENWEBUI_MODEL,
+        }.get(provider_name)
 
     def validate(self, call) -> None | ServiceValidationError:
         """Validate call data"""
 
         # if not call.model set default model for provider
         if not call.model:
-            call.model = Request._get_default_model(self.get_provider(self.hass, call.provider))
-
-        _LOGGER.info(f"Using model: {call.model}")
-
+            call.model = self._get_default_model(call.provider)
         # Check image input
         if not call.base64_images:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
@@ -166,7 +129,7 @@ class Request:
         if not call.provider:
             raise ServiceValidationError(ERROR_NOT_CONFIGURED)
 
-    async def call(self, call):
+    async def call(self, call, _is_fallback_retry=False):
         """
         Forwards a request to the specified provider and optionally generates a title.
 
@@ -183,118 +146,162 @@ class Request:
         config = self.hass.data.get(DOMAIN).get(entry_id)
 
         provider = Request.get_provider(self.hass, entry_id)
+        api_key = config.get(CONF_API_KEY)
+        model = getattr(call, "model", None)
+        setattr(call, "model", model if model else self.get_default_model(entry_id))
+        call.temperature = config.get(CONF_TEMPERATURE, 0.5)
+        call.top_p = config.get(CONF_TOP_P, 0.9)
         call.base64_images = self.base64_images
         call.filenames = self.filenames
 
-        self.validate(call)
+        self.validate(call)  # TODO: Skip validation for text only requests
 
-        if provider == 'OpenAI':
-            api_key = config.get(CONF_OPENAI_API_KEY)
-            provider_instance = OpenAI(
-                hass=self.hass, api_key=api_key, model=call.model)
+        # Get fallback provider from settings
+        settings_entry = None
+        for entry in self.hass.config_entries.async_entries(DOMAIN):
+            if entry.data.get('provider') == 'Settings':
+                settings_entry = entry.data
+                break
+        fallback_provider = settings_entry.get('general_section', {}).get(
+            'fallback_provider', None) if settings_entry else None
 
-        elif provider == 'Azure':
-            api_key = config.get(CONF_AZURE_API_KEY)
-            endpoint = config.get(CONF_AZURE_BASE_URL)
-            deployment = config.get(CONF_AZURE_DEPLOYMENT)
-            version = config.get(CONF_AZURE_VERSION)
+        try:
+            if provider == 'OpenAI':
+                api_key = config.get(CONF_API_KEY)
+                provider_instance = OpenAI(
+                    hass=self.hass, api_key=api_key, model=call.model)
 
-            provider_instance = AzureOpenAI(self.hass,
-                                            api_key=api_key,
+            elif provider == 'Azure':
+                api_key = config.get(CONF_API_KEY)
+                endpoint = config.get(CONF_AZURE_BASE_URL)
+                deployment = config.get(CONF_AZURE_DEPLOYMENT)
+                version = config.get(CONF_AZURE_VERSION)
+
+                provider_instance = AzureOpenAI(self.hass,
+                                                api_key=api_key,
+                                                model=call.model,
+                                                endpoint={
+                                                    'base_url': ENDPOINT_AZURE,
+                                                    'endpoint': endpoint,
+                                                    'deployment': deployment,
+                                                    'api_version': version
+                                                })
+
+            elif provider == 'Anthropic':
+                api_key = config.get(CONF_API_KEY)
+                provider_instance = Anthropic(
+                    self.hass, api_key=api_key, model=call.model)
+
+            elif provider == 'Google':
+                api_key = config.get(CONF_API_KEY)
+                provider_instance = Google(self.hass,
+                                           api_key=api_key,
+                                           model=call.model,
+                                           endpoint={
+                                               'base_url': ENDPOINT_GOOGLE
+                                           })
+
+            elif provider == 'Groq':
+                api_key = config.get(CONF_API_KEY)
+                provider_instance = Groq(
+                    self.hass, api_key=api_key, model=call.model)
+
+            elif provider == 'LocalAI':
+                ip_address = config.get(CONF_IP_ADDRESS)
+                port = config.get(CONF_PORT)
+                https = config.get(CONF_HTTPS, False)
+
+                provider_instance = LocalAI(self.hass,
+                                            api_key="",
+                                            model=call.model,
                                             endpoint={
-                                                'base_url': ENDPOINT_AZURE,
-                                                'endpoint': endpoint,
-                                                'deployment': deployment,
-                                                'api_version': version
-                                            },
-                                            model=call.model)
+                                                'ip_address': ip_address,
+                                                'port': port,
+                                                'https': https
+                                            })
 
-        elif provider == 'Anthropic':
-            api_key = config.get(CONF_ANTHROPIC_API_KEY)
-            provider_instance = Anthropic(self.hass, api_key=api_key, model=call.model)
+            elif provider == 'Ollama':
+                ip_address = config.get(CONF_IP_ADDRESS)
+                port = config.get(CONF_PORT)
+                https = config.get(CONF_HTTPS, False)
 
-        elif provider == 'Google':
-            api_key = config.get(CONF_GOOGLE_API_KEY)
-            model = call.model if call.model and call.model != "None" else CONF_GOOGLE_DEFAULT_MODEL
+                provider_instance = Ollama(self.hass,
+                                           api_key="",
+                                           model=call.model,
+                                           endpoint={
+                                               'ip_address': ip_address,
+                                               'port': port,
+                                               'https': https,
+                                               'keep_alive': config.get(CONF_KEEP_ALIVE, 5),
+                                               'context_window': config.get(CONF_CONTEXT_WINDOW, 2048)
+                                           })
 
-            provider_instance = Google(self.hass, api_key=api_key, endpoint={
-                                       'base_url': ENDPOINT_GOOGLE, 'model': call.model})
+            elif provider == 'Custom OpenAI':
+                api_key = config.get(CONF_API_KEY)
+                endpoint = config.get(
+                    CONF_CUSTOM_OPENAI_ENDPOINT)
+                provider_instance = OpenAI(self.hass,
+                                           api_key=api_key,
+                                           model=call.model,
+                                           endpoint={
+                                               'base_url': endpoint
+                                           })
 
-        elif provider == 'Groq':
-            api_key = config.get(CONF_GROQ_API_KEY)
-            provider_instance = Groq(self.hass, api_key=api_key, model=call.model)
+            elif provider == 'AWS Bedrock':
+                provider_instance = AWSBedrock(self.hass,
+                                               aws_access_key_id=config.get(
+                                                   CONF_AWS_ACCESS_KEY_ID),
+                                               aws_secret_access_key=config.get(
+                                                   CONF_AWS_SECRET_ACCESS_KEY),
+                                               aws_region_name=config.get(
+                                                   CONF_AWS_REGION_NAME),
+                                               model=call.model
+                                               )
 
-        elif provider == 'LocalAI':
-            ip_address = config.get(CONF_LOCALAI_IP_ADDRESS)
-            port = config.get(CONF_LOCALAI_PORT)
-            https = config.get(CONF_LOCALAI_HTTPS, False)
+            elif provider == 'OpenWebUI':
+                ip_address = config.get(CONF_IP_ADDRESS)
+                port = config.get(CONF_PORT)
+                https = config.get(CONF_HTTPS, False)
+                api_key = config.get(CONF_API_KEY)
 
-            provider_instance = LocalAI(self.hass, endpoint={
-                'ip_address': ip_address,
-                'port': port,
-                'https': https
-            },
-                model=call.model)
+                endpoint = ENDPOINT_OPENWEBUI.format(
+                    ip_address=ip_address,
+                    port=port,
+                    protocol="https" if https else "http"
+                )
 
-        elif provider == 'Ollama':
-            ip_address = config.get(CONF_OLLAMA_IP_ADDRESS)
-            port = config.get(CONF_OLLAMA_PORT)
-            https = config.get(CONF_OLLAMA_HTTPS, False)
+                provider_instance = OpenAI(self.hass,
+                                           api_key=api_key,
+                                           model=call.model,
+                                           endpoint={
+                                               'base_url': endpoint
+                                           })
 
-            provider_instance = Ollama(self.hass, endpoint={
-                'ip_address': ip_address,
-                'port': port,
-                'https': https
-            },
-            model=call.model)
+            else:
+                raise ServiceValidationError("invalid_provider")
 
-        elif provider == 'Custom OpenAI':
-            api_key = config.get(CONF_CUSTOM_OPENAI_API_KEY)
-            endpoint = config.get(
-                CONF_CUSTOM_OPENAI_ENDPOINT)
-            provider_instance = OpenAI(
-                self.hass, api_key=api_key, endpoint={'base_url': endpoint}, model=call.model)
+            # Make call to provider
+            response_text = await provider_instance.vision_request(call)
 
-        elif provider == 'AWS Bedrock':
-            provider_instance = AWSBedrock(self.hass,
-                                           aws_access_key_id=config.get(
-                                               CONF_AWS_ACCESS_KEY_ID),
-                                           aws_secret_access_key=config.get(
-                                               CONF_AWS_SECRET_ACCESS_KEY),
-                                           aws_region_name=config.get(
-                                               CONF_AWS_REGION_NAME),
-                                           model=call.model
-                                           )
+            if call.generate_title:
+                call.message = call.memory.title_prompt + \
+                    "Create a title for this text: " + response_text
+                gen_title = await provider_instance.title_request(call)
 
-        elif provider == 'OpenWebUI':
-            ip_address = config.get(CONF_OPENWEBUI_IP_ADDRESS)
-            port = config.get(CONF_OPENWEBUI_PORT)
-            https = config.get(CONF_OPENWEBUI_HTTPS, False)
-            api_key = config.get(CONF_OPENWEBUI_API_KEY)
+                return {"title": re.sub(r'[^a-zA-Z0-9ŽžÀ-ÿ\s]', '', gen_title), "response_text": response_text}
+            else:
+                return {"response_text": response_text}
 
-            endpoint = ENDPOINT_OPENWEBUI.format(
-                ip_address=ip_address,
-                port=port,
-                protocol="https" if https else "http"
-            )
-
-            provider_instance = OpenAI(
-                self.hass, api_key=api_key, endpoint={'base_url': endpoint}, model=call.model)
-
-        else:
-            raise ServiceValidationError("invalid_provider")
-
-        # Make call to provider
-        response_text = await provider_instance.vision_request(call)
-
-        if call.generate_title:
-            call.message = call.memory.title_prompt + \
-                "Create a title for this text: " + response_text
-            gen_title = await provider_instance.title_request(call)
-
-            return {"title": re.sub(r'[^a-zA-Z0-9ŽžÀ-ÿ\s]', '', gen_title), "response_text": response_text}
-        else:
-            return {"response_text": response_text}
+        except Exception as e:
+            _LOGGER.error(f"Provider {provider} failed: {e}")
+            # Only try fallback if not already tried and fallback is set and different
+            if fallback_provider and not _is_fallback_retry and fallback_provider != call.provider:
+                _LOGGER.info(f"Trying fallback provider: {fallback_provider}")
+                call.provider = fallback_provider
+                call.model = None
+                return await self.call(call, _is_fallback_retry=True)
+            else:
+                raise
 
     def add_frame(self, base64_image, filename):
         self.base64_images.append(base64_image)
@@ -303,7 +310,7 @@ class Request:
     async def _resolve_error(self, response, provider):
         """Translate response status to error message"""
         full_response_text = await response.text()
-        _LOGGER.info(f"[INFO] Full Response: {full_response_text}")
+        _LOGGER.debug(f"[INFO] Full Response: {full_response_text}")
 
         try:
             response_json = json.loads(full_response_text)
@@ -332,9 +339,9 @@ class Provider(ABC):
     """
 
     def __init__(self,
-                 hass,
-                 api_key,
-                 model,
+                 hass: object,
+                 api_key: str,
+                 model: str,
                  endpoint={
                      'base_url': "",
                      'deployment': "",
@@ -342,46 +349,58 @@ class Provider(ABC):
                      'ip_address': "",
                      'port': "",
                      'https': False
-                 }
-                 ):
+                 }):
         self.hass = hass
         self.session = async_get_clientsession(hass)
         self.api_key = api_key
         self.model = model
         self.endpoint = endpoint
+        _LOGGER.debug(
+            f"Provider initialized: {self.__class__.__name__.title()}(model={self.model}, endpoint={self.endpoint})")
 
     @abstractmethod
-    async def _make_request(self, data) -> str:
+    async def _make_request(self, data: dict) -> str:
         pass
 
     @abstractmethod
-    def _prepare_vision_data(self, call) -> dict:
+    def _prepare_vision_data(self, call: dict) -> dict:
         pass
 
     @abstractmethod
-    def _prepare_text_data(self, call) -> dict:
+    def _prepare_text_data(self, call: dict) -> dict:
         pass
 
     @abstractmethod
     async def validate(self) -> None | ServiceValidationError:
         pass
 
-    async def vision_request(self, call) -> str:
+    def _get_default_parameters(self, call: dict) -> dict:
+        """Get default parameters from config entry"""
+        entry_id = call.provider
+        config = self.hass.data.get(DOMAIN).get(entry_id)
+        default_parameters = {
+            'temperature': config.get(CONF_TEMPERATURE, 0.5),
+            'top_p': config.get(CONF_TOP_P, 0.9),
+            'keep_alive': config.get(CONF_KEEP_ALIVE, 5),
+            'context_window': config.get(CONF_CONTEXT_WINDOW, 2048)
+        }
+        return default_parameters
+
+    async def vision_request(self, call: dict) -> str:
         data = self._prepare_vision_data(call)
         return await self._make_request(data)
 
-    async def title_request(self, call) -> str:
-        call.temperature = 0.1
+    async def title_request(self, call: dict) -> str:
         call.max_tokens = 10
         data = self._prepare_text_data(call)
         return await self._make_request(data)
 
-    async def _post(self, url, headers, data) -> dict:
+    async def _post(self, url: str, headers: dict, data: dict) -> dict:
         """Post data to url and return response data"""
-        _LOGGER.info(f"Request data: {Request.sanitize_data(data)}")
+        _LOGGER.debug(f"Request data: {Request.sanitize_data(data)}")
 
         try:
-            _LOGGER.info(f"Posting to {url}")
+            _LOGGER.debug(f"Posting to {url}")
             response = await self.session.post(url, headers=headers, json=data)
         except Exception as e:
             raise ServiceValidationError(f"Request failed: {e}")
@@ -393,13 +412,13 @@ class Provider(ABC):
             raise ServiceValidationError(parsed_response)
         else:
             response_data = await response.json()
-            _LOGGER.info(f"Response data: {response_data}")
+            _LOGGER.debug(f"Response data: {response_data}")
             return response_data
 
-    async def _resolve_error(self, response, provider) -> str:
+    async def _resolve_error(self, response: dict, provider: str) -> str:
         """Translate response status to error message"""
         full_response_text = await response.text()
-        _LOGGER.info(f"[INFO] Full Response: {full_response_text}")
+        _LOGGER.debug(f"[INFO] Full Response: {full_response_text}")
 
         try:
             response_json = json.loads(full_response_text)
@@ -418,14 +437,14 @@ class Provider(ABC):
 
 
 class OpenAI(Provider):
-    def __init__(self, hass, api_key, model, endpoint={'base_url': ENDPOINT_OPENAI}):
+    def __init__(self, hass: object, api_key: str, model: str, endpoint={'base_url': ENDPOINT_OPENAI}):
         super().__init__(hass, api_key, model, endpoint=endpoint)
 
     def _generate_headers(self) -> dict:
         return {'Content-type': 'application/json',
                 'Authorization': 'Bearer ' + self.api_key}
 
-    async def _make_request(self, data) -> str:
+    async def _make_request(self, data: dict) -> str:
         headers = self._generate_headers()
         if isinstance(self.endpoint, dict):
             url = self.endpoint.get('base_url')
@@ -436,11 +455,13 @@ class OpenAI(Provider):
             "choices")[0].get("message").get("content")
         return response_text
 
-    def _prepare_vision_data(self, call) -> list:
+    def _prepare_vision_data(self, call: dict) -> list:
+        default_parameters = self._get_default_parameters(call)
         payload = {"model": self.model,
                    "messages": [{"role": "user", "content": []}],
-                   "max_tokens": call.max_tokens,
-                   "temperature": call.temperature
+                   "max_completion_tokens": call.max_tokens,
+                   "temperature": default_parameters.get('temperature'),
+                   "top_p": default_parameters.get('top_p'),
                    }
 
         for image, filename in zip(call.base64_images, call.filenames):
@@ -467,21 +488,23 @@ class OpenAI(Provider):
 
         return payload
 
-    def _prepare_text_data(self, call) -> list:
+    def _prepare_text_data(self, call: dict) -> list:
+        default_parameters = self._get_default_parameters(call)
         return {
             "model": self.model,
             "messages": [{"role": "user", "content": [{"type": "text", "text": call.message}]}],
-            "max_tokens": call.max_tokens,
-            "temperature": call.temperature
+            "max_completion_tokens": call.max_tokens,
+            "temperature": default_parameters.get('temperature'),
+            "top_p": default_parameters.get('top_p')
         }
 
     async def validate(self) -> None | ServiceValidationError:
         if self.api_key:
             headers = self._generate_headers()
             data = {
-                "model": self.default_model,
+                "model": self.model,
                 "messages": [{"role": "user", "content": [{"type": "text", "text": "Hi"}]}],
-                "max_tokens": 1,
+                "max_completion_tokens": 1,
                 "temperature": 0.5
             }
             await self._post(url=self.endpoint.get('base_url'), headers=headers, data=data)
@@ -490,14 +513,14 @@ class OpenAI(Provider):
 
 
 class AzureOpenAI(Provider):
-    def __init__(self, hass, api_key, model, endpoint={'base_url': ENDPOINT_AZURE, 'endpoint': "", 'deployment': "", 'api_version': ""}):
+    def __init__(self, hass: object, api_key: str, model: str, endpoint={'base_url': ENDPOINT_AZURE, 'endpoint': "", 'deployment': "", 'api_version': ""}):
         super().__init__(hass, api_key, model, endpoint)
 
     def _generate_headers(self) -> dict:
         return {'Content-type': 'application/json',
                 'api-key': self.api_key}
 
-    async def _make_request(self, data) -> str:
+    async def _make_request(self, data: dict) -> str:
         headers = self._generate_headers()
         endpoint = self.endpoint.get("base_url").format(
             base_url=self.endpoint.get("endpoint"),
@@ -510,10 +533,12 @@ class AzureOpenAI(Provider):
             "choices")[0].get("message").get("content")
         return response_text
 
-    def _prepare_vision_data(self, call) -> list:
+    def _prepare_vision_data(self, call: dict) -> list:
+        default_parameters = self._get_default_parameters(call)
         payload = {"messages": [{"role": "user", "content": []}],
                    "max_tokens": call.max_tokens,
-                   "temperature": call.temperature,
+                   "temperature": default_parameters.get('temperature'),
+                   "top_p": default_parameters.get('top_p'),
                    "stream": False
                    }
         for image, filename in zip(call.base64_images, call.filenames):
@@ -538,10 +563,12 @@ class AzureOpenAI(Provider):
                     0, {"role": "developer", "content": system_prompt})
         return payload
 
-    def _prepare_text_data(self, call) -> list:
+    def _prepare_text_data(self, call: dict) -> list:
+        default_parameters = self._get_default_parameters(call)
         return {"messages": [{"role": "user", "content": [{"type": "text", "text": call.message}]}],
                 "max_tokens": call.max_tokens,
-                "temperature": call.temperature,
+                "temperature": default_parameters.get('temperature'),
+                "top_p": default_parameters.get('top_p'),
                 "stream": False
                 }
 
@@ -564,7 +591,7 @@ class AzureOpenAI(Provider):
 
 
 class Anthropic(Provider):
-    def __init__(self, hass, api_key, model):
+    def __init__(self, hass: object, api_key: str, model: str):
         super().__init__(hass, api_key, model)
 
     def _generate_headers(self) -> dict:
@@ -574,18 +601,20 @@ class Anthropic(Provider):
             'anthropic-version': VERSION_ANTHROPIC
         }
 
-    async def _make_request(self, data) -> str:
+    async def _make_request(self, data: dict) -> str:
         headers = self._generate_headers()
         response = await self._post(url=ENDPOINT_ANTHROPIC, headers=headers, data=data)
         response_text = response.get("content")[0].get("text")
         return response_text
 
-    def _prepare_vision_data(self, call) -> dict:
+    def _prepare_vision_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         payload = {
             "model": self.model,
             "messages": [{"role": "user", "content": []}],
             "max_tokens": call.max_tokens,
-            "temperature": call.temperature
+            "temperature": default_parameters.get('temperature'),
+            "top_p": default_parameters.get('top_p')
         }
         for image, filename in zip(call.base64_images, call.filenames):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
@@ -609,12 +638,14 @@ class Anthropic(Provider):
 
         return payload
 
-    def _prepare_text_data(self, call) -> dict:
+    def _prepare_text_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         return {
             "model": self.model,
             "messages": [{"role": "user", "content": [{"type": "text", "text": call.message}]}],
             "max_tokens": call.max_tokens,
-            "temperature": call.temperature
+            "temperature": default_parameters.get('temperature'),
+            "top_p": default_parameters.get('top_p')
         }
 
     async def validate(self) -> None | ServiceValidationError:
@@ -623,7 +654,7 @@ class Anthropic(Provider):
 
         header = self._generate_headers()
         payload = {
-            "model": "claude-3-haiku-20240307",
+            "model": DEFAULT_ANTHROPIC_MODEL,
             "messages": [
                   {"role": "user", "content": "Hi"}
             ],
@@ -634,17 +665,18 @@ class Anthropic(Provider):
 
 
 class Google(Provider):
-    def __init__(self, hass, api_key="", endpoint={'base_url': ENDPOINT_GOOGLE, 'model': CONF_GOOGLE_DEFAULT_MODEL}):
-        super().__init__(hass, api_key, endpoint)
-        self.default_model = endpoint['model']
+    def __init__(self, hass: object, api_key: str, model: str, endpoint={'base_url': ENDPOINT_GOOGLE}):
+        super().__init__(hass, api_key, model, endpoint)
 
     def _generate_headers(self) -> dict:
         return {'content-type': 'application/json'}
 
+    @retry(wait=wait_random_exponential(multiplier=1, max=60),
+           before_sleep=before_sleep_log(_LOGGER, logging.ERROR))
     async def _make_request(self, data) -> str:
         try:
             endpoint = self.endpoint.get('base_url').format(
-            model=self.endpoint.get('model'), api_key=self.api_key)
+                model=self.model, api_key=self.api_key)
 
             headers = self._generate_headers()
             response = await self._post(url=endpoint, headers=headers, data=data)
@@ -652,12 +684,15 @@ class Google(Provider):
                 "content").get("parts")[0].get("text")
         except Exception as e:
             _LOGGER.error(f"Error: {e}")
-            return "Event Detected" # this would still make the automation succeed, but the user will see an error in log, and event calendar will show the event has no further summary.
+            raise e
+            # return "Event Detected" # this would still make the automation succeed, but the user will see an error in log, and event calendar will show the event has no further summary.
+
         return response_text
 
-    def _prepare_vision_data(self, call) -> dict:
+    def _prepare_vision_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         payload = {"contents": [{"role": "user", "parts": []}], "generationConfig": {
-            "maxOutputTokens": call.max_tokens, "temperature": call.temperature}}
+            "maxOutputTokens": call.max_tokens, "temperature": default_parameters.get('temperature'), "topP": default_parameters.get('top_p')}}
         for image, filename in zip(call.base64_images, call.filenames):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename
@@ -679,10 +714,11 @@ class Google(Provider):
 
         return payload
 
-    def _prepare_text_data(self, call) -> dict:
+    def _prepare_text_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         return {
             "contents": [{"role": "user", "parts": [{"text": call.message + ":"}]}],
-            "generationConfig": {"maxOutputTokens": call.max_tokens, "temperature": call.temperature}
+            "generationConfig": {"maxOutputTokens": call.max_tokens, "temperature": default_parameters.get('temperature'), "topP": default_parameters.get('top_p')}
         }
 
     async def validate(self) -> None | ServiceValidationError:
@@ -694,24 +730,25 @@ class Google(Provider):
             "contents": [{"role": "user", "parts": [{"text": "Hi"}]}],
             "generationConfig": {"maxOutputTokens": 1, "temperature": 0.5}
         }
-        await self._post(url=self.endpoint.get('base_url').format(model=self.endpoint.get('model'), api_key=self.api_key), headers=headers, data=data)
+        await self._post(url=self.endpoint.get('base_url').format(model=DEFAULT_GOOGLE_MODEL, api_key=self.api_key), headers=headers, data=data)
 
 
 class Groq(Provider):
-    def __init__(self, hass, api_key, model):
+    def __init__(self, hass: object, api_key: str, model: str):
         super().__init__(hass, api_key, model)
 
     def _generate_headers(self) -> dict:
         return {'Content-type': 'application/json', 'Authorization': 'Bearer ' + self.api_key}
 
-    async def _make_request(self, data) -> str:
+    async def _make_request(self, data: dict) -> str:
         headers = self._generate_headers()
         response = await self._post(url=ENDPOINT_GROQ, headers=headers, data=data)
         response_text = response.get(
             "choices")[0].get("message").get("content")
         return response_text
 
-    def _prepare_vision_data(self, call) -> dict:
+    def _prepare_vision_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         first_image = call.base64_images[0]
         payload = {
             "messages": [
@@ -724,7 +761,10 @@ class Groq(Provider):
                     ]
                 }
             ],
-            "model": self.model
+            "model": self.model,
+            "max_completion_tokens": call.max_tokens,
+            "temperature": default_parameters.get('temperature'),
+            "top_p": default_parameters.get('top_p')
         }
 
         system_prompt = call.memory.system_prompt
@@ -733,7 +773,8 @@ class Groq(Provider):
 
         return payload
 
-    def _prepare_text_data(self, call) -> dict:
+    def _prepare_text_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         return {
             "messages": [
                 {
@@ -743,7 +784,10 @@ class Groq(Provider):
                     ]
                 }
             ],
-            "model": self.model
+            "model": self.model,
+            "max_completion_tokens": call.max_tokens,
+            "temperature": default_parameters.get('temperature'),
+            "top_p": default_parameters.get('top_p')
         }
 
     async def validate(self) -> None | ServiceValidationError:
@@ -751,7 +795,7 @@ class Groq(Provider):
             raise ServiceValidationError("empty_api_key")
         headers = self._generate_headers()
         data = {
-            "model": self.model,
+            "model": DEFAULT_GROQ_MODEL,
             "messages": [{
                 "role": "user",
                 "content": "Hi"
@@ -761,7 +805,7 @@ class Groq(Provider):
 
 
 class LocalAI(Provider):
-    def __init__(self, hass, api_key, model, endpoint={'ip_address': "", 'port': "", 'https': False}):
+    def __init__(self, hass: object, api_key: str, model: str, endpoint={'ip_address': "", 'port': "", 'https': False}):
         super().__init__(hass, api_key, model, endpoint)
 
     async def _make_request(self, data) -> str:
@@ -777,9 +821,10 @@ class LocalAI(Provider):
             "choices")[0].get("message").get("content")
         return response_text
 
-    def _prepare_vision_data(self, call) -> dict:
+    def _prepare_vision_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         payload = {"model": self.model, "messages": [{"role": "user", "content": [
-        ]}], "max_tokens": call.max_tokens, "temperature": call.temperature}
+        ]}], "max_tokens": call.max_tokens, "temperature": default_parameters.get('temperature'), "top_p": default_parameters.get('top_p')}
         for image, filename in zip(call.base64_images, call.filenames):
             tag = ("Image " + str(call.base64_images.index(image) + 1)
                    ) if filename == "" else filename
@@ -803,12 +848,14 @@ class LocalAI(Provider):
 
         return payload
 
-    def _prepare_text_data(self, call) -> dict:
+    def _prepare_text_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         return {
             "model": self.model,
             "messages": [{"role": "user", "content": [{"type": "text", "text": call.message}]}],
             "max_tokens": call.max_tokens,
-            "temperature": call.temperature
+            "temperature": default_parameters.get('temperature'),
+            "top_p": default_parameters.get('top_p')
         }
 
     async def validate(self) -> None | ServiceValidationError:
@@ -828,10 +875,16 @@ class LocalAI(Provider):
 
 
 class Ollama(Provider):
-    def __init__(self, hass, api_key, model, endpoint={'ip_address': "0.0.0.0", 'port': "11434", 'https': False}):
+    def __init__(self,
+                 hass: object,
+                 api_key: str,
+                 model: str,
+                 endpoint={
+                     'ip_address': "0.0.0.0", 'port': "11434", 'https': False
+                 }):
         super().__init__(hass, api_key, model, endpoint)
 
-    async def _make_request(self, data) -> str:
+    async def _make_request(self, data: dict) -> str:
         https = self.endpoint.get("https")
         ip_address = self.endpoint.get("ip_address")
         port = self.endpoint.get("port")
@@ -846,9 +899,10 @@ class Ollama(Provider):
         response_text = response.get("message").get("content")
         return response_text
 
-    def _prepare_vision_data(self, call) -> dict:
-        payload = {"model": self.model, "messages": [], "stream": False, "options": {
-            "num_predict": call.max_tokens, "temperature": call.temperature}}
+    def _prepare_vision_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
+        payload = {"model": self.model, "messages": [], "stream": False, "keep_alive": default_parameters.get('keep_alive'), "options": {
+            "num_predict": call.max_tokens, "temperature": default_parameters.get('temperature'), "num_ctx": default_parameters.get('context_window')}}
 
         if call.use_memory:
             memory_content = call.memory._get_memory_images(
@@ -870,12 +924,17 @@ class Ollama(Provider):
 
         return payload
 
-    def _prepare_text_data(self, call) -> dict:
+    def _prepare_text_data(self, call: dict) -> dict:
+        default_parameters = self._get_default_parameters(call)
         return {
             "model": self.model,
             "messages": [{"role": "user", "content": call.message}],
             "stream": False,
-            "options": {"num_predict": call.max_tokens, "temperature": call.temperature}
+            "keep_alive": default_parameters.get('keep_alive'),
+            "options": {"num_predict": call.max_tokens,
+                        "temperature": default_parameters.get('temperature'),
+                        "num_ctx": default_parameters.get('context_window')
+                        },
         }
 
     async def validate(self) -> None | ServiceValidationError:
@@ -890,7 +949,7 @@ class Ollama(Provider):
             _LOGGER.info(
                 f"Checking connection to {protocol}://{ip_address}:{port}")
             response = await session.get(f"{protocol}://{ip_address}:{port}/api/tags", headers={})
-            _LOGGER.info(f"Response: {response}")
+            _LOGGER.debug(f"Response: {response}")
             if response.status != 200:
                 raise ServiceValidationError('handshake_failed')
         except Exception as e:
@@ -899,8 +958,13 @@ class Ollama(Provider):
 
 
 class AWSBedrock(Provider):
-    def __init__(self, hass, aws_access_key_id, aws_secret_access_key, aws_region_name, model):
-        super().__init__(hass, "", model)
+    def __init__(self,
+                 hass: object,
+                 aws_access_key_id: str,
+                 aws_secret_access_key: str,
+                 aws_region_name: str,
+                 model: str):
+        super().__init__(hass=hass, api_key="", model=model)
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
         self.aws_region = aws_region_name
@@ -909,12 +973,12 @@ class AWSBedrock(Provider):
         return {'Content-type': 'application/json',
                 'Authorization': 'Bearer ' + self.api_key}
 
-    async def _make_request(self, data) -> str:
+    async def _make_request(self, data: dict) -> str:
         response = await self.invoke_bedrock(model=self.model, data=data)
         response_text = response.get("message").get("content")[0].get("text")
         return response_text
 
-    async def invoke_bedrock(self, model, data) -> dict:
+    async def invoke_bedrock(self, model: str, data: dict) -> dict:
         """Post data to url and return response data"""
         _LOGGER.debug(
             f"AWS Bedrock request data: {Request.sanitize_data(data)}")
@@ -958,20 +1022,21 @@ class AWSBedrock(Provider):
             tokens_in = token_usage.get("inputTokens")
             tokens_out = token_usage.get("outputTokens")
             tokens_total = token_usage.get("totalTokens")
-            _LOGGER.info(
+            _LOGGER.debug(
                 f"AWS Bedrock call latency: {latency}ms inputTokens: {tokens_in} outputTokens: {tokens_out} totalTokens: {tokens_total}")
             response_data = response.get("output")
             _LOGGER.debug(f"AWS Bedrock call response data: {response_data}")
             return response_data
 
-    def _prepare_vision_data(self, call) -> list:
+    def _prepare_vision_data(self, call: dict) -> list:
         _LOGGER.debug(f"Found model type `{self.model}` for AWS Bedrock call.")
+        default_parameters = self._get_default_parameters(call)
         # We need to generate the correct format for the respective models
         payload = {
             "messages": [{"role": "user", "content": []}],
             "inferenceConfig": {
                 "maxTokens": call.max_tokens,
-                "temperature": call.temperature
+                "temperature": default_parameters.get('temperature'),
             }
         }
 
@@ -1001,7 +1066,7 @@ class AWSBedrock(Provider):
 
         return payload
 
-    def _prepare_text_data(self, call) -> list:
+    def _prepare_text_data(self, call: dict) -> list:
         return {
             "messages": [{"role": "user", "content": [{"text": call.message}]}],
             "inferenceConfig": {
@@ -1015,4 +1080,4 @@ class AWSBedrock(Provider):
             "messages": [{"role": "user", "content": [{"text": "Hi"}]}],
             "inferenceConfig": {"maxTokens": 10, "temperature": 0.5}
         }
-        await self.invoke_bedrock(model=self.model, data=data)
+        await self.invoke_bedrock(model=DEFAULT_AWS_MODEL, data=data)
