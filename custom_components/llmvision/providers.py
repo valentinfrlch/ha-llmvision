@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from tenacity import retry, wait_random_exponential, before_sleep_log
+from tenacity import retry, wait_random_exponential, before_sleep_log, stop_after_attempt
 import boto3
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -672,6 +672,7 @@ class Google(Provider):
         return {'content-type': 'application/json'}
 
     @retry(wait=wait_random_exponential(multiplier=1, max=60),
+           stop=stop_after_attempt(5),
            before_sleep=before_sleep_log(_LOGGER, logging.ERROR))
     async def _make_request(self, data) -> str:
         try:
