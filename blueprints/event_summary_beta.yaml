@@ -159,7 +159,7 @@ blueprint:
                 integration: mobile_app
         notification_delivery:
           name: Notification Delivery
-          description: "Controls how notifications are delivered. \n \n **Dynamic** immediately notifies with a Live Preview (iOS only) or Snapshot and updates the notification silently with a summary once it is available. \n **Consolidated** Delays the notification until the event summary is generated. Use this if you're receiving multiple notifications for the same event."
+          description: "Controls how notifications are delivered. \n \n **Dynamic** immediately notifies with a Live Preview (iOS only) or Snapshot before analysis and updates the notification silently with a summary once it is available, or after analysis. \n **Consolidated** Delays the notification until the event summary is generated. Use this if you're receiving multiple notifications for the same event."
           default: 'Dynamic'
           selector:
             select:
@@ -168,7 +168,16 @@ blueprint:
                 - Consolidated
         preview_mode:
           name: Preview Mode
-          description: "Choose between a live preview or a snapshot of the event after analysis.\n\n  **BUG: On Android, the Snapshot of the last camera, if using multiple Camera Entities, will be used in the inital notification but the notification will be updated with the camera view that triggered the automation. Use `Consolidated` above if this is not intended. I hope to fix this.** \n\n **Important:** Live Preview is only supported on iOS."
+          description: "Choose between a live preview or a snapshot of the event before analysis.\n\n  **BUG: On Android, the Snapshot of the last camera, if using multiple Camera Entities, will be used in the inital notification but the notification will be updated with the camera view that triggered the automation. Use `Consolidated` above if this is not intended. I hope to fix this.** \n\n **Important:** Live Preview is only supported on iOS."
+          default: Snapshot
+          selector:
+            select:
+              options:
+                - Snapshot
+                - Live Preview
+        analysis_mode:
+          name: Analysis Mode
+          description: "Choose between a live preview or a snapshot of the event after analysis.\n\n **Important:** Live Preview is only supported on iOS."
           default: Snapshot
           selector:
             select:
@@ -410,6 +419,7 @@ variables:
   remember: !input remember
   cooldown: !input cooldown
   preview_mode: !input preview_mode
+  analysis_mode: !input analysis_mode
   notify_devices: !input notify_device
   notification_delivery: !input notification_delivery
   notification_sticky: !input notification_sticky
@@ -637,7 +647,7 @@ action:
         - choose:
             - conditions:
                 - condition: template
-                  value_template: "{{ preview_mode=='Snapshot' }}"
+                  value_template: "{{ analysis_mode=='Snapshot' }}"
               sequence:
               - alias: "(Snapshot) Update notification on notify devices"
                 repeat:
@@ -676,7 +686,7 @@ action:
 
             - conditions:
                 - condition: template
-                  value_template: "{{ preview_mode=='Live Preview' }}"
+                  value_template: "{{ analysis_mode=='Live Preview' }}"
               sequence:
 
                 - alias: "Send Live Feed to notify devices"
