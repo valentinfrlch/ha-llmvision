@@ -601,9 +601,6 @@ action:
                                   sticky: !input notification_sticky
                                   entity_id: "{{camera_entity}}"
                                   # iOS only
-                                  attachment:
-                                    url: '{{ snapshot_access_file_path }}'
-                                    content_type: JPEG
                                   push:
                                     interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
                                     sound:
