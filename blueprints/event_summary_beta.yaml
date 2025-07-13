@@ -597,7 +597,7 @@ action:
                                   color: !input notification_color
                                   notification_icon: !input notification_icon
                                   sticky: !input notification_sticky
-                                  image: "{{ snapshot_access_file_path }}"
+                                  entity_id: "{{camera_entity}}"
                                   # iOS only
                                   attachment:
                                     url: '{{ snapshot_access_file_path }}'
