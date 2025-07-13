@@ -451,6 +451,8 @@ variables:
   tag: >
     {{ camera_entity + int(as_timestamp(now()))|string }}
   label: Motion detected
+  camera_message: >
+    {{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize }}
   camera: >
     {{ camera_entities_list[0].replace("camera.", "").replace("_", " ") | title }}
   importance_prompt: >
@@ -544,7 +546,7 @@ action:
                             - action: "notify.{{ repeat.item }}"
                               data:
                                 title: "{{ label }} {{ notification_time }}"
-                                message: "{{camera}} has detected activity."
+                                message: "{{camera_message}} has detected activity."
                                 data:
                                   url: !input tap_navigate #iOS
                                   clickAction: !input tap_navigate #Android
@@ -582,7 +584,7 @@ action:
                           - action: "notify.{{ repeat.item }}"
                             data:
                               title: "{{ label }}"
-                              message: "{{camera}} has detected activity."
+                              message: "{{camera_message}} has detected activity."
                               data:
                                   url: !input tap_navigate #iOS
                                   clickAction: !input tap_navigate #Android
@@ -621,7 +623,7 @@ action:
                             - action: "notify.{{ repeat.item }}"
                               data:
                                 title: "{{ label }} {{ notification_time }}"
-                                message: "{{camera}} has detected activity."
+                                message: "{{camera_message}} has detected activity."
                                 data:
                                   entity_id: "{{camera_entity}}"
                                   url: !input tap_navigate
