@@ -3,7 +3,7 @@
 # Take snapshot of triggered camera entity if using multiple cameras (? help needed)
 # Snooze blueprint or notifications
 blueprint:
-  name: AI Event Summary (v1.4.4)
+  name: AI Event Summary (v1.5.1)
   author: valentinfrlch
   homeassistant:
     min_version: 2024.10.0
@@ -81,9 +81,9 @@ blueprint:
       collapsed: true
       input:
         remember:
-          name: Remember
+          name: Store in Timeline
           description: Stores this event in the Timeline so you can ask about it. If important is enabled, only events classified as Normal or Critical will be saved.
-          default: false
+          default: true
           selector:
             boolean:
         use_memory:
@@ -126,16 +126,7 @@ blueprint:
           selector:
             number:
               min: 1
-              max: 100
-        temperature:
-          name: Temperature
-          description: Randomness. Lower is more accurate, higher is more creative.
-          default: 0.1
-          selector:
-            number:
-              min: 0.1
-              max: 1.0
-              step: 0.1
+              max: 300
     # Notificaion Section
     notification_section:
       name: Notification Settings
@@ -183,6 +174,7 @@ blueprint:
             select:
               options:
                 - Snapshot
+                - Snapshot with Multiple Cameras
                 - Live Preview
         notification_time:
           name: Notification Time
@@ -194,7 +186,7 @@ blueprint:
                 - label:  No Time Added
                   value: ''
                 - label: 12 Hour
-                  value: 'at {{ now().strftime("%I:%M %p") }}'
+                  value: 'at {{ now().strftime("%-I:%M %p") }}'
                 - label: 24 Hour
                   value: 'at {{ now().strftime("%H:%M") }}'
         file_path:
@@ -504,7 +496,6 @@ action:
               include_filename: true
               target_width: 1280
               max_tokens: 3
-              temperature: 0.1
             response_variable: importance
 
   # Cancel automation if event not deemed important
@@ -581,6 +572,44 @@ action:
 
                   - conditions:
                       - condition: template
+                        value_template: "{{ preview_mode=='Snapshot with Multiple Cameras' }}"
+                    sequence:
+                    - alias: "Send instant notification to notify devices"
+                      repeat:
+                        for_each: "{{device_name_map}}"
+                        sequence:
+                          - action: "notify.{{ repeat.item }}"
+                            data:
+                              title: "{{ label }}"
+                              message: "{{camera}} has detected activity."
+                              data:
+                                  url: !input tap_navigate #iOS
+                                  clickAction: !input tap_navigate #Android
+                                  tag: "{{tag}}"
+                                  group: !input notification_channel
+                                  alert_once: true
+                                  # Priority options
+                                  ttl: 0
+                                  priority: high
+                                  # Android only
+                                  channel: !input notification_channel
+                                  color: !input notification_color
+                                  notification_icon: !input notification_icon
+                                  sticky: !input notification_sticky
+                                  image: "{{ snapshot_access_file_path }}"
+                                  # iOS only
+                                  attachment:
+                                    url: '{{ snapshot_access_file_path }}'
+                                    content_type: JPEG
+                                  push:
+                                    interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
+                                    sound:
+                                      name: !input notification_sound
+                                      volume: !input notification_volume
+                                      critical: '{{ notification_critical }}'
+
+                  - conditions:
+                      - condition: template
                         value_template: "{{ preview_mode=='Live Preview' }}"
                     sequence:
 
@@ -618,13 +647,12 @@ action:
       message: !input message
       use_memory: !input use_memory
       remember: !input remember
-      expose_images: "{{preview_mode == 'Snapshot' or remember}}"
+      expose_images: "{{preview_mode == 'Snapshot' or 'Snapshot with Multiple Cameras' or remember}}"
       generate_title: !input remember
       include_filename: true
       max_frames: !input max_frames
       target_width: !input target_width
       max_tokens: !input max_tokens
-      temperature: !input temperature  
     response_variable: response
 
   - alias: "Update label with title"
@@ -674,6 +702,10 @@ action:
                               name: !input notification_sound
                               volume: !input notification_volume
                               critical: '{{ notification_critical }}'
+                          actions:
+                          - action: 'URI'
+                            title: 'See Snapshot'
+                            uri: "{{response.key_frame.replace('/config/www/','/local/') }}"
 
       - if:
         - condition: template
@@ -701,17 +733,3 @@ action:
 
   # - delay: '00:{{cooldown|int}}:00'
   - delay: !input cooldown
-
-
-
-
-
-
-
-
-
-
-
-
-
-
