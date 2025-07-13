@@ -159,7 +159,7 @@ blueprint:
                 integration: mobile_app
         notification_delivery:
           name: Notification Delivery
-          description: "Controls how notifications are delivered. \n \n **Dynamic** immediately notifies with a live preview and updates the notification silently with a summary once it is available. \n **Consolidated** Delays the notification until the event summary is generated. Use this if you're receiving multiple notifications for the same event."
+          description: "Controls how notifications are delivered. \n \n **Dynamic** immediately notifies with a Live Preview (iOS only) or Snapshot and updates the notification silently with a summary once it is available. \n **Consolidated** Delays the notification until the event summary is generated. Use this if you're receiving multiple notifications for the same event."
           default: 'Dynamic'
           selector:
             select:
@@ -168,7 +168,7 @@ blueprint:
                 - Consolidated
         preview_mode:
           name: Preview Mode
-          description: "Choose between a live preview or a snapshot of the event. **BUG: On Android, the Snapshot of the last camera, if using multiple Camera Entities, will be used in the inital notification but the updated notification will be updated with the camera view that triggered the automation.** \n\n **Important:** Live Preview is only supported on iOS."
+          description: "Choose between a live preview or a snapshot of the event after analysis.\n\n  **BUG: On Android, the Snapshot of the last camera, if using multiple Camera Entities, will be used in the inital notification but the notification will be updated with the camera view that triggered the automation. Use `Consolidated` above if this is not intended. I hope to fix this.** \n\n **Important:** Live Preview is only supported on iOS."
           default: Snapshot
           selector:
             select:
@@ -405,7 +405,6 @@ blueprint:
           selector:
             action:
 
-
 variables:
   important: !input important
   remember: !input remember
@@ -635,6 +634,11 @@ action:
           value_template: '{{ not this.attributes.last_triggered or (now() - this.attributes.last_triggered).seconds
             > delay_notification }}'
         then:
+        - choose:
+            - conditions:
+                - condition: template
+                  value_template: "{{ preview_mode=='Snapshot' }}"
+              sequence:
               - alias: "(Snapshot) Update notification on notify devices"
                 repeat:
                   for_each: "{{device_name_map}}"
@@ -669,10 +673,40 @@ action:
                           - action: 'URI'
                             title: 'See Snapshot'
                             uri: "{{response.key_frame.replace('/config/www/','/local/') }}"
-                          actions:
-                          - action: 'URI'
-                            title: 'See Snapshot'
-                            uri: "{{response.key_frame.replace('/config/www/','/local/') }}"
+
+            - conditions:
+                - condition: template
+                  value_template: "{{ preview_mode=='Live Preview' }}"
+              sequence:
+
+                - alias: "Send Live Feed to notify devices"
+                  repeat:
+                    for_each: "{{device_name_map}}"
+                    sequence:
+                      - action: "notify.{{ repeat.item }}"
+                        data:
+                          title: "{{ label }} {{ notification_time }}"
+                          message: "{{camera_message}} has detected activity."
+                          data:
+                            entity_id: "{{camera_entity}}"
+                            url: !input tap_navigate
+                            tag: "{{tag}}"
+                            group: !input notification_channel
+                            alert_once: true
+                            push:
+                              interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
+                              sound:
+                                name: !input notification_sound
+                                volume: !input notification_volume
+                                critical: '{{ notification_critical }}'
+                            # Priority options
+                            ttl: 0
+                            priority: high
+                            actions:
+                            - action: 'URI'
+                              title: 'See Snapshot'
+                              uri: "{{response.key_frame.replace('/config/www/','/local/') }}"
+
 
       - if:
         - condition: template
