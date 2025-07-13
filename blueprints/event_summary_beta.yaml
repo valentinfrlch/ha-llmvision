@@ -187,7 +187,6 @@ blueprint:
                   value: ''
                 - label: 12 Hour
                   value: 'at {{ now().strftime("%-I:%M %p") }}'
-                  value: 'at {{ now().strftime("%-I:%M %p") }}'
                 - label: 24 Hour
                   value: 'at {{ now().strftime("%H:%M") }}'
         file_path:
