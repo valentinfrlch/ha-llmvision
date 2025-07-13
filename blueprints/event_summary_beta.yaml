@@ -168,7 +168,13 @@ blueprint:
                 - Consolidated
         preview_mode:
           name: Preview Mode
-          description: "Choose between a live preview or a snapshot of the event before analysis.\n\n  **BUG: On Android, the Snapshot of the last camera, if using multiple Camera Entities, will be used in the inital notification but the notification will be updated with the camera view that triggered the automation. Use `Consolidated` above if this is not intended. I hope to fix this.** \n\n **Important:** Live Preview is only supported on iOS."
+          description: |-
+            Choose between a live preview or a snapshot of the event before analysis.
+            > [!NOTE]  
+            > **BUG**: On Android, the Snapshot of the last camera, if using multiple Camera Entities, will be used in the inital notification but the notification will be updated with the camera view that triggered the automation. Use `Consolidated` above if this is not intended. I hope to fix this.
+            
+            > [!IMPORTANT]  
+            > **IMPORTANT**: Live Preview is only supported on iOS.
           default: Snapshot
           selector:
             select:
@@ -177,7 +183,10 @@ blueprint:
                 - Live Preview
         analysis_mode:
           name: Analysis Mode
-          description: "Choose between a live preview or a snapshot of the event after analysis.\n\n **Important:** Live Preview is only supported on iOS."
+          description: |-
+            Choose between a live preview or a snapshot of the event after analysis.
+            > [!IMPORTANT]  
+            > **IMPORTANT**: Live Preview is only supported on iOS.
           default: Snapshot
           selector:
             select:
@@ -331,8 +340,11 @@ blueprint:
           selector:
             boolean:
         tts_volume:
-          name: TTS Volume
-          description: Set TTS volume to device's current alarm volume or Max volume. ALARM VOLUME WILL IGNORE DO NOT DISTURB! Android Only
+          name: TTS Volume (Android Only)
+          description: |-
+            Set TTS volume to device's current alarm volume or Max volume. 
+            > [!NOTE]  
+            > ALARM VOLUME WILL IGNORE DO NOT DISTURB!
           default: 'notification_stream'
           selector:
             select:
