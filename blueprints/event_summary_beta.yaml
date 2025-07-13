@@ -171,7 +171,7 @@ blueprint:
           description: |-
             Choose between a live preview or a snapshot of the event before analysis.
             > [!NOTE]  
-            > **BUG**: On Android if using multiple Camera Entities, the Snapshot of the last camera is used in the inital notification but the notification will be updated with the camera view that triggered the automation. Use `Consolidated` above if this is not intended. I hope to fix this.
+            > **BUG**: If using multiple Camera Entities, the Snapshot of the last camera is used in the inital notification but the notification will be updated with the camera view that triggered the automation. Use `Live Preview` or `Consolidated` (if using Android) for `Notification Delivery`. I hope to fix this.
             
             > [!IMPORTANT]  
             > **IMPORTANT**: Live Preview is only supported on iOS.
