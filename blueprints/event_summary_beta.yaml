@@ -187,6 +187,7 @@ blueprint:
                   value: ''
                 - label: 12 Hour
                   value: 'at {{ now().strftime("%-I:%M %p") }}'
+                  value: 'at {{ now().strftime("%-I:%M %p") }}'
                 - label: 24 Hour
                   value: 'at {{ now().strftime("%H:%M") }}'
         file_path:
@@ -702,6 +703,10 @@ action:
                               name: !input notification_sound
                               volume: !input notification_volume
                               critical: '{{ notification_critical }}'
+                          actions:
+                          - action: 'URI'
+                            title: 'See Snapshot'
+                            uri: "{{response.key_frame.replace('/config/www/','/local/') }}"
                           actions:
                           - action: 'URI'
                             title: 'See Snapshot'
