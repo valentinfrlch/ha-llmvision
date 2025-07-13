@@ -174,7 +174,6 @@ blueprint:
             select:
               options:
                 - Snapshot
-                - Live Preview with Multiple Cameras
                 - Live Preview
         notification_time:
           name: Notification Time
@@ -574,41 +573,6 @@ action:
 
                   - conditions:
                       - condition: template
-                        value_template: "{{ preview_mode=='Live Preview with Multiple Cameras' }}"
-                    sequence:
-                    - alias: "Send instant notification to notify devices"
-                      repeat:
-                        for_each: "{{device_name_map}}"
-                        sequence:
-                          - action: "notify.{{ repeat.item }}"
-                            data:
-                              title: "{{ label }}"
-                              message: "{{camera_message}} has detected activity."
-                              data:
-                                  url: !input tap_navigate #iOS
-                                  clickAction: !input tap_navigate #Android
-                                  tag: "{{tag}}"
-                                  group: !input notification_channel
-                                  alert_once: true
-                                  # Priority options
-                                  ttl: 0
-                                  priority: high
-                                  # Android only
-                                  channel: !input notification_channel
-                                  color: !input notification_color
-                                  notification_icon: !input notification_icon
-                                  sticky: !input notification_sticky
-                                  entity_id: "{{camera_entity}}"
-                                  # iOS only
-                                  push:
-                                    interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
-                                    sound:
-                                      name: !input notification_sound
-                                      volume: !input notification_volume
-                                      critical: '{{ notification_critical }}'
-
-                  - conditions:
-                      - condition: template
                         value_template: "{{ preview_mode=='Live Preview' }}"
                     sequence:
 
@@ -646,7 +610,7 @@ action:
       message: !input message
       use_memory: !input use_memory
       remember: !input remember
-      expose_images: "{{preview_mode == 'Snapshot' or 'Live Preview with Multiple Cameras' or remember}}"
+      expose_images: "{{preview_mode == 'Snapshot' or remember}}"
       generate_title: !input remember
       include_filename: true
       max_frames: !input max_frames
