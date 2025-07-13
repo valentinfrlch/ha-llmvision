@@ -168,13 +168,13 @@ blueprint:
                 - Consolidated
         preview_mode:
           name: Preview Mode
-          description: "Choose between a live preview or a snapshot of the event. The Snapshot of the last camera, if using multiple Camera Entities, will be used but the notification will be udated with the camera view that triggered the automation. \n\n **Important:** Live Preview is only supported on iOS."
+          description: "Choose between a live preview or a snapshot of the event. **BUG: On Android, the Snapshot of the last camera, if using multiple Camera Entities, will be used in the inital notification but the updated notification will be updated with the camera view that triggered the automation.** \n\n **Important:** Live Preview is only supported on iOS."
           default: Snapshot
           selector:
             select:
               options:
                 - Snapshot
-                - Snapshot with Multiple Cameras
+                - Live Preview with Multiple Cameras
                 - Live Preview
         notification_time:
           name: Notification Time
@@ -574,7 +574,7 @@ action:
 
                   - conditions:
                       - condition: template
-                        value_template: "{{ preview_mode=='Snapshot with Multiple Cameras' }}"
+                        value_template: "{{ preview_mode=='Live Preview with Multiple Cameras' }}"
                     sequence:
                     - alias: "Send instant notification to notify devices"
                       repeat:
@@ -646,7 +646,7 @@ action:
       message: !input message
       use_memory: !input use_memory
       remember: !input remember
-      expose_images: "{{preview_mode == 'Snapshot' or 'Snapshot with Multiple Cameras' or remember}}"
+      expose_images: "{{preview_mode == 'Snapshot' or 'Live Preview with Multiple Cameras' or remember}}"
       generate_title: !input remember
       include_filename: true
       max_frames: !input max_frames
