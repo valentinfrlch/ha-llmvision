@@ -1,5 +1,6 @@
 import voluptuous as vol
 import os
+import re
 import logging
 from homeassistant import config_entries
 from homeassistant.helpers.selector import selector
