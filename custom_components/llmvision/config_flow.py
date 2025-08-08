@@ -1,5 +1,6 @@
 import voluptuous as vol
 import os
+import re
 import logging
 from homeassistant import config_entries
 from homeassistant.helpers.selector import selector
@@ -291,7 +292,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 api_key="",
                                 model=user_input[CONF_DEFAULT_MODEL],
                                 endpoint={
-                                    'ip_address': user_input[CONF_IP_ADDRESS],
+                                    'ip_address': re.sub(r'^https?://', '', user_input[CONF_IP_ADDRESS]),
                                     'port': user_input[CONF_PORT],
                                     'https': user_input[CONF_HTTPS],
                                     'keep_alive': user_input[CONF_KEEP_ALIVE],
@@ -388,7 +389,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input = flatten_dict(user_input)
             try:
                 endpoint = ENDPOINT_OPENWEBUI.format(
-                    ip_address=user_input[CONF_IP_ADDRESS],
+                    ip_address=re.sub(r'^https?://', '', user_input[CONF_IP_ADDRESS]),
                     port=user_input[CONF_PORT],
                     protocol="https" if user_input[CONF_HTTPS] else "http"
                 )
