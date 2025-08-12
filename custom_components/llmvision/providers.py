@@ -3,6 +3,7 @@ from tenacity import retry, wait_random_exponential, before_sleep_log, stop_afte
 import boto3
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import asyncio
 from functools import partial
 import logging
 import inspect
@@ -284,6 +285,7 @@ class Request:
             response_text = await provider_instance.vision_request(call)
 
             if call.generate_title:
+                await asyncio.sleep(0.3)  # Add delay to avoid rate limiting
                 call.message = call.memory.title_prompt + \
                     "Create a title for this text: " + response_text
                 gen_title = await provider_instance.title_request(call)
