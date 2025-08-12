@@ -398,9 +398,10 @@ class Provider(ABC):
     async def _post(self, url: str, headers: dict, data: dict) -> dict:
         """Post data to url and return response data"""
         _LOGGER.debug(f"Request data: {Request.sanitize_data(data)}")
-
+        # Sanitize url
+        san_url = re.sub(r'\?key=[^&]*', '', url)
         try:
-            _LOGGER.debug(f"Posting to {url}")
+            _LOGGER.debug(f"Posting to {san_url}")
             response = await self.session.post(url, headers=headers, json=data)
         except Exception as e:
             raise ServiceValidationError(f"Request failed: {e}")
