@@ -287,7 +287,7 @@
                 }
             },
             "openwebui": {
-                "title": "Configure Open WebUI provider",
+                "title": "Configure Open WebUI",
                 "description": "Provide API key (JWT token), IP Address, Port, HTTP(S) and default model.",
                 "sections": {
                     "connection_section": {
@@ -301,6 +301,36 @@
                         },
                         "data_description": {
                             "https": "Use HTTPS for secure connections if your server supports it."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
+                }
+            },
+            "openrouter": {
+                "title": "Configure OpenRouter",
+                "description": "OpenRouter is a platform that provides access to various AI models. You can use it to connect to models like OpenAI, Anthropic, and more.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "OpenRouter authentication",
+                        "data": {
+                            "api_key": "API key"
+                        },
+                        "data_description": {
+                            "api_key": "Your OpenRouter API key. Make sure to add credit to your OpenRouter account first."
                         }
                     },
                     "model_section": {

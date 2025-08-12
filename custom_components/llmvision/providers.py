@@ -33,6 +33,7 @@ from .const import (
     ENDPOINT_OLLAMA,
     ENDPOINT_OPENWEBUI,
     ENDPOINT_GROQ,
+    ENDPOINT_OPENROUTER,
     ERROR_NOT_CONFIGURED,
     ERROR_GROQ_MULTIPLE_IMAGES,
     ERROR_NO_IMAGE_INPUT,
@@ -46,6 +47,7 @@ from .const import (
     DEFAULT_CUSTOM_OPENAI_MODEL,
     DEFAULT_AWS_MODEL,
     DEFAULT_OPENWEBUI_MODEL,
+    DEFAULT_OPENROUTER_MODEL,
     CONF_KEEP_ALIVE,
     CONF_CONTEXT_WINDOW,
     CONF_TEMPERATURE,
@@ -111,6 +113,7 @@ class Request:
             "Custom OpenAI": DEFAULT_CUSTOM_OPENAI_MODEL,
             "AWS": DEFAULT_AWS_MODEL,
             "Open WebUI": DEFAULT_OPENWEBUI_MODEL,
+            "OpenRouter": DEFAULT_OPENROUTER_MODEL,
         }.get(provider_name)
 
     def validate(self, call) -> None | ServiceValidationError:
@@ -275,6 +278,15 @@ class Request:
                                            model=call.model,
                                            endpoint={
                                                'base_url': endpoint
+                                           })
+            
+            elif provider == 'OpenRouter':
+                api_key = config.get(CONF_API_KEY)
+                provider_instance = OpenAI(self.hass,
+                                           api_key=api_key,
+                                           model=call.model,
+                                           endpoint={
+                                               'base_url': ENDPOINT_OPENROUTER
                                            })
 
             else:
