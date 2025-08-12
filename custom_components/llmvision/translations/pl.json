@@ -319,6 +319,36 @@
                     }
                 }
             },
+            "openrouter": {
+                "title": "Skonfiguruj OpenRouter",
+                "description": "OpenRouter to platforma, która zapewnia dostęp do różnych modeli AI. Możesz jej użyć do połączenia z modelami takimi jak OpenAI, Anthropic i innymi.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Połączenie",
+                        "description": "Autoryzacja OpenRouter",
+                        "data": {
+                            "api_key": "Klucz API"
+                        },
+                        "data_description": {
+                            "api_key": "Twój klucz API OpenRouter. Upewnij się, że dodałeś środki do swojego konta OpenRouter."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Ustaw domyślne parametry modelu",
+                        "data": {
+                            "default_model": "Domyślny model",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
+                            "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Ustawienia",
                 "description": "Skonfiguruj integrację LLM Vision. Ten wpis jest wymagany przed skonfigurowaniem innych dostawców. Jeśli chcesz użyć domyślnych ustawień, po prostu naciśnij 'Wyślij'.",
