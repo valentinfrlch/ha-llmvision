@@ -127,9 +127,14 @@ async def async_setup_entry(hass, entry):
         timeline = Timeline(hass, entry)
         await timeline._cleanup()
 
+    # Sanitize provider config (remove api_key and value)
+    sanitized_provider_config = {
+        key: value for key, value in filtered_provider_config.items() if key != CONF_API_KEY
+    }
+
     # Print the config entry data for debugging
     _LOGGER.debug(
-        f"Config entry {entry.title} data: {filtered_provider_config}")
+        f"Config entry {entry.title} data: {sanitized_provider_config}")
     return True
 
 

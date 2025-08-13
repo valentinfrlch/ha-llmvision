@@ -319,6 +319,36 @@
           }
         }
       },
+      "openrouter": {
+        "title": "OpenRouter configureren",
+        "description": "OpenRouter is een platform dat toegang biedt tot verschillende AI-modellen. U kunt het gebruiken om verbinding te maken met modellen zoals OpenAI, Anthropic en meer.",
+        "sections": {
+          "connection_section": {
+            "name": "Verbinding",
+            "description": "OpenRouter authenticatie",
+            "data": {
+              "api_key": "API-sleutel"
+            },
+            "data_description": {
+              "api_key": "Uw OpenRouter API-sleutel. Zorg ervoor dat u tegoed toevoegt aan uw OpenRouter-account."
+            }
+          },
+          "model_section": {
+            "name": "Model",
+            "description": "Stel standaard modelparameters in",
+            "data": {
+              "default_model": "Standaardmodel",
+              "temperature": "Temperatuur",
+              "top_p": "Top P"
+            },
+            "data_description": {
+              "default_model": "Het standaardmodel dat wordt gebruikt wanneer geen ander model is gespecificeerd.",
+              "temperature": "Regelt de willekeurigheid van de uitvoer. Lagere waarden maken de uitvoer deterministischer.",
+              "top_p": "Regelt de diversiteit van de uitvoer. Lagere waarden maken de uitvoer gerichter."
+            }
+          }
+        }
+      },
       "settings": {
         "title": "Instellingen",
         "description": "Configureer de LLM Vision integratie. Deze invoer is vereist voordat u andere providers instelt. Als u de standaardinstellingen wilt gebruiken, drukt u gewoon op 'Verzenden'.",
