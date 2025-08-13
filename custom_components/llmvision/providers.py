@@ -674,7 +674,7 @@ class Google(Provider):
     def _generate_headers(self) -> dict:
         return {'content-type': 'application/json'}
 
-    @retry(wait=wait_random_exponential(multiplier=1, max=60),
+    @retry(wait=wait_random_exponential(multiplier=5, max=60),
            stop=stop_after_attempt(5),
            before_sleep=before_sleep_log(_LOGGER, logging.ERROR))
     async def _make_request(self, data) -> str:
