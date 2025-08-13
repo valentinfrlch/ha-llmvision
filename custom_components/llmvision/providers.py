@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
-from tenacity import retry, wait_random_exponential, before_sleep_log, stop_after_attempt
+from tenacity import retry, wait_fixed, wait_random_exponential, before_sleep_log, stop_after_attempt
 import boto3
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-import asyncio
 from functools import partial
 import logging
 import inspect
@@ -285,7 +284,6 @@ class Request:
             response_text = await provider_instance.vision_request(call)
 
             if call.generate_title:
-                await asyncio.sleep(0.3)  # Add delay to avoid rate limiting
                 call.message = call.memory.title_prompt + \
                     "Create a title for this text: " + response_text
                 gen_title = await provider_instance.title_request(call)
@@ -674,7 +672,7 @@ class Google(Provider):
     def _generate_headers(self) -> dict:
         return {'content-type': 'application/json'}
 
-    @retry(wait=wait_random_exponential(multiplier=5, max=60),
+    @retry(wait=wait_fixed(5) + wait_random_exponential(multiplier=5, max=60),
            stop=stop_after_attempt(5),
            before_sleep=before_sleep_log(_LOGGER, logging.ERROR))
     async def _make_request(self, data) -> str:
