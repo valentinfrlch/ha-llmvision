@@ -1,71 +1,71 @@
-""" Constants for llmvision component"""
+"""Constants for llmvision component"""
 
 # Global constants
 DOMAIN = "llmvision"
 
 # CONFIGURABLE VARIABLES FOR SETUP
-CONF_PROVIDER = 'provider'
-CONF_API_KEY = 'api_key'
-CONF_IP_ADDRESS= 'ip_address'
-CONF_PORT = 'port'
-CONF_HTTPS = 'https'
-CONF_DEFAULT_MODEL = 'default_model'
-CONF_TEMPERATURE = 'temperature'
-CONF_TOP_P = 'top_p'
-CONF_CONTEXT_WINDOW = 'context_window' #(ollama: num_ctx)
-CONF_KEEP_ALIVE = 'keep_alive'
+CONF_PROVIDER = "provider"
+CONF_API_KEY = "api_key"
+CONF_IP_ADDRESS = "ip_address"
+CONF_PORT = "port"
+CONF_HTTPS = "https"
+CONF_DEFAULT_MODEL = "default_model"
+CONF_TEMPERATURE = "temperature"
+CONF_TOP_P = "top_p"
+CONF_CONTEXT_WINDOW = "context_window"  # (ollama: num_ctx)
+CONF_KEEP_ALIVE = "keep_alive"
 
 # Azure specific
-CONF_AZURE_BASE_URL = 'azure_base_url'
-CONF_AZURE_DEPLOYMENT = 'azure_deployment'
-CONF_AZURE_VERSION = 'azure_version'
+CONF_AZURE_BASE_URL = "azure_base_url"
+CONF_AZURE_DEPLOYMENT = "azure_deployment"
+CONF_AZURE_VERSION = "azure_version"
 
 # AWS specific
-CONF_AWS_ACCESS_KEY_ID = 'aws_access_key_id'
-CONF_AWS_SECRET_ACCESS_KEY = 'aws_secret_access_key'
-CONF_AWS_REGION_NAME = 'aws_region_name'
+CONF_AWS_ACCESS_KEY_ID = "aws_access_key_id"
+CONF_AWS_SECRET_ACCESS_KEY = "aws_secret_access_key"
+CONF_AWS_REGION_NAME = "aws_region_name"
 
 # Custom OpenAI specific
-CONF_CUSTOM_OPENAI_ENDPOINT = 'custom_openai_endpoint'
+CONF_CUSTOM_OPENAI_ENDPOINT = "custom_openai_endpoint"
 
 # Timeline
-CONF_RETENTION_TIME = 'retention_time'
+CONF_RETENTION_TIME = "retention_time"
 
 # Settings
-CONF_FALLBACK_PROVIDER = 'fallback_provider'
-CONF_TIMELINE_TODAY_SUMMARY = 'timeline_today_summary'
-CONF_TIMELINE_SUMMARY_PROMPT = 'timeline_summary_prompt'
-CONF_MEMORY_PATHS = 'memory_paths'
-CONG_MEMORY_IMAGES_ENCODED = 'memory_images_encoded'
-CONF_MEMORY_STRINGS = 'memory_strings'
-CONF_SYSTEM_PROMPT = 'system_prompt'
-CONF_TITLE_PROMPT = 'title_prompt'
-CONF_MEMORY_PATHS = 'memory_paths'
-CONF_MEMORY_IMAGES_ENCODED = 'memory_images_encoded'
-CONF_MEMORY_STRINGS = 'memory_strings'
+CONF_FALLBACK_PROVIDER = "fallback_provider"
+CONF_TIMELINE_TODAY_SUMMARY = "timeline_today_summary"
+CONF_TIMELINE_SUMMARY_PROMPT = "timeline_summary_prompt"
+CONF_MEMORY_PATHS = "memory_paths"
+CONG_MEMORY_IMAGES_ENCODED = "memory_images_encoded"
+CONF_MEMORY_STRINGS = "memory_strings"
+CONF_SYSTEM_PROMPT = "system_prompt"
+CONF_TITLE_PROMPT = "title_prompt"
+CONF_MEMORY_PATHS = "memory_paths"
+CONF_MEMORY_IMAGES_ENCODED = "memory_images_encoded"
+CONF_MEMORY_STRINGS = "memory_strings"
 
 
 # SERVICE CALL CONSTANTS
-MESSAGE = 'message'
-REMEMBER = 'remember'
-USE_MEMORY = 'use_memory'
-PROVIDER = 'provider'
-MAXTOKENS = 'max_tokens'
-TARGET_WIDTH = 'target_width'
-MODEL = 'model'
-IMAGE_FILE = 'image_file'
-IMAGE_ENTITY = 'image_entity'
-VIDEO_FILE = 'video_file'
-EVENT_ID = 'event_id'
-INTERVAL = 'interval'
-DURATION = 'duration'
-FRIGATE_RETRY_ATTEMPTS = 'frigate_retry_attempts'
-FRIGATE_RETRY_SECONDS = 'frigate_retry_seconds'
-MAX_FRAMES = 'max_frames'
-INCLUDE_FILENAME = 'include_filename'
-EXPOSE_IMAGES = 'expose_images'
-GENERATE_TITLE = 'generate_title'
-SENSOR_ENTITY = 'sensor_entity'
+MESSAGE = "message"
+REMEMBER = "remember"
+USE_MEMORY = "use_memory"
+PROVIDER = "provider"
+MAXTOKENS = "max_tokens"
+TARGET_WIDTH = "target_width"
+MODEL = "model"
+IMAGE_FILE = "image_file"
+IMAGE_ENTITY = "image_entity"
+VIDEO_FILE = "video_file"
+EVENT_ID = "event_id"
+INTERVAL = "interval"
+DURATION = "duration"
+FRIGATE_RETRY_ATTEMPTS = "frigate_retry_attempts"
+FRIGATE_RETRY_SECONDS = "frigate_retry_seconds"
+MAX_FRAMES = "max_frames"
+INCLUDE_FILENAME = "include_filename"
+EXPOSE_IMAGES = "expose_images"
+GENERATE_TITLE = "generate_title"
+SENSOR_ENTITY = "sensor_entity"
 
 # Error messages
 ERROR_NOT_CONFIGURED = "{provider} is not configured"
