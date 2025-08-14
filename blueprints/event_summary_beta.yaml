@@ -170,9 +170,6 @@ blueprint:
           name: Preview Mode
           description: |-
             Choose between a live preview or a snapshot of the event before analysis.
-            > [!NOTE]  
-            > **BUG**: If using multiple Camera Entities, the Snapshot of the last camera is used in the inital notification but the notification will be updated with the camera view that triggered the automation. Use `Live Preview` or `Consolidated` (if using Android) for `Notification Delivery`. I hope to fix this.
-            
             > [!IMPORTANT]  
             > **IMPORTANT**: Live Preview is only supported on iOS.
           default: Snapshot
@@ -708,7 +705,7 @@ action:
                       - action: "notify.{{ repeat.item }}"
                         data:
                           title: "{{ label }} {{ notification_time }}"
-                          message: "{{camera_message}} has detected activity."
+                          message: "{{response.response_text}"
                           data:
                             entity_id: "{{camera_entity}}"
                             url: !input tap_navigate
