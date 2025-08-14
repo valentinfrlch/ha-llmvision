@@ -428,7 +428,7 @@ class Provider(ABC):
         return await self._make_request(data)
 
     async def title_request(self, call: dict) -> str:
-        call.max_tokens = 1000 # Gives model tokens to think
+        # call.max_tokens = 1000
         data = self._prepare_text_data(call)
         return await self._make_request(data)
 
