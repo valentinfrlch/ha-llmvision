@@ -85,7 +85,7 @@ image_analyzer:
       selector:
         number:
           min: 1
-          max: 300
+          max: 1000
     generate_title:
       name: Generate Title
       required: false
@@ -223,7 +223,7 @@ video_analyzer:
       selector:
         number:
           min: 1
-          max: 300
+          max: 1000
     generate_title:
       name: Generate Title
       required: false
@@ -340,7 +340,7 @@ stream_analyzer:
       selector:
         number:
           min: 1
-          max: 300
+          max: 1000
     generate_title:
       name: Generate Title
       required: false
@@ -447,14 +447,14 @@ data_analyzer:
           max: 1920
     max_tokens:
       name: Maximum Tokens
-      description: 'Maximum number of tokens to generate. A low value is recommended since this will likely result in a number.'
+      description: 'Maximum number of tokens to generate'
       required: true
       example: 5
       default: 5
       selector:
         number:
           min: 1
-          max: 50
+          max: 1000
     generate_title:
       name: Generate Title
       required: false
