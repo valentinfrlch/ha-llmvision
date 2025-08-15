@@ -705,7 +705,7 @@ action:
                       - action: "notify.{{ repeat.item }}"
                         data:
                           title: "{{ label }} {{ notification_time }}"
-                          message: "{{response.response_text}"
+                          message: "{{ response.response_text }}"
                           data:
                             entity_id: "{{camera_entity}}"
                             url: !input tap_navigate
