@@ -335,7 +335,7 @@ class Request:
                 call.model = None
                 return await self.call(call, _is_fallback_retry=True)
             else:
-                raise
+                raise ServiceValidationError("Provider call failed")
 
     def add_frame(self, base64_image, filename):
         self.base64_images.append(base64_image)

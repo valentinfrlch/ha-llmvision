@@ -109,10 +109,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_PROVIDER): selector(
                     {
                         "select": {
-                            # Azure removed until fixed
                             "options": [
                                 "Anthropic",
                                 "AWS Bedrock",
+                                "Azure",
                                 "Google",
                                 "Groq",
                                 "LocalAI",
