@@ -15,6 +15,7 @@ CONF_TOP_P = 'top_p'
 CONF_CONTEXT_WINDOW = 'context_window' #(ollama: num_ctx)
 CONF_KEEP_ALIVE = 'keep_alive'
 
+
 # Azure specific
 CONF_AZURE_BASE_URL = 'azure_base_url'
 CONF_AZURE_DEPLOYMENT = 'azure_deployment'
@@ -66,6 +67,7 @@ INCLUDE_FILENAME = 'include_filename'
 EXPOSE_IMAGES = 'expose_images'
 GENERATE_TITLE = 'generate_title'
 SENSOR_ENTITY = 'sensor_entity'
+TITLE_PROMPT = 'title_prompt'
 
 # Error messages
 ERROR_NOT_CONFIGURED = "{provider} is not configured"
