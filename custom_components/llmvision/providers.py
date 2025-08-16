@@ -284,8 +284,12 @@ class Request:
             response_text = await provider_instance.vision_request(call)
 
             if call.generate_title:
-                call.message = call.memory.title_prompt + \
-                    "Create a title for this text: " + response_text
+                if call.title_prompt:
+                    # Use custom title prompt from service call
+                    call.message = call.title_prompt + " Create a title for this text: " + response_text
+                else:
+                    # Fall back to global title prompt from memory
+                    call.message = call.memory.title_prompt + " Create a title for this text: " + response_text
                 gen_title = await provider_instance.title_request(call)
 
                 return {"title": re.sub(r'[^a-zA-Z0-9ŽžÀ-ÿ\s]', '', gen_title), "response_text": response_text}

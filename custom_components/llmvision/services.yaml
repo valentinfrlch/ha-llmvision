@@ -25,6 +25,14 @@ image_analyzer:
       selector:
         text:
           multiline: true
+    title_prompt:
+      name: Title Prompt
+      description: 'Custom prompt used for generating the title for this request.'
+      required: false
+      example: "Provide a descriptive title mentioning the main activity"
+      selector:
+        text:
+          multiline: true
     remember:
       name: Remember
       required: false
@@ -93,6 +101,9 @@ image_analyzer:
       default: false
       selector:
         boolean:
+  selector:
+    text:
+      multiline: true
     expose_images:
       name: Expose Images
       description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response.
@@ -126,6 +137,14 @@ video_analyzer:
       required: true
       description: 'Model prompt'
       example: "Describe what happens in the video"
+      selector:
+        text:
+          multiline: true
+    title_prompt:
+      name: Title Prompt
+      description: 'Custom prompt used for generating the title for this request.'
+      required: false
+      example: "Provide a descriptive title mentioning the main activity"
       selector:
         text:
           multiline: true
@@ -267,6 +286,14 @@ stream_analyzer:
       selector:
         text:
           multiline: true
+    title_prompt:
+      name: Title Prompt
+      description: 'Custom prompt used for generating the title for this request.'
+      required: false
+      example: "Provide a descriptive title mentioning the main activity"
+      selector:
+        text:
+          multiline: true
     remember:
       name: Remember
       required: false
@@ -382,6 +409,14 @@ data_analyzer:
       description: 'Describe what should be extracted from the image. Data types and available options will be recognized automatically based the provided sensor.'
       example: "How many cars are parked?"
       default: "How many cars are parked?"
+      selector:
+        text:
+          multiline: true
+    title_prompt:
+      name: Title Prompt
+      description: 'Custom prompt used for generating the title for this request.'
+      required: false
+      example: "Provide a descriptive title mentioning the main activity"
       selector:
         text:
           multiline: true

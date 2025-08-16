@@ -1,5 +1,4 @@
 from datetime import datetime
-import json
 from .calendar import Timeline
 from .providers import Request
 from .memory import Memory
@@ -69,6 +68,7 @@ from .const import (
     DEFAULT_OPENWEBUI_MODEL,
     CONF_CONTEXT_WINDOW,
     CONF_KEEP_ALIVE,
+    TITLE_PROMPT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -538,6 +538,7 @@ class ServiceCallData:
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)
         self.sensor_entity = data_call.data.get(SENSOR_ENTITY, "")
+        self.title_prompt = data_call.data.get(TITLE_PROMPT, "")
 
         # ------------ Remember ------------
         self.title = data_call.data.get("title")
