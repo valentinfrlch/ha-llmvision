@@ -111,6 +111,13 @@ blueprint:
           selector:
             text:
               multiline: false
+        title_prompt:
+          name: Title Prompt
+          description: 'Custom prompt for generating event titles. Leave empty to use the global LLM Vision title prompt setting.'
+          default: ""
+          selector:
+            text:
+              multiline: true
         target_width:
           name: Target Width
           description: Downscale images (uses less tokens and speeds up processing)
@@ -427,6 +434,7 @@ variables:
   notify: !input notify
   condition_notify: !input condition_notify
   delay_notification: !input delay_notification
+  title_prompt: !input title_prompt
   # camera_snapshot: !input camera_snapshot
   # camera_name: '{{ states[camera_snapshot].name.replace(" ", "_") }}'
   device_name_map: >
@@ -606,6 +614,7 @@ action:
       provider: !input provider
       model: !input model
       message: !input message
+      title_prompt: !input title_prompt
       use_memory: !input use_memory
       remember: !input remember
       expose_images: "{{preview_mode == 'Snapshot' or remember}}"
