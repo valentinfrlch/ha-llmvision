@@ -1,11 +1,4 @@
 from abc import ABC, abstractmethod
-from tenacity import (
-    retry,
-    wait_fixed,
-    wait_random_exponential,
-    before_sleep_log,
-    stop_after_attempt,
-)
 import boto3
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -174,157 +167,141 @@ class Request:
             if entry.data.get("provider") == "Settings":
                 settings_entry = entry.data
                 break
+        _LOGGER.debug("Settings entry: %s", settings_entry)
         fallback_provider = (
-            settings_entry.get("general_section", {}).get("fallback_provider", None)
+            settings_entry.get("fallback_provider", None)
             if settings_entry
             else None
         )
+        _LOGGER.debug("Fallback provider: %s", fallback_provider)
+
+        if provider == "OpenAI":
+            api_key = config.get(CONF_API_KEY)
+            provider_instance = OpenAI(
+                hass=self.hass, api_key=api_key, model=call.model
+            )
+
+        elif provider == "Azure":
+            api_key = config.get(CONF_API_KEY)
+            endpoint = config.get(CONF_AZURE_BASE_URL)
+            deployment = config.get(CONF_AZURE_DEPLOYMENT)
+            version = config.get(CONF_AZURE_VERSION)
+
+            provider_instance = AzureOpenAI(
+                self.hass,
+                api_key=api_key,
+                model=call.model,
+                endpoint={
+                    "base_url": ENDPOINT_AZURE,
+                    "endpoint": endpoint,
+                    "deployment": deployment,
+                    "api_version": version,
+                },
+            )
+
+        elif provider == "Anthropic":
+            api_key = config.get(CONF_API_KEY)
+            provider_instance = Anthropic(self.hass, api_key=api_key, model=call.model)
+
+        elif provider == "Google":
+            api_key = config.get(CONF_API_KEY)
+            provider_instance = Google(
+                self.hass,
+                api_key=api_key,
+                model=call.model,
+                endpoint={"base_url": ENDPOINT_GOOGLE},
+            )
+
+        elif provider == "Groq":
+            api_key = config.get(CONF_API_KEY)
+            provider_instance = Groq(self.hass, api_key=api_key, model=call.model)
+
+        elif provider == "LocalAI":
+            ip_address = config.get(CONF_IP_ADDRESS)
+            port = config.get(CONF_PORT)
+            https = config.get(CONF_HTTPS, False)
+
+            provider_instance = LocalAI(
+                self.hass,
+                api_key="",
+                model=call.model,
+                endpoint={"ip_address": ip_address, "port": port, "https": https},
+            )
+
+        elif provider == "Ollama":
+            ip_address = config.get(CONF_IP_ADDRESS)
+            port = config.get(CONF_PORT)
+            https = config.get(CONF_HTTPS, False)
+
+            provider_instance = Ollama(
+                self.hass,
+                api_key="",
+                model=call.model,
+                endpoint={
+                    "ip_address": ip_address,
+                    "port": port,
+                    "https": https,
+                    "keep_alive": config.get(CONF_KEEP_ALIVE, 5),
+                    "context_window": config.get(CONF_CONTEXT_WINDOW, 2048),
+                },
+            )
+
+        elif provider == "Custom OpenAI":
+            api_key = config.get(CONF_API_KEY)
+            endpoint = config.get(CONF_CUSTOM_OPENAI_ENDPOINT)
+            provider_instance = OpenAI(
+                self.hass,
+                api_key=api_key,
+                model=call.model,
+                endpoint={"base_url": endpoint},
+            )
+
+        elif provider == "AWS Bedrock":
+            provider_instance = AWSBedrock(
+                self.hass,
+                aws_access_key_id=config.get(CONF_AWS_ACCESS_KEY_ID),
+                aws_secret_access_key=config.get(CONF_AWS_SECRET_ACCESS_KEY),
+                aws_region_name=config.get(CONF_AWS_REGION_NAME),
+                model=call.model,
+            )
+
+        elif provider == "OpenWebUI":
+            ip_address = config.get(CONF_IP_ADDRESS)
+            port = config.get(CONF_PORT)
+            https = config.get(CONF_HTTPS, False)
+            api_key = config.get(CONF_API_KEY)
+
+            endpoint = ENDPOINT_OPENWEBUI.format(
+                ip_address=ip_address,
+                port=port,
+                protocol="https" if https else "http",
+            )
+
+            provider_instance = OpenAI(
+                self.hass,
+                api_key=api_key,
+                model=call.model,
+                endpoint={"base_url": endpoint},
+            )
+
+        elif provider == "OpenRouter":
+            api_key = config.get(CONF_API_KEY)
+            provider_instance = OpenAI(
+                self.hass,
+                api_key=api_key,
+                model=call.model,
+                endpoint={"base_url": ENDPOINT_OPENROUTER},
+            )
+
+        else:
+            raise ServiceValidationError("invalid_provider")
 
         try:
-            if provider == "OpenAI":
-                api_key = config.get(CONF_API_KEY)
-                provider_instance = OpenAI(
-                    hass=self.hass, api_key=api_key, model=call.model
-                )
-
-            elif provider == "Azure":
-                api_key = config.get(CONF_API_KEY)
-                endpoint = config.get(CONF_AZURE_BASE_URL)
-                deployment = config.get(CONF_AZURE_DEPLOYMENT)
-                version = config.get(CONF_AZURE_VERSION)
-
-                provider_instance = AzureOpenAI(
-                    self.hass,
-                    api_key=api_key,
-                    model=call.model,
-                    endpoint={
-                        "base_url": ENDPOINT_AZURE,
-                        "endpoint": endpoint,
-                        "deployment": deployment,
-                        "api_version": version,
-                    },
-                )
-
-            elif provider == "Anthropic":
-                api_key = config.get(CONF_API_KEY)
-                provider_instance = Anthropic(
-                    self.hass, api_key=api_key, model=call.model
-                )
-
-            elif provider == "Google":
-                api_key = config.get(CONF_API_KEY)
-                provider_instance = Google(
-                    self.hass,
-                    api_key=api_key,
-                    model=call.model,
-                    endpoint={"base_url": ENDPOINT_GOOGLE},
-                )
-
-            elif provider == "Groq":
-                api_key = config.get(CONF_API_KEY)
-                provider_instance = Groq(self.hass, api_key=api_key, model=call.model)
-
-            elif provider == "LocalAI":
-                ip_address = config.get(CONF_IP_ADDRESS)
-                port = config.get(CONF_PORT)
-                https = config.get(CONF_HTTPS, False)
-
-                provider_instance = LocalAI(
-                    self.hass,
-                    api_key="",
-                    model=call.model,
-                    endpoint={"ip_address": ip_address, "port": port, "https": https},
-                )
-
-            elif provider == "Ollama":
-                ip_address = config.get(CONF_IP_ADDRESS)
-                port = config.get(CONF_PORT)
-                https = config.get(CONF_HTTPS, False)
-
-                provider_instance = Ollama(
-                    self.hass,
-                    api_key="",
-                    model=call.model,
-                    endpoint={
-                        "ip_address": ip_address,
-                        "port": port,
-                        "https": https,
-                        "keep_alive": config.get(CONF_KEEP_ALIVE, 5),
-                        "context_window": config.get(CONF_CONTEXT_WINDOW, 2048),
-                    },
-                )
-
-            elif provider == "Custom OpenAI":
-                api_key = config.get(CONF_API_KEY)
-                endpoint = config.get(CONF_CUSTOM_OPENAI_ENDPOINT)
-                provider_instance = OpenAI(
-                    self.hass,
-                    api_key=api_key,
-                    model=call.model,
-                    endpoint={"base_url": endpoint},
-                )
-
-            elif provider == "AWS Bedrock":
-                provider_instance = AWSBedrock(
-                    self.hass,
-                    aws_access_key_id=config.get(CONF_AWS_ACCESS_KEY_ID),
-                    aws_secret_access_key=config.get(CONF_AWS_SECRET_ACCESS_KEY),
-                    aws_region_name=config.get(CONF_AWS_REGION_NAME),
-                    model=call.model,
-                )
-
-            elif provider == "OpenWebUI":
-                ip_address = config.get(CONF_IP_ADDRESS)
-                port = config.get(CONF_PORT)
-                https = config.get(CONF_HTTPS, False)
-                api_key = config.get(CONF_API_KEY)
-
-                endpoint = ENDPOINT_OPENWEBUI.format(
-                    ip_address=ip_address,
-                    port=port,
-                    protocol="https" if https else "http",
-                )
-
-                provider_instance = OpenAI(
-                    self.hass,
-                    api_key=api_key,
-                    model=call.model,
-                    endpoint={"base_url": endpoint},
-                )
-
-            elif provider == "OpenRouter":
-                api_key = config.get(CONF_API_KEY)
-                provider_instance = OpenAI(
-                    self.hass,
-                    api_key=api_key,
-                    model=call.model,
-                    endpoint={"base_url": ENDPOINT_OPENROUTER},
-                )
-
-            else:
-                raise ServiceValidationError("invalid_provider")
-
             # Make call to provider
             response_text = await provider_instance.vision_request(call)
-
-            if call.generate_title:
-                call.message = (
-                    call.memory.title_prompt
-                    + "Create a title for this text: "
-                    + response_text
-                )
-                gen_title = await provider_instance.title_request(call)
-
-                return {
-                    "title": re.sub(r"[^a-zA-Z0-9ŽžÀ-ÿ\s]", "", gen_title),
-                    "response_text": response_text,
-                }
-            else:
-                return {"response_text": response_text}
-
         except Exception as e:
             _LOGGER.error(f"Provider {provider} failed: {e}")
-            # Only try fallback if not already tried and fallback is set and different
+            # Only try fallback if not already tried and fallback is set and different from current
             if (
                 fallback_provider
                 and not _is_fallback_retry
@@ -335,7 +312,34 @@ class Request:
                 call.model = None
                 return await self.call(call, _is_fallback_retry=True)
             else:
-                raise ServiceValidationError("Provider call failed")
+                response_text = "Couldn't generate content. Check logs for details."
+        try:
+            if call.generate_title:
+                call.message = (
+                    call.memory.title_prompt
+                    + "Create a title for this text: "
+                    + response_text
+                )
+                gen_title = await provider_instance.title_request(call)
+        except Exception as e:
+            _LOGGER.error(f"Provider {provider} failed: {e}")
+            # Only try fallback if not already tried and fallback is set and different from current
+            if (
+                fallback_provider
+                and not _is_fallback_retry
+                and fallback_provider != call.provider
+            ):
+                _LOGGER.info(f"Trying fallback provider: {fallback_provider}")
+                call.provider = fallback_provider
+                call.model = None
+                return await self.call(call, _is_fallback_retry=True)
+            else:
+                gen_title = "Event Detected"
+
+        return {
+            "title": re.sub(r"[^a-zA-Z0-9ŽžÀ-ÿ\s]", "", gen_title),
+            "response_text": response_text,
+        }
 
     def add_frame(self, base64_image, filename):
         self.base64_images.append(base64_image)
@@ -784,11 +788,6 @@ class Google(Provider):
     def _generate_headers(self) -> dict:
         return {"content-type": "application/json"}
 
-    @retry(
-        wait=wait_fixed(5) + wait_random_exponential(multiplier=5, max=60),
-        stop=stop_after_attempt(5),
-        before_sleep=before_sleep_log(_LOGGER, logging.ERROR),
-    )
     async def _make_request(self, data) -> str:
         try:
             endpoint = self.endpoint.get("base_url").format(
@@ -803,7 +802,6 @@ class Google(Provider):
         except Exception as e:
             _LOGGER.error(f"Error: {e}")
             raise e
-            # return "Event Detected" # this would still make the automation succeed, but the user will see an error in log, and event calendar will show the event has no further summary.
 
         return response_text
 
