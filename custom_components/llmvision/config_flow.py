@@ -57,7 +57,7 @@ from .const import (
     ENDPOINT_OPENROUTER,
     CONF_CONTEXT_WINDOW,
     CONF_KEEP_ALIVE,
-    DEFAULT_SUMMARY_PROMPT,
+    VERSION_AZURE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -601,7 +601,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 CONF_AZURE_DEPLOYMENT, default="deployment"
                             ): str,
                             vol.Required(
-                                CONF_AZURE_VERSION, default="2024-10-01-preview"
+                                CONF_AZURE_VERSION, default=VERSION_AZURE
                             ): str,
                         }
                     ),
@@ -645,7 +645,18 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.init_info = self._get_reconfigure_entry().data
             # Re-nest the flat config entry data into sections
             suggested = {
-                "connection_section": {CONF_API_KEY: self.init_info.get(CONF_API_KEY)},
+                "connection_section": {
+                    CONF_API_KEY: self.init_info.get(CONF_API_KEY),
+                    CONF_AZURE_BASE_URL: self.init_info.get(
+                        CONF_AZURE_BASE_URL, "https://domain.openai.azure.com/"
+                    ),
+                    CONF_AZURE_DEPLOYMENT: self.init_info.get(
+                        CONF_AZURE_DEPLOYMENT, "deployment"
+                    ),
+                    CONF_AZURE_VERSION: self.init_info.get(
+                        CONF_AZURE_VERSION, VERSION_AZURE
+                    ),
+                },
                 "model_section": {
                     CONF_DEFAULT_MODEL: self.init_info.get(
                         CONF_DEFAULT_MODEL, DEFAULT_AZURE_MODEL
