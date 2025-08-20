@@ -1,4 +1,5 @@
 import aiosqlite
+import shutil
 import datetime
 import uuid
 import os
@@ -17,6 +18,7 @@ from homeassistant.components.calendar import (
 )
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
+from functools import partial
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,7 +45,7 @@ class Timeline(CalendarEntity):
 
         # Path to the JSON file where events are stored
         self._db_path = os.path.join(self.hass.config.path(DOMAIN), "events.db")
-        self._file_path = self.hass.config.path(f"www/{DOMAIN}")
+        self._file_path = self.hass.config.path(f"media/{DOMAIN}/snapshots")
         # Ensure the directory exists
         os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
         os.makedirs(self._file_path, exist_ok=True)
@@ -58,30 +60,6 @@ class Timeline(CalendarEntity):
 
     async def _migrate(self):
         """Handles migration for events.db (current v3)"""
-        # v2 -> v3: Add "today_summary" column to events.db if it doesn't exist
-        try:
-            async with aiosqlite.connect(self._db_path) as db:
-                async with db.execute(
-                    """
-                    PRAGMA table_info(events)
-                """
-                ) as cursor:
-                    columns = await cursor.fetchall()
-                    column_names = [column[1] for column in columns]
-                    if "today_summary" not in column_names:
-                        _LOGGER.info(
-                            "Migrating events.db to include today_summary column"
-                        )
-                        await db.execute(
-                            """
-                            ALTER TABLE events ADD COLUMN today_summary TEXT
-                        """
-                        )
-                        await db.commit()
-                        _LOGGER.info("Migration complete")
-        except aiosqlite.Error as e:
-            _LOGGER.error(f"Error migrating events.db: {e}")
-
         # v1 -> v2: Migrate events from events.json to events.db
         old_db_path = os.path.join(self.hass.config.path(DOMAIN), "events.json")
         if os.path.exists(old_db_path):
@@ -109,6 +87,64 @@ class Timeline(CalendarEntity):
                 _LOGGER.info(f"Migrated {event_counter} events")
             _LOGGER.info("Migration complete, deleting events.json")
             os.remove(old_db_path)
+        # v2 -> v3: Add "today_summary" column to events.db if it doesn't exist
+        try:
+            async with aiosqlite.connect(self._db_path) as db:
+                async with db.execute(
+                    """
+                    PRAGMA table_info(events)
+                """
+                ) as cursor:
+                    columns = await cursor.fetchall()
+                    column_names = [column[1] for column in columns]
+                    if "today_summary" not in column_names:
+                        _LOGGER.info(
+                            "Migrating events.db to include today_summary column"
+                        )
+                        await db.execute(
+                            """
+                            ALTER TABLE events ADD COLUMN today_summary TEXT
+                        """
+                        )
+                        await db.commit()
+                        _LOGGER.info("Migration complete")
+        except aiosqlite.Error as e:
+            _LOGGER.error(f"Error migrating events.db: {e}")
+
+        # v3 -> v4: Migrate image paths to /media/llmvision/snapshots from /www/llmvision
+        try:
+            # Move images to new location
+            # Ensure dir exists
+            await self.hass.loop.run_in_executor(
+                None,
+                partial(
+                    os.makedirs,
+                    self.hass.config.path("media/llmvision/snapshots"),
+                    exist_ok=True,
+                ),
+            )
+            src_dir = self.hass.config.path("www/llmvision")
+            dst_dir = self.hass.config.path("media/llmvision/snapshots")
+            if os.path.exists(src_dir):
+                for filename in await self.hass.loop.run_in_executor(
+                    None, partial(os.listdir, src_dir)
+                ):
+                    src_file = os.path.join(src_dir, filename)
+                    dst_file = os.path.join(dst_dir, filename)
+                    if os.path.isfile(src_file):
+                        await self.hass.loop.run_in_executor(
+                            None, shutil.move, src_file, dst_file
+                        )
+
+            async with aiosqlite.connect(self._db_path) as db:
+                await db.execute(
+                    """
+                    UPDATE events SET key_frame = REPLACE(key_frame, '/www/llmvision', '/media/llmvision/snapshots')
+                """
+                )
+                await db.commit()
+        except aiosqlite.Error as e:
+            _LOGGER.error(f"Error migrating image paths in events.db: {e}")
 
     @property
     def extra_state_attributes(self):
