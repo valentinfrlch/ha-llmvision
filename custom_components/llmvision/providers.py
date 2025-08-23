@@ -505,7 +505,7 @@ class OpenAI(Provider):
                 "model": self.model,
                 "messages": [{"role": "user", "content": [{"type": "text", "text": "Hi"}]}],
                 "max_completion_tokens": 1,
-                "temperature": 0.5
+                "temperature": 1.0
             }
             await self._post(url=self.endpoint.get('base_url'), headers=headers, data=data)
         else:
