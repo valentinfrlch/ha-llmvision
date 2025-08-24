@@ -667,7 +667,7 @@ action:
                         title: "{{ label }} {{ notification_time }}"
                         message: "{{response.response_text}}"
                         data:
-                          image: "{{response.key_frame.replace('/config/www/','/local/') }}"
+                          image: "{{response.key_frame.replace('/config/media', '/media') }}"
                           url: !input tap_navigate #iOS
                           clickAction: !input tap_navigate #Android
                           tag: "{{tag}}"
@@ -691,7 +691,7 @@ action:
                           actions:
                           - action: 'URI'
                             title: 'See Snapshot'
-                            uri: "{{response.key_frame.replace('/config/www/','/local/') }}"
+                            uri: "{{response.key_frame.replace('/config/media', '/media') }}"
 
             - conditions:
                 - condition: template
@@ -724,7 +724,7 @@ action:
                             actions:
                             - action: 'URI'
                               title: 'See Snapshot'
-                              uri: "{{response.key_frame.replace('/config/www/','/local/') }}"
+                              uri: "{{response.key_frame.replace('/config/media', '/media') }}"
 
 
       - if:
