@@ -150,6 +150,14 @@ class Request:
         entry_id = call.provider
         config = self.hass.data.get(DOMAIN).get(entry_id)
 
+        # Check config exists
+        entry_id = call.provider
+        config = self.hass.data.get(DOMAIN).get(entry_id)
+        if config is None:
+            raise ServiceValidationError(
+                f"Provider config not found for entry_id: {entry_id}"
+            )
+
         provider = Request.get_provider(self.hass, entry_id)
         api_key = config.get(CONF_API_KEY)
         model = getattr(call, "model", None)
@@ -159,7 +167,7 @@ class Request:
         call.base64_images = self.base64_images
         call.filenames = self.filenames
 
-        self.validate(call)  # TODO: Skip validation for text only requests
+        self.validate(call)
 
         # Get fallback provider from settings
         settings_entry = None
@@ -169,9 +177,7 @@ class Request:
                 break
         _LOGGER.debug("Settings entry: %s", settings_entry)
         fallback_provider = (
-            settings_entry.get("fallback_provider", None)
-            if settings_entry
-            else None
+            settings_entry.get("fallback_provider", None) if settings_entry else None
         )
         _LOGGER.debug("Fallback provider: %s", fallback_provider)
 
@@ -302,8 +308,10 @@ class Request:
         except Exception as e:
             _LOGGER.error(f"Provider {provider} failed: {e}")
             # Only try fallback if not already tried and fallback is set and different from current
+            print(f"Fallback provider: {fallback_provider}")
             if (
                 fallback_provider
+                and fallback_provider != "no_fallback"
                 and not _is_fallback_retry
                 and fallback_provider != call.provider
             ):
@@ -326,6 +334,7 @@ class Request:
             # Only try fallback if not already tried and fallback is set and different from current
             if (
                 fallback_provider
+                and fallback_provider != "no_fallback"
                 and not _is_fallback_retry
                 and fallback_provider != call.provider
             ):
@@ -793,16 +802,22 @@ class Google(Provider):
             endpoint = self.endpoint.get("base_url").format(
                 model=self.model, api_key=self.api_key
             )
-
             headers = self._generate_headers()
             response = await self._post(url=endpoint, headers=headers, data=data)
-            response_text = (
-                response.get("candidates")[0].get("content").get("parts")[0].get("text")
-            )
+            candidates = response.get("candidates")
+            if not candidates or not isinstance(candidates, list) or not candidates[0]:
+                raise ServiceValidationError(
+                    "No candidates were returned from Google API"
+                )
+            content = candidates[0].get("content")
+            if not content or not content.get("parts") or not content.get("parts")[0]:
+                raise ServiceValidationError(
+                    "No content parts were returned from Google API"
+                )
+            response_text = content.get("parts")[0].get("text")
         except Exception as e:
             _LOGGER.error(f"Error: {e}")
             raise e
-
         return response_text
 
     def _prepare_vision_data(self, call: dict) -> dict:
