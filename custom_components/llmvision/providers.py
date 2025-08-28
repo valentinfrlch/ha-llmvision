@@ -321,6 +321,7 @@ class Request:
                 return await self.call(call, _is_fallback_retry=True)
             else:
                 response_text = "Couldn't generate content. Check logs for details."
+        gen_title = None
         try:
             if call.generate_title:
                 call.message = (
@@ -344,11 +345,11 @@ class Request:
                 return await self.call(call, _is_fallback_retry=True)
             else:
                 gen_title = "Event Detected"
-
-        return {
-            "title": re.sub(r"[^a-zA-Z0-9ŽžÀ-ÿ\s]", "", gen_title),
-            "response_text": response_text,
-        }
+        result = {}
+        if gen_title is not None:
+            result["title"] = re.sub(r"[^a-zA-Z0-9ŽžÀ-ÿ\s]", "", gen_title)
+        result["response_text"] = response_text
+        return result
 
     def add_frame(self, base64_image, filename):
         self.base64_images.append(base64_image)
