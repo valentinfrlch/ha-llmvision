@@ -442,7 +442,7 @@ class Provider(ABC):
         return await self._make_request(data)
 
     async def title_request(self, call: dict) -> str:
-        # call.max_tokens = 1000
+        call.max_tokens = 4096
         data = self._prepare_text_data(call)
         return await self._make_request(data)
 
@@ -587,9 +587,7 @@ class OpenAI(Provider):
                 "model": self.model,
                 "messages": [
                     {"role": "user", "content": [{"type": "text", "text": "Hi"}]}
-                ],
-                "max_completion_tokens": 1,
-                "temperature": 0.5,
+                ]
             }
             await self._post(
                 url=self.endpoint.get("base_url"), headers=headers, data=data
