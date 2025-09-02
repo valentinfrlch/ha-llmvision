@@ -1,0 +1,420 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Konfiguracja LLM Vision",
+                "description": "Wybierz dostawcę, którego chcesz skonfigurować."
+            },
+            "localai": {
+                "title": "Połącz z serwerem LocalAI",
+                "description": "Podaj adres IP i port swojego serwera LocalAI.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Połączenie",
+                        "description": "Połączenie z serwerem",
+                        "data": {
+                            "ip_address": "Adres IP",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Użyj HTTPS dla bezpiecznych połączeń"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Ustaw domyślne parametry modelu",
+                        "data": {
+                            "default_model": "Domyślny model",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
+                            "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                        }
+                    }
+                }
+            },
+            "ollama": {
+                "title": "Skonfiguruj Ollama",
+                "description": "Podaj adres IP i port swojego serwera Ollama.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Połączenie",
+                        "description": "Połączenie z serwerem",
+                        "data": {
+                            "ip_address": "Adres IP",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Użyj HTTPS dla bezpiecznych połączeń"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Ustaw domyślne parametry modelu",
+                        "data": {
+                            "default_model": "Domyślny model",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
+                            "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Zaawansowane",
+                        "description": "Zaawansowane parametry modelu",
+                        "data": {
+                            "context_window": "Długość kontekstu",
+                            "keep_alive": "Utrzymuj aktywność"
+                        },
+                        "data_description": {
+                            "context_window": "Ustala rozmiar okna kontekstowego używanego do generowania następnego tokena.",
+                            "keep_alive": "Kontroluje, jak długo model pozostanie załadowany w pamięci po zakończeniu żądania. Domyślnie: 5m (5 minut), -1: utrzymuj w pamięci na czas nieokreślony, 0: natychmiastowe zwolnienie"
+                        }
+                    }
+                }
+            },
+            "openai": {
+                "title": "Skonfiguruj OpenAI",
+                "description": "Podaj poprawny klucz API OpenAI.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Połączenie",
+                        "description": "Autoryzacja OpenAI",
+                        "data": {
+                            "api_key": "Klucz API"
+                        },
+                        "data_description": {
+                            "api_key": "Upewnij się, że dodałeś środki do swojego konta OpenAI."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Ustaw domyślne parametry modelu",
+                        "data": {
+                            "default_model": "Domyślny model",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
+                            "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                        }
+                    }
+                }
+            },
+            "azure": {
+                "title": "Skonfiguruj Azure",
+                "description": "Podaj poprawny klucz API Azure, adres URL, wdrożenie i wersję API.\nAdres URL musi mieć format `https://domain.openai.azure.com/` łącznie z ukośnikiem na końcu.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Połączenie",
+                        "description": "Autoryzacja Azure",
+                        "data": {
+                            "api_key": "Klucz API",
+                            "azure_base_url": "Adres URL",
+                            "azure_deployment": "Wdrożenie",
+                            "azure_version": "Wersja API"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Ustaw domyślne parametry modelu",
+                        "data": {
+                            "default_model": "Domyślny model",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
+                            "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                        }
+                    }
+                }
+            },
+            "anthropic": {
+                "title": "Skonfiguruj Anthropic Claude",
+                "description": "Podaj poprawny klucz API Anthropic.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Połączenie",
+                        "description": "Autoryzacja Anthropic",
+                        "data": {
+                            "api_key": "Klucz API"
+                        },
+                        "data_description": {
+                            "api_key": "Upewnij się, że dodałeś środki do swojego konta Anthropic."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Ustaw domyślne parametry modelu",
+                        "data": {
+                            "default_model": "Domyślny model",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
+                            "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                        }
+                    }
+                }
+            },
+            "google": {
+                "title": "Skonfiguruj Google Gemini",
+                "description": "Podaj poprawny klucz API Google Gemini.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Połączenie",
+                        "description": "Autoryzacja Google",
+                        "data": {
+                            "api_key": "Klucz API"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Ustaw domyślne parametry modelu",
+                        "data": {
+                            "default_model": "Domyślny model",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
+                            "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                        }
+                    }
+                }
+            },
+            "groq": {
+                "title": "Skonfiguruj Groq",
+                "description": "Podaj poprawny klucz API Groq.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Połączenie",
+                        "description": "Autoryzacja Groq",
+                        "data": {
+                            "api_key": "Klucz API"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Ustaw domyślne parametry modelu",
+                        "data": {
+                            "default_model": "Domyślny model",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
+                            "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                        }
+                    }
+                }
+            },
+            "custom_openai": {
+                "title": "Skonfiguruj niestandardowego dostawcę OpenAI",
+                "description": "**Ważne**: Działa tylko jeśli API jest zgodne z API OpenAI. Jeśli API nie wymaga klucza API, wprowadź wartość zastępczą. Punkt końcowy musi mieć następujący format: `http(s)://baseURL(:port)/some/endpoint`",
+                "sections": {
+                    "connection_section": {
+                        "name": "Połączenie",
+                        "description": "Niestandardowa autoryzacja OpenAI",
+                        "data": {
+                            "custom_openai_endpoint": "Niestandardowy punkt końcowy",
+                            "api_key": "Klucz API"
+                        },
+                        "data_description": {
+                            "endpoint": "Punkt końcowy API w formacie: http(s)://baseURL(:port)/some/endpoint",
+                            "api_key": "Klucz API lub 'openai', jeśli żaden nie jest wymagany."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Ustaw domyślne parametry modelu",
+                        "data": {
+                            "default_model": "Domyślny model",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
+                            "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                        }
+                    }
+                }
+            },
+            "aws_bedrock": {
+                "title": "Skonfiguruj dostawcę AWS Bedrock",
+                "description": "**Ważne**: Obecnie obsługiwane są tylko następujące modele: Nova, Anthropic Claude",
+                "sections": {
+                    "connection_section": {
+                        "name": "Połączenie",
+                        "description": "Autoryzacja AWS",
+                        "data": {
+                            "aws_access_key_id": "Klucz dostępu",
+                            "aws_secret_access_key": "Klucz tajny",
+                            "aws_region_name": "Nazwa regionu"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Ustaw domyślne parametry modelu",
+                        "data": {
+                            "default_model": "Domyślny model",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
+                            "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                        }
+                    }
+                }
+            },
+            "openwebui": {
+                "title": "Skonfiguruj dostawcę Open WebUI",
+                "description": "Podaj klucz API (token JWT), adres IP, port, HTTP(S) i domyślny model.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Połączenie",
+                        "description": "Autoryzacja Open WebUI",
+                        "data": {
+                            "api_key": "Klucz API (token JWT)",
+                            "ip_address": "Adres IP",
+                            "port": "Port",
+                            "https": "Użyj HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Użyj HTTPS dla bezpiecznych połączeń, jeśli twój serwer to obsługuje."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Ustaw domyślne parametry modelu",
+                        "data": {
+                            "default_model": "Domyślny model",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
+                            "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                        }
+                    }
+                }
+            },
+            "openrouter": {
+                "title": "Skonfiguruj OpenRouter",
+                "description": "OpenRouter to platforma, która zapewnia dostęp do różnych modeli AI. Możesz jej użyć do połączenia z modelami takimi jak OpenAI, Anthropic i innymi.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Połączenie",
+                        "description": "Autoryzacja OpenRouter",
+                        "data": {
+                            "api_key": "Klucz API"
+                        },
+                        "data_description": {
+                            "api_key": "Twój klucz API OpenRouter. Upewnij się, że dodałeś środki do swojego konta OpenRouter."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Ustaw domyślne parametry modelu",
+                        "data": {
+                            "default_model": "Domyślny model",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
+                            "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "title": "Ustawienia",
+                "description": "Skonfiguruj integrację LLM Vision. Ten wpis jest wymagany przed skonfigurowaniem innych dostawców. Jeśli chcesz użyć domyślnych ustawień, po prostu naciśnij 'Wyślij'.",
+                "sections": {
+                    "general_section": {
+                        "name": "Ogólne",
+                        "description": "Ustaw preferowanego dostawcę do użycia, gdy wybrany dostawca jest niedostępny.",
+                        "data": {
+                            "fallback_provider": "Dostawca zapasowy"
+                        },
+                        "data_description": {
+                            "fallback_provider": "LLM Vision spróbuje ponownie wysłać żądanie z wybranym dostawcą, jeśli bieżący dostawca zawiedzie."
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "Monity systemowe",
+                        "description": "Monity systemowe są używane do zmiany sposobu, w jaki model się zachowuje i odpowiada.",
+                        "data": {
+                            "system_prompt": "Monit systemowy",
+                            "title_prompt": "Monit tytułowy"
+                        },
+                        "data_description": {
+                            "system_prompt": "Użyj monitu systemowego, aby zmienić sposób, w jaki model się zachowuje i odpowiada.",
+                            "title_prompt": "Instrukcja podana modelowi w celu wygenerowania tytułu."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Oś czasu",
+                        "description": "Oś czasu przechowuje dzisiejsze wydarzenia do wyświetlenia za pomocą karty LLM Vision na twoim pulpicie.",
+                        "data": {
+                            "retention_time": "Czas przechowywania",
+                            "timeline_today_summary": "Podsumowanie osi czasu",
+                            "timeline_summary_prompt": "Monit podsumowujący na dzisiejsze wydarzenia"
+                        },
+                        "data_description": {
+                            "retention_time": "Automatyczne usuwanie wydarzeń po (dniach). Ustaw na 0, aby wyłączyć automatyczne usuwanie.",
+                            "timeline_today_summary": "Włącz podsumowanie osi czasu, aby automatycznie wygenerować podsumowanie dzisiejszych wydarzeń.",
+                            "timeline_summary_prompt": "Instrukcja podana modelowi w celu wygenerowania podsumowania dzisiejszych wydarzeń."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Pamięć (Beta)",
+                        "description": "Zawartość w pamięci synchronizuje się między dostawcami i jest używana do zapewnienia dodatkowego kontekstu dla modelu.",
+                        "data": {
+                            "memory_paths": "Ścieżka pliku obrazu",
+                            "memory_strings": "Opis obrazu"
+                        },
+                        "data_description": {
+                            "memory_paths": "Podaj ścieżkę do pliku obrazu.",
+                            "memory_strings": "Podaj opis obrazu (np.: 'To jest Cookie, mój pies'). Obrazy i opisy muszą być w tej samej kolejności, a opisów musi być tyle, co obrazów."
+                        }
+                    }
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "Nie można połączyć się z serwerem. Sprawdź swój klucz API lub adres IP i port",
+            "empty_api_key": "Nieprawidłowy klucz API",
+            "invalid_provider": "Nieprawidłowy wybrany dostawca",
+            "memory_not_supported": "Ten dostawca nie obsługuje pamięci",
+            "invalid_image_path": "Jedna lub więcej ścieżek do obrazów jest nieprawidłowa",
+            "mismatched_lengths": "Liczba ścieżek do obrazów i opisów musi być zgodna"
+        },
+        "abort": {
+            "unknown_provider": "Nieznany dostawca",
+            "reconfigure_successful": "Ustawienia zostały pomyślnie zapisane"
+        }
+    }
+}

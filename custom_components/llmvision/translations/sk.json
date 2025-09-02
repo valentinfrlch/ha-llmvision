@@ -319,6 +319,36 @@
                     }
                 }
             },
+            "openrouter": {
+                "title": "Konfigurácia OpenRouter",
+                "description": "OpenRouter je platforma, ktorá poskytuje prístup k rôznym AI modelom. Môžete ju použiť na pripojenie k modelom ako OpenAI, Anthropic a ďalším.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Pripojenie",
+                        "description": "OpenRouter autentifikácia",
+                        "data": {
+                            "api_key": "API kľúč"
+                        },
+                        "data_description": {
+                            "api_key": "Váš OpenRouter API kľúč. Uistite sa, že ste si dobili kredit na svojom OpenRouter účte."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavte predvolené parametre modelu",
+                        "data": {
+                            "default_model": "Predvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
+                            "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Nastavenia",
                 "description": "Nakonfigurujte integráciu LLM Vision. Tento záznam je potrebný pred nastavením iných poskytovateľov. Ak chcete použiť predvolené nastavenia, stačí stlačiť 'Odoslať'.",

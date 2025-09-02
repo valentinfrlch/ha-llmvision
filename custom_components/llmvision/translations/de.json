@@ -319,6 +319,36 @@
                     }
                 }
             },
+            "openrouter": {
+                "title": "OpenRouter konfigurieren",
+                "description": "OpenRouter ist eine Plattform, die Zugang zu verschiedenen KI-Modellen bietet. Sie können damit Modelle wie OpenAI, Anthropic und mehr verbinden.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Verbindung",
+                        "description": "OpenRouter Authentifizierung",
+                        "data": {
+                            "api_key": "API-Key"
+                        },
+                        "data_description": {
+                            "api_key": "Ihr OpenRouter API-Key. Stellen Sie sicher, dass Ihr OpenRouter-Konto über Guthaben verfügt."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Standardmodell-Parameter festlegen",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
+                            "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Settings",
                 "description": "Configure the LLM Vision integration. This entry is required before setting up other providers. If you wish to use the default settings, just press 'Submit'.",

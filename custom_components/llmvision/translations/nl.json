@@ -1,0 +1,420 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "LLM Vision instellen",
+        "description": "Selecteer de provider die u wilt instellen."
+      },
+      "localai": {
+        "title": "Verbinden met uw LocalAI server",
+        "description": "Voer het IP-adres en de poort van uw LocalAI server in.",
+        "sections": {
+          "connection_section": {
+            "name": "Verbinding",
+            "description": "Serververbinding",
+            "data": {
+              "ip_address": "IP-adres",
+              "port": "Poort",
+              "https": "HTTPS"
+            },
+            "data_description": {
+              "https": "Gebruik HTTPS voor veilige verbindingen"
+            }
+          },
+          "model_section": {
+            "name": "Model",
+            "description": "Stel standaard modelparameters in",
+            "data": {
+              "default_model": "Standaardmodel",
+              "temperature": "Temperatuur",
+              "top_p": "Top P"
+            },
+            "data_description": {
+              "default_model": "Het standaardmodel dat wordt gebruikt wanneer geen ander model is gespecificeerd.",
+              "temperature": "Regelt de willekeurigheid van de uitvoer. Lagere waarden maken de uitvoer deterministischer.",
+              "top_p": "Regelt de diversiteit van de uitvoer. Lagere waarden maken de uitvoer gerichter."
+            }
+          }
+        }
+      },
+      "ollama": {
+        "title": "Ollama configureren",
+        "description": "Voer het IP-adres en de poort van uw Ollama server in.",
+        "sections": {
+          "connection_section": {
+            "name": "Verbinding",
+            "description": "Serververbinding",
+            "data": {
+              "ip_address": "IP-adres",
+              "port": "Poort",
+              "https": "HTTPS"
+            },
+            "data_description": {
+              "https": "Gebruik HTTPS voor veilige verbindingen"
+            }
+          },
+          "model_section": {
+            "name": "Model",
+            "description": "Stel standaard modelparameters in",
+            "data": {
+              "default_model": "Standaardmodel",
+              "temperature": "Temperatuur",
+              "top_p": "Top P"
+            },
+            "data_description": {
+              "default_model": "Het standaardmodel dat wordt gebruikt wanneer geen ander model is gespecificeerd.",
+              "temperature": "Regelt de willekeurigheid van de uitvoer. Lagere waarden maken de uitvoer deterministischer.",
+              "top_p": "Regelt de diversiteit van de uitvoer. Lagere waarden maken de uitvoer gerichter."
+            }
+          },
+          "advanced_section": {
+            "name": "Geavanceerd",
+            "description": "Geavanceerde modelparameters",
+            "data": {
+              "context_window": "Contextlengte",
+              "keep_alive": "Actief houden"
+            },
+            "data_description": {
+              "context_window": "Stelt de grootte in van het contextvenster dat wordt gebruikt om de volgende token te genereren.",
+              "keep_alive": "Regelt hoe lang het model in het geheugen geladen blijft na het verzoek. Standaard: 5m (5 minuten), -1: onbeperkt in geheugen houden, 0: direct ontladen"
+            }
+          }
+        }
+      },
+      "openai": {
+        "title": "OpenAI configureren",
+        "description": "Voer een geldige OpenAI API-sleutel in.",
+        "sections": {
+          "connection_section": {
+            "name": "Verbinding",
+            "description": "OpenAI authenticatie",
+            "data": {
+              "api_key": "API-sleutel"
+            },
+            "data_description": {
+              "api_key": "Zorg ervoor dat u tegoed aan uw OpenAI-account toevoegt."
+            }
+          },
+          "model_section": {
+            "name": "Model",
+            "description": "Stel standaard modelparameters in",
+            "data": {
+              "default_model": "Standaardmodel",
+              "temperature": "Temperatuur",
+              "top_p": "Top P"
+            },
+            "data_description": {
+              "default_model": "Het standaardmodel dat wordt gebruikt wanneer geen ander model is gespecificeerd.",
+              "temperature": "Regelt de willekeurigheid van de uitvoer. Lagere waarden maken de uitvoer deterministischer.",
+              "top_p": "Regelt de diversiteit van de uitvoer. Lagere waarden maken de uitvoer gerichter."
+            }
+          }
+        }
+      },
+      "azure": {
+        "title": "Azure configureren",
+        "description": "Voer een geldige Azure API-sleutel, basis-URL, implementatie en API-versie in.\nDe basis-URL moet het formaat `https://domein.openai.azure.com/` hebben, inclusief de afsluitende schuine streep.",
+        "sections": {
+          "connection_section": {
+            "name": "Verbinding",
+            "description": "Azure authenticatie",
+            "data": {
+              "api_key": "API-sleutel",
+              "azure_base_url": "Basis-URL",
+              "azure_deployment": "Implementatie",
+              "azure_version": "API-versie"
+            }
+          },
+          "model_section": {
+            "name": "Model",
+            "description": "Stel standaard modelparameters in",
+            "data": {
+              "default_model": "Standaardmodel",
+              "temperature": "Temperatuur",
+              "top_p": "Top P"
+            },
+            "data_description": {
+              "default_model": "Het standaardmodel dat wordt gebruikt wanneer geen ander model is gespecificeerd.",
+              "temperature": "Regelt de willekeurigheid van de uitvoer. Lagere waarden maken de uitvoer deterministischer.",
+              "top_p": "Regelt de diversiteit van de uitvoer. Lagere waarden maken de uitvoer gerichter."
+            }
+          }
+        }
+      },
+      "anthropic": {
+        "title": "Anthropic Claude configureren",
+        "description": "Voer een geldige Anthropic API-sleutel in.",
+        "sections": {
+          "connection_section": {
+            "name": "Verbinding",
+            "description": "Anthropic authenticatie",
+            "data": {
+              "api_key": "API-sleutel"
+            },
+            "data_description": {
+              "api_key": "Zorg ervoor dat u tegoed aan uw Anthropic-account toevoegt."
+            }
+          },
+          "model_section": {
+            "name": "Model",
+            "description": "Stel standaard modelparameters in",
+            "data": {
+              "default_model": "Standaardmodel",
+              "temperature": "Temperatuur",
+              "top_p": "Top P"
+            },
+            "data_description": {
+              "default_model": "Het standaardmodel dat wordt gebruikt wanneer geen ander model is gespecificeerd.",
+              "temperature": "Regelt de willekeurigheid van de uitvoer. Lagere waarden maken de uitvoer deterministischer.",
+              "top_p": "Regelt de diversiteit van de uitvoer. Lagere waarden maken de uitvoer gerichter."
+            }
+          }
+        }
+      },
+      "google": {
+        "title": "Google Gemini configureren",
+        "description": "Voer een geldige Google Gemini API-sleutel in.",
+        "sections": {
+          "connection_section": {
+            "name": "Verbinding",
+            "description": "Google authenticatie",
+            "data": {
+              "api_key": "API-sleutel"
+            }
+          },
+          "model_section": {
+            "name": "Model",
+            "description": "Stel standaard modelparameters in",
+            "data": {
+              "default_model": "Standaardmodel",
+              "temperature": "Temperatuur",
+              "top_p": "Top P"
+            },
+            "data_description": {
+              "default_model": "Het standaardmodel dat wordt gebruikt wanneer geen ander model is gespecificeerd.",
+              "temperature": "Regelt de willekeurigheid van de uitvoer. Lagere waarden maken de uitvoer deterministischer.",
+              "top_p": "Regelt de diversiteit van de uitvoer. Lagere waarden maken de uitvoer gerichter."
+            }
+          }
+        }
+      },
+      "groq": {
+        "title": "Groq configureren",
+        "description": "Voer een geldige Groq API-sleutel in.",
+        "sections": {
+          "connection_section": {
+            "name": "Verbinding",
+            "description": "Groq authenticatie",
+            "data": {
+              "api_key": "API-sleutel"
+            }
+          },
+          "model_section": {
+            "name": "Model",
+            "description": "Stel standaard modelparameters in",
+            "data": {
+              "default_model": "Standaardmodel",
+              "temperature": "Temperatuur",
+              "top_p": "Top P"
+            },
+            "data_description": {
+              "default_model": "Het standaardmodel dat wordt gebruikt wanneer geen ander model is gespecificeerd.",
+              "temperature": "Regelt de willekeurigheid van de uitvoer. Lagere waarden maken de uitvoer deterministischer.",
+              "top_p": "Regelt de diversiteit van de uitvoer. Lagere waarden maken de uitvoer gerichter."
+            }
+          }
+        }
+      },
+      "custom_openai": {
+        "title": "Aangepaste OpenAI-provider configureren",
+        "description": "**Belangrijk**: Werkt alleen als de API compatibel is met de OpenAI API. Als de API geen API-sleutel vereist, voer dan een dummywaarde in. Het eindpunt moet het volgende formaat hebben: `http(s)://baseURL(:poort)/een/eindpunt`",
+        "sections": {
+          "connection_section": {
+            "name": "Verbinding",
+            "description": "Aangepaste OpenAI authenticatie",
+            "data": {
+              "custom_openai_endpoint": "Aangepast eindpunt",
+              "api_key": "API-sleutel"
+            },
+            "data_description": {
+              "endpoint": "Het API-eindpunt met dit formaat: http(s)://baseURL(:poort)/een/eindpunt",
+              "api_key": "API-sleutel of 'openai', indien geen vereist is."
+            }
+          },
+          "model_section": {
+            "name": "Model",
+            "description": "Stel standaard modelparameters in",
+            "data": {
+              "default_model": "Standaardmodel",
+              "temperature": "Temperatuur",
+              "top_p": "Top P"
+            },
+            "data_description": {
+              "default_model": "Het standaardmodel dat wordt gebruikt wanneer geen ander model is gespecificeerd.",
+              "temperature": "Regelt de willekeurigheid van de uitvoer. Lagere waarden maken de uitvoer deterministischer.",
+              "top_p": "Regelt de diversiteit van de uitvoer. Lagere waarden maken de uitvoer gerichter."
+            }
+          }
+        }
+      },
+      "aws_bedrock": {
+        "title": "AWS Bedrock provider configureren",
+        "description": "**Belangrijk**: Dit ondersteunt momenteel alleen de volgende modellen: Nova, Anthropic Claude",
+        "sections": {
+          "connection_section": {
+            "name": "Verbinding",
+            "description": "AWS authenticatie",
+            "data": {
+              "aws_access_key_id": "Toegangssleutel",
+              "aws_secret_access_key": "Geheime sleutel",
+              "aws_region_name": "Regiocode"
+            }
+          },
+          "model_section": {
+            "name": "Model",
+            "description": "Stel standaard modelparameters in",
+            "data": {
+              "default_model": "Standaardmodel",
+              "temperature": "Temperatuur",
+              "top_p": "Top P"
+            },
+            "data_description": {
+              "default_model": "Het standaardmodel dat wordt gebruikt wanneer geen ander model is gespecificeerd.",
+              "temperature": "Regelt de willekeurigheid van de uitvoer. Lagere waarden maken de uitvoer deterministischer.",
+              "top_p": "Regelt de diversiteit van de uitvoer. Lagere waarden maken de uitvoer gerichter."
+            }
+          }
+        }
+      },
+      "openwebui": {
+        "title": "Open WebUI provider configureren",
+        "description": "Voer de API-sleutel (JWT-token), IP-adres, poort, HTTP(S) en standaardmodel in.",
+        "sections": {
+          "connection_section": {
+            "name": "Verbinding",
+            "description": "Open WebUI authenticatie",
+            "data": {
+              "api_key": "API-sleutel (JWT-token)",
+              "ip_address": "IP-adres",
+              "port": "Poort",
+              "https": "Gebruik HTTPS"
+            },
+            "data_description": {
+              "https": "Gebruik HTTPS voor veilige verbindingen als uw server dit ondersteunt."
+            }
+          },
+          "model_section": {
+            "name": "Model",
+            "description": "Stel standaard modelparameters in",
+            "data": {
+              "default_model": "Standaardmodel",
+              "temperature": "Temperatuur",
+              "top_p": "Top P"
+            },
+            "data_description": {
+              "default_model": "Het standaardmodel dat wordt gebruikt wanneer geen ander model is gespecificeerd.",
+              "temperature": "Regelt de willekeurigheid van de uitvoer. Lagere waarden maken de uitvoer deterministischer.",
+              "top_p": "Regelt de diversiteit van de uitvoer. Lagere waarden maken de uitvoer gerichter."
+            }
+          }
+        }
+      },
+      "openrouter": {
+        "title": "OpenRouter configureren",
+        "description": "OpenRouter is een platform dat toegang biedt tot verschillende AI-modellen. U kunt het gebruiken om verbinding te maken met modellen zoals OpenAI, Anthropic en meer.",
+        "sections": {
+          "connection_section": {
+            "name": "Verbinding",
+            "description": "OpenRouter authenticatie",
+            "data": {
+              "api_key": "API-sleutel"
+            },
+            "data_description": {
+              "api_key": "Uw OpenRouter API-sleutel. Zorg ervoor dat u tegoed toevoegt aan uw OpenRouter-account."
+            }
+          },
+          "model_section": {
+            "name": "Model",
+            "description": "Stel standaard modelparameters in",
+            "data": {
+              "default_model": "Standaardmodel",
+              "temperature": "Temperatuur",
+              "top_p": "Top P"
+            },
+            "data_description": {
+              "default_model": "Het standaardmodel dat wordt gebruikt wanneer geen ander model is gespecificeerd.",
+              "temperature": "Regelt de willekeurigheid van de uitvoer. Lagere waarden maken de uitvoer deterministischer.",
+              "top_p": "Regelt de diversiteit van de uitvoer. Lagere waarden maken de uitvoer gerichter."
+            }
+          }
+        }
+      },
+      "settings": {
+        "title": "Instellingen",
+        "description": "Configureer de LLM Vision integratie. Deze invoer is vereist voordat u andere providers instelt. Als u de standaardinstellingen wilt gebruiken, drukt u gewoon op 'Verzenden'.",
+        "sections": {
+          "general_section": {
+            "name": "Algemeen",
+            "description": "Stel de voorkeursprovider in die moet worden gebruikt wanneer de geselecteerde provider niet beschikbaar is.",
+            "data": {
+              "fallback_provider": "Terugvalprovider"
+            },
+            "data_description": {
+              "fallback_provider": "LLM Vision zal het verzoek opnieuw proberen met de geselecteerde provider als de huidige provider faalt."
+            }
+          },
+          "prompt_section": {
+            "name": "Systeem prompts",
+            "description": "Systeem prompts worden gebruikt om te veranderen hoe het model zich gedraagt en reageert.",
+            "data": {
+              "system_prompt": "Systeem prompt",
+              "title_prompt": "Titel prompt"
+            },
+            "data_description": {
+              "system_prompt": "Gebruik de systeem prompt om te veranderen hoe het model zich gedraagt en reageert.",
+              "title_prompt": "De instructie die aan het model wordt gegeven om een titel te genereren."
+            }
+          },
+          "timeline_section": {
+            "name": "Tijdlijn",
+            "description": "Tijdlijn slaat de gebeurtenissen van vandaag op om weer te geven met behulp van de LLM Vision-kaart op uw dashboard.",
+            "data": {
+              "retention_time": "Bewaartijd",
+              "timeline_today_summary": "Tijdlijn Samenvatting",
+              "timeline_summary_prompt": "Vandaag Samenvatting Prompt"
+            },
+            "data_description": {
+              "retention_time": "Gebeurtenissen automatisch verwijderen na (dagen). Stel in op 0 om automatisch verwijderen uit te schakelen.",
+              "timeline_today_summary": "Schakel tijdlijn samenvatting in om automatisch een samenvatting van de gebeurtenissen van vandaag te genereren.",
+              "timeline_summary_prompt": "De instructie die aan het model wordt gegeven om een samenvatting van de gebeurtenissen van vandaag te genereren."
+            }
+          },
+          "memory_section": {
+            "name": "Geheugen (Bèta)",
+            "description": "Inhoud in het geheugen synchroniseert tussen providers en wordt gebruikt om aanvullende context aan het model te bieden.",
+            "data": {
+              "memory_paths": "Afbeeldingsbestandspad",
+              "memory_strings": "Afbeeldingsbeschrijving"
+            },
+            "data_description": {
+              "memory_paths": "Geef het pad naar het afbeeldingsbestand op.",
+              "memory_strings": "Geef een beschrijving van de afbeelding (bijv.: 'Dit is Cookie, mijn hond'). Afbeeldingen en beschrijvingen moeten in dezelfde volgorde staan, en er moeten evenveel beschrijvingen als afbeeldingen zijn."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "handshake_failed": "Kon geen verbinding maken met de server. Controleer uw API-sleutel of IP en poort",
+      "empty_api_key": "Ongeldige API-sleutel",
+      "invalid_provider": "Ongeldige provider geselecteerd",
+      "memory_not_supported": "Deze provider ondersteunt geen geheugen",
+      "invalid_image_path": "Een of meer afbeeldingspaden zijn ongeldig",
+      "mismatched_lengths": "Het aantal afbeeldingspaden en beschrijvingen moet overeenkomen"
+    },
+    "abort": {
+      "unknown_provider": "Onbekende provider",
+      "reconfigure_successful": "Instellingen succesvol opgeslagen"
+    }
+  }
+}
