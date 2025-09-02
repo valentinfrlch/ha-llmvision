@@ -3,7 +3,7 @@
 # Take snapshot of triggered camera entity if using multiple cameras (? help needed)
 # Snooze blueprint or notifications
 blueprint:
-  name: AI Event Summary (v1.5.0)
+  name: AI Event Summary (v1.5.1)
   author: valentinfrlch
   homeassistant:
     min_version: 2024.10.0
@@ -159,7 +159,7 @@ blueprint:
                 integration: mobile_app
         notification_delivery:
           name: Notification Delivery
-          description: "Controls how notifications are delivered. \n \n **Dynamic** immediately notifies with a live preview and updates the notification silently with a summary once it is available. \n **Consolidated** Delays the notification until the event summary is generated. Use this if you're receiving multiple notifications for the same event."
+          description: "Controls how notifications are delivered. \n \n **Dynamic** immediately notifies with a Live Preview (iOS only) or Snapshot before analysis and updates the notification silently with a summary once it is available, or after analysis. \n **Consolidated** Delays the notification until the event summary is generated. Use this if you're receiving multiple notifications for the same event."
           default: 'Dynamic'
           selector:
             select:
@@ -168,7 +168,22 @@ blueprint:
                 - Consolidated
         preview_mode:
           name: Preview Mode
-          description: "Choose between a live preview or a snapshot of the event. The Snapshot of the last camera, if using multiple Camera Entities, will be used but the notification will be udated with the camera view that triggered the automation. \n\n **Important:** Live Preview is only supported on iOS."
+          description: |-
+            Choose between a live preview or a snapshot of the event before analysis.
+            > [!IMPORTANT]  
+            > **IMPORTANT**: Live Preview is only supported on iOS.
+          default: Snapshot
+          selector:
+            select:
+              options:
+                - Snapshot
+                - Live Preview
+        analysis_mode:
+          name: Analysis Mode
+          description: |-
+            Choose between a live preview or a snapshot of the event after analysis.
+            > [!IMPORTANT]  
+            > **IMPORTANT**: Live Preview is only supported on iOS.
           default: Snapshot
           selector:
             select:
@@ -185,7 +200,7 @@ blueprint:
                 - label:  No Time Added
                   value: ''
                 - label: 12 Hour
-                  value: 'at {{ now().strftime("%I:%M %p") }}'
+                  value: 'at {{ now().strftime("%-I:%M %p") }}'
                 - label: 24 Hour
                   value: 'at {{ now().strftime("%H:%M") }}'
         file_path:
@@ -322,8 +337,11 @@ blueprint:
           selector:
             boolean:
         tts_volume:
-          name: TTS Volume
-          description: Set TTS volume to device's current alarm volume or Max volume. ALARM VOLUME WILL IGNORE DO NOT DISTURB! Android Only
+          name: TTS Volume (Android Only)
+          description: |-
+            Set TTS volume to device's current alarm volume or Max volume. 
+            > [!NOTE]  
+            > ALARM VOLUME WILL IGNORE DO NOT DISTURB!
           default: 'notification_stream'
           selector:
             select:
@@ -405,12 +423,12 @@ blueprint:
           selector:
             action:
 
-
 variables:
   important: !input important
   remember: !input remember
   cooldown: !input cooldown
   preview_mode: !input preview_mode
+  analysis_mode: !input analysis_mode
   notify_devices: !input notify_device
   notification_delivery: !input notification_delivery
   notification_sticky: !input notification_sticky
@@ -449,6 +467,8 @@ variables:
   tag: >
     {{ camera_entity + int(as_timestamp(now()))|string }}
   label: Motion detected
+  camera_message: >
+    {{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize }}
   camera: >
     {{ camera_entities_list[0].replace("camera.", "").replace("_", " ") | title }}
   importance_prompt: >
@@ -542,7 +562,7 @@ action:
                             - action: "notify.{{ repeat.item }}"
                               data:
                                 title: "{{ label }} {{ notification_time }}"
-                                message: "{{camera}} has detected activity."
+                                message: "{{camera_message}} has detected activity."
                                 data:
                                   url: !input tap_navigate #iOS
                                   clickAction: !input tap_navigate #Android
@@ -581,7 +601,7 @@ action:
                             - action: "notify.{{ repeat.item }}"
                               data:
                                 title: "{{ label }} {{ notification_time }}"
-                                message: "{{camera}} has detected activity."
+                                message: "{{camera_message}} has detected activity."
                                 data:
                                   entity_id: "{{camera_entity}}"
                                   url: !input tap_navigate
@@ -633,6 +653,11 @@ action:
           value_template: '{{ not this.attributes.last_triggered or (now() - this.attributes.last_triggered).seconds
             > delay_notification }}'
         then:
+        - choose:
+            - conditions:
+                - condition: template
+                  value_template: "{{ analysis_mode=='Snapshot' }}"
+              sequence:
               - alias: "(Snapshot) Update notification on notify devices"
                 repeat:
                   for_each: "{{device_name_map}}"
@@ -642,7 +667,7 @@ action:
                         title: "{{ label }} {{ notification_time }}"
                         message: "{{response.response_text}}"
                         data:
-                          image: "{{response.key_frame.replace('/config/www/','/local/') }}"
+                          image: "{{response.key_frame.replace('/config/media', '/media') }}"
                           url: !input tap_navigate #iOS
                           clickAction: !input tap_navigate #Android
                           tag: "{{tag}}"
@@ -663,6 +688,44 @@ action:
                               name: !input notification_sound
                               volume: !input notification_volume
                               critical: '{{ notification_critical }}'
+                          actions:
+                          - action: 'URI'
+                            title: 'See Snapshot'
+                            uri: "{{response.key_frame.replace('/config/media', '/media') }}"
+
+            - conditions:
+                - condition: template
+                  value_template: "{{ analysis_mode=='Live Preview' }}"
+              sequence:
+
+                - alias: "Send Live Feed to notify devices"
+                  repeat:
+                    for_each: "{{device_name_map}}"
+                    sequence:
+                      - action: "notify.{{ repeat.item }}"
+                        data:
+                          title: "{{ label }} {{ notification_time }}"
+                          message: "{{ response.response_text }}"
+                          data:
+                            entity_id: "{{camera_entity}}"
+                            url: !input tap_navigate
+                            tag: "{{tag}}"
+                            group: !input notification_channel
+                            alert_once: true
+                            push:
+                              interruption-level: "{{importance.response_text|lower if importance is defined else 'active'}}"
+                              sound:
+                                name: !input notification_sound
+                                volume: !input notification_volume
+                                critical: '{{ notification_critical }}'
+                            # Priority options
+                            ttl: 0
+                            priority: high
+                            actions:
+                            - action: 'URI'
+                              title: 'See Snapshot'
+                              uri: "{{response.key_frame.replace('/config/media', '/media') }}"
+
 
       - if:
         - condition: template
