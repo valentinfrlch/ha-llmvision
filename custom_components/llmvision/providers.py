@@ -8,6 +8,8 @@ import inspect
 import re
 import json
 import base64
+from google import genai
+from google.genai import types
 from .const import (
     DOMAIN,
     CONF_API_KEY,
@@ -587,7 +589,7 @@ class OpenAI(Provider):
                 "model": self.model,
                 "messages": [
                     {"role": "user", "content": [{"type": "text", "text": "Hi"}]}
-                ]
+                ],
             }
             await self._post(
                 url=self.endpoint.get("base_url"), headers=headers, data=data
@@ -792,92 +794,108 @@ class Google(Provider):
         endpoint={"base_url": ENDPOINT_GOOGLE},
     ):
         super().__init__(hass, api_key, model, endpoint)
-
-    def _generate_headers(self) -> dict:
-        return {"content-type": "application/json"}
+        self.client = genai.Client(api_key=api_key)
 
     async def _make_request(self, data) -> str:
         try:
-            endpoint = self.endpoint.get("base_url").format(
-                model=self.model, api_key=self.api_key
+            loop = self.hass.loop
+            # Prepare arguments for the new SDK
+            model_name = self.model
+            prompt = data.get("prompt")
+            system_instruction = data.get("system_instruction", None)
+            generation_config = data.get("generation_config", {})
+
+            # Convert prompt to the expected format (list of dicts to string or list of strings)
+            contents = prompt  # The SDK accepts list of dicts or strings
+
+            config = types.GenerateContentConfig(
+                max_output_tokens=generation_config.get("max_output_tokens"),
+                temperature=generation_config.get("temperature"),
+                top_p=generation_config.get("top_p"),
+                system_instruction=system_instruction,
             )
-            headers = self._generate_headers()
-            response = await self._post(url=endpoint, headers=headers, data=data)
-            candidates = response.get("candidates")
-            if not candidates or not isinstance(candidates, list) or not candidates[0]:
-                raise ServiceValidationError(
-                    "No candidates were returned from Google API"
-                )
-            content = candidates[0].get("content")
-            if not content or not content.get("parts") or not content.get("parts")[0]:
-                raise ServiceValidationError(
-                    "No content parts were returned from Google API"
-                )
-            response_text = content.get("parts")[0].get("text")
+
+            # Use the async aio client
+            response = await self.client.aio.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=config,
+            )
+            # Extract text from response
+            response_text = response.text
         except Exception as e:
             _LOGGER.error(f"Error: {e}")
             raise e
         return response_text
 
     def _prepare_vision_data(self, call: dict) -> dict:
+        # Adapt payload for SDK: use 'prompt' and 'generation_config'
         default_parameters = self._get_default_parameters(call)
-        payload = {
-            "contents": [{"role": "user", "parts": []}],
-            "generationConfig": {
-                "maxOutputTokens": call.max_tokens,
-                "temperature": default_parameters.get("temperature"),
-                "topP": default_parameters.get("top_p"),
-            },
-        }
+        prompt = []
         for image, filename in zip(call.base64_images, call.filenames):
             tag = (
                 ("Image " + str(call.base64_images.index(image) + 1))
                 if filename == ""
                 else filename
             )
-            payload["contents"][0]["parts"].append({"text": tag + ":"})
-            payload["contents"][0]["parts"].append(
-                {"inline_data": {"mime_type": "image/jpeg", "data": image}}
-            )
-        payload["contents"][0]["parts"].append({"text": call.message})
+            prompt.append({"text": tag + ":"})
+            prompt.append({"inline_data": {"mime_type": "image/jpeg", "data": image}})
+        prompt.append({"text": call.message})
 
         if call.use_memory:
             memory_content = call.memory._get_memory_images(memory_type="Google")
             system_prompt = call.memory.system_prompt
             if memory_content:
-                payload["contents"].insert(0, {"role": "user", "parts": memory_content})
+                prompt = memory_content + prompt
             if system_prompt:
-                payload["system_instruction"] = {"parts": {"text": system_prompt}}
+                # The SDK supports system_instruction as a string
+                return {
+                    "prompt": prompt,
+                    "generation_config": {
+                        "max_output_tokens": call.max_tokens,
+                        "temperature": default_parameters.get("temperature"),
+                        "top_p": default_parameters.get("top_p"),
+                    },
+                    "system_instruction": system_prompt,
+                }
 
-        return payload
+        return {
+            "prompt": prompt,
+            "generation_config": {
+                "max_output_tokens": call.max_tokens,
+                "temperature": default_parameters.get("temperature"),
+                "top_p": default_parameters.get("top_p"),
+            },
+        }
 
     def _prepare_text_data(self, call: dict) -> dict:
         default_parameters = self._get_default_parameters(call)
+        prompt = [{"text": call.message + ":"}]
         return {
-            "contents": [{"role": "user", "parts": [{"text": call.message + ":"}]}],
-            "generationConfig": {
-                "maxOutputTokens": call.max_tokens,
+            "prompt": prompt,
+            "generation_config": {
+                "max_output_tokens": call.max_tokens,
                 "temperature": default_parameters.get("temperature"),
-                "topP": default_parameters.get("top_p"),
+                "top_p": default_parameters.get("top_p"),
             },
         }
 
     async def validate(self) -> None | ServiceValidationError:
         if not self.api_key:
             raise ServiceValidationError("empty_api_key")
-
-        headers = self._generate_headers()
-        data = {
-            "contents": [{"role": "user", "parts": [{"text": "Hi"}]}],
-            "generationConfig": {"maxOutputTokens": 1, "temperature": 0.5},
-        }
-        await self._post(
-            url=self.endpoint.get("base_url").format(
-                model=DEFAULT_GOOGLE_MODEL, api_key=self.api_key
-            ),
-            headers=headers,
-            data=data,
-        )
+        loop = self.hass.loop
+        try:
+            config = types.GenerateContentConfig(
+                max_output_tokens=1,
+                temperature=0.5,
+            )
+            await self.client.aio.models.generate_content(
+                model=self.model,
+                contents=[{"text": "Hi"}],
+                config=config,
+            )
+        except Exception as e:
+            raise ServiceValidationError(str(e))
 
 
 class Groq(Provider):
