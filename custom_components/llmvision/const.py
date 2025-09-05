@@ -84,7 +84,7 @@ DATA_EXTRACTION_PROMPT = "You are an advanced image analysis assistant specializ
 
 # Models
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
-DEFAULT_ANTHROPIC_MODEL = "claude-3-5-sonnet-latest"
+DEFAULT_ANTHROPIC_MODEL = "claude-3-7-sonnet-latest"
 DEFAULT_AZURE_MODEL = "gpt-4o-mini"
 DEFAULT_GOOGLE_MODEL = "gemini-2.0-flash"
 DEFAULT_GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"

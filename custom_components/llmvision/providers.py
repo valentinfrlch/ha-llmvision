@@ -773,7 +773,7 @@ class Anthropic(Provider):
 
         header = self._generate_headers()
         payload = {
-            "model": DEFAULT_ANTHROPIC_MODEL,
+            "model": self.model,
             "messages": [{"role": "user", "content": "Hi"}],
             "max_tokens": 1,
             "temperature": 0.5,
@@ -873,7 +873,7 @@ class Google(Provider):
         }
         await self._post(
             url=self.endpoint.get("base_url").format(
-                model=DEFAULT_GOOGLE_MODEL, api_key=self.api_key
+                model=self.model, api_key=self.api_key
             ),
             headers=headers,
             data=data,
@@ -944,7 +944,7 @@ class Groq(Provider):
             raise ServiceValidationError("empty_api_key")
         headers = self._generate_headers()
         data = {
-            "model": DEFAULT_GROQ_MODEL,
+            "model": self.model,
             "messages": [{"role": "user", "content": "Hi"}],
         }
         await self._post(url=ENDPOINT_GROQ, headers=headers, data=data)
@@ -1266,4 +1266,4 @@ class AWSBedrock(Provider):
             "messages": [{"role": "user", "content": [{"text": "Hi"}]}],
             "inferenceConfig": {"maxTokens": 10, "temperature": 0.5},
         }
-        await self.invoke_bedrock(model=DEFAULT_AWS_MODEL, data=data)
+        await self.invoke_bedrock(model=self.model, data=data)
