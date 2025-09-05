@@ -859,6 +859,21 @@ def setup(hass, config):
             camera_name=call.camera_entity,
         )
 
+    def add_memory(data_call):
+        """Handle the service call to add memory (image or string)"""
+        # TODO: implement
+        pass
+
+    def get_memory(data_call):
+        """Handle the service call to get a list of memories"""
+        # TODO: implement
+        pass
+
+    def delete_memory(data_call):
+        """Handle the service call to delete memory (image or string)"""
+        # TODO: implement
+        pass
+
     # Register actions
     hass.services.register(
         DOMAIN,
@@ -882,9 +897,25 @@ def setup(hass, config):
         DOMAIN, "data_analyzer", data_analyzer, supports_response=SupportsResponse.ONLY
     )
     hass.services.register(
+        #TODO: Change name to avoid confusion(?)
         DOMAIN,
         "remember",
         remember,
+    )
+    hass.services.register(
+        DOMAIN,
+        "add_memory",
+        add_memory,
+    )
+    hass.services.register(
+        DOMAIN,
+        "get_memory",
+        get_memory,
+    )
+    hass.services.register(
+        DOMAIN,
+        "delete_memory",
+        delete_memory,
     )
 
     return True

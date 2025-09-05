@@ -32,8 +32,7 @@ from .const import (
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_RETENTION_TIME,
     CONF_FALLBACK_PROVIDER,
-    CONF_MEMORY_PATHS,
-    CONF_MEMORY_STRINGS,
+    CONF_MEMORY_PROVIDER,
     CONF_SYSTEM_PROMPT,
     CONF_TITLE_PROMPT,
     CONF_AWS_ACCESS_KEY_ID,
@@ -1323,12 +1322,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional("memory_section"): section(
                     vol.Schema(
                         {
-                            vol.Optional(CONF_MEMORY_PATHS): selector(
-                                {"text": {"multiline": False, "multiple": True}}
-                            ),
-                            vol.Optional(CONF_MEMORY_STRINGS): selector(
-                                {"text": {"multiline": False, "multiple": True}}
-                            ),
+                            vol.Optional(CONF_MEMORY_PROVIDER): selector(
+                                {"text": {"multiline": False, "multiple": False}}
+                            )
                         }
                     ),
                     {"collapsed": True},
@@ -1364,8 +1360,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 #     CONF_TIMELINE_SUMMARY_PROMPT, DEFAULT_SUMMARY_PROMPT),
             },
             "memory_section": {
-                CONF_MEMORY_PATHS: self.init_info.get(CONF_MEMORY_PATHS),
-                CONF_MEMORY_STRINGS: self.init_info.get(CONF_MEMORY_STRINGS),
+                CONF_MEMORY_PROVIDER: self.init_info.get(CONF_MEMORY_PROVIDER)
             },
         }
         data_schema = self.add_suggested_values_to_schema(data_schema, suggested)
@@ -1375,19 +1370,6 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # flatten dict to remove nested keys
             user_input = flatten_dict(user_input)
 
-            errors = {}
-            if len(user_input.get(CONF_MEMORY_PATHS, [])) != len(
-                user_input.get(CONF_MEMORY_STRINGS, [])
-            ):
-                errors = {"base": "mismatched_lengths"}
-            for path in user_input.get(CONF_MEMORY_PATHS, []):
-                if not os.path.exists(path):
-                    errors = {"base": "invalid_image_path"}
-
-            if errors:
-                return self.async_show_form(
-                    step_id="settings", data_schema=data_schema, errors=errors
-                )
             if self.source == config_entries.SOURCE_RECONFIGURE:
                 # we're reconfiguring an existing config
                 return self.async_update_reload_and_abort(

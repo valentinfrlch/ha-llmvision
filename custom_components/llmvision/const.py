@@ -40,10 +40,7 @@ CONG_MEMORY_IMAGES_ENCODED = "memory_images_encoded"
 CONF_MEMORY_STRINGS = "memory_strings"
 CONF_SYSTEM_PROMPT = "system_prompt"
 CONF_TITLE_PROMPT = "title_prompt"
-CONF_MEMORY_PATHS = "memory_paths"
-CONF_MEMORY_IMAGES_ENCODED = "memory_images_encoded"
-CONF_MEMORY_STRINGS = "memory_strings"
-
+CONF_MEMORY_PROVIDER = "memory_provider"
 
 # SERVICE CALL CONSTANTS
 MESSAGE = "message"
