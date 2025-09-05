@@ -287,7 +287,8 @@ class MediaProcessor:
                         score = self._similarity_score(
                             previous_frame, current_frame_gray
                         )
-
+                        # Favor earlier frames
+                        score += 0.1 * (max_frames - frame_counter)
                         # Encode the image back to bytes
                         buffer = io.BytesIO()
                         img.save(buffer, format="JPEG")
@@ -626,6 +627,11 @@ class MediaProcessor:
                         score = self._similarity_score(
                             previous_frame, current_frame_gray
                         )
+
+                        frame_index = int(os.path.splitext(os.path.basename(previous_frame_path))[0].split("frame")[-1])
+                        # Favor earlier frames
+                        # TODO: Tune score weighting
+                        score += 0.1 * (max_frames - frame_index)
                         # Insert the new frame, maintain sorted order
                         insort(frames, (previous_frame_path, score), key=lambda x: x[1])
                         if len(frames) > max_frames:
