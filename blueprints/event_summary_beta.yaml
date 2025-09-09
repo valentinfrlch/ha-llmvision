@@ -121,12 +121,10 @@ blueprint:
               max: 3840
         max_tokens:
           name: Maximum Tokens
-          description: Maximum number of tokens to generate. Use this to control the length of the summaries.
-          default: 20
+          description: Maximum number of tokens to generate. **Note: Newer and reasoning models may require significantly more tokens. At least 5000 is recommended.**
+          default: 5000
           selector:
             number:
-              min: 1
-              max: 300
     # Notificaion Section
     notification_section:
       name: Notification Settings
