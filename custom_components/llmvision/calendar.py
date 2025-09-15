@@ -174,7 +174,7 @@ class Timeline(CalendarEntity):
             async with aiosqlite.connect(self._db_path) as db:
                 await db.execute(
                     """
-                    UPDATE events SET key_frame = REPLACE(key_frame, '/media/llmvision/snapshots', '/media/local/llmvision/snapshots')
+                    UPDATE events SET key_frame = REPLACE(key_frame, '/config/media/llmvision/snapshots', '/media/local/llmvision/snapshots')
                 """
                 )
                 await db.commit()
