@@ -34,7 +34,7 @@ class MediaProcessor:
         self.client = client
         self.base64_images = []
         self.filenames = []
-        self.path = self.hass.config.path(f"media/{DOMAIN}/snapshots/")
+        self.path = f"/media/{DOMAIN}/snapshots/"
         self.key_frame = ""
 
     async def _encode_image(self, img):
@@ -77,10 +77,10 @@ class MediaProcessor:
         # ensure /media/llmvision/snapshots dir exists
         await self.hass.loop.run_in_executor(
             None,
-            partial(os.makedirs, self.hass.config.path(f"media/{DOMAIN}/snapshots"), exist_ok=True),
+            partial(os.makedirs, f"/media/{DOMAIN}/snapshots", exist_ok=True),
         )
         if self.key_frame == "":
-            filename = self.hass.config.path(f"media/{DOMAIN}/snapshots/{uid}-{frame_name}.jpg")
+            filename = f"/media/{DOMAIN}/snapshots/{uid}-{frame_name}.jpg"
             self.key_frame = filename
             if image_data is None and frame_path is not None:
                 # open image in hass.loop
