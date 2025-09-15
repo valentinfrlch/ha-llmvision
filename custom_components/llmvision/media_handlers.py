@@ -77,10 +77,16 @@ class MediaProcessor:
         # ensure /media/llmvision/snapshots dir exists
         await self.hass.loop.run_in_executor(
             None,
-            partial(os.makedirs, self.hass.config.path(f"media/{DOMAIN}/snapshots"), exist_ok=True),
+            partial(
+                os.makedirs,
+                self.hass.config.path(f"media/{DOMAIN}/snapshots"),
+                exist_ok=True,
+            ),
         )
         if self.key_frame == "":
-            filename = self.hass.config.path(f"media/{DOMAIN}/snapshots/{uid}-{frame_name}.jpg")
+            filename = self.hass.config.path(
+                f"media/{DOMAIN}/snapshots/{uid}-{frame_name}.jpg"
+            )
             self.key_frame = filename
             if image_data is None and frame_path is not None:
                 # open image in hass.loop
@@ -469,7 +475,7 @@ class MediaProcessor:
             current_event_id = str(uuid.uuid4())
             video_path = video_path.strip()
 
-            # Resolve media source (media-source://blahblah)
+            # Resolve media source (media-source://...)
             if is_media_source_id(video_path):
                 _LOGGER.debug(f"Resolving media source id: {video_path}")
                 video_path = async_process_play_media_url(self.hass, video_path)
@@ -490,86 +496,159 @@ class MediaProcessor:
 
                 video_path = base_url + video_path
 
-            # Fetch URL to local file to avoid ffmpeg schenanigans
+            # Fetch URL to local file
             if video_path.startswith("http://") or video_path.startswith("https://"):
-                # Create tmp dir to store video
-                await self.hass.loop.run_in_executor(
-                    None, partial(os.makedirs, tmp_clips_dir, exist_ok=True)
-                )
+                # Download video into memory instead of disk
+                video_data = await self._fetch(video_path)
+                if not video_data:
+                    raise ServiceValidationError(
+                        f"Failed to fetch video from {video_path}"
+                    )
 
-                parsed = urlparse(video_path)
-                # Extract basename from URL (http://example.com/file.mp4?query => file.mp4)
-                basename = os.path.basename(parsed.path)
+                # Write video_data to a BytesIO object for ffmpeg input
+                video_bytes_io = io.BytesIO(video_data)
 
-                tmp_filename = os.path.join(
-                    tmp_clips_dir,
-                    # prepend with event_id to avoid name conflicts
-                    current_event_id + "_" + basename,
-                )
-
-                await self._fetch(video_path, target_file=tmp_filename)
-
-                video_path = tmp_filename
-
-            # Check file exists
-            if not os.path.exists(video_path):
-                raise ServiceValidationError(f"File {video_path} does not exist")
-
-            _LOGGER.debug(f"Processing {video_path}")
-
-            # create tmp dir to store extracted frames
-            await self.hass.loop.run_in_executor(
-                None, partial(os.makedirs, tmp_frames_dir, exist_ok=True)
-            )
-            if os.path.exists(tmp_frames_dir):
-                _LOGGER.debug(f"Created {tmp_frames_dir}")
-            else:
-                _LOGGER.error(f"Failed to create temp directory {tmp_frames_dir}")
-
-            # Extract iframes from video
-            # use %05d formatting to enable iteration in sorted order
-            ffmpeg_cmd = " ".join(
-                [
+                # Use ffmpeg to read from stdin (pipe:0)
+                ffmpeg_cmd = [
                     "ffmpeg",
                     "-hide_banner",
                     "-hwaccel",
-                    "auto",  # TODO: Add config option to specify FFmpeg options (hwaccel auto doesn't work on all systems, ie RP4)
+                    "auto",
                     "-skip_frame",
                     "nokey",
                     "-an",
                     "-sn",
                     "-dn",
                     "-i",
-                    shlex.quote(
-                        video_path
-                    ),  # TODO: Consider using stdin to avoid file I/O
+                    "pipe:0",
                     "-fps_mode",
                     "passthrough",
-                    os.path.join(tmp_frames_dir, f"{current_event_id}_frame%05d.jpg"),
+                    "-vcodec",
+                    "mjpeg",
+                    "-f",
+                    "image2pipe",
+                    "-",
                 ]
-            )
-            # Add additional options for friga
 
-            # Don't clutter stdout/stderr with ffmpeg output by default
-            output = asyncio.subprocess.DEVNULL
+                output = asyncio.subprocess.PIPE
+                error_output = asyncio.subprocess.DEVNULL
+                if _LOGGER.isEnabledFor(logging.DEBUG):
+                    error_output = None
 
-            if _LOGGER.isEnabledFor(logging.DEBUG):
-                output = None
+                ffmpeg_start = time.monotonic_ns()
+                ffmpeg_timeout = 300  # seconds
 
-            ffmpeg_start = time.monotonic_ns()
+                _LOGGER.debug(
+                    f"Running FFMPEG to create keyframes: {' '.join(ffmpeg_cmd)}"
+                )
 
-            # TODO: Make this configurable
-            ffmpeg_timeout = 300  # seconds
+                ffmpeg_process = await asyncio.create_subprocess_exec(
+                    *ffmpeg_cmd,
+                    stdin=asyncio.subprocess.PIPE,
+                    stdout=output,
+                    stderr=error_output,
+                )
 
-            _LOGGER.debug(f"Running FFMPEG to create keyframes: {ffmpeg_cmd}")
+                # Send video bytes to ffmpeg's stdin
+                await ffmpeg_process.stdin.write(video_bytes_io.getvalue())
+                await ffmpeg_process.stdin.drain()
+                ffmpeg_process.stdin.close()
+            else:
 
-            # Run ffmpeg command
-            ffmpeg_process = await asyncio.create_subprocess_shell(
-                ffmpeg_cmd, stdout=output, stderr=output
-            )
+                # Extract iframes from video
+                # use %05d formatting to enable iteration in sorted order
+                # Extract iframes from video directly to memory using image2pipe
+                ffmpeg_cmd = [
+                    "ffmpeg",
+                    "-hide_banner",
+                    "-hwaccel",
+                    "auto",
+                    "-skip_frame",
+                    "nokey",
+                    "-an",
+                    "-sn",
+                    "-dn",
+                    "-i",
+                    video_path,
+                    "-fps_mode",
+                    "passthrough",
+                    "-vcodec",
+                    "mjpeg",
+                    "-f",
+                    "image2pipe",
+                    "-",
+                ]
+
+                output = asyncio.subprocess.PIPE
+                error_output = asyncio.subprocess.DEVNULL
+                if _LOGGER.isEnabledFor(logging.DEBUG):
+                    error_output = None
+
+                ffmpeg_start = time.monotonic_ns()
+                ffmpeg_timeout = 300  # seconds
+
+                _LOGGER.debug(
+                    f"Running FFMPEG to create keyframes: {' '.join(ffmpeg_cmd)}"
+                )
+
+                ffmpeg_process = await asyncio.create_subprocess_exec(
+                    *ffmpeg_cmd, stdout=output, stderr=error_output
+                )
+
+            previous_frame = None
+            frames = []
+            frame_counter = 0
+            jpeg_buffer = b""
+
+            def find_jpeg_frames(data):
+                frames = []
+                start = 0
+                while True:
+                    soi = data.find(b"\xff\xd8", start)
+                    eoi = data.find(b"\xff\xd9", soi)
+                    if soi == -1 or eoi == -1:
+                        break
+                    frames.append(data[soi : eoi + 2])
+                    start = eoi + 2
+                return frames, data[start:]
+
             try:
-                await asyncio.wait_for(ffmpeg_process.wait(), timeout=ffmpeg_timeout)
-            except TimeoutError:
+                while frame_counter < max_frames:
+                    chunk = await ffmpeg_process.stdout.read(4096)
+                    if not chunk:
+                        break
+                    jpeg_buffer += chunk
+                    found_frames, jpeg_buffer = find_jpeg_frames(jpeg_buffer)
+                    for jpeg_data in found_frames:
+                        try:
+                            img = Image.open(io.BytesIO(jpeg_data))
+                            await self.hass.loop.run_in_executor(None, img.load)
+                            if img.mode == "RGBA":
+                                img = img.convert("RGB")
+                            current_frame_gray = np.array(img.convert("L"))
+                            if previous_frame is not None:
+                                score = self._similarity_score(
+                                    previous_frame, current_frame_gray
+                                )
+                                # TODO: Adjust factor
+                                # Favor earlier frames
+                                score += 0.1 * (max_frames - frame_counter)
+                                frames.append((jpeg_data, score, frame_counter))
+                            else:
+                                # First frame, always considered important
+                                score = -9999
+                                frames.append((jpeg_data, score, frame_counter))
+                            previous_frame = current_frame_gray
+                            frame_counter += 1
+                        except UnidentifiedImageError:
+                            _LOGGER.error(
+                                f"Cannot identify image from ffmpeg pipe at frame {frame_counter}"
+                            )
+                            continue
+                        if frame_counter >= max_frames:
+                            break
+                await ffmpeg_process.wait()
+            except asyncio.TimeoutError:
                 _LOGGER.info(
                     f"FFmpeg failed to process video within {ffmpeg_timeout} seconds"
                 )
@@ -588,91 +667,41 @@ class MediaProcessor:
             ffmpeg_time = time.monotonic_ns() - ffmpeg_start
             _LOGGER.debug(f"FFmpeg took {ffmpeg_time / 1_000_000:.2f} ms")
 
-            previous_frame, previous_frame_path = None, None
-            frames = []
+            if len(frames) == 0:
+                raise ServiceValidationError("No frames extracted from video.")
 
-            generated_frames = await self.hass.loop.run_in_executor(
-                None, os.listdir, tmp_frames_dir
-            )
+            # Sort frames by SSIM score
+            frames.sort(key=lambda x: x[1])
+            selected_frames = frames[:max_frames]
+            # Sort selected frames back into their original chronological order
+            selected_frames.sort(key=lambda x: x[2])
 
-            _LOGGER.debug(f"Extracted {len(generated_frames)} frames")
-
-            # Iterate over frames in sorted order
-            for frame_file in sorted(generated_frames):
-                # Check if the file is a "our" frame file before processing
-                # It can belong to another event, so we check the prefix
-                if not frame_file.startswith(f"{current_event_id}_frame"):
-                    _LOGGER.debug(f"Skipping non-frame file {frame_file}")
-                    continue
-
-                _LOGGER.debug(f"Adding frame {frame_file}")
-                frame_path = os.path.join(tmp_frames_dir, frame_file)
-                try:
-                    # open image in hass.loop
-                    with await self.hass.loop.run_in_executor(
-                        None, Image.open, frame_path
-                    ) as img:
-                        await self.hass.loop.run_in_executor(None, img.load)
-                        # Remove transparency for compatibility
-                        if img.mode == "RGBA":
-                            img = img.convert("RGB")
-                            await self.hass.loop.run_in_executor(
-                                None, img.save, frame_path
-                            )
-
-                        current_frame_gray = np.array(img.convert("L"))
-
-                    # Calculate similarity score
-                    if previous_frame is not None:
-                        score = self._similarity_score(
-                            previous_frame, current_frame_gray
-                        )
-
-                        frame_index = int(os.path.splitext(os.path.basename(previous_frame_path))[0].split("frame")[-1])
-                        # Favor earlier frames
-                        # TODO: Tune score weighting
-                        score += 0.1 * (max_frames - frame_index)
-                        # Insert the new frame, maintain sorted order
-                        insort(frames, (previous_frame_path, score), key=lambda x: x[1])
-                        if len(frames) > max_frames:
-                            # Keep only max_frames many frames with lowest SSIM scores
-                            frames.pop()
-                    previous_frame = current_frame_gray
-                    previous_frame_path = frame_path
-                except UnidentifiedImageError:
-                    _LOGGER.error(f"Cannot identify image file {frame_path}")
-                    continue
-
-            if len(frames) == 0 and previous_frame_path is not None:
-                frames.append((previous_frame_path, 0))
-
+            # Expose images if requested
             if expose_images:
-                # Expose images with original size, keep SSIM score order
-                for frame_path, _ in frames:
-                    frame_name = os.path.splitext(os.path.basename(frame_path))[
-                        0
-                    ].replace("frame", "")
+                for idx, (frame_data, _, frame_idx) in enumerate(selected_frames):
                     await self._expose_image(
-                        frame_name, None, current_event_id[:8], frame_path
+                        str(frame_idx + 1),
+                        await self.resize_image(
+                            target_width=target_width, image_data=frame_data
+                        ),
+                        current_event_id[:8],
                     )
 
-            # Add frames to client, sorted by frame number instead of SSIM score
-            for counter, (frame_path, _) in enumerate(
-                sorted(frames, key=lambda x: x[0]), start=1
-            ):
+            # Add frames to client
+            for idx, (frame_data, _, frame_idx) in enumerate(selected_frames, start=1):
                 resized_image = await self.resize_image(
-                    image_path=frame_path, target_width=target_width
+                    target_width=target_width, image_data=frame_data
                 )
                 self.client.add_frame(
                     base64_image=resized_image,
                     filename=(
-                        f"{os.path.splitext(os.path.basename(video_path))[0]} (frame {counter})"
+                        f"{os.path.splitext(os.path.basename(video_path))[0]} (frame {idx})"
                         if include_filename
-                        else f"Video frame {counter}"
+                        else f"Video frame {idx}"
                     ),
                 )
         except Exception as e:
-            raise ServiceValidationError(f"Error: {e}")
+            raise ServiceValidationError(f"Error processing video {video_path}: {e}")
 
     async def add_videos(
         self,
@@ -686,11 +715,6 @@ class MediaProcessor:
         frigate_retry_seconds,
     ):
         """Wrapper for client.add_frame for videos"""
-
-        # TODO: Add config option to specify path for tmp files.
-        # For example: Sometimes config path is located on SD card, and using ramdisk/SSD instead would be much faster and won't wear SD card out
-        tmp_clips_dir = self.hass.config.path(f"custom_components/{DOMAIN}/tmp_clips")
-        tmp_frames_dir = self.hass.config.path(f"custom_components/{DOMAIN}/tmp_frames")
 
         if not video_paths:
             video_paths = []
@@ -708,8 +732,6 @@ class MediaProcessor:
         def process_video(video_path):
             return self.add_video(
                 video_path=video_path,
-                tmp_clips_dir=tmp_clips_dir,
-                tmp_frames_dir=tmp_frames_dir,
                 base_url=base_url,
                 max_frames=max_frames,
                 target_width=target_width,
@@ -720,17 +742,6 @@ class MediaProcessor:
         # Process videos in parallel
         await asyncio.gather(*map(process_video, video_paths))
 
-        # Clean up tmp dirs
-        try:
-            await self.hass.loop.run_in_executor(None, shutil.rmtree, tmp_clips_dir)
-            _LOGGER.info(f"Deleted tmp folder: {tmp_clips_dir}")
-        except FileNotFoundError as e:
-            _LOGGER.info(f"Failed to delete tmp folder: {e}")
-        try:
-            await self.hass.loop.run_in_executor(None, shutil.rmtree, tmp_frames_dir)
-            _LOGGER.info(f"Deleted tmp folder: {tmp_frames_dir}")
-        except FileNotFoundError as e:
-            _LOGGER.info(f"Failed to delete tmp folders: {e}")
         return self.client
 
     async def add_streams(
