@@ -265,7 +265,7 @@
                         "name": "Kapcsolat",
                         "description": "AWS hitelesítés",
                         "data": {
-                            "aws_access_key_id": "Hozzáférési kulcs"",
+                            "aws_access_key_id": "Hozzáférési kulcs",
                             "aws_secret_access_key": "Titkos kulcs",
                             "aws_region_name": "Régiókód"
                         }
