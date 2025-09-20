@@ -45,7 +45,7 @@ class Timeline(CalendarEntity):
 
         # Path to the JSON file where events are stored
         self._db_path = os.path.join(self.hass.config.path(DOMAIN), "events.db")
-        self._file_path = self.hass.config.path(f"media/{DOMAIN}/snapshots")
+        self._file_path = f"/media/{DOMAIN}/snapshots"
         # Ensure the directory exists
         os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
         os.makedirs(self._file_path, exist_ok=True)
@@ -111,7 +111,7 @@ class Timeline(CalendarEntity):
         except aiosqlite.Error as e:
             _LOGGER.error(f"Error migrating events.db: {e}")
 
-        # v3 -> v4: Migrate image paths to /media/llmvision/snapshots from /www/llmvision
+        # v3 -> v4: Migrate image paths to /config/media/llmvision/snapshots from /www/llmvision
         try:
             # Move images to new location
             # Ensure dir exists
@@ -140,6 +140,41 @@ class Timeline(CalendarEntity):
                 await db.execute(
                     """
                     UPDATE events SET key_frame = REPLACE(key_frame, '/www/llmvision', '/media/llmvision/snapshots')
+                """
+                )
+                await db.commit()
+        except aiosqlite.Error as e:
+            _LOGGER.error(f"Error migrating image paths in events.db: {e}")
+
+        # v4 -> v4.1: Migrate image paths to /media/llmvision/snapshots from /config/media/llmvision/snapshots
+        try:
+            # Move images to new location
+            # Ensure dir exists
+            await self.hass.loop.run_in_executor(
+                None,
+                partial(
+                    os.makedirs,
+                    "/media/llmvision/snapshots",
+                    exist_ok=True,
+                ),
+            )
+            src_dir = self.hass.config.path("media/llmvision/snapshots")
+            dst_dir = "/media/llmvision/snapshots"
+            if os.path.exists(src_dir):
+                for filename in await self.hass.loop.run_in_executor(
+                    None, partial(os.listdir, src_dir)
+                ):
+                    src_file = os.path.join(src_dir, filename)
+                    dst_file = os.path.join(dst_dir, filename)
+                    if os.path.isfile(src_file):
+                        await self.hass.loop.run_in_executor(
+                            None, shutil.move, src_file, dst_file
+                        )
+
+            async with aiosqlite.connect(self._db_path) as db:
+                await db.execute(
+                    """
+                    UPDATE events SET key_frame = REPLACE(key_frame, '/config/media/llmvision/snapshots', '/media/local/llmvision/snapshots')
                 """
                 )
                 await db.commit()
