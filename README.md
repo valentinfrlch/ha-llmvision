@@ -7,11 +7,11 @@
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Default-orange.svg>
 <img src="https://img.shields.io/maintenance/yes/2025.svg">
-<img src=https://img.shields.io/badge/version-1.5.0-blue>
+<img src=https://img.shields.io/badge/version-1.5.1-blue>
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-llmvision?color=0088ff">
 <img alt="Static Badge" src="https://img.shields.io/badge/support-buymeacoffee?logo=buymeacoffee&logoColor=black&color=%23FFDD00&link=https%3A%2F%2Fbuymeacoffee.com%2Fvalentinfrlch">
     <p align=center style="font-weight:bold">
-      Image and video analyzer for Home Assistant using multimodal LLMs
+      Visual intelligence for your smart home.
     </p>
 </p>
 
@@ -36,15 +36,15 @@
 </p>
 
 ## Features
-- Compatible with OpenAI, Anthropic Claude, Google Gemini, AWS Bedrock, Groq, [Ollama](https://ollama.com/), [Open WebUI](https://github.com/open-webui/open-webui), [LocalAI](https://github.com/mudler/LocalAI) and providers with OpenAI compatible enpoints.
-- Analyzes images and video files, live camera feeds and Frigate events
+- Supports OpenRouter, OpenAI, Anthropic, Google Gemini, AWS Bedrock, Azure, Groq, [Ollama](https://ollama.com/), [Open WebUI](https://github.com/open-webui/open-webui), [LocalAI](https://github.com/mudler/LocalAI) and any provider with OpenAI compatible endpoints.
+- Answers questions and provides descriptions of images, video files, live camera feeds, and Frigate events based on your prompt.
 - Remembers people, pets and objects
-- Maintains a timeline of camera events, so you can display them on your dashboard and ask Assist about them
+- Keeps a timeline of camera events, so you can display them on your dashboard or ask Assist about them.
 - Seamlessly updates sensors based on data extracted from camera streams, images or videos
 
 <br>
 
-See the [website](https://llmvision.org) for the latest features as well as examples.
+See the [website](https://llmvision.org) for the latest features and examples.
 <img width="1027" alt="Bentoboard" src="https://github.com/user-attachments/assets/68af19b0-7000-4e5f-a3d3-c180ec2905f2" />
 
 
@@ -61,7 +61,15 @@ See the [website](https://llmvision.org) for the latest features as well as exam
 2. **Restart** Home Assistant
 3. **Search for `LLM Vision`** in Home Assistant Settings/Devices & services
 4. **Press submit** to continue setup with default settings
-5. **Press 'Add Entry'** to add your first AI Provider
+5. **Set up the media folder** LLM Vision uses the more secure `/media` folder for storing snapshots. Add the following to your `configuration.yaml`:
+   ```yaml
+   homeassistant:
+     media_dirs:
+       llmvision: /config/media/llmvision
+   ```
+   Then restart Home Assistant again to apply the changes.
+6. **Return to the LLM Vision Integration Page** 
+7. **Press 'Add Entry'** to add your first AI Provider
 
 Detailed setup instructions and documentation is available here: [LLM Vision Documentation](https://llm-vision.gitbook.io/getting-started/setup/providers)
 
@@ -76,10 +84,11 @@ With the easy to use blueprint, you'll get camera event notifications intelligen
 [Learn how to install the blueprint](https://llm-vision.gitbook.io/getting-started/setup/blueprint)
 
 ## Resources
-Check the docs for detailed instructions on how to set up LLM Vision and each of the supported providers, get inspiration from examples or join the discussion on the Home Assistant Community.
+Check the docs for detailed instructions on how to set up LLM Vision and each of the supported providers, get inspiration from examples or join the discussion on the Home Assistant Community and Discord.
 
 <a href="https://llmvision.org"><img alt="Static Badge" src="https://img.shields.io/badge/website-teal?style=for-the-badge&&logoColor=white&link=https%3A%2F%2Fvalentinfrlch.github.io%2Fllmvision%2F"></a>
 <a href="https://llm-vision.gitbook.io/getting-started"><img src="https://img.shields.io/badge/Documentation-blue?style=for-the-badge&logo=gitbook&logoColor=white&color=18bcf2"/> </a><a href="https://llmvision.org/gallery/"><img src="https://img.shields.io/badge/Examples-blue?style=for-the-badge&logo=gitbook&logoColor=black&color=39ffc2"/></a> </a><a href="https://community.home-assistant.io/t/llm-vision-let-home-assistant-see/729241"><img src="https://img.shields.io/badge/Community-blue?style=for-the-badge&logo=homeassistant&logoColor=white&color=03a9f4"/></a>
+<a href="https://discord.gg/wuFeMfCMRB"><img src="https://img.shields.io/badge/Discord-blue?style=for-the-badge&logo=discord&logoColor=white&color=7289da"/> </a>
 
 For technical questions see the discussions tab.
 

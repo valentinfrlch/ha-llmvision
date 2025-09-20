@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
 import logging
+
 # Declare variables
 from .const import (
     DOMAIN,
@@ -112,7 +113,8 @@ async def async_setup_entry(hass, entry):
 
     # Filter out None values
     filtered_provider_config = {
-        key: value for key, value in provider_config.items() if value is not None}
+        key: value for key, value in provider_config.items() if value is not None
+    }
 
     # Ensure DOMAIN exists in hass.data
     if DOMAIN not in hass.data:
@@ -122,14 +124,20 @@ async def async_setup_entry(hass, entry):
     hass.data[DOMAIN][entry_uid] = filtered_provider_config
 
     # If this is the Settings entry, set up the calendar and run cleanup
-    if filtered_provider_config.get(CONF_PROVIDER) == 'Settings':
+    if filtered_provider_config.get(CONF_PROVIDER) == "Settings":
         await hass.config_entries.async_forward_entry_setups(entry, ["calendar"])
         timeline = Timeline(hass, entry)
         await timeline._cleanup()
 
+    # Sanitize provider config (remove api_key and value)
+    sanitized_provider_config = {
+        key: value
+        for key, value in filtered_provider_config.items()
+        if key != CONF_API_KEY
+    }
+
     # Print the config entry data for debugging
-    _LOGGER.debug(
-        f"Config entry {entry.title} data: {filtered_provider_config}")
+    _LOGGER.debug(f"Config entry {entry.title} data: {sanitized_provider_config}")
     return True
 
 
@@ -140,15 +148,14 @@ async def async_remove_entry(hass, entry):
         _LOGGER.info(f"Removing {entry.title} from hass.data")
         await async_unload_entry(hass, entry)
         hass.data[DOMAIN].pop(entry_uid)
-        if entry.data[CONF_PROVIDER] == 'Settings':
-            db_path = os.path.join(
-                hass.config.path("llmvision"), "events.db"
-            )
+        if entry.data[CONF_PROVIDER] == "Settings":
+            db_path = os.path.join(hass.config.path("llmvision"), "events.db")
             if os.path.exists(db_path):
                 os.remove(db_path)
     else:
         _LOGGER.warning(
-            f"Entry {entry.title} not found but was requested to be removed")
+            f"Entry {entry.title} not found but was requested to be removed"
+        )
     return True
 
 
@@ -157,7 +164,9 @@ async def async_unload_entry(hass, entry) -> bool:
     # check if the entry is the calendar entry (has entry rentention_time)
     if entry.data.get(CONF_RETENTION_TIME) is not None:
         # unload the calendar
-        unload_ok = await hass.config_entries.async_unload_platforms(entry, ["calendar"])
+        unload_ok = await hass.config_entries.async_unload_platforms(
+            entry, ["calendar"]
+        )
     else:
         unload_ok = True
     return unload_ok
@@ -165,7 +174,8 @@ async def async_unload_entry(hass, entry) -> bool:
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
     _LOGGER.debug(
-        f"{config_entry.title} provider v{config_entry.version}.{config_entry.minor_version}")
+        f"{config_entry.title} provider v{config_entry.version}.{config_entry.minor_version}"
+    )
 
     new_data = config_entry.data.copy()
     updated = False
@@ -174,7 +184,11 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
     if config_entry.version == 2 and new_data.get(CONF_PROVIDER) == "Event Calendar":
         new_data[CONF_PROVIDER] = "Timeline"
         hass.config_entries.async_update_entry(
-            config_entry, title="LLM Vision Timeline", data=new_data, version=3, minor_version=0
+            config_entry,
+            title="LLM Vision Timeline",
+            data=new_data,
+            version=3,
+            minor_version=0,
         )
 
     # v3 -> v4: Standardize keys for all providers, Memory, Timeline merge into Settings
@@ -186,29 +200,33 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
             # Find the Memory entry
             target_entry = None
             for entry in hass.config_entries.async_entries(DOMAIN):
-                if (entry.data.get(CONF_PROVIDER) == "Memory"):
+                if entry.data.get(CONF_PROVIDER) == "Memory":
                     target_entry = entry
                     break
             if target_entry:
                 # Migrate retention_time to this entry
                 new_data = dict(target_entry.data)
                 new_data[CONF_RETENTION_TIME] = retention_time
-                hass.config_entries.async_update_entry(
-                    target_entry, data=new_data
-                )
+                hass.config_entries.async_update_entry(target_entry, data=new_data)
             # Log hass.data[DOMAIN] for debugging
             _LOGGER.debug(f"hass.data[DOMAIN]: {hass.data.get(DOMAIN, {})}")
             # Remove the Timeline entry
             _LOGGER.info(
-                f"Scheduling removal of old Timeline config entry {config_entry.title}")
+                f"Scheduling removal of old Timeline config entry {config_entry.title}"
+            )
             hass.async_create_task(
-                hass.config_entries.async_remove(config_entry.entry_id))
+                hass.config_entries.async_remove(config_entry.entry_id)
+            )
         if provider == "Memory":
             # Change the provider name to "Settings"
             new_data[CONF_PROVIDER] = "Settings"
             # Update the title to "LLM Vision Settings"
             hass.config_entries.async_update_entry(
-                config_entry, title="LLM Vision Settings", data=new_data, version=4, minor_version=0
+                config_entry,
+                title="LLM Vision Settings",
+                data=new_data,
+                version=4,
+                minor_version=0,
             )
         if provider == "OpenAI":
             # Migrate old provider-specific keys to generic keys
@@ -246,8 +264,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
                 new_data[CONF_AZURE_BASE_URL] = new_data.pop("azure_base_url")
                 updated = True
             if "azure_deployment" in new_data:
-                new_data[CONF_AZURE_DEPLOYMENT] = new_data.pop(
-                    "azure_deployment")
+                new_data[CONF_AZURE_DEPLOYMENT] = new_data.pop("azure_deployment")
                 updated = True
             if "azure_version" in new_data:
                 new_data[CONF_AZURE_VERSION] = new_data.pop("azure_version")
@@ -342,7 +359,8 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
                 updated = True
             if "custom_openai_endpoint" in new_data:
                 new_data[CONF_CUSTOM_OPENAI_ENDPOINT] = new_data.pop(
-                    "custom_openai_endpoint")
+                    "custom_openai_endpoint"
+                )
                 updated = True
             if CONF_DEFAULT_MODEL not in new_data:
                 new_data[CONF_DEFAULT_MODEL] = DEFAULT_CUSTOM_OPENAI_MODEL
@@ -356,16 +374,15 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
         # AWS
         if provider == "AWS":
             if "aws_access_key_id" in new_data:
-                new_data[CONF_AWS_ACCESS_KEY_ID] = new_data.pop(
-                    "aws_access_key_id")
+                new_data[CONF_AWS_ACCESS_KEY_ID] = new_data.pop("aws_access_key_id")
                 updated = True
             if "aws_secret_access_key" in new_data:
                 new_data[CONF_AWS_SECRET_ACCESS_KEY] = new_data.pop(
-                    "aws_secret_access_key")
+                    "aws_secret_access_key"
+                )
                 updated = True
             if "aws_region_name" in new_data:
-                new_data[CONF_AWS_REGION_NAME] = new_data.pop(
-                    "aws_region_name")
+                new_data[CONF_AWS_REGION_NAME] = new_data.pop("aws_region_name")
                 updated = True
             if CONF_DEFAULT_MODEL not in new_data:
                 new_data[CONF_DEFAULT_MODEL] = DEFAULT_AWS_MODEL
@@ -382,8 +399,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
                 new_data[CONF_API_KEY] = new_data.pop("openwebui_api_key")
                 updated = True
             if "openwebui_ip_address" in new_data:
-                new_data[CONF_IP_ADDRESS] = new_data.pop(
-                    "openwebui_ip_address")
+                new_data[CONF_IP_ADDRESS] = new_data.pop("openwebui_ip_address")
                 updated = True
             if "openwebui_port" in new_data:
                 new_data[CONF_PORT] = new_data.pop("openwebui_port")
@@ -410,7 +426,14 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
     return True
 
 
-async def _remember(hass, call: dict, start: datetime, response: dict, key_frame: str, today_summary: str) -> None:
+async def _remember(
+    hass,
+    call: dict,
+    start: datetime,
+    response: dict,
+    key_frame: str,
+    today_summary: str,
+) -> None:
     if call.remember:
         # Find timeline config
         config_entry = None
@@ -422,15 +445,15 @@ async def _remember(hass, call: dict, start: datetime, response: dict, key_frame
 
         if config_entry is None:
             raise ServiceValidationError(
-                f"Settings config entry not found. Please set up LLM Vision first.")
+                f"Settings config entry not found. Please set up LLM Vision first."
+            )
 
         timeline = Timeline(hass, config_entry)
 
         if call.image_entities and len(call.image_entities) > 0:
             camera_name = call.image_entities[0]
         elif call.video_paths and len(call.video_paths) > 0:
-            camera_name = call.video_paths[0].split(
-                "/")[-1].replace(".mp4", "")
+            camera_name = call.video_paths[0].split("/")[-1].replace(".mp4", "")
         else:
             camera_name = ""
 
@@ -446,7 +469,7 @@ async def _remember(hass, call: dict, start: datetime, response: dict, key_frame
             summary=response["response_text"],
             key_frame=key_frame,
             camera_name=camera_name,
-            today_summary=today_summary
+            today_summary=today_summary,
         )
 
 
@@ -467,14 +490,16 @@ async def _update_sensor(hass, sensor_entity: str, value: str | int, type: str) 
                 new_value = "off"
             else:
                 raise ServiceValidationError(
-                    f"Response {value} could not be parsed. Please check your prompt.")
+                    f"Response {value} could not be parsed. Please check your prompt."
+                )
 
     elif type == "number":
         try:
             new_value = float(value)
         except ValueError:
             raise ServiceValidationError(
-                f"Response {value} could not be parsed. Please check your prompt.")
+                f"Response {value} could not be parsed. Please check your prompt."
+            )
 
     elif type == "option":
         options = hass.states.get(sensor_entity).attributes["options"]
@@ -484,7 +509,8 @@ async def _update_sensor(hass, sensor_entity: str, value: str | int, type: str) 
                 new_value = value.title()
             else:
                 raise ServiceValidationError(
-                    f"Response {value} could not be parsed. Please check your prompt.")
+                    f"Response {value} could not be parsed. Please check your prompt."
+                )
         else:
             new_value = value
 
@@ -495,11 +521,9 @@ async def _update_sensor(hass, sensor_entity: str, value: str | int, type: str) 
         raise ServiceValidationError("Unsupported sensor entity type")
 
     # Update the value
-    _LOGGER.info(
-        f"Updating sensor {sensor_entity} with new value: {new_value}")
+    _LOGGER.info(f"Updating sensor {sensor_entity} with new value: {new_value}")
     try:
-        current_attributes = hass.states.get(
-            sensor_entity).attributes.copy()
+        current_attributes = hass.states.get(sensor_entity).attributes.copy()
         hass.states.async_set(sensor_entity, new_value, current_attributes)
     except Exception as e:
         _LOGGER.error(f"Failed to update sensor {sensor_entity}: {e}")
@@ -517,19 +541,26 @@ class ServiceCallData:
         self.message = str(data_call.data.get(MESSAGE, "")[0:2000])
         self.remember = data_call.data.get(REMEMBER, False)
         self.use_memory = data_call.data.get(USE_MEMORY, False)
-        self.image_paths = data_call.data.get(IMAGE_FILE, "").split(
-            "\n") if data_call.data.get(IMAGE_FILE) else None
+        self.image_paths = (
+            data_call.data.get(IMAGE_FILE, "").split("\n")
+            if data_call.data.get(IMAGE_FILE)
+            else None
+        )
         self.image_entities = data_call.data.get(IMAGE_ENTITY)
-        self.video_paths = data_call.data.get(VIDEO_FILE, "").split(
-            "\n") if data_call.data.get(VIDEO_FILE) else None
-        self.event_id = data_call.data.get(EVENT_ID, "").split(
-            "\n") if data_call.data.get(EVENT_ID) else None
+        self.video_paths = (
+            data_call.data.get(VIDEO_FILE, "").split("\n")
+            if data_call.data.get(VIDEO_FILE)
+            else None
+        )
+        self.event_id = (
+            data_call.data.get(EVENT_ID, "").split("\n")
+            if data_call.data.get(EVENT_ID)
+            else None
+        )
         self.interval = int(data_call.data.get(INTERVAL, 2))
         self.duration = int(data_call.data.get(DURATION, 10))
-        self.frigate_retry_attempts = int(
-            data_call.data.get(FRIGATE_RETRY_ATTEMPTS, 2))
-        self.frigate_retry_seconds = int(
-            data_call.data.get(FRIGATE_RETRY_SECONDS, 1))
+        self.frigate_retry_attempts = int(data_call.data.get(FRIGATE_RETRY_ATTEMPTS, 2))
+        self.frigate_retry_seconds = int(data_call.data.get(FRIGATE_RETRY_SECONDS, 1))
         self.max_frames = int(data_call.data.get(MAX_FRAMES, 3))
         self.target_width = data_call.data.get(TARGET_WIDTH, 3840)
         self.temperature = float()
@@ -547,7 +578,8 @@ class ServiceCallData:
         self.start_time = data_call.data.get("start_time", dt_util.now())
         self.start_time = self._convert_time_input_to_datetime(self.start_time)
         self.end_time = data_call.data.get(
-            "end_time", self.start_time + timedelta(minutes=1))
+            "end_time", self.start_time + timedelta(minutes=1)
+        )
         self.end_time = self._convert_time_input_to_datetime(self.end_time)
 
         # ------------ Added during call ------------
@@ -593,20 +625,22 @@ def setup(hass, config):
         # Initialize call object with service call data
         call = ServiceCallData(data_call).get_service_call_data()
         # Initialize the RequestHandler client
-        request = Request(hass=hass,
-                          message=call.message,
-                          max_tokens=call.max_tokens,
-                          temperature=call.temperature,
-                          )
+        request = Request(
+            hass=hass,
+            message=call.message,
+            max_tokens=call.max_tokens,
+            temperature=call.temperature,
+        )
         # Fetch and preprocess images
         processor = MediaProcessor(hass, request)
         # Send images to RequestHandler client
-        request = await processor.add_images(image_entities=call.image_entities,
-                                             image_paths=call.image_paths,
-                                             target_width=call.target_width,
-                                             include_filename=call.include_filename,
-                                             expose_images=call.expose_images,
-                                             )
+        request = await processor.add_images(
+            image_entities=call.image_entities,
+            image_paths=call.image_paths,
+            target_width=call.target_width,
+            include_filename=call.include_filename,
+            expose_images=call.expose_images,
+        )
 
         call.memory = Memory(hass)
         await call.memory._update_memory()
@@ -619,13 +653,14 @@ def setup(hass, config):
             _LOGGER.info(f"Key frame: {processor.key_frame}")
             response["key_frame"] = processor.key_frame
 
-        await _remember(hass=hass,
-                        call=call,
-                        start=start,
-                        response=response,
-                        key_frame=processor.key_frame,
-                        today_summary=response.get("today_summary", "")
-                        )
+        await _remember(
+            hass=hass,
+            call=call,
+            start=start,
+            response=response,
+            key_frame=processor.key_frame,
+            today_summary=response.get("today_summary", ""),
+        )
         return response
 
     async def video_analyzer(data_call):
@@ -634,21 +669,23 @@ def setup(hass, config):
         call = ServiceCallData(data_call).get_service_call_data()
         call.message = "The attached images are frames from a video. " + call.message
 
-        request = Request(hass,
-                          message=call.message,
-                          max_tokens=call.max_tokens,
-                          temperature=call.temperature,
-                          )
+        request = Request(
+            hass,
+            message=call.message,
+            max_tokens=call.max_tokens,
+            temperature=call.temperature,
+        )
         processor = MediaProcessor(hass, request)
-        request = await processor.add_videos(video_paths=call.video_paths,
-                                             event_ids=call.event_id,
-                                             max_frames=call.max_frames,
-                                             target_width=call.target_width,
-                                             include_filename=call.include_filename,
-                                             expose_images=call.expose_images,
-                                             frigate_retry_attempts=call.frigate_retry_attempts,
-                                             frigate_retry_seconds=call.frigate_retry_seconds
-                                             )
+        request = await processor.add_videos(
+            video_paths=call.video_paths,
+            event_ids=call.event_id,
+            max_frames=call.max_frames,
+            target_width=call.target_width,
+            include_filename=call.include_filename,
+            expose_images=call.expose_images,
+            frigate_retry_attempts=call.frigate_retry_attempts,
+            frigate_retry_seconds=call.frigate_retry_seconds,
+        )
         call.memory = Memory(hass)
         await call.memory._update_memory()
 
@@ -657,33 +694,39 @@ def setup(hass, config):
         if processor.key_frame:
             response["key_frame"] = processor.key_frame
 
-        await _remember(hass=hass,
-                        call=call,
-                        start=start,
-                        response=response,
-                        key_frame=processor.key_frame,
-                        today_summary=response.get("today_summary", ""))
+        await _remember(
+            hass=hass,
+            call=call,
+            start=start,
+            response=response,
+            key_frame=processor.key_frame,
+            today_summary=response.get("today_summary", ""),
+        )
         return response
 
     async def stream_analyzer(data_call):
         """Handle the service call to analyze a stream"""
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
-        call.message = "The attached images are frames from a live camera feed. " + call.message
-        request = Request(hass,
-                          message=call.message,
-                          max_tokens=call.max_tokens,
-                          temperature=call.temperature,
-                          )
+        call.message = (
+            "The attached images are frames from a live camera feed. " + call.message
+        )
+        request = Request(
+            hass,
+            message=call.message,
+            max_tokens=call.max_tokens,
+            temperature=call.temperature,
+        )
         processor = MediaProcessor(hass, request)
 
-        request = await processor.add_streams(image_entities=call.image_entities,
-                                              duration=call.duration,
-                                              max_frames=call.max_frames,
-                                              target_width=call.target_width,
-                                              include_filename=call.include_filename,
-                                              expose_images=call.expose_images,
-                                              )
+        request = await processor.add_streams(
+            image_entities=call.image_entities,
+            duration=call.duration,
+            max_frames=call.max_frames,
+            target_width=call.target_width,
+            include_filename=call.include_filename,
+            expose_images=call.expose_images,
+        )
 
         call.memory = Memory(hass)
         await call.memory._update_memory()
@@ -693,13 +736,14 @@ def setup(hass, config):
         if processor.key_frame:
             response["key_frame"] = processor.key_frame
 
-        await _remember(hass=hass,
-                        call=call,
-                        start=start,
-                        response=response,
-                        key_frame=processor.key_frame,
-                        today_summary=response.get("today_summary", "")
-                        )
+        await _remember(
+            hass=hass,
+            call=call,
+            start=start,
+            response=response,
+            key_frame=processor.key_frame,
+            today_summary=response.get("today_summary", ""),
+        )
         return response
 
     async def data_analyzer(data_call):
@@ -718,16 +762,26 @@ def setup(hass, config):
         if state == "unavailable":
             raise ServiceValidationError("Sensor entity is unavailable")
 
-        if sensor_type == "input_boolean" or sensor_type == "boolean" or sensor_type == "binary_sensor" or sensor_type == "switch":
+        if (
+            sensor_type == "input_boolean"
+            or sensor_type == "boolean"
+            or sensor_type == "binary_sensor"
+            or sensor_type == "switch"
+        ):
             data_type = "one of: ['on', 'off']"
             type = "boolean"
-        elif sensor_type == "input_number" or sensor_type == "number" or sensor_type == "sensor":
+        elif (
+            sensor_type == "input_number"
+            or sensor_type == "number"
+            or sensor_type == "sensor"
+        ):
             data_type = "a number"
             type = "number"
         elif sensor_type == "input_select" or sensor_type == "select":
             options = hass.states.get(sensor_entity).attributes["options"]
-            data_type = "one of these options: " + \
-                ", ".join([f"'{option}'" for option in options])
+            data_type = "one of these options: " + ", ".join(
+                [f"'{option}'" for option in options]
+            )
             type = "option"
         elif sensor_type == "input_text" or sensor_type == "text":
             data_type = "text (string)"
@@ -735,19 +789,24 @@ def setup(hass, config):
         else:
             raise ServiceValidationError("Unsupported sensor entity type")
 
-        call.message = f"Your job is to extract data from images. You can only respond with {data_type}. You must respond with one of the options! If unsure, choose the option that best matches. Answer the following question with the options provided: " + call.message
-        request = Request(hass,
-                          message=call.message,
-                          max_tokens=call.max_tokens,
-                          temperature=call.temperature,
-                          )
+        call.message = (
+            f"Your job is to extract data from images. You can only respond with {data_type}. You must respond with one of the options! If unsure, choose the option that best matches. Answer the following question with the options provided: "
+            + call.message
+        )
+        request = Request(
+            hass,
+            message=call.message,
+            max_tokens=call.max_tokens,
+            temperature=call.temperature,
+        )
         processor = MediaProcessor(hass, request)
-        request = await processor.add_visual_data(image_entities=call.image_entities,
-                                                  image_paths=call.image_paths,
-                                                  target_width=call.target_width,
-                                                  include_filename=call.include_filename,
-                                                  expose_images=call.expose_images,
-                                                  )
+        request = await processor.add_visual_data(
+            image_entities=call.image_entities,
+            image_paths=call.image_paths,
+            target_width=call.target_width,
+            include_filename=call.include_filename,
+            expose_images=call.expose_images,
+        )
 
         call.memory = Memory(hass, system_prompt=DATA_EXTRACTION_PROMPT)
         await call.memory._update_memory()
@@ -757,13 +816,14 @@ def setup(hass, config):
         if processor.key_frame:
             response["key_frame"] = processor.key_frame
 
-        await _remember(hass=hass,
-                        call=call,
-                        start=start,
-                        response=response,
-                        key_frame=processor.key_frame,
-                        today_summary=response.get("today_summary", "")
-                        )
+        await _remember(
+            hass=hass,
+            call=call,
+            start=start,
+            response=response,
+            key_frame=processor.key_frame,
+            today_summary=response.get("today_summary", ""),
+        )
 
         _LOGGER.debug(f"Response: {response}")
         _LOGGER.debug(f"Sensor type: {type}")
@@ -785,7 +845,8 @@ def setup(hass, config):
 
         if config_entry is None:
             raise ServiceValidationError(
-                f"Config entry not found. Please create the 'Settings' config entry first.")
+                f"Config entry not found. Please create the 'Settings' config entry first."
+            )
 
         timeline = Timeline(hass, config_entry)
 
@@ -795,28 +856,35 @@ def setup(hass, config):
             label=call.title,
             summary=call.summary,
             key_frame=call.image_path,
-            camera_name=call.camera_entity
+            camera_name=call.camera_entity,
         )
 
     # Register actions
     hass.services.register(
-        DOMAIN, "image_analyzer", image_analyzer,
-        supports_response=SupportsResponse.ONLY
+        DOMAIN,
+        "image_analyzer",
+        image_analyzer,
+        supports_response=SupportsResponse.ONLY,
     )
     hass.services.register(
-        DOMAIN, "video_analyzer", video_analyzer,
-        supports_response=SupportsResponse.ONLY
+        DOMAIN,
+        "video_analyzer",
+        video_analyzer,
+        supports_response=SupportsResponse.ONLY,
     )
     hass.services.register(
-        DOMAIN, "stream_analyzer", stream_analyzer,
-        supports_response=SupportsResponse.ONLY
+        DOMAIN,
+        "stream_analyzer",
+        stream_analyzer,
+        supports_response=SupportsResponse.ONLY,
     )
     hass.services.register(
-        DOMAIN, "data_analyzer", data_analyzer,
-        supports_response=SupportsResponse.ONLY
+        DOMAIN, "data_analyzer", data_analyzer, supports_response=SupportsResponse.ONLY
     )
     hass.services.register(
-        DOMAIN, "remember", remember,
+        DOMAIN,
+        "remember",
+        remember,
     )
 
     return True

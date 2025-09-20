@@ -319,6 +319,36 @@
                     }
                 }
             },
+            "openrouter": {
+                "title": "配置OpenRouter",
+                "description": "OpenRouter是一个平台，提供对多种AI模型的访问。您可以用它连接到OpenAI、Anthropic等模型。",
+                "sections": {
+                    "connection_section": {
+                        "name": "连接",
+                        "description": "OpenRouter认证",
+                        "data": {
+                            "api_key": "API密钥"
+                        },
+                        "data_description": {
+                            "api_key": "您的OpenRouter API密钥。请确保您的OpenRouter账户已充值。"
+                        }
+                    },
+                    "model_section": {
+                        "name": "模型",
+                        "description": "设置默认模型参数",
+                        "data": {
+                            "default_model": "默认模型",
+                            "temperature": "温度",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "当未指定其他模型时使用的默认模型。",
+                            "temperature": "控制输出的随机性。较低的值使输出更确定。",
+                            "top_p": "控制输出的多样性。较低的值使输出更集中。"
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "设置",
                 "description": "配置LLM视觉集成。在设置其他提供商之前，必须先完成此项。如果您想使用默认设置，只需点击“提交”。",

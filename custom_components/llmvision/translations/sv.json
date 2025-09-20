@@ -319,6 +319,36 @@
                     }
                 }
             },
+            "openrouter": {
+                "title": "Konfigurera OpenRouter",
+                "description": "OpenRouter är en plattform som ger tillgång till olika AI-modeller. Du kan använda den för att ansluta till modeller som OpenAI, Anthropic och fler.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Anslutning",
+                        "description": "OpenRouter-autentisering",
+                        "data": {
+                            "api_key": "API-nyckel"
+                        },
+                        "data_description": {
+                            "api_key": "Din OpenRouter API-nyckel. Se till att du har saldo på ditt OpenRouter-konto."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Ställ in standardmodellparametrar",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen som används om ingen annan anges.",
+                            "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Inställningar",
                 "description": "Konfigurera LLM Vision-integrationen. Detta måste göras innan du lägger till andra leverantörer. Om du vill använda standardinställningarna, tryck bara på 'Skicka'.",

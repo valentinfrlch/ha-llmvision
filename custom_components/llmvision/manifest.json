@@ -6,6 +6,6 @@
     "documentation": "https://github.com/valentinfrlch/ha-llmvision",
     "iot_class": "cloud_polling",
     "issue_tracker": "https://github.com/valentinfrlch/ha-llmvision/issues",
-    "requirements": ["boto3", "aiosqlite", "tenacity"],
-    "version": "1.5.0"
+    "requirements": ["boto3", "aiosqlite", "aiofile", "tenacity"],
+    "version": "1.5.1"
 }

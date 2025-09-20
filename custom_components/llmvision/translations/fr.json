@@ -319,6 +319,36 @@
                     }
                 }
             },
+            "openrouter": {
+                "title": "Configurer OpenRouter",
+                "description": "OpenRouter est une plateforme qui donne accès à divers modèles d'IA. Vous pouvez l'utiliser pour vous connecter à des modèles comme OpenAI, Anthropic, et plus encore.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexion",
+                        "description": "Authentification OpenRouter",
+                        "data": {
+                            "api_key": "Clé API"
+                        },
+                        "data_description": {
+                            "api_key": "Votre clé API OpenRouter. Assurez-vous d'avoir du crédit sur votre compte OpenRouter."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modèle",
+                        "description": "Définir les paramètres par défaut du modèle",
+                        "data": {
+                            "default_model": "Modèle par défaut",
+                            "temperature": "Température",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
+                            "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Paramètres",
                 "description": "Configurez l'intégration LLM Vision. Cette entrée est requise avant de configurer d'autres fournisseurs. Si vous souhaitez utiliser les paramètres par défaut, appuyez simplement sur 'Soumettre'.",
