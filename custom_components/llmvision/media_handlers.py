@@ -137,6 +137,35 @@ class MediaProcessor:
 
         return ssim
 
+    async def _select_keyframe_index(
+        self, reference_frame_bytes, candidate_frames_bytes
+    ):
+        """
+        Pick the index of the frame most different from the reference frame.
+        """
+        # Decode reference to grayscale
+        ref_img = Image.open(io.BytesIO(reference_frame_bytes))
+        try:
+            await self.hass.loop.run_in_executor(None, ref_img.load)
+            ref_gray = np.array(ref_img.convert("L"))
+        finally:
+            ref_img.close()
+
+        best_idx = 0
+        best_score = float("inf")  # minimize SSIM
+        for idx, frame_bytes in enumerate(candidate_frames_bytes):
+            img = Image.open(io.BytesIO(frame_bytes))
+            try:
+                await self.hass.loop.run_in_executor(None, img.load)
+                curr_gray = np.array(img.convert("L"))
+            finally:
+                img.close()
+            score = self._similarity_score(ref_gray, curr_gray)
+            if score < best_score:
+                best_score = score
+                best_idx = idx
+        return best_idx
+
     async def resize_image(
         self, target_width, image_path=None, image_data=None, img=None
     ):
@@ -247,16 +276,18 @@ class MediaProcessor:
             target_width (int): Target width for the images in pixels
         """
 
-        interval = (
-            1
-            if duration < 3
-            else (
-                2
-                if duration < 10
-                else 4 if duration < 30 else 6 if duration < 60 else 10
-            )
-        )
+        if duration is None or duration < 3:
+            interval = 1
+        elif duration < 10:
+            interval = 2
+        elif duration < 30:
+            interval = 3
+        elif duration < 60:
+            interval = 5
+        else:
+            interval = 5
         camera_frames = {}
+        first_frames = {}
 
         # Record on a separate thread for each camera
         async def record_camera(image_entity, camera_number):
@@ -293,8 +324,6 @@ class MediaProcessor:
                         score = self._similarity_score(
                             previous_frame, current_frame_gray
                         )
-                        # Favor earlier frames
-                        score += 0.1 * (max_frames - frame_counter)
                         # Encode the image back to bytes
                         buffer = io.BytesIO()
                         img.save(buffer, format="JPEG")
@@ -323,10 +352,24 @@ class MediaProcessor:
                         frame_counter += 1
                         previous_frame = current_frame_gray
                     else:
-                        # Initialize previous_frame with the first frame
+                        # Current frame is first frame
                         previous_frame = current_frame_gray
-                        # First snapshot of the camera, always considered important.
-                        score = -9999
+                        # Normalize to JPEG
+                        buffer = io.BytesIO()
+                        img.save(buffer, format="JPEG")
+                        first_bytes = buffer.getvalue()
+                        frame_label = (
+                            image_entity.replace("camera.", "")
+                            + " frame "
+                            + str(frame_counter)
+                            if include_filename
+                            else "camera "
+                            + str(camera_number)
+                            + " frame "
+                            + str(frame_counter)
+                        )
+                        first_frames[image_entity] = (frame_label, first_bytes)
+                        frame_counter += 1
 
                 preprocessing_duration = time.time() - preprocessing_start_time
                 _LOGGER.info(
@@ -371,22 +414,52 @@ class MediaProcessor:
         # Sort frames by SSIM score
         frames_with_scores.sort(key=lambda x: x[2])
 
-        # Select frames with lowest ssim SIM scores
-        selected_frames = frames_with_scores[:max_frames]
-        # Sort selected frames back into their original chronological order
-        selected_frames.sort(key=lambda x: x[0])
+        # Frame selection: prepend first frames, then best-scored (respect max_frames)
+        selected_frames = []
+        remaining = max(0, max_frames)
+
+        # Prepend first frames in the order of requested entities
+        for entity in image_entities:
+            if remaining <= 0:
+                break
+            if entity in first_frames:
+                label, data = first_frames[entity]
+                selected_frames.append((label, data, None))
+                remaining -= 1
+
+        # Fill remaining slots with best scored frames
+        for name, data, score in frames_with_scores:
+            if remaining <= 0:
+                break
+            selected_frames.append((name, data, score))
+            remaining -= 1
 
         # Add selected frames to client
-        for frame_name, frame_data, _ in selected_frames:
-            resized_image = await self.resize_image(
-                target_width=target_width, image_data=frame_data
+        if selected_frames:
+            # Choose keyframe among the selected frames using the first as reference
+            reference_bytes = selected_frames[0][1]
+            candidate_bytes = [data for _, data, _ in selected_frames]
+            key_idx = await self._select_keyframe_index(
+                reference_bytes, candidate_bytes
             )
-            if expose_images:
-                await self._expose_image(
-                    frame_name[-1], resized_image, uid=str(uuid.uuid4())[:8]
-                )
 
-            self.client.add_frame(base64_image=resized_image, filename=frame_name)
+            # Add all frames (resized) and expose only the chosen keyframe
+            resized_base64 = []
+            for frame_name, frame_data, _ in selected_frames:
+                resized_image = await self.resize_image(
+                    target_width=target_width, image_data=frame_data
+                )
+                resized_base64.append(resized_image)
+                self.client.add_frame(base64_image=resized_image, filename=frame_name)
+
+            if expose_images:
+                key_name = selected_frames[key_idx][0]
+                key_b64 = resized_base64[key_idx]
+                await self._expose_image(
+                    key_name[-1],  # keep existing naming style
+                    key_b64,
+                    uid=str(uuid.uuid4())[:8],
+                )
 
     async def add_images(
         self, image_entities, image_paths, target_width, include_filename, expose_images
@@ -463,8 +536,6 @@ class MediaProcessor:
     async def add_video(
         self,
         video_path,
-        tmp_clips_dir,
-        tmp_frames_dir,
         base_url,
         max_frames=10,
         target_width=640,
@@ -496,7 +567,21 @@ class MediaProcessor:
 
                 video_path = base_url + video_path
 
-            # Fetch URL to local file
+            ffmpeg_tail = [
+                "-vf",  # video filter
+                "select=eq(pict_type\\,I)",  # select only I-frames
+                "-vsync",
+                "0",  # disable v-sync to avoid frame duplication
+                "-q:v",  # quality level for JPEG (lower is better)
+                "5",  # 5 medium quality
+                "-f",
+                "image2pipe",  # output to pipe
+                "-vcodec",
+                "mjpeg",  # encode as mjpeg
+                "-",
+            ]
+
+            # If file is served over http(s)
             if video_path.startswith("http://") or video_path.startswith("https://"):
                 # Download video into memory instead of disk
                 video_data = await self._fetch(video_path)
@@ -508,26 +593,19 @@ class MediaProcessor:
                 # Write video_data to a BytesIO object for ffmpeg input
                 video_bytes_io = io.BytesIO(video_data)
 
-                # Use ffmpeg to read from stdin (pipe:0)
                 ffmpeg_cmd = [
                     "ffmpeg",
-                    "-hide_banner",
-                    "-hwaccel",
-                    "auto",
-                    "-skip_frame",
-                    "nokey",
-                    "-an",
-                    "-sn",
-                    "-dn",
+                    "-hide_banner",  # cleaner logs
+                    "-loglevel",
+                    "error",  # only show errors
+                    "-hwaccel",  # enable hardware acceleration
+                    "auto",  # auto-detect hardware acceleration
+                    "-an",  # disable audio
+                    "-sn",  # disable subtitles
+                    "-dn",  # disable data
                     "-i",
                     "pipe:0",
-                    "-fps_mode",
-                    "passthrough",
-                    "-vcodec",
-                    "mjpeg",
-                    "-f",
-                    "image2pipe",
-                    "-",
+                    *ffmpeg_tail,
                 ]
 
                 output = asyncio.subprocess.PIPE
@@ -554,29 +632,20 @@ class MediaProcessor:
                 await ffmpeg_process.stdin.drain()
                 ffmpeg_process.stdin.close()
             else:
-
-                # Extract iframes from video
-                # use %05d formatting to enable iteration in sorted order
-                # Extract iframes from video directly to memory using image2pipe
+                # Local file
                 ffmpeg_cmd = [
                     "ffmpeg",
                     "-hide_banner",
+                    "-loglevel",
+                    "error",
                     "-hwaccel",
                     "auto",
-                    "-skip_frame",
-                    "nokey",
                     "-an",
                     "-sn",
                     "-dn",
                     "-i",
                     video_path,
-                    "-fps_mode",
-                    "passthrough",
-                    "-vcodec",
-                    "mjpeg",
-                    "-f",
-                    "image2pipe",
-                    "-",
+                    *ffmpeg_tail,
                 ]
 
                 output = asyncio.subprocess.PIPE
@@ -590,15 +659,19 @@ class MediaProcessor:
                 _LOGGER.debug(
                     f"Running FFMPEG to create keyframes: {' '.join(ffmpeg_cmd)}"
                 )
-
                 ffmpeg_process = await asyncio.create_subprocess_exec(
                     *ffmpeg_cmd, stdout=output, stderr=error_output
+                )
+                _LOGGER.info(
+                    f"Started ffmpeg pid={ffmpeg_process.pid} (stdin={'inherit' if video_path else 'none'}, "
+                    f"stdout={'pipe' if ffmpeg_process.stdout else 'none'}, stderr={'inherited' if error_output is None else 'devnull'})"
                 )
 
             previous_frame = None
             frames = []
             frame_counter = 0
             jpeg_buffer = b""
+            first_frame = None
 
             def find_jpeg_frames(data):
                 frames = []
@@ -613,12 +686,35 @@ class MediaProcessor:
                 return frames, data[start:]
 
             try:
-                while frame_counter < max_frames:
-                    chunk = await ffmpeg_process.stdout.read(4096)
-                    if not chunk:
+                per_read_timeout = 30  # seconds
+                # Ensure stdout is readable
+                if ffmpeg_process.stdout is None:
+                    _LOGGER.error("ffmpeg stdout is not a PIPE; cannot read frames")
+                    await ffmpeg_process.wait()
+                    raise ServiceValidationError("ffmpeg stdout not available")
+                # Read until ffmpeg closes stdout
+                while True:
+                    try:
+                        chunk = await asyncio.wait_for(
+                            ffmpeg_process.stdout.read(4096), timeout=per_read_timeout
+                        )
+                    except asyncio.TimeoutError:
+                        _LOGGER.warning(
+                            "Timeout while waiting for ffmpeg stdout read; terminating read loop"
+                        )
                         break
+
+                    if not chunk:
+                        _LOGGER.debug("ffmpeg stdout closed or returned no data")
+                        break
+
+                    _LOGGER.debug(f"Read chunk from ffmpeg stdout: {len(chunk)} bytes")
                     jpeg_buffer += chunk
                     found_frames, jpeg_buffer = find_jpeg_frames(jpeg_buffer)
+                    _LOGGER.debug(
+                        f"Found {len(found_frames)} complete JPEG frames in buffer"
+                    )
+
                     for jpeg_data in found_frames:
                         try:
                             img = Image.open(io.BytesIO(jpeg_data))
@@ -630,14 +726,17 @@ class MediaProcessor:
                                 score = self._similarity_score(
                                     previous_frame, current_frame_gray
                                 )
-                                # TODO: Adjust factor
-                                # Favor earlier frames
-                                score += 0.1 * (max_frames - frame_counter)
                                 frames.append((jpeg_data, score, frame_counter))
+                                _LOGGER.debug(
+                                    f"Appended frame {frame_counter} (score={score:.6f}, bytes={len(jpeg_data)})"
+                                )
                             else:
-                                # First frame, always considered important
-                                score = -9999
-                                frames.append((jpeg_data, score, frame_counter))
+                                # First frame, always include
+                                first_frame = (jpeg_data, frame_counter)
+                                _LOGGER.debug(
+                                    f"Captured first frame {frame_counter} (bytes={len(jpeg_data)})"
+                                )
+
                             previous_frame = current_frame_gray
                             frame_counter += 1
                         except UnidentifiedImageError:
@@ -667,31 +766,45 @@ class MediaProcessor:
             ffmpeg_time = time.monotonic_ns() - ffmpeg_start
             _LOGGER.debug(f"FFmpeg took {ffmpeg_time / 1_000_000:.2f} ms")
 
-            if len(frames) == 0:
+            if len(frames) == 0 and first_frame is None:
                 raise ServiceValidationError("No frames extracted from video.")
 
-            # Sort frames by SSIM score
-            frames.sort(key=lambda x: x[1])
-            selected_frames = frames[:max_frames]
-            # Sort selected frames back into their original chronological order
-            selected_frames.sort(key=lambda x: x[2])
+            # Log all frames with scores
+            for fdata, fscore, findex in frames:
+                _LOGGER.debug(f"Extracted frame {findex} with SSIM score {fscore:.6f}")
 
-            # Expose images if requested
-            if expose_images:
-                for idx, (frame_data, _, frame_idx) in enumerate(selected_frames):
-                    await self._expose_image(
-                        str(frame_idx + 1),
-                        await self.resize_image(
-                            target_width=target_width, image_data=frame_data
-                        ),
-                        current_event_id[:8],
-                    )
+            # Sort scored frames by SSIM
+            frames.sort(key=lambda x: x[1])
+
+            # Frame selection: prepend first frame, then best-scored (respect max_frames)
+            selected_frames = []
+            remaining = max(0, max_frames)
+
+            if first_frame is not None and remaining > 0:
+                first_data, first_idx = first_frame
+                selected_frames.append((first_data, None, first_idx))
+                remaining -= 1
+
+            best_rest = frames[:remaining]
+            # Keep chronological order for the rest
+            best_rest.sort(key=lambda x: x[2])
+            selected_frames.extend(best_rest)
+
+            # Expose keyframe if requested
+            if expose_images and selected_frames:
+                reference_bytes = selected_frames[0][0]
+                candidate_bytes = [fd for (fd, _, _) in selected_frames]
+                key_idx = await self._select_keyframe_index(
+                    reference_bytes, candidate_bytes
+                )
 
             # Add frames to client
-            for idx, (frame_data, _, frame_idx) in enumerate(selected_frames, start=1):
+            resized_base64 = []
+            for idx, (frame_data, _, _) in enumerate(selected_frames, start=1):
                 resized_image = await self.resize_image(
                     target_width=target_width, image_data=frame_data
                 )
+                resized_base64.append(resized_image)
                 self.client.add_frame(
                     base64_image=resized_image,
                     filename=(
@@ -699,6 +812,15 @@ class MediaProcessor:
                         if include_filename
                         else f"Video frame {idx}"
                     ),
+                )
+
+            if expose_images and selected_frames:
+                # selected_frames items are (frame_bytes, score, original_index)
+                frame_idx_label = (selected_frames[key_idx][2] or 0) + 1
+                await self._expose_image(
+                    str(frame_idx_label),
+                    resized_base64[key_idx],
+                    uid=str(uuid.uuid4())[:8],
                 )
         except Exception as e:
             raise ServiceValidationError(f"Error processing video {video_path}: {e}")
