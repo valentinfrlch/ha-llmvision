@@ -7,6 +7,7 @@ import logging
 import time
 import asyncio
 import shlex
+import tempfile
 from aiofile import async_open
 from datetime import timedelta
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -580,38 +581,43 @@ class MediaProcessor:
                 "mjpeg",  # encode as mjpeg
                 "-",
             ]
+            ffmpeg_stderr = None
+            temp_file_path = None
 
             # If file is served over http(s)
             if video_path.startswith("http://") or video_path.startswith("https://"):
-                # Download video into memory instead of disk
-                video_data = await self._fetch(video_path)
-                if not video_data:
+                # Download to a seekable temp file so ffmpeg can parse MP4 (moov at end)
+                suffix = os.path.splitext(urlparse(video_path).path)[1] or ".mp4"
+                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                    temp_file_path = tmp.name
+                await self._fetch(video_path, target_file=temp_file_path)
+                if (
+                    not os.path.exists(temp_file_path)
+                    or os.path.getsize(temp_file_path) == 0
+                ):
                     raise ServiceValidationError(
                         f"Failed to fetch video from {video_path}"
                     )
-
-                # Write video_data to a BytesIO object for ffmpeg input
-                video_bytes_io = io.BytesIO(video_data)
 
                 ffmpeg_cmd = [
                     "ffmpeg",
                     "-hide_banner",  # cleaner logs
                     "-loglevel",
-                    "error",  # only show errors
-                    "-hwaccel",  # enable hardware acceleration
-                    "auto",  # auto-detect hardware acceleration
-                    "-an",  # disable audio
-                    "-sn",  # disable subtitles
-                    "-dn",  # disable data
+                    "error",
+                    # input network robustness if ever used with URLs directly
+                    "-an",
+                    "-sn",
+                    "-dn",
                     "-i",
-                    "pipe:0",
+                    temp_file_path,
                     *ffmpeg_tail,
                 ]
 
                 output = asyncio.subprocess.PIPE
                 error_output = asyncio.subprocess.DEVNULL
                 if _LOGGER.isEnabledFor(logging.DEBUG):
-                    error_output = None
+                    error_output = asyncio.subprocess.PIPE
+                ffmpeg_stderr = None
 
                 ffmpeg_start = time.monotonic_ns()
                 ffmpeg_timeout = 300  # seconds
@@ -619,18 +625,12 @@ class MediaProcessor:
                 _LOGGER.debug(
                     f"Running FFMPEG to create keyframes: {' '.join(ffmpeg_cmd)}"
                 )
-
                 ffmpeg_process = await asyncio.create_subprocess_exec(
                     *ffmpeg_cmd,
-                    stdin=asyncio.subprocess.PIPE,
                     stdout=output,
                     stderr=error_output,
                 )
 
-                # Send video bytes to ffmpeg's stdin
-                await ffmpeg_process.stdin.write(video_bytes_io.getvalue())
-                await ffmpeg_process.stdin.drain()
-                ffmpeg_process.stdin.close()
             else:
                 # Local file
                 ffmpeg_cmd = [
@@ -708,12 +708,8 @@ class MediaProcessor:
                         _LOGGER.debug("ffmpeg stdout closed or returned no data")
                         break
 
-                    _LOGGER.debug(f"Read chunk from ffmpeg stdout: {len(chunk)} bytes")
                     jpeg_buffer += chunk
                     found_frames, jpeg_buffer = find_jpeg_frames(jpeg_buffer)
-                    _LOGGER.debug(
-                        f"Found {len(found_frames)} complete JPEG frames in buffer"
-                    )
 
                     for jpeg_data in found_frames:
                         try:
@@ -747,6 +743,16 @@ class MediaProcessor:
                         if frame_counter >= max_frames:
                             break
                 await ffmpeg_process.wait()
+
+                if (
+                    error_output == asyncio.subprocess.PIPE
+                    and ffmpeg_process.stderr is not None
+                ):
+                    try:
+                        ffmpeg_stderr = await ffmpeg_process.stderr.read()
+                    except Exception:
+                        ffmpeg_stderr = None
+
             except asyncio.TimeoutError:
                 _LOGGER.info(
                     f"FFmpeg failed to process video within {ffmpeg_timeout} seconds"
@@ -758,10 +764,21 @@ class MediaProcessor:
                 f"FFmpeg process finished with return code {ffmpeg_process.returncode}"
             )
 
+            # Cleanup temp file (if any)
+            if temp_file_path and os.path.exists(temp_file_path):
+                try:
+                    os.remove(temp_file_path)
+                except Exception:
+                    pass
+
             if ffmpeg_process.returncode != 0:
-                raise ServiceValidationError(
-                    f"FFmpeg failed with return code {ffmpeg_process.returncode}"
-                )
+                msg = f"FFmpeg failed with return code {ffmpeg_process.returncode}"
+                if ffmpeg_stderr:
+                    try:
+                        msg += f": {ffmpeg_stderr.decode(errors='ignore')}"
+                    except Exception:
+                        pass
+                raise ServiceValidationError(msg)
 
             ffmpeg_time = time.monotonic_ns() - ffmpeg_start
             _LOGGER.debug(f"FFmpeg took {ffmpeg_time / 1_000_000:.2f} ms")
