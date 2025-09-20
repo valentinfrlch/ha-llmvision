@@ -2,11 +2,9 @@ import base64
 import io
 import os
 import uuid
-import shutil
 import logging
 import time
 import asyncio
-import shlex
 import tempfile
 from aiofile import async_open
 from datetime import timedelta
@@ -17,7 +15,6 @@ from homeassistant.components.media_player import async_process_play_media_url
 
 from urllib.parse import urlparse
 from functools import partial
-from bisect import insort
 from PIL import Image, UnidentifiedImageError
 import numpy as np
 from homeassistant.helpers.network import get_url
