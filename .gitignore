@@ -1,3 +1,22 @@
 .DS_Store
 playground.py
-.gitignore
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Test and debug files
+test_provider_debug.py
+test_secrets.py
+*_test.log
+*.log
+
+# IDE files
+.vscode/
+.idea/
+
+# Environment files
+.env
+.env.local
