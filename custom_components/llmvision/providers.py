@@ -321,6 +321,11 @@ class Request:
                 return await self.call(call, _is_fallback_retry=True)
             else:
                 response_text = "Couldn't generate content. Check logs for details."
+
+        # Skip title generation for structured JSON responses
+        if call.response_format == "json" and provider_instance.supports_structured_output():
+            call.generate_title = False
+
         gen_title = None
         try:
             if call.generate_title:
