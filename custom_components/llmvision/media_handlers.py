@@ -325,12 +325,12 @@ class MediaProcessor:
                         # Use either entity name or assign number to each camera
                         frame_label = (
                             image_entity.replace("camera.", "")
-                            + " frame "
+                            + "-frame-"
                             + str(frame_counter)
                             if include_filename
-                            else "camera "
+                            else "-camera-"
                             + str(camera_number)
-                            + " frame "
+                            + "-frame-"
                             + str(frame_counter)
                         )
                         frames.update(
@@ -353,12 +353,12 @@ class MediaProcessor:
                         first_bytes = buffer.getvalue()
                         frame_label = (
                             image_entity.replace("camera.", "")
-                            + " frame "
+                            + "-frame-"
                             + str(frame_counter)
                             if include_filename
-                            else "camera "
+                            else "-camera-"
                             + str(camera_number)
-                            + " frame "
+                            + "-frame-"
                             + str(frame_counter)
                         )
                         first_frames[image_entity] = (frame_label, first_bytes)
@@ -449,8 +449,8 @@ class MediaProcessor:
                 key_name = selected_frames[key_idx][0]
                 key_b64 = resized_base64[key_idx]
                 await self._expose_image(
-                    key_name,
-                    key_b64,
+                    frame_name=key_name,
+                    image_data=key_b64,
                     uid=str(uuid.uuid4())[:8],
                 )
 
@@ -492,7 +492,9 @@ class MediaProcessor:
 
                     if expose_images:
                         await self._expose_image(
-                            "0", resized_image, str(uuid.uuid4())[:8]
+                            frame_name="0",
+                            image_data=resized_image,
+                            uid=str(uuid.uuid4())[:8],
                         )
 
                 except AttributeError as e:
@@ -521,7 +523,11 @@ class MediaProcessor:
                     self.client.add_frame(base64_image=image_data, filename=filename)
 
                     if expose_images:
-                        await self._expose_image("0", image_data, str(uuid.uuid4())[:8])
+                        await self._expose_image(
+                            frame_name="0",
+                            image_data=image_data,
+                            uid=str(uuid.uuid4())[:8],
+                        )
                 except Exception as e:
                     raise ServiceValidationError(f"Error: {e}")
         return self.client
@@ -827,8 +833,8 @@ class MediaProcessor:
                 # selected_frames items are (frame_bytes, score, original_index)
                 frame_idx_label = (selected_frames[key_idx][2] or 0) + 1
                 await self._expose_image(
-                    str(frame_idx_label),
-                    resized_base64[key_idx],
+                    frame_name=str(frame_idx_label),
+                    image_data=resized_base64[key_idx],
                     uid=str(uuid.uuid4())[:8],
                 )
         except Exception as e:
