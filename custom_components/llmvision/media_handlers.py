@@ -32,7 +32,7 @@ class MediaProcessor:
         self.client = client
         self.base64_images = []
         self.filenames = []
-        self.path = f"/media/{DOMAIN}/snapshots/"
+        self.snapshots_path = f"/media/{DOMAIN}/snapshots/"
         self.key_frame = ""
 
     async def _encode_image(self, img):
@@ -45,9 +45,10 @@ class MediaProcessor:
     async def _save_clip(
         self, clip_data=None, clip_path=None, image_data=None, image_path=None
     ):
+        _LOGGER.debug(f"Saving clip to {clip_path} and image to {image_path}")
         # Ensure dir exists
         await self.hass.loop.run_in_executor(
-            None, partial(os.makedirs, self.path, exist_ok=True)
+            None, partial(os.makedirs, self.snapshots_path, exist_ok=True)
         )
 
         def _run_save_clips(clip_data, clip_path, image_data, image_path):
@@ -448,7 +449,7 @@ class MediaProcessor:
                 key_name = selected_frames[key_idx][0]
                 key_b64 = resized_base64[key_idx]
                 await self._expose_image(
-                    key_name[-1],  # keep existing naming style
+                    key_name,
                     key_b64,
                     uid=str(uuid.uuid4())[:8],
                 )
@@ -841,8 +842,6 @@ class MediaProcessor:
         target_width,
         include_filename,
         expose_images,
-        frigate_retry_attempts,
-        frigate_retry_seconds,
     ):
         """Wrapper for client.add_frame for videos"""
 
