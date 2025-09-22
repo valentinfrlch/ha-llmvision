@@ -308,6 +308,7 @@ class Request:
         except Exception as e:
             _LOGGER.error(f"Provider {provider} failed: {e}")
             # Only try fallback if not already tried and fallback is set and different from current
+            print(f"Fallback provider: {fallback_provider}")
             if (
                 fallback_provider
                 and fallback_provider != "no_fallback"
