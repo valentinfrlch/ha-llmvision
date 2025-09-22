@@ -207,12 +207,12 @@ blueprint:
           name: File Path - To send snapshot in Dynamic Mode with Snapshot Preview Mode
           description: "The file path to store the most current snapshot for the FIRST camera if using multiple camera entities. You can specifiy a custom location as well.\n\nDefaults
             to `Media Folder - Secured` that references **/media/snapshots/<CAMERA_NAME>/last_motion.jpg** \n\n Try the `Public Folder - Unsecured` option that references **/config/www/snapshots/{{ camera_file_path }}/last_motion.jpg** if you are having issues ***Note that this is unsecured and exposes the images to the web.***"
-          default: '/media/snapshots/{{ camera_file_path }}/last_motion.jpg'
+          default: '/media/llmvision/snapshots_blueprint/{{ camera_file_path }}/last_motion.jpg'
           selector:
             select:
               options:
                 - label: Media Folder - Secured
-                  value: '/media/snapshots/{{ camera_file_path }}/last_motion.jpg'
+                  value: '/media/llmvision/snapshots_blueprint/{{ camera_file_path }}/last_motion.jpg'
 
                 - label: Public Folder - Unsecured
                   value: '/config/www/snapshots/{{ camera_file_path }}/last_motion.jpg'
@@ -669,7 +669,7 @@ action:
                         title: "{{ label }} {{ notification_time }}"
                         message: "{{response.response_text}}"
                         data:
-                          image: "{{response.key_frame.replace('/config/media', '/media') }}"
+                          image: "{{response.key_frame.replace('/media','/media/local') }}"
                           url: !input tap_navigate #iOS
                           clickAction: !input tap_navigate #Android
                           tag: "{{tag}}"
@@ -693,7 +693,7 @@ action:
                           actions:
                           - action: 'URI'
                             title: 'See Snapshot'
-                            uri: "{{response.key_frame.replace('/config/media', '/media') }}"
+                            uri: "{{response.key_frame.replace('/media','/media/local') }}"
 
             - conditions:
                 - condition: template
@@ -726,8 +726,7 @@ action:
                             actions:
                             - action: 'URI'
                               title: 'See Snapshot'
-                              uri: "{{response.key_frame.replace('/config/media', '/media') }}"
-
+                              uri: "{{response.key_frame.replace('/media','/media/local') }}"
 
       - if:
         - condition: template
