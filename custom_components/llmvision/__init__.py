@@ -1,5 +1,4 @@
 from datetime import datetime
-import json
 from .calendar import Timeline
 from .providers import Request
 from .memory import Memory
