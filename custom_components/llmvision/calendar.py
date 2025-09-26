@@ -34,12 +34,8 @@ class Timeline(CalendarEntity):
         self._attr_unique_id = "llm_vision_timeline"
         self._events = []
         self._today_summary = ""
-        self._retention_time = (
-            self.hass.data.get(DOMAIN)
-            .get(config_entry.entry_id)
-            .get("timeline_section", {})
-            .get(CONF_RETENTION_TIME)
-        )
+        self._retention_time = config_entry.data.get(CONF_RETENTION_TIME)
+        _LOGGER.debug(f"Retention time set to: {self._retention_time} days")
         self._current_event = None
         self._attr_supported_features = CalendarEntityFeature.DELETE_EVENT
 
@@ -50,7 +46,8 @@ class Timeline(CalendarEntity):
         os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
         os.makedirs(self._file_path, exist_ok=True)
 
-        self.hass.loop.create_task(self.async_update())
+        self.hass.loop.create_task(self.async_update()) # Init db, load events and check events for retention
+        self.hass.loop.create_task(self._cleanup()) # Cleanup unlinked images
         self.hass.async_create_task(self._migrate())  # Run migration if needed
 
     @property
@@ -261,6 +258,7 @@ class Timeline(CalendarEntity):
 
     async def async_update(self) -> None:
         """Loads events from database"""
+        _LOGGER.debug("Updating calendar events from database")
         await self._initialize_db()
 
         # calculate the cutoff date for retention
@@ -268,11 +266,14 @@ class Timeline(CalendarEntity):
             cutoff_date = dt_util.utcnow() - datetime.timedelta(
                 days=self._retention_time
             )
-
+            _LOGGER.debug(
+                f"Retention time set to {self._retention_time} days, deleting events before {cutoff_date}"
+            )
             # find events older than retention time and delete them
             async with aiosqlite.connect(self._db_path) as db:
                 async with db.execute("SELECT uid, start FROM events") as cursor:
                     rows = await cursor.fetchall()
+                    _LOGGER.debug(f"Found {len(rows)} events in database older than retention")
                     for row in rows:
                         event_uid = row[0]
                         event_start = dt_util.parse_datetime(row[1])

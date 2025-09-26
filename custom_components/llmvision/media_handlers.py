@@ -449,7 +449,7 @@ class MediaProcessor:
                 key_name = selected_frames[key_idx][0]
                 key_b64 = resized_base64[key_idx]
                 await self._expose_image(
-                    frame_name=key_name,
+                    frame_name=key_name.split('-')[0],
                     image_data=key_b64,
                     uid=str(uuid.uuid4())[:8],
                 )
