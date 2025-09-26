@@ -281,9 +281,6 @@ class Timeline(CalendarEntity):
                     for row in rows:
                         event_uid = row[0]
                         event_start = dt_util.parse_datetime(row[1])
-                        _LOGGER.debug(
-                            f"Checking event {event_uid} with start {event_start}"
-                        )
                         if event_start < cutoff_date:
                             _LOGGER.info(
                                 f"Deleting event {event_uid} with start {event_start} as it is older than cutoff date {cutoff_date}"
