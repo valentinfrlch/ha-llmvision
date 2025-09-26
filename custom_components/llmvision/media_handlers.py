@@ -323,16 +323,19 @@ class MediaProcessor:
                         frame_data = buffer.getvalue()
 
                         # Use either entity name or assign number to each camera
-                        frame_label = (
-                            image_entity.replace("camera.", "")
-                            + "-frame-"
-                            + str(frame_counter)
-                            if include_filename
-                            else "-camera-"
-                            + str(camera_number)
-                            + "-frame-"
-                            + str(frame_counter)
-                        )
+                        if include_filename:
+                            parts = [
+                                image_entity.replace("camera.", ""),
+                                "frame",
+                                str(frame_counter),
+                            ]
+                        else:
+                            parts = [
+                                f"camera{camera_number}",
+                                "frame",
+                                str(frame_counter),
+                            ]
+                        frame_label = "-".join(parts)
                         frames.update(
                             {
                                 frame_label: {
@@ -351,16 +354,19 @@ class MediaProcessor:
                         buffer = io.BytesIO()
                         img.save(buffer, format="JPEG")
                         first_bytes = buffer.getvalue()
-                        frame_label = (
-                            image_entity.replace("camera.", "")
-                            + "-frame-"
-                            + str(frame_counter)
-                            if include_filename
-                            else "-camera-"
-                            + str(camera_number)
-                            + "-frame-"
-                            + str(frame_counter)
-                        )
+                        if include_filename:
+                            parts = [
+                                image_entity.replace("camera.", ""),
+                                "frame",
+                                str(frame_counter),
+                            ]
+                        else:
+                            parts = [
+                                f"camera{camera_number}",
+                                "frame",
+                                str(frame_counter),
+                            ]
+                        frame_label = "-".join(parts)
                         first_frames[image_entity] = (frame_label, first_bytes)
                         frame_counter += 1
 
@@ -449,7 +455,7 @@ class MediaProcessor:
                 key_name = selected_frames[key_idx][0]
                 key_b64 = resized_base64[key_idx]
                 await self._expose_image(
-                    frame_name=key_name.split('-')[0],
+                    frame_name=key_name.split("-")[0],
                     image_data=key_b64,
                     uid=str(uuid.uuid4())[:8],
                 )

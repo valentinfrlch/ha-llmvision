@@ -4,6 +4,7 @@ import datetime
 import uuid
 import os
 import json
+import asyncio
 from .const import DOMAIN, CONF_RETENTION_TIME
 from homeassistant.util import dt as dt_util
 from homeassistant.core import HomeAssistant
@@ -38,6 +39,10 @@ class Timeline(CalendarEntity):
         _LOGGER.debug(f"Retention time set to: {self._retention_time} days")
         self._current_event = None
         self._attr_supported_features = CalendarEntityFeature.DELETE_EVENT
+
+        # Track key_frame paths whose DB rows are not yet committed
+        self._pending_key_frames: set[str] = set()
+        self._cleanup_lock = asyncio.Lock()
 
         # Path to the JSON file where events are stored
         self._db_path = os.path.join(self.hass.config.path(DOMAIN), "events.db")
@@ -273,11 +278,16 @@ class Timeline(CalendarEntity):
             async with aiosqlite.connect(self._db_path) as db:
                 async with db.execute("SELECT uid, start FROM events") as cursor:
                     rows = await cursor.fetchall()
-                    _LOGGER.debug(f"Found {len(rows)} events in database older than retention")
                     for row in rows:
                         event_uid = row[0]
                         event_start = dt_util.parse_datetime(row[1])
+                        _LOGGER.debug(
+                            f"Checking event {event_uid} with start {event_start}"
+                        )
                         if event_start < cutoff_date:
+                            _LOGGER.info(
+                                f"Deleting event {event_uid} with start {event_start} as it is older than cutoff date {cutoff_date}"
+                            )
                             await self.async_delete_event(event_uid)
 
         # load events
@@ -422,22 +432,58 @@ class Timeline(CalendarEntity):
             _LOGGER.error(f"Error deleting image: {e}")
 
     async def _cleanup(self):
-        """Deletes images not associated with any events"""
+        """Deletes images not associated with any events.
+        Protects:
+          - Images linked to events.
+          - Pending key_frames (event insert in progress).
+          - Very new files (grace period).
+        """
+        GRACE_SECONDS = 10
 
-        def delete_files(path, filenames=[]):
-            """Helper function to run in executor"""
-            for file in os.listdir(path):
-                if file not in filenames:
-                    file_path = os.path.join(path, file)
-                    # ensure only files are removed
-                    if os.path.isfile(file_path):
-                        _LOGGER.info(f"[CLEANUP] Removing {file}")
-                        os.remove(file_path)
+        async with self._cleanup_lock:
+            filenames = set(await self.linked_images)
+            pending_basenames = {os.path.basename(p) for p in self._pending_key_frames}
+            protected = filenames | pending_basenames
 
-        filenames = await self.linked_images
-        await self.hass.loop.run_in_executor(
-            None, delete_files, self._file_path, filenames
-        )
+            def delete_files(path, protected_names, grace, now_ts):
+                removed = 0
+                try:
+                    for file in os.listdir(path):
+                        file_path = os.path.join(path, file)
+                        if not os.path.isfile(file_path):
+                            continue
+                        # Skip protected
+                        if file in protected_names:
+                            continue
+                        # Skip very new files (grace window)
+                        try:
+                            mtime = os.path.getmtime(file_path)
+                            if (now_ts - mtime) < grace:
+                                continue
+                        except OSError:
+                            continue
+                        _LOGGER.info(f"[CLEANUP] Removing unlinked snapshot: {file}")
+                        try:
+                            os.remove(file_path)
+                            removed += 1
+                        except OSError as e:
+                            _LOGGER.warning(
+                                f"[CLEANUP] Failed to remove {file_path}: {e}"
+                            )
+                except FileNotFoundError:
+                    return
+                if removed:
+                    _LOGGER.debug(f"[CLEANUP] Removed {removed} orphaned snapshot(s)")
+
+            now_ts = datetime.datetime.now().timestamp()
+            await self.hass.loop.run_in_executor(
+                None,
+                delete_files,
+                self._file_path,
+                protected,
+                GRACE_SECONDS,
+                now_ts,
+            )
 
     async def get_summaries(self, start: datetime, end: datetime):
         """Generates a summary of events between start and end"""
@@ -453,15 +499,23 @@ class Timeline(CalendarEntity):
         _LOGGER.info(
             f"(REMEMBER) Adding event: {label} from {start} to {end} with key_frame: {key_frame} and camera_name: {camera_name}"
         )
-        await self.async_create_event(
-            dtstart=start,
-            dtend=end,
-            summary=label,
-            description=summary,
-            key_frame=key_frame,
-            camera_name=camera_name,
-            today_summary=today_summary,
-        )
+        # Mark key_frame as pending so cleanup won't remove it before DB insert
+        if key_frame:
+            self._pending_key_frames.add(key_frame)
+        try:
+            await self.async_create_event(
+                dtstart=start,
+                dtend=end,
+                summary=label,
+                description=summary,
+                key_frame=key_frame,
+                camera_name=camera_name,
+                today_summary=today_summary,
+            )
+        finally:
+            # Remove from pending
+            if key_frame:
+                self._pending_key_frames.discard(key_frame)
 
 
 async def async_setup_entry(
