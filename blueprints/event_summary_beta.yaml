@@ -1,6 +1,4 @@
-# Fix Group and Channel to First Camera Entity, user edits - DONE
-# Add time to notificaion title or message, with user choose between 12/24h - DONE
-# Take snapshot of triggered camera entity if using multiple cameras (? help needed)
+
 # Snooze blueprint or notifications
 blueprint:
   name: AI Event Summary (v1.5.2)
