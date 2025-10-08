@@ -121,7 +121,7 @@ blueprint:
               max: 3840
         max_tokens:
           name: Maximum Tokens
-          description: Maximum number of tokens to generate. **Note: Newer and reasoning models may require significantly more tokens. At least 5000 is recommended.**
+          description: "Maximum number of tokens to generate. **Note: Newer and reasoning models may require significantly more tokens. At least 5000 is recommended.**"
           default: 5000
           selector:
             number:
