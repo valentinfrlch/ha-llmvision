@@ -1,0 +1,420 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "LLM Vision Beállítása",
+                "description": "Válaszd ki a beállítani kívánt szolgáltatót."
+            },
+            "localai": {
+                "title": "Csatlakozz a LocalAI szerveredhez",
+                "description": "Add meg a LocalAI szervered IP-címét és portját.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Kapcsolat",
+                        "description": "Szerverkapcsolat",
+                        "data": {
+                            "ip_address": "IP-cím",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Használjon HTTPS-t biztonságos kapcsolatokhoz"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "A modell alapértelmezéseinek beállítása",
+                        "data": {
+                            "default_model": "Alapértelmezett modell",
+                            "temperature": "Hőmérséklet",
+                            "top_p": "Magmintavétel"
+                        },
+                        "data_description": {
+                            "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
+                            "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabbá teszik a kimenetet.",
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                        }
+                    }
+                }
+            },
+            "ollama": {
+                "title": "Ollama konfigurálása",
+                "description": "Add meg az Ollama szervered IP-címét és portját.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Kapcsolat",
+                        "description": "Szerverkapcsolat",
+                        "data": {
+                            "ip_address": "IP-cím",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Használjon HTTPS-t biztonságos kapcsolatokhoz"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "A modell alapértelmezéseinek beállítása",
+                        "data": {
+                            "default_model": "Alapértelmezett modell",
+                            "temperature": "Hőmérséklet",
+                            "top_p": "Magmintavétel"
+                        },
+                        "data_description": {
+                            "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
+                            "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Speciális",
+                        "description": "Speciális modellparaméterek",
+                        "data": {
+                            "context_window": "Kontextus hossza",
+                            "keep_alive": "KÁllandó kapcsolat"
+                        },
+                        "data_description": {
+                            "context_window": "A következő token generálására szánt környezeti ablakméretet állítja be.",
+                            "keep_alive": "Azt szabályozza, hogy a modell mennyi ideig maradjon betöltve a memóriában a kérést követően. Alapértelmezett: 5m (5 perc), -1: mindig maradjon betöltve, 0: azonnal kiürít"
+                        }
+                    }
+                }
+            },
+            "openai": {
+                "title": "OpenAI konfigurálása",
+                "description": "Adj meg egy érvényes OpenAI API-kulcsot.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Kapcsolat",
+                        "description": "OpenAI hitelesítés",
+                        "data": {
+                            "api_key": "API-kulcs"
+                        },
+                        "data_description": {
+                            "api_key": "Először töltsd fel az OpenAI egyenleged."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "A modell alapértelmezéseinek beállítása",
+                        "data": {
+                            "default_model": "Alapértelmezett modell",
+                            "temperature": "Hőmérséklet",
+                            "top_p": "Magmintavétel"
+                        },
+                        "data_description": {
+                            "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
+                            "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                        }
+                    }
+                }
+            },
+            "azure": {
+                "title": "Azure konfigurálása",
+                "description": "Adj meg érvényes Azure API-kulcsot, alap URL-címet, Deployment-et és API-verziót.\nAz alap URL-címnek `https://domain.openai.azure.com/` formátumúnak kell lennie, beleértve a záró perjelet is.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Kapcsolat",
+                        "description": "Azure-hitelesítés",
+                        "data": {
+                            "api_key": "API-kulcs",
+                            "azure_base_url": "Alap URL",
+                            "azure_deployment": "Alkalmazásinfrastruktúra",
+                            "azure_version": "API verzió"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "A modell alapértelmezéseinek beállítása",
+                        "data": {
+                            "default_model": "Alapértelmezett modell",
+                            "temperature": "Hőmérséklet",
+                            "top_p": "Magmintavétel"
+                        },
+                        "data_description": {
+                            "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
+                            "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                        }
+                    }
+                }
+            },
+            "anthropic": {
+                "title": "Anthropic Claude konfigurálása",
+                "description": "Adj meg egy érvényes Anthropic API-kulcsot.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Kapcsolat",
+                        "description": "Anthropic hitelesítés",
+                        "data": {
+                            "api_key": "API-kulcs"
+                        },
+                        "data_description": {
+                            "api_key": "Először töltsd fel az Anthropic egyenleged."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "A modell alapértelmezéseinek beállítása",
+                        "data": {
+                            "default_model": "Alapértelmezett modell",
+                            "temperature": "Hőmérséklet",
+                            "top_p": "Magmintavétel"
+                        },
+                        "data_description": {
+                            "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
+                            "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                        }
+                    }
+                }
+            },
+            "google": {
+                "title": "Google Gemini konfigurálása",
+                "description": "Adj meg egy érvényes Google Gemini API-kulcsot.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Kapcsolat",
+                        "description": "Google-hitelesítés",
+                        "data": {
+                            "api_key": "API-kulcs"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "A modell alapértelmezéseinek beállítása",
+                        "data": {
+                            "default_model": "Alapértelmezett modell",
+                            "temperature": "Hőmérséklet",
+                            "top_p": "Magmintavétel"
+                        },
+                        "data_description": {
+                            "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
+                            "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                        }
+                    }
+                }
+            },
+            "groq": {
+                "title": "Groq konfigurálása",
+                "description": "Adj meg egy érvényes Groq API-kulcsot.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Kapcsolat",
+                        "description": "Groq hitelesítés",
+                        "data": {
+                            "api_key": "API-kulcs"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "A modell alapértelmezéseinek beállítása",
+                        "data": {
+                            "default_model": "Alapértelmezett modell",
+                            "temperature": "Hőmérséklet",
+                            "top_p": "Magmintavétel"
+                        },
+                        "data_description": {
+                            "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
+                            "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                        }
+                    }
+                }
+            },
+            "custom_openai": {
+                "title": "Egyedi OpenAI-szolgáltató konfigurálása",
+                "description": "**Fontos**: Csak akkor működik, ha az API kompatibilis az OpenAI API-jával. Ha az API nem igényel API-kulcsot, adjon meg egy dummy értéket. A végpontnak a következő formátumúnak kell lennie: `http(s)://baseURL(:port)/some/endpoint`",
+                "sections": {
+                    "connection_section": {
+                        "name": "Kapcsolat",
+                        "description": "Egyedi OpenAI hitelesítés",
+                        "data": {
+                            "custom_openai_endpoint": "Egyedi végpont",
+                            "api_key": "API-kulcs"
+                        },
+                        "data_description": {
+                            "endpoint": "Az API végpont a következő formátumot követi: http(s)://baseURL(:port)/some/endpoint",
+                            "api_key": "API-kulcs vagy „openai”, ha nincs rá szükség."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "A modell alapértelmezéseinek beállítása",
+                        "data": {
+                            "default_model": "Alapértelmezett modell",
+                            "temperature": "Hőmérséklet",
+                            "top_p": "Magmintavétel"
+                        },
+                        "data_description": {
+                            "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
+                            "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                        }
+                    }
+                }
+            },
+            "aws_bedrock": {
+                "title": "AWS Bedrock konfigurálása",
+                "description": "**Fontos**: Jelenleg csak a következő modelleket támogatja: Nova, Anthropic Claude",
+                "sections": {
+                    "connection_section": {
+                        "name": "Kapcsolat",
+                        "description": "AWS hitelesítés",
+                        "data": {
+                            "aws_access_key_id": "Hozzáférési kulcs",
+                            "aws_secret_access_key": "Titkos kulcs",
+                            "aws_region_name": "Régiókód"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "A modell alapértelmezéseinek beállítása",
+                        "data": {
+                            "default_model": "Alapértelmezett modell",
+                            "temperature": "Hőmérséklet",
+                            "top_p": "Magmintavétel"
+                        },
+                        "data_description": {
+                            "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
+                            "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                        }
+                    }
+                }
+            },
+            "openwebui": {
+                "title": "Open WebUI konfigurálása",
+                "description": "Add meg az API-kulcsot (JWT token), az IP-címet, a portot, a HTTP(S)-t és az alapértelmezett modellt.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Kapcsolat",
+                        "description": "Open WebUI hitelesítés",
+                        "data": {
+                            "api_key": "API-kulcs (JWT token)",
+                            "ip_address": "IP-cím",
+                            "port": "Port",
+                            "https": "HTTPS használata"
+                        },
+                        "data_description": {
+                            "https": "Használjon HTTPS-t biztonságos kapcsolatokhoz, ha a szervered támogatja."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "A modell alapértelmezéseinek beállítása",
+                        "data": {
+                            "default_model": "Alapértelmezett modell",
+                            "temperature": "Hőmérséklet",
+                            "top_p": "Magmintavétel"
+                        },
+                        "data_description": {
+                            "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
+                            "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                        }
+                    }
+                }
+            },
+            "openrouter": {
+                "title": "OpenRouter konfigurálása",
+                "description": "Az OpenRouter egy olyan platform, amely hozzáférést biztosít különféle MI-modellekhez. Használhatod olyan modellekhez való csatlakozásra, mint az OpenAI, az Anthropic és egyebek.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Kapcsolat",
+                        "description": "OpenRouter hitelesítés",
+                        "data": {
+                            "api_key": "API-kulcs"
+                        },
+                        "data_description": {
+                            "api_key": "Az OpenRouter API-kulcsod. Először töltsd fel az OpenRouter egyenleged."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "A modell alapértelmezéseinek beállítása",
+                        "data": {
+                            "default_model": "Alapértelmezett modell",
+                            "temperature": "Hőmérséklet",
+                            "top_p": "Magmintavétel"
+                        },
+                        "data_description": {
+                            "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
+                            "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "title": "Beállítások",
+                "description": "Konfiguráld az LLM Vision integrációt. Ez a bejegyzés kötelező más szolgáltatók beállítása előtt. Ha az alapértelmezett beállításokat szeretnéd használni, kattints a „Mehet” gombra.",
+                "sections": {
+                    "general_section": {
+                        "name": "Általános",
+                        "description": "Állítsd be azt a szolgáltatót, amelyet használni kívánsz, ha a kiválasztott nem elérhető.",
+                        "data": {
+                            "fallback_provider": "Tartalék szolgáltató"
+                        },
+                        "data_description": {
+                            "fallback_provider": "Az LLM Vision újrapróbálkozik a kéréssel a kiválasztott szolgáltatóval, ha a jelenlegi szolgáltató hibát jelez."
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "System Prompts",
+                        "description": "System prompts are used to change how the model behaves and responds.",
+                        "data": {
+                            "system_prompt": "Rendszerutasítás",
+                            "title_prompt": "Cím utasítás"
+                        },
+                        "data_description": {
+                            "system_prompt": "A rendszerutasítással módosíthatod a modell viselkedését és válaszait.",
+                            "title_prompt": "Ezen utasítások alapján adja a modell a címet."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Idővonal",
+                        "description": "Az Idővonal tárolja a mai eseményeket, hogy azokat az LLM Vision Card segítségével megjeleníthesse az irányítópulton.",
+                        "data": {
+                            "retention_time": "Megőrzési idő",
+                            "timeline_today_summary": "Idővonal-összefoglaló",
+                            "timeline_summary_prompt": "Mai összefoglaló kérése"
+                        },
+                        "data_description": {
+                            "retention_time": "Események automatikus törlése (nap) után. Állítsd 0-ra az automatikus törlés letiltásához.",
+                            "timeline_today_summary": "Idővonal-összefoglaló engedélyezése a mai nap eseményeinek automatikus összefoglalásához.",
+                            "timeline_summary_prompt": "Ezen utasítások alapján foglalja össze a modell a mai nap eseményeit."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Emlékezés (Beta)",
+                        "description": "A memóriában lévő tartalom szinkronizálódik a szolgáltatók között, és további kontextus biztosítására szolgál a modellhez.",
+                        "data": {
+                            "memory_paths": "Képfájl elérési útja",
+                            "memory_strings": "Kép leírása"
+                        },
+                        "data_description": {
+                            "memory_paths": "Add meg a képfájl elérési útját.",
+                            "memory_strings": "Adj meg egy leírást a képről (pl.: „Ez itt Süti, a kutyám”). A képeknek és a leírásoknak ugyanabban a sorrendben kell lenniük, és annyi leírásnak kell lennie, ahány kép van."
+                        }
+                    }
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "Nem sikerült csatlakozni a szerverhez. Ellenőrizze az API-kulcsot vagy az IP-címet és a portot",
+            "empty_api_key": "Érvénytelen API-kulcs",
+            "invalid_provider": "Érvénytelen szolgáltatót választottál",
+            "memory_not_supported": "Ez a szolgáltató nem támogatja az emlékezést",
+            "invalid_image_path": "Egy vagy több kép elérési útja nem érvényes",
+            "mismatched_lengths": "A képek elérési útjának száma meg kell egyezzen a leírások számával"
+        },
+        "abort": {
+            "unknown_provider": "Ismeretlen szolgáltató",
+            "reconfigure_successful": "Beállítások sikeresen mentve"
+        }
+    }
+}
