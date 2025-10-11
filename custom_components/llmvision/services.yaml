@@ -99,6 +99,33 @@ image_analyzer:
       default: false
       selector:
         boolean:
+    response_format:
+      name: Response Format
+      description: Format of the response - text for natural language or json for structured data
+      required: false
+      default: "text"
+      example: "json"
+      selector:
+        select:
+          options:
+            - "text"
+            - "json"
+    structure:
+      name: Structure
+      description: 'JSON schema defining the expected response structure (only used when response_format is json). To enable automatic title generation for calendar events, include a field in your schema for the title (e.g., "title": {"type": "string", "description": "Event title"}) and specify the field name below.'
+      required: false
+      example: '{"type": "object", "properties": {"package_detected": {"type": "boolean", "description": "Is a package visible"}, "confidence": {"type": "number", "minimum": 0, "maximum": 100}}, "required": ["package_detected"]}'
+      selector:
+        text:
+          multiline: true
+    title_field:
+      name: Title Field Name
+      description: 'Name of the field in your JSON schema that contains the event title (used for calendar entries and notifications). Leave empty to use fallback title "Motion detected".'
+      required: false
+      example: 'title'
+      default: ''
+      selector:
+        text:
 
 video_analyzer:
   name: Video Analyzer
