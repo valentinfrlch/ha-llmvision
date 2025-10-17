@@ -5,11 +5,14 @@ from .memory import Memory
 from .media_handlers import MediaProcessor
 import re
 import os
+import json
 from datetime import timedelta
 from homeassistant.util import dt as dt_util
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
+from homeassistant.components.http import HomeAssistantView
+from homeassistant.helpers.json import json_dumps
 import logging
 
 # Declare variables
@@ -167,6 +170,14 @@ async def async_unload_entry(hass, entry) -> bool:
     else:
         unload_ok = True
     return unload_ok
+
+
+async def async_get_settings_entry(hass) -> ConfigEntry | None:
+    """Return the Settings config entry, or None if not found"""
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if entry.data.get(CONF_PROVIDER) == "Settings":
+            return entry
+    return None
 
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
@@ -607,6 +618,84 @@ class ServiceCallData:
         return self
 
 
+# API Views for Timeline events
+class TimelineEventsView(HomeAssistantView):
+    """View to handle timeline events.
+    Returns:
+        - 200: List of events
+    """
+
+    url = "/api/llmvision/timeline/events"
+    name = "api:llmvision:timeline:events"
+    requires_auth = True
+
+    async def get(self, request):
+        _LOGGER.debug(f"Request: {request}")
+        hass = request.app["hass"]
+
+        settings_entry = await async_get_settings_entry(hass)
+        # Parse request params
+        try:
+            limit = max(1, min(int(request.query.get("limit", 10)), 100))
+        except ValueError:
+            limit = 10
+
+        camera = request.query.get("camera", None)
+        category = request.query.get("category", None)
+        start = request.query.get("start", None)
+        end = request.query.get("end", None)
+
+        timeline = Timeline(hass, settings_entry)
+        events = await timeline.get_events_raw(
+            limit=limit,
+            camera=camera,
+            category=category,
+            start=start,
+            end=end,
+        )
+        _LOGGER.debug(f"Events: {events}")
+        return self.json({"events": json.loads(json_dumps(events))})
+
+
+class TimelineEventView(HomeAssistantView):
+    """View to handle individual timeline events.
+    Parameters:
+        - event_id: ID of the event to delete (uid)
+    Returns:
+        - 200: Event deleted successfully
+        - 404: Event not found
+        - 500: Error deleting event
+    """
+
+    url = "/api/llmvision/timeline/event/{event_id}"
+    name = "api:llmvision:timeline:event"
+    requires_auth = True
+
+    async def get(self, request, event_id):
+        hass = request.app["hass"]
+        settings_entry = await async_get_settings_entry(hass)
+        if settings_entry is None:
+            return self.json_message("Settings config entry not found", status_code=404)
+        timeline = Timeline(hass, settings_entry)
+        event = await timeline.get_event(event_id)
+        if event is None:
+            return self.json_message("Event not found", status_code=404)
+        return self.json({"event": json.loads(json_dumps(event))})
+
+    async def delete(self, request, event_id):
+        hass = request.app["hass"]
+        settings_entry = await async_get_settings_entry(hass)
+        if settings_entry is None:
+            return self.json_message("Settings config entry not found", status_code=404)
+        timeline = Timeline(hass, settings_entry)
+        try:
+            await timeline.async_delete_event(event_id)
+        except Exception as e:
+            _LOGGER.error(f"Error deleting event {event_id}: {e}")
+            return self.json_message("Error deleting event", status_code=500)
+        return self.json({"event_id": event_id, "status": "deleted"})
+
+
 def setup(hass, config):
     async def image_analyzer(data_call):
         """Handle the service call to analyze an image with LLM Vision"""
@@ -879,5 +968,7 @@ def setup(hass, config):
         "remember",
         remember,
     )
+    hass.http.register_view(TimelineEventsView)
+    hass.http.register_view(TimelineEventView)
 
     return True

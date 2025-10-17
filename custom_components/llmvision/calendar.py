@@ -51,8 +51,10 @@ class Timeline(CalendarEntity):
         os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
         os.makedirs(self._file_path, exist_ok=True)
 
-        self.hass.loop.create_task(self.async_update()) # Init db, load events and check events for retention
-        self.hass.loop.create_task(self._cleanup()) # Cleanup unlinked images
+        self.hass.loop.create_task(
+            self.async_update()
+        )  # Init db, load events and check events for retention
+        self.hass.loop.create_task(self._cleanup())  # Cleanup unlinked images
         self.hass.async_create_task(self._migrate())  # Run migration if needed
 
     @property
@@ -325,6 +327,88 @@ class Timeline(CalendarEntity):
 
             if event_end > start_date and event_start < end_date:
                 events.append(event)
+        return events
+
+    async def get_events_raw(
+        self, limit=100, camera=None, category=None, start=None, end=None
+    ) -> list[dict]:
+        """Returns raw event data from the database. Used by the API.
+        Supports filtering by camera, start/end range and sorting by start (newest first).
+        Categories are ignored for now.
+        """
+        events: list[dict] = []
+
+        # Normalize start/end inputs to timezone-aware datetimes (or None)
+        def normalize_input_dt(dt_in):
+            if dt_in is None:
+                return None
+            try:
+                if isinstance(dt_in, str):
+                    dt = dt_util.parse_datetime(dt_in)
+                else:
+                    dt = dt_in
+                return self._ensure_datetime(dt)
+            except Exception:
+                return None
+
+        start_dt = normalize_input_dt(start)
+        end_dt = normalize_input_dt(end)
+
+        async with aiosqlite.connect(self._db_path) as db:
+            async with db.execute("SELECT * FROM events") as cursor:
+                rows = await cursor.fetchall()
+                for row in rows:
+                    # row: uid, summary, start, end, description, key_frame, camera_name, today_summary
+                    try:
+                        row_start = dt_util.parse_datetime(row[2]) if row[2] else None
+                        row_end = dt_util.parse_datetime(row[3]) if row[3] else None
+                    except Exception:
+                        # skip malformed rows
+                        continue
+
+                    if row_start:
+                        row_start = self._ensure_datetime(row_start)
+                    if row_end:
+                        row_end = self._ensure_datetime(row_end)
+
+                    # Filter by camera if provided (case-insensitive exact match)
+                    if camera:
+                        cam_name = (row[6] or "").lower()
+                        if camera.lower() != cam_name:
+                            continue
+
+                    # Filter by start/end range: keep events that overlap the requested range
+                    if start_dt and row_end and row_end <= start_dt:
+                        continue
+                    if end_dt and row_start and row_start >= end_dt:
+                        continue
+
+                    events.append(
+                        {
+                            "uid": row[0],
+                            "summary": row[1],
+                            "start": row[2],
+                            "end": row[3],
+                            "description": row[4],
+                            "key_frame": row[5],
+                            "camera_name": row[6],
+                            "today_summary": row[7],
+                        }
+                    )
+
+        # Sort by start datetime descending (newest first). Malformed/missing start go to the end.
+        def sort_key(ev):
+            try:
+                d = dt_util.parse_datetime(ev.get("start"))
+                return dt_util.as_local(self._ensure_datetime(d))
+            except Exception:
+                return datetime.datetime.fromtimestamp(0, tz=datetime.timezone.utc)
+
+        events.sort(key=sort_key, reverse=True)
+
+        if limit is not None:
+            return events[:limit]
+
         return events
 
     async def async_create_event(self, **kwargs: any) -> None:
