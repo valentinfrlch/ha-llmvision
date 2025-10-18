@@ -1302,6 +1302,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 {
                                     "select": {
                                         "options": [
+                                            "Bulgarian",
                                             "Catalan",
                                             "Czech",
                                             "Dutch",

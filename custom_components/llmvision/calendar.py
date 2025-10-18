@@ -31,6 +31,7 @@ def _get_category(config_entry: ConfigEntry, query: str) -> list[str]:
     language = config_entry.options.get(CONF_TIMELINE_LANGUAGE) or "English"
 
     lang_map = {
+        "Bulgarian": "bg",
         "Catalan": "ca",
         "Czech": "cs",
         "German": "de",
