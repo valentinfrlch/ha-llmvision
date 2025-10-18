@@ -13,6 +13,8 @@ from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.helpers.json import json_dumps
+import homeassistant.helpers.config_validation as cv
+
 import logging
 
 # Declare variables
@@ -71,6 +73,7 @@ from .const import (
     CONF_CONTEXT_WINDOW,
     CONF_KEEP_ALIVE,
 )
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 _LOGGER = logging.getLogger(__name__)
 
