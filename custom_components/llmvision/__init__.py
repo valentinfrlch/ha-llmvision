@@ -629,10 +629,9 @@ class TimelineEventsView(HomeAssistantView):
 
     url = "/api/llmvision/timeline/events"
     name = "api:llmvision:timeline:events"
-    requires_auth = False  # TODO: Set to True for prod
+    requires_auth = True
 
     async def get(self, request):
-        _LOGGER.debug(f"Request: {request.query}")
         hass = request.app["hass"]
 
         settings_entry = await async_get_settings_entry(hass)
@@ -684,7 +683,6 @@ class TimelineEventsView(HomeAssistantView):
             start=start,
             end=end,
         )
-        _LOGGER.debug(f"Events: {events}")
         return self.json({"events": json.loads(json_dumps(events))})
 
 
@@ -700,7 +698,7 @@ class TimelineEventView(HomeAssistantView):
 
     url = "/api/llmvision/timeline/event/{event_id}"
     name = "api:llmvision:timeline:event"
-    requires_auth = False  # TODO: Set to True for prod
+    requires_auth = True
 
     async def get(self, request, event_id):
         hass = request.app["hass"]

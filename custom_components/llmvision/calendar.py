@@ -119,7 +119,6 @@ class Timeline(CalendarEntity):
         self._events = []
         self._today_summary = ""
         self._retention_time = config_entry.data.get(CONF_RETENTION_TIME)
-        _LOGGER.debug(f"Retention time set to: {self._retention_time} days")
         self._current_event = None
         self._attr_supported_features = CalendarEntityFeature.DELETE_EVENT
 
@@ -357,16 +356,12 @@ class Timeline(CalendarEntity):
 
     async def async_update(self) -> None:
         """Loads events from database"""
-        _LOGGER.debug("Updating calendar events from database")
         await self._initialize_db()
 
         # calculate the cutoff date for retention
         if self._retention_time is not None and self._retention_time > 0:
             cutoff_date = dt_util.utcnow() - datetime.timedelta(
                 days=self._retention_time
-            )
-            _LOGGER.debug(
-                f"Retention time set to {self._retention_time} days, deleting events before {cutoff_date}"
             )
             # find events older than retention time and delete them
             async with aiosqlite.connect(self._db_path) as db:
