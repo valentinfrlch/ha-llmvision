@@ -379,11 +379,13 @@
                         "name": "Idővonal",
                         "description": "Az Idővonal tárolja a mai eseményeket, hogy azokat az LLM Vision Card segítségével megjeleníthesse az irányítópulton.",
                         "data": {
+                            "timeline_language": "Idővonal nyelve",
                             "retention_time": "Megőrzési idő",
                             "timeline_today_summary": "Idővonal-összefoglaló",
                             "timeline_summary_prompt": "Mai összefoglaló kérése"
                         },
                         "data_description": {
+                            "timeline_language": "Válaszd ki azt a nyelvet, amelyet az idővonal karakterláncaihoz és kategóriáihoz használnak.",
                             "retention_time": "Események automatikus törlése (nap) után. Állítsd 0-ra az automatikus törlés letiltásához.",
                             "timeline_today_summary": "Idővonal-összefoglaló engedélyezése a mai nap eseményeinek automatikus összefoglalásához.",
                             "timeline_summary_prompt": "Ezen utasítások alapján foglalja össze a modell a mai nap eseményeit."

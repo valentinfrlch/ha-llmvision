@@ -379,11 +379,13 @@
                         "name": "Oś czasu",
                         "description": "Oś czasu przechowuje dzisiejsze wydarzenia do wyświetlenia za pomocą karty LLM Vision na twoim pulpicie.",
                         "data": {
+                            "timeline_language": "Język osi czasu",
                             "retention_time": "Czas przechowywania",
                             "timeline_today_summary": "Podsumowanie osi czasu",
                             "timeline_summary_prompt": "Monit podsumowujący na dzisiejsze wydarzenia"
                         },
                         "data_description": {
+                            "timeline_language": "Wybierz język używany dla łańcuchów i kategorii osi czasu.",
                             "retention_time": "Automatyczne usuwanie wydarzeń po (dniach). Ustaw na 0, aby wyłączyć automatyczne usuwanie.",
                             "timeline_today_summary": "Włącz podsumowanie osi czasu, aby automatycznie wygenerować podsumowanie dzisiejszych wydarzeń.",
                             "timeline_summary_prompt": "Instrukcja podana modelowi w celu wygenerowania podsumowania dzisiejszych wydarzeń."

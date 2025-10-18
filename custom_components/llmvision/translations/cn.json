@@ -379,11 +379,13 @@
                         "name": "时间线",
                         "description": "时间线存储今天的事件，可通过LLM视觉卡片在仪表板上显示。",
                         "data": {
+                            "timeline_language": "时间线语言",
                             "retention_time": "保留时间",
                             "timeline_today_summary": "时间线摘要",
                             "timeline_summary_prompt": "今日摘要提示词"
                         },
                         "data_description": {
+                            "timeline_language": "选择用于从事件生成图标的语言。",
                             "retention_time": "事件自动删除天数。设为0则不自动删除。",
                             "timeline_today_summary": "启用时间线摘要，自动生成今天事件的摘要。",
                             "timeline_summary_prompt": "用于生成今天事件摘要的指令。"
