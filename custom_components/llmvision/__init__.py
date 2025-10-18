@@ -475,6 +475,7 @@ async def _remember(
             end=dt_util.now() + timedelta(minutes=1),
             label=title,
             summary=response["response_text"],
+            category="",
             key_frame=key_frame,
             camera_name=camera_name,
             today_summary=today_summary,
@@ -579,6 +580,7 @@ class ServiceCallData:
         # ------------ Remember ------------
         self.title = data_call.data.get("title")
         self.summary = data_call.data.get("summary")
+        self.category = data_call.data.get("category", "")
         self.image_path = data_call.data.get("image_path", "")
         self.camera_entity = data_call.data.get("camera_entity", "")
         self.start_time = data_call.data.get("start_time", dt_util.now())
@@ -627,29 +629,58 @@ class TimelineEventsView(HomeAssistantView):
 
     url = "/api/llmvision/timeline/events"
     name = "api:llmvision:timeline:events"
-    requires_auth = True
+    requires_auth = False  # TODO: Set to True for prod
 
     async def get(self, request):
-        _LOGGER.debug(f"Request: {request}")
+        _LOGGER.debug(f"Request: {request.query}")
         hass = request.app["hass"]
 
         settings_entry = await async_get_settings_entry(hass)
         # Parse request params
         try:
+            # Limit: minimum 1, maximum 100
             limit = max(1, min(int(request.query.get("limit", 10)), 100))
         except ValueError:
             limit = 10
 
-        camera = request.query.get("camera", None)
-        category = request.query.get("category", None)
-        start = request.query.get("start", None)
-        end = request.query.get("end", None)
+        cameras = request.query.get("cameras", None)
+        categories = request.query.get("categories", None)
+        days = request.query.get("days", None)
+
+        def _parse_list_param(val):
+            if val is None:
+                return None
+            if isinstance(val, str):
+                parts = [p.strip() for p in val.split(",") if p.strip()]
+                return parts if parts else None
+            # if already a list-like, normalize items to str
+            try:
+                return [str(p).strip() for p in val if str(p).strip()]
+            except Exception:
+                return None
+
+        cameras = _parse_list_param(cameras)
+        categories = _parse_list_param(categories)
+        start = None
+        end = None
+
+        # If days is provided, calculate start and end dates
+        if days is not None:
+            try:
+                days = int(days)
+                end_date = dt_util.now()
+                start_date = end_date - timedelta(days=days)
+                start = start_date.isoformat()
+                end = end_date.isoformat()
+            except ValueError:
+                start = None
+                end = None
 
         timeline = Timeline(hass, settings_entry)
         events = await timeline.get_events_raw(
             limit=limit,
-            camera=camera,
-            category=category,
+            cameras=cameras,
+            categories=categories,
             start=start,
             end=end,
         )
@@ -669,7 +700,7 @@ class TimelineEventView(HomeAssistantView):
 
     url = "/api/llmvision/timeline/event/{event_id}"
     name = "api:llmvision:timeline:event"
-    requires_auth = True
+    requires_auth = False  # TODO: Set to True for prod
 
     async def get(self, request, event_id):
         hass = request.app["hass"]
@@ -912,8 +943,8 @@ def setup(hass, config):
         await _update_sensor(hass, sensor_entity, response["response_text"], type)
         return response
 
-    async def remember(data_call):
-        """Handle the service call to remember an event"""
+    async def create_event(data_call):
+        """Handle the service call to create an event"""
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
 
@@ -937,6 +968,7 @@ def setup(hass, config):
             end=call.end_time,
             label=call.title,
             summary=call.summary,
+            category=call.category,
             key_frame=call.image_path,
             camera_name=call.camera_entity,
         )
@@ -965,8 +997,8 @@ def setup(hass, config):
     )
     hass.services.register(
         DOMAIN,
-        "remember",
-        remember,
+        "create_event",
+        create_event,
     )
     hass.http.register_view(TimelineEventsView)
     hass.http.register_view(TimelineEventView)
