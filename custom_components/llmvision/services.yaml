@@ -520,9 +520,9 @@ data_analyzer:
       selector:
         boolean:
 
-remember:
-  name: Remember
-  description: Remember an event in the LLM Vision Timeline
+create_event:
+  name: Create Event
+  description: Creates a new event in the LLM Vision Timeline
   fields:
     title:
       name: Title
@@ -540,11 +540,26 @@ remember:
       selector:
         text:
           multiline: true
+    category:
+      name: category
+      required: false
+      description: 'Category to assign the event to'
+      example: 'Vehicle'
+      selector:
+        select:
+          options:
+            - People
+            - Vehicles
+            - Animals
+            - Packages
+            - Nature
+            - Objects
+            - Entities
     image_path:
       name: Image Path
       required: false
       description: Image of the event. Must be stored in "/media/llmvision/snapshots/"
-      example: '/config/media/llmvision/snapshots/example.jpg'
+      example: '/media/llmvision/snapshots/example.jpg'
       selector:
         text:
           multiline: false

@@ -379,11 +379,13 @@
                         "name": "Tidslinje",
                         "description": "Tidslinjen lagrar dagens händelser för att visas med LLM Vision-kortet på din dashboard.",
                         "data": {
+                            "timeline_language": "Tidslinje språk",
                             "retention_time": "Behållningstid",
                             "timeline_today_summary": "Tidslinjesammanfattning",
                             "timeline_summary_prompt": "Dagens sammanfattningsprompt"
                         },
                         "data_description": {
+                            "timeline_language": "Välj språket som används för tidslinjesträngar och kategorier.",
                             "retention_time": "Radera händelser automatiskt efter (dagar). Sätt till 0 för att inaktivera automatisk radering.",
                             "timeline_today_summary": "Aktivera tidslinjesammanfattning för att automatiskt generera en sammanfattning av dagens händelser.",
                             "timeline_summary_prompt": "Instruktionen som ges till modellen för att generera en sammanfattning av dagens händelser."

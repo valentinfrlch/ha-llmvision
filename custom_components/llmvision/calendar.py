@@ -2,10 +2,10 @@ import aiosqlite
 import shutil
 import datetime
 import uuid
-import os
+import os, re
 import json
 import asyncio
-from .const import DOMAIN, CONF_RETENTION_TIME
+from .const import DOMAIN, CONF_RETENTION_TIME, CONF_TIMELINE_LANGUAGE
 from homeassistant.util import dt as dt_util
 from homeassistant.core import HomeAssistant
 from homeassistant.components.calendar import (
@@ -25,6 +25,89 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 
+def _get_category(config_entry: ConfigEntry, query: str) -> list[str]:
+    """Get categories matching the query using the language regex template."""
+    # Determine language (fallback to 'en')
+    language = config_entry.options.get(CONF_TIMELINE_LANGUAGE) or "English"
+
+    lang_map = {
+        "Catalan": "ca",
+        "Czech": "cs",
+        "German": "de",
+        "English": "en",
+        "Spanish": "es",
+        "French": "fr",
+        "Hungarian": "hu",
+        "Italian": "it",
+        "Dutch": "nl",
+        "Polish": "pl",
+        "Portuguese": "pt",
+        "Slovak": "sk",
+        "Swedish": "sv"
+    }
+
+    # Load language json from /timeline_strings/{language}.json
+    lang_file_path = os.path.join(
+        os.path.dirname(__file__), "timeline_strings", f"{lang_map.get(language)}.json"
+    )
+    if not os.path.exists(lang_file_path):
+        _LOGGER.warning(
+            f"Language file {lang_file_path} does not exist. Defaulting to English."
+        )
+        lang_file_path = os.path.join(
+            os.path.dirname(__file__), "timeline_strings", "en.json"
+        )
+
+    try:
+        with open(lang_file_path, "r", encoding="utf-8") as lang_file:
+            lang_data = json.load(lang_file)
+    except Exception as e:
+        _LOGGER.error(f"Error loading language file {lang_file_path}: {e}")
+        return []
+
+    categories_data = lang_data.get("categories", {})
+    regex_template = lang_data.get("regex")
+
+    def compile_pattern(key: str):
+        # Fallback pattern and flags
+        pattern = rf"\b{re.escape(key)}s?\b"
+        flags = re.IGNORECASE
+
+        # If a template is provided, try to parse it
+        if isinstance(regex_template, str):
+            # Expect something like: "`\\b${key}s?\\b`, 'i'"
+            m = re.search(r"`([^`]*)`(?:\s*,\s*'([a-zA-Z]+)')?", regex_template)
+            if m:
+                tpl_pat = m.group(1)
+                tpl_flags = m.group(2) or ""
+                # Substitute ${key} with escaped key
+                tpl_pat = tpl_pat.replace("${key}", re.escape(key))
+                pattern = tpl_pat
+                # Map flags
+                flags = 0
+                if "i" in tpl_flags.lower():
+                    flags |= re.IGNORECASE
+        try:
+            return re.compile(pattern, flags)
+        except re.error as e:
+            _LOGGER.warning(f"Invalid regex for key '{key}': {pattern} ({e})")
+            return None
+
+    matched_categories: list[str] = []
+    for cat_name, cat_def in categories_data.items():
+        objects = (cat_def or {}).get("objects", {})
+        if not isinstance(objects, dict):
+            continue
+        # If any object key matches, we add the category once
+        for key in objects.keys():
+            pat = compile_pattern(str(key))
+            if pat and pat.search(query or ""):
+                matched_categories.append(cat_name)
+                break
+
+    return matched_categories
+
+
 class Timeline(CalendarEntity):
     """Representation of a Calendar."""
 
@@ -36,13 +119,14 @@ class Timeline(CalendarEntity):
         self._events = []
         self._today_summary = ""
         self._retention_time = config_entry.data.get(CONF_RETENTION_TIME)
-        _LOGGER.debug(f"Retention time set to: {self._retention_time} days")
         self._current_event = None
         self._attr_supported_features = CalendarEntityFeature.DELETE_EVENT
 
         # Track key_frame paths whose DB rows are not yet committed
         self._pending_key_frames: set[str] = set()
         self._cleanup_lock = asyncio.Lock()
+        self._category: str = ""
+        self._config_entry = config_entry
 
         # Path to the JSON file where events are stored
         self._db_path = os.path.join(self.hass.config.path(DOMAIN), "events.db")
@@ -51,8 +135,10 @@ class Timeline(CalendarEntity):
         os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
         os.makedirs(self._file_path, exist_ok=True)
 
-        self.hass.loop.create_task(self.async_update()) # Init db, load events and check events for retention
-        self.hass.loop.create_task(self._cleanup()) # Cleanup unlinked images
+        self.hass.loop.create_task(
+            self.async_update()
+        )  # Init db, load events and check events for retention
+        self.hass.loop.create_task(self._cleanup())  # Cleanup unlinked images
         self.hass.async_create_task(self._migrate())  # Run migration if needed
 
     @property
@@ -75,7 +161,6 @@ class Timeline(CalendarEntity):
                             dtstart=datetime.datetime.fromisoformat(event["start"]),
                             dtend=datetime.datetime.fromisoformat(event["end"]),
                             summary=event["summary"],
-                            description=event["description"],
                             key_frame=event["location"].split(",")[0],
                             camera_name=(
                                 event["location"].split(",")[1]
@@ -183,30 +268,37 @@ class Timeline(CalendarEntity):
         except aiosqlite.Error as e:
             _LOGGER.error(f"Error migrating image paths in events.db: {e}")
 
-    @property
-    def extra_state_attributes(self):
-        """Return the state attributes"""
-        sorted_events = sorted(
-            self._events, key=lambda event: event.start, reverse=True
-        )
-        # Set limit to 10 newest events to improve performance
-        events = sorted_events[:10]
-        return {
-            "events": [event.summary for event in events],
-            "starts": [event.start for event in events],
-            "ends": [event.end for event in events],
-            "summaries": [event.description for event in events],
-            "key_frames": [event.location.split(",")[0] for event in events],
-            "camera_names": [
-                (
-                    event.location.split(",")[1]
-                    if len(event.location.split(",")) > 1
-                    else ""
-                )
-                for event in events
-            ],
-            "today_summary": self._today_summary,
-        }
+        # v4.1 -> v4.2: Add category column to events.db
+        try:
+            async with aiosqlite.connect(self._db_path) as db:
+                async with db.execute("""PRAGMA table_info(events)""") as cursor:
+                    columns = await cursor.fetchall()
+                    column_names = [column[1] for column in columns]
+                    if "category" not in column_names:
+                        _LOGGER.info("Migrating events.db to include category column")
+                        await db.execute(
+                            """ALTER TABLE events ADD COLUMN category TEXT"""
+                        )
+                        await db.commit()
+                        _LOGGER.info("Timeline DB migration to v4.2 complete")
+            # Initialize existing rows with resolved category
+            async with aiosqlite.connect(self._db_path) as db:
+                async with db.execute(
+                    """SELECT uid, summary FROM events WHERE category IS NULL OR category = ''"""
+                ) as cursor:
+                    rows = await cursor.fetchall()
+                    for row in rows:
+                        uid = row[0]
+                        summary = row[1]
+                        matches = _get_category(self._config_entry, summary)
+                        category = matches[0] if matches else ""
+                        await db.execute(
+                            """UPDATE events SET category = ? WHERE uid = ?""",
+                            (category, uid),
+                        )
+                await db.commit()
+        except aiosqlite.Error as e:
+            _LOGGER.error(f"Error migrating events.db: {e}")
 
     @property
     def event(self):
@@ -241,6 +333,7 @@ class Timeline(CalendarEntity):
                         start TEXT,
                         end TEXT,
                         description TEXT,
+                        category TEXT,
                         key_frame TEXT,
                         camera_name TEXT,
                         today_summary TEXT
@@ -263,16 +356,12 @@ class Timeline(CalendarEntity):
 
     async def async_update(self) -> None:
         """Loads events from database"""
-        _LOGGER.debug("Updating calendar events from database")
         await self._initialize_db()
 
         # calculate the cutoff date for retention
         if self._retention_time is not None and self._retention_time > 0:
             cutoff_date = dt_util.utcnow() - datetime.timedelta(
                 days=self._retention_time
-            )
-            _LOGGER.debug(
-                f"Retention time set to {self._retention_time} days, deleting events before {cutoff_date}"
             )
             # find events older than retention time and delete them
             async with aiosqlite.connect(self._db_path) as db:
@@ -289,7 +378,14 @@ class Timeline(CalendarEntity):
 
         # load events
         async with aiosqlite.connect(self._db_path) as db:
-            async with db.execute("SELECT * FROM events") as cursor:
+            async with db.execute(
+                """
+                SELECT
+                    uid, summary, start, end, description,
+                    category, key_frame, camera_name, today_summary
+                FROM events
+                """
+            ) as cursor:
                 rows = await cursor.fetchall()
                 self._events = [
                     CalendarEvent(
@@ -298,12 +394,12 @@ class Timeline(CalendarEntity):
                         start=dt_util.as_local(dt_util.parse_datetime(row[2])),
                         end=dt_util.as_local(dt_util.parse_datetime(row[3])),
                         description=row[4],
-                        location=f"{row[5]},{row[6]}" if row[6] else row[5],
+                        location=f"{row[6]},{row[7]}" if row[7] else row[6],
                     )
                     for row in rows
                 ]
                 self._events.sort(key=lambda event: event.start, reverse=True)
-                self._today_summary = rows[-1][7] if rows and len(rows) != 0 else ""
+                self._today_summary = rows[-1][8] if rows and len(rows) != 0 else ""
 
     async def async_get_events(
         self,
@@ -327,6 +423,102 @@ class Timeline(CalendarEntity):
                 events.append(event)
         return events
 
+    async def get_events_raw(
+        self, limit=100, cameras=[], categories=[], start=None, end=None
+    ) -> list[dict]:
+        """Returns raw event data from the database. Used by the API.
+        Supports filtering by camera, start/end range and sorting by start (newest first).
+        category are ignored for now.
+        """
+        events: list[dict] = []
+
+        # Normalize start/end inputs to timezone-aware datetimes (or None)
+        def normalize_input_dt(dt_in):
+            if dt_in is None:
+                return None
+            try:
+                if isinstance(dt_in, str):
+                    dt = dt_util.parse_datetime(dt_in)
+                else:
+                    dt = dt_in
+                return self._ensure_datetime(dt)
+            except Exception:
+                return None
+
+        start_dt = normalize_input_dt(start)
+        end_dt = normalize_input_dt(end)
+
+        async with aiosqlite.connect(self._db_path) as db:
+            async with db.execute(
+                """
+                SELECT
+                    uid, summary, start, end, description,
+                    category, key_frame, camera_name, today_summary
+                FROM events
+                """
+            ) as cursor:
+                rows = await cursor.fetchall()
+                for row in rows:
+                    # row: uid, summary, start, end, description, key_frame, camera_name, today_summary
+                    try:
+                        row_start = dt_util.parse_datetime(row[2]) if row[2] else None
+                        row_end = dt_util.parse_datetime(row[3]) if row[3] else None
+                    except Exception:
+                        # skip malformed rows
+                        continue
+
+                    if row_start:
+                        row_start = self._ensure_datetime(row_start)
+                    if row_end:
+                        row_end = self._ensure_datetime(row_end)
+
+                    # Camera filter
+                    if cameras:
+                        camera_name = (row[7] or "").lower()
+                        if camera_name not in [c.lower() for c in cameras]:
+                            continue
+
+                    # Category filter
+                    if categories:
+                        category_name = (row[5] or "").lower()
+                        if category_name not in [c.lower() for c in categories]:
+                            continue
+
+                    # Range overlap filter
+                    if start_dt and row_end and row_end <= start_dt:
+                        continue
+                    if end_dt and row_start and row_start >= end_dt:
+                        continue
+
+                    events.append(
+                        {
+                            "uid": row[0],
+                            "summary": row[1],
+                            "start": row[2],
+                            "end": row[3],
+                            "description": row[4],
+                            "category": row[5],
+                            "key_frame": row[6],
+                            "camera_name": row[7],
+                            "today_summary": row[8],
+                        }
+                    )
+
+        # Sort by start datetime descending (newest first). Malformed/missing start go to the end.
+        def sort_key(ev):
+            try:
+                d = dt_util.parse_datetime(ev.get("start"))
+                return dt_util.as_local(self._ensure_datetime(d))
+            except Exception:
+                return datetime.datetime.fromtimestamp(0, tz=datetime.timezone.utc)
+
+        events.sort(key=sort_key, reverse=True)
+
+        if limit is not None:
+            return events[:limit]
+
+        return events
+
     async def async_create_event(self, **kwargs: any) -> None:
         """Adds a new event to calendar"""
         _LOGGER.info(f"Creating event: {kwargs}")
@@ -337,6 +529,7 @@ class Timeline(CalendarEntity):
         end: datetime.datetime
         summary = kwargs[EVENT_SUMMARY]
         description = kwargs.get(EVENT_DESCRIPTION)
+        category = kwargs.get("category", "")
         key_frame = kwargs.get("key_frame", "")
         camera_name = kwargs.get("camera_name", "")
         today_summary = kwargs.get("today_summary", "")
@@ -358,17 +551,19 @@ class Timeline(CalendarEntity):
             description=description,
             location=f"{key_frame},{camera_name}",
         )
-        await self._insert_event(event, today_summary)
+        await self._insert_event(event, today_summary, category)
 
-    async def _insert_event(self, event: CalendarEvent, today_summary: str) -> None:
+    async def _insert_event(
+        self, event: CalendarEvent, today_summary: str, category: str
+    ) -> None:
         """Inserts a new event into the database"""
         try:
             async with aiosqlite.connect(self._db_path) as db:
                 _LOGGER.info(f"Inserting event into database: {event}")
                 await db.execute(
                     """
-                    INSERT INTO events (uid, summary, start, end, description, key_frame, camera_name, today_summary)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO events (uid, summary, start, end, description, category, key_frame, camera_name, today_summary)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                     (
                         event.uid,
@@ -378,6 +573,7 @@ class Timeline(CalendarEntity):
                         ).isoformat(),
                         dt_util.as_local(self._ensure_datetime(event.end)).isoformat(),
                         event.description,
+                        category,
                         event.location.split(",")[0],
                         (
                             event.location.split(",")[1]
@@ -496,6 +692,16 @@ class Timeline(CalendarEntity):
         _LOGGER.info(
             f"(REMEMBER) Adding event: {label} from {start} to {end} with key_frame: {key_frame} and camera_name: {camera_name}"
         )
+
+        # Resolve category
+        try:
+            matches = _get_category(self._config_entry, label)
+            self._category = matches[0] if matches else ""
+            _LOGGER.debug(f"Resolved category: {self._category} (matches={matches})")
+        except Exception as e:
+            _LOGGER.warning(f"Failed to resolve category: {e}")
+            self._category = ""
+
         # Mark key_frame as pending so cleanup won't remove it before DB insert
         if key_frame:
             self._pending_key_frames.add(key_frame)
@@ -505,6 +711,7 @@ class Timeline(CalendarEntity):
                 dtend=end,
                 summary=label,
                 description=summary,
+                category=self._category,
                 key_frame=key_frame,
                 camera_name=camera_name,
                 today_summary=today_summary,

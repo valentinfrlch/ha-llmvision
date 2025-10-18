@@ -31,6 +31,7 @@ from .const import (
     CONF_AZURE_DEPLOYMENT,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_RETENTION_TIME,
+    CONF_TIMELINE_LANGUAGE,
     CONF_FALLBACK_PROVIDER,
     CONF_MEMORY_PATHS,
     CONF_MEMORY_STRINGS,
@@ -1297,6 +1298,29 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional("timeline_section"): section(
                     vol.Schema(
                         {
+                            vol.Required(CONF_TIMELINE_LANGUAGE): selector(
+                                {
+                                    "select": {
+                                        "options": [
+                                            "Catalan",
+                                            "Czech",
+                                            "Dutch",
+                                            "English",
+                                            "French",
+                                            "German",
+                                            "Hungarian",
+                                            "Italian",
+                                            "Polish",
+                                            "Portuguese",
+                                            "Slovak",
+                                            "Spanish",
+                                            "Swedish"
+                                        ],
+                                        "mode": "dropdown",
+                                        "default": "English",
+                                    }
+                                }
+                            ),
                             vol.Required(CONF_RETENTION_TIME, default=7): selector(
                                 {
                                     "number": {
@@ -1358,6 +1382,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ),
             },
             "timeline_section": {
+                CONF_TIMELINE_LANGUAGE: self.init_info.get(
+                    CONF_TIMELINE_LANGUAGE, "en"
+                ),
                 CONF_RETENTION_TIME: self.init_info.get(CONF_RETENTION_TIME, 7),
                 # CONF_TIMELINE_TODAY_SUMMARY: self.init_info.get(CONF_TIMELINE_TODAY_SUMMARY, False),
                 # CONF_TIMELINE_SUMMARY_PROMPT: self.init_info.get(

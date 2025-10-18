@@ -379,11 +379,13 @@
                         "name": "Časová osa",
                         "description": "Časová osa ukládá dnešní události pro zobrazení pomocí LLM Vision karty na vaší nástěnce.",
                         "data": {
+                            "timeline_language": "Jazyk časové osy",
                             "retention_time": "Doba uchování",
                             "timeline_today_summary": "Souhrn dne",
                             "timeline_summary_prompt": "Prompt pro souhrn dne"
                         },
                         "data_description": {
+                            "timeline_language": "Vyberte jazyk používaný pro generování ikon z událostí.",
                             "retention_time": "Automaticky smazat události po (dnech). Nastavte na 0 pro vypnutí automatického mazání.",
                             "timeline_today_summary": "Povolit souhrn dne pro automatické generování souhrnu dnešních událostí.",
                             "timeline_summary_prompt": "Instrukce pro model k vygenerování souhrnu dnešních událostí."

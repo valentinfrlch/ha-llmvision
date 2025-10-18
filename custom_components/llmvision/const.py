@@ -32,11 +32,12 @@ CONF_CUSTOM_OPENAI_ENDPOINT = "custom_openai_endpoint"
 CONF_RETENTION_TIME = "retention_time"
 
 # Settings
+CONF_TIMELINE_LANGUAGE = "timeline_language"
 CONF_FALLBACK_PROVIDER = "fallback_provider"
 CONF_TIMELINE_TODAY_SUMMARY = "timeline_today_summary"
 CONF_TIMELINE_SUMMARY_PROMPT = "timeline_summary_prompt"
 CONF_MEMORY_PATHS = "memory_paths"
-CONG_MEMORY_IMAGES_ENCODED = "memory_images_encoded"
+CONF_MEMORY_IMAGES_ENCODED = "memory_images_encoded"
 CONF_MEMORY_STRINGS = "memory_strings"
 CONF_SYSTEM_PROMPT = "system_prompt"
 CONF_TITLE_PROMPT = "title_prompt"
