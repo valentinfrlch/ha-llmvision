@@ -25,8 +25,12 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 
-def _get_category(config_entry: ConfigEntry, query: str) -> list[str]:
+async def _get_category(hass: HomeAssistant, config_entry: ConfigEntry, query: str) -> list[str]:
     """Get categories matching the query using the language regex template."""
+    def load_lang_json(path: str) -> dict:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    
     # Determine language (fallback to 'en')
     language = config_entry.options.get(CONF_TIMELINE_LANGUAGE) or "English"
 
@@ -59,8 +63,7 @@ def _get_category(config_entry: ConfigEntry, query: str) -> list[str]:
         )
 
     try:
-        with open(lang_file_path, "r", encoding="utf-8") as lang_file:
-            lang_data = json.load(lang_file)
+        lang_data = await hass.async_add_executor_job(load_lang_json, lang_file_path)
     except Exception as e:
         _LOGGER.error(f"Error loading language file {lang_file_path}: {e}")
         return []
@@ -125,7 +128,6 @@ class Timeline(CalendarEntity):
         # Track key_frame paths whose DB rows are not yet committed
         self._pending_key_frames: set[str] = set()
         self._cleanup_lock = asyncio.Lock()
-        self._category: str = ""
         self._config_entry = config_entry
 
         # Path to the JSON file where events are stored
@@ -290,7 +292,7 @@ class Timeline(CalendarEntity):
                     for row in rows:
                         uid = row[0]
                         summary = row[1]
-                        matches = _get_category(self._config_entry, summary)
+                        matches = await _get_category(self.hass, self._config_entry, summary)
                         category = matches[0] if matches else ""
                         await db.execute(
                             """UPDATE events SET category = ? WHERE uid = ?""",
@@ -686,7 +688,7 @@ class Timeline(CalendarEntity):
         return events_summaries
 
     async def remember(
-        self, start, end, label, key_frame, summary, camera_name="", today_summary=""
+        self, start, end, label, key_frame, summary, category="", camera_name="", today_summary=""
     ):
         """Remembers the event"""
         _LOGGER.info(
@@ -695,12 +697,12 @@ class Timeline(CalendarEntity):
 
         # Resolve category
         try:
-            matches = _get_category(self._config_entry, label)
-            self._category = matches[0] if matches else ""
-            _LOGGER.debug(f"Resolved category: {self._category} (matches={matches})")
+            matches = await _get_category(self.hass, self._config_entry, label)
+            category = matches[0] if matches else ""
+            _LOGGER.debug(f"Resolved category: {category} (matches={matches})")
         except Exception as e:
             _LOGGER.warning(f"Failed to resolve category: {e}")
-            self._category = ""
+            category = ""
 
         # Mark key_frame as pending so cleanup won't remove it before DB insert
         if key_frame:
@@ -711,7 +713,7 @@ class Timeline(CalendarEntity):
                 dtend=end,
                 summary=label,
                 description=summary,
-                category=self._category,
+                category=category,
                 key_frame=key_frame,
                 camera_name=camera_name,
                 today_summary=today_summary,
