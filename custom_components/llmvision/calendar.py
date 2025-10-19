@@ -147,7 +147,7 @@ class Timeline(CalendarEntity):
         return "mdi:timeline-outline"
 
     async def _migrate(self):
-        """Handles migration for events.db (current v3)"""
+        """Handles migration for events.db (current v4.2)"""
         # v1 -> v2: Migrate events from events.json to events.db
         old_db_path = os.path.join(self.hass.config.path(DOMAIN), "events.json")
         if os.path.exists(old_db_path):
