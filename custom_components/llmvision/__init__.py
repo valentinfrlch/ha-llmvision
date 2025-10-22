@@ -69,6 +69,9 @@ from .const import (
     DEFAULT_OPENWEBUI_MODEL,
     CONF_CONTEXT_WINDOW,
     CONF_KEEP_ALIVE,
+    RESPONSE_FORMAT,
+    STRUCTURE,
+    TITLE_FIELD,
 )
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -569,6 +572,9 @@ class ServiceCallData:
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)
         self.sensor_entity = data_call.data.get(SENSOR_ENTITY, "")
+        self.response_format = data_call.data.get(RESPONSE_FORMAT, "text")
+        self.structure = data_call.data.get(STRUCTURE, None)
+        self.title_field = data_call.data.get(TITLE_FIELD, "")
 
         # ------------ Remember ------------
         self.title = data_call.data.get("title")
