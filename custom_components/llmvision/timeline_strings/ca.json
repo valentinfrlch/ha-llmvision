@@ -1,76 +1,66 @@
 {
     "categories": {
-        "people": {
-            "objects": {
-                "persona": "mdi:walk",
-                "individual": "mdi:walk",
-                "figura": "mdi:walk",
-                "gent": "mdi:walk",
-                "persones": "mdi:walk",
-                "infant": "mdi:walk",
-                "nen": "mdi:walk",
-                "nena": "mdi:walk",
-                "dona": "mdi:walk",
-                "home": "mdi:walk",
-                "humà": "mdi:walk",
-                "ciclista": "mdi:bike"
+        "person": {
+            "labels": {
+                "persona": "person",
+                "individual": "person",
+                "figura": "person",
+                "gent": "person",
+                "persones": "person",
+                "infant": "person",
+                "nen": "person",
+                "nena": "person",
+                "dona": "person",
+                "home": "person",
+                "humà": "person",
+                "ciclista": "bike"
             }
         },
-        "vehicles": {
-            "objects": {
-                "repartidor": "mdi:truck-delivery",
-                "carter": "mdi:truck-delivery",
-                "bicicleta": "mdi:bike",
-                "bici": "mdi:bike",
-                "motocicleta": "mdi:motorbike",
-                "moto": "mdi:motorbike",
-                "autobús": "mdi:bus",
-                "cotxe": "mdi:car",
-                "furgoneta": "mdi:car",
-                "vehicle": "mdi:car",
-                "camió": "mdi:truck",
-                "carrer": "mdi:road-variant",
-                "camí": "mdi:road-variant",
-                "entrada": "mdi:road-variant"
+        "vehicle": {
+            "labels": {
+                "repartidor": "truck",
+                "carter": "truck",
+                "bicicleta": "bicycle",
+                "bici": "bicycle",
+                "motocicleta": "motorcycle",
+                "moto": "motorcycle",
+                "autobús": "bus",
+                "cotxe": "car",
+                "furgoneta": "car",
+                "vehicle": "car",
+                "camió": "truck"
             }
         },
-        "animals": {
-            "objects": {
-                "gos": "mdi:dog",
-                "gat": "mdi:cat",
-                "ocell": "mdi:duck",
-                "mascota": "mdi:dog",
-                "animal": "mdi:dog"
+        "animal": {
+            "labels": {
+                "gos": "dog",
+                "gat": "cat",
+                "ocell": "bird"
             }
         },
-        "packages": {
-            "objects": {
-                "caixa": "mdi:package-variant-closed",
-                "paquet": "mdi:package-variant-closed",
-                "paqueteria": "mdi:package-variant-closed",
-                "carta": "mdi:email"
+        "package": {
+            "labels": {
+                "caixa": "package",
+                "paquet": "package",
+                "paqueteria": "package"
             }
         },
-        "entities": {
-            "objects": {
-                "càmera": "mdi:cctv",
-                "sensor": "mdi:access-point",
-                "llum": "mdi:lightbulb",
-                "clau": "mdi:key",
-                "pany": "mdi:lock",
-                "alarma": "mdi:alarm-light",
-                "casa": "mdi:home",
-                "porxo": "mdi:door-closed",
-                "porta": "mdi:door-closed",
-                "finestra": "mdi:window-closed-variant"
+        "entity": {
+            "labels": {
+                "càmera": "camera",
+                "sensor": "sensor",
+                "llum": "light",
+                "clau": "key",
+                "pany": "lock",
+                "alarma": "alarm"
             }
         },
         "nature": {
-            "objects": {
-                "jardí": "mdi:flower",
-                "planta": "mdi:flower",
-                "flor": "mdi:flower",
-                "arbre": "mdi:tree"
+            "labels": {
+                "jardí": "plant",
+                "planta": "plant",
+                "flor": "plant",
+                "arbre": "tree"
             }
         }
     },

@@ -1,72 +1,62 @@
 {
     "categories": {
-        "people": {
-            "objects": {
-                "személy": "mdi:walk",
-                "egyén": "mdi:walk",
-                "alak": "mdi:walk",
-                "személyek": "mdi:walk",
-                "gyermek": "mdi:walk",
-                "nő": "mdi:walk",
-                "férfi": "mdi:walk",
-                "ember": "mdi:walk",
-                "kerékpáros": "mdi:bike"
+        "person": {
+            "labels": {
+                "személy": "person",
+                "egyén": "person",
+                "alak": "person",
+                "személyek": "person",
+                "gyermek": "person",
+                "nő": "person",
+                "férfi": "person",
+                "ember": "person"
             }
         },
-        "vehicles": {
-            "objects": {
-                "futár": "mdi:truck-delivery",
-                "postás": "mdi:truck-delivery",
-                "kerékpár": "mdi:bike",
-                "motorkerékpár": "mdi:bike",
-                "busz": "mdi:bus",
-                "autó": "mdi:car",
-                "furgon": "mdi:car",
-                "suv": "mdi:car",
-                "jármű": "mdi:car",
-                "teherautó": "mdi:truck",
-                "utca": "mdi:road-variant",
-                "ösvény": "mdi:road-variant",
-                "járda": "mdi:road-variant",
-                "kocsibehajtó": "mdi:road-variant"
+        "vehicle": {
+            "labels": {
+                "futár": "truck",
+                "postás": "truck",
+                "kerékpár": "bicycle",
+                "motorkerékpár": "motorcycle",
+                "busz": "bus",
+                "autó": "car",
+                "furgon": "car",
+                "suv": "car",
+                "jármű": "car",
+                "teherautó": "truck"
             }
         },
-        "animals": {
-            "objects": {
-                "kutya": "mdi:dog",
-                "macska": "mdi:cat",
-                "madár": "mdi:duck",
-                "háziállat": "mdi:dog",
-                "állat": "mdi:dog"
+        "animal": {
+            "labels": {
+                "kutya": "dog",
+                "macska": "cat",
+                "madár": "bird",
+                "háziállat": "dog",
+                "állat": "dog"
             }
         },
-        "packages": {
-            "objects": {
-                "doboz": "mdi:package-variant-closed",
-                "csomag": "mdi:package-variant-closed",
-                "levél": "mdi:email"
+        "package": {
+            "labels": {
+                "doboz": "package",
+                "csomag": "package"
             }
         },
-        "entities": {
-            "objects": {
-                "kamera": "mdi:cctv",
-                "érzékelő": "mdi:access-point",
-                "világítás": "mdi:lightbulb",
-                "kulcs": "mdi:key",
-                "zár": "mdi:lock",
-                "riasztó": "mdi:alarm-light",
-                "ház": "mdi:home",
-                "bejárat": "mdi:door-closed",
-                "ajtó": "mdi:door-closed",
-                "ablak": "mdi:window-closed-variant"
+        "entity": {
+            "labels": {
+                "kamera": "camera",
+                "érzékelő": "sensor",
+                "világítás": "light",
+                "kulcs": "key",
+                "zár": "lock",
+                "riasztó": "alarm"
             }
         },
         "nature": {
-            "objects": {
-                "kert": "mdi:flower",
-                "növény": "mdi:flower",
-                "virág": "mdi:flower",
-                "fa": "mdi:tree"
+            "labels": {
+                "kert": "plant",
+                "növény": "plant",
+                "virág": "plant",
+                "fa": "tree"
             }
         }
     },

@@ -1,73 +1,63 @@
 {
     "categories": {
-        "people": {
-            "objects": {
-                "човек": "mdi:walk",
-                "индивид": "mdi:walk",
-                "фигура": "mdi:walk",
-                "хора": "mdi:walk",
-                "дете": "mdi:walk",
-                "жена": "mdi:walk",
-                "мъж": "mdi:walk",
-                "колоездач": "mdi:bike"
+        "person": {
+            "labels": {
+                "човек": "person",
+                "индивид": "person",
+                "фигура": "person",
+                "хора": "person",
+                "дете": "person",
+                "жена": "person",
+                "мъж": "person"
             }
         },
-        "vehicles": {
-            "objects": {
-                "куриер": "mdi:truck-delivery",
-                "пощальон": "mdi:truck-delivery",
-                "колело": "mdi:bike",
-                "мотор": "mdi:motorbike",
-                "мотоциклет": "mdi:motorbike",
-                "автобус": "mdi:bus",
-                "кола": "mdi:car",
-                "ван": "mdi:car",
-                "джип": "mdi:car",
-                "камион": "mdi:truck",
-                "улица": "mdi:road-variant",
-                "път": "mdi:road-variant",
-                "алея": "mdi:road-variant"
+        "vehicle": {
+            "labels": {
+                "куриер": "truck",
+                "пощальон": "truck",
+                "колело": "bicycle",
+                "мотор": "motorcycle",
+                "мотоциклет": "motorcycle",
+                "автобус": "bus",
+                "кола": "car",
+                "ван": "car",
+                "джип": "car",
+                "камион": "truck"
             }
         },
-        "animals": {
-            "objects": {
-                "куче": "mdi:dog",
-                "котка": "mdi:cat",
-                "птица": "mdi:duck",
-                "домашен любимец": "mdi:dog",
-                "животно": "mdi:dog"
+        "animal": {
+            "labels": {
+                "куче": "dog",
+                "котка": "cat",
+                "птица": "bird",
+                "домашен любимец": "dog",
+                "животно": "dog"
             }
         },
-        "packages": {
-            "objects": {
-                "кутия": "mdi:package-variant-closed",
-                "пакет": "mdi:package-variant-closed",
-                "парцел": "mdi:package-variant-closed",
-                "писмо": "mdi:email"
+        "package": {
+            "labels": {
+                "кутия": "package",
+                "пакет": "package",
+                "парцел": "package"
             }
         },
-        "entities": {
-            "objects": {
-                "камера": "mdi:cctv",
-                "сензор": "mdi:access-point",
-                "светлина": "mdi:lightbulb",
-                "крушка": "mdi:lightbulb",
-                "ключ": "mdi:key",
-                "ключалка": "mdi:lock",
-                "аларма": "mdi:alarm-light",
-                "къща": "mdi:home",
-                "дом": "mdi:home",
-                "порта": "mdi:door-closed",
-                "врата": "mdi:door-closed",
-                "прозорец": "mdi:window-closed-variant"
+        "entity": {
+            "labels": {
+                "камера": "camera",
+                "сензор": "sensor",
+                "светлина": "light",
+                "крушка": "light",
+                "ключ": "key",
+                "ключалка": "lock",
+                "аларма": "alarm"
             }
         },
         "nature": {
-            "objects": {
-                "градина": "mdi:flower",
-                "растение": "mdi:flower",
-                "цвете": "mdi:flower",
-                "дърво": "mdi:tree"
+            "labels": {
+                "градина": "plant",
+                "растение": "plant",
+                "цвете": "plant",
+                "дърво": "tree"
             }
         }
     },

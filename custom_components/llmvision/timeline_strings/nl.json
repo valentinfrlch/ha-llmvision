@@ -1,73 +1,62 @@
 {
     "categories": {
-        "people": {
-            "objects": {
-                "persoon": "mdi:walk",
-                "individu": "mdi:walk",
-                "figuur": "mdi:walk",
-                "mensen": "mdi:walk",
-                "kind": "mdi:walk",
-                "vrouw": "mdi:walk",
-                "man": "mdi:walk",
-                "mens": "mdi:walk",
-                "fietser": "mdi:bike"
+        "person": {
+            "labels": {
+                "persoon": "person",
+                "individu": "person",
+                "figuur": "person",
+                "mensen": "person",
+                "kind": "person",
+                "vrouw": "person",
+                "man": "person",
+                "mens": "person"
             }
         },
-        "vehicles": {
-            "objects": {
-                "koerier": "mdi:truck-delivery",
-                "postbode": "mdi:truck-delivery",
-                "fiets": "mdi:bike",
-                "bromfiets": "mdi:motorbike",
-                "motorfiets": "mdi:motorbike",
-                "bus": "mdi:bus",
-                "auto": "mdi:car",
-                "bestelwagen": "mdi:car",
-                "suv": "mdi:car",
-                "voertuig": "mdi:car",
-                "vrachtwagen": "mdi:truck",
-                "straat": "mdi:road-variant",
-                "weg": "mdi:road-variant",
-                "oprit": "mdi:road-variant"
+        "vehicle": {
+            "labels": {
+                "koerier": "truck",
+                "postbode": "truck",
+                "fiets": "bicycle",
+                "bromfiets": "motorcycle",
+                "motorfiets": "motorcycle",
+                "bus": "bus",
+                "auto": "car",
+                "bestelwagen": "car",
+                "suv": "car",
+                "voertuig": "car",
+                "vrachtwagen": "truck"
             }
         },
-        "animals": {
-            "objects": {
-                "hond": "mdi:dog",
-                "kat": "mdi:cat",
-                "vogel": "mdi:duck",
-                "huisdier": "mdi:dog",
-                "dier": "mdi:dog"
+        "animal": {
+            "labels": {
+                "hond": "dog",
+                "kat": "cat",
+                "vogel": "bird"
             }
         },
-        "packages": {
-            "objects": {
-                "doos": "mdi:package-variant-closed",
-                "pakket": "mdi:package-variant-closed",
-                "pakje": "mdi:package-variant-closed",
-                "brief": "mdi:email"
+        "package": {
+            "labels": {
+                "doos": "package",
+                "pakket": "package",
+                "pakje": "package"
             }
         },
-        "entities": {
-            "objects": {
-                "camera": "mdi:cctv",
-                "sensor": "mdi:access-point",
-                "licht": "mdi:lightbulb",
-                "sleutel": "mdi:key",
-                "slot": "mdi:lock",
-                "alarm": "mdi:alarm-light",
-                "huis": "mdi:home",
-                "veranda": "mdi:door-closed",
-                "deur": "mdi:door-closed",
-                "raam": "mdi:window-closed-variant"
+        "entity": {
+            "labels": {
+                "camera": "camera",
+                "sensor": "sensor",
+                "licht": "light",
+                "sleutel": "key",
+                "slot": "lock",
+                "alarm": "alarm"
             }
         },
         "nature": {
-            "objects": {
-                "tuin": "mdi:flower",
-                "plant": "mdi:flower",
-                "bloem": "mdi:flower",
-                "boom": "mdi:tree"
+            "labels": {
+                "tuin": "plant",
+                "plant": "plant",
+                "bloem": "plant",
+                "boom": "tree"
             }
         }
     },
