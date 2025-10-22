@@ -1,19 +1,16 @@
 from datetime import datetime
-from .calendar import Timeline
+from .timeline import Timeline
 from .providers import Request
 from .memory import Memory
 from .media_handlers import MediaProcessor
-import re
-import os
-import json
+import os, re
 from datetime import timedelta
 from homeassistant.util import dt as dt_util
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
-from homeassistant.components.http import HomeAssistantView
-from homeassistant.helpers.json import json_dumps
 import homeassistant.helpers.config_validation as cv
+from .api import TimelineEventView, TimelineEventsView, TimelineEventCreateView
 
 import logging
 
@@ -73,6 +70,7 @@ from .const import (
     CONF_CONTEXT_WINDOW,
     CONF_KEEP_ALIVE,
 )
+
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 _LOGGER = logging.getLogger(__name__)
@@ -173,14 +171,6 @@ async def async_unload_entry(hass, entry) -> bool:
     else:
         unload_ok = True
     return unload_ok
-
-
-async def async_get_settings_entry(hass) -> ConfigEntry | None:
-    """Return the Settings config entry, or None if not found"""
-    for entry in hass.config_entries.async_entries(DOMAIN):
-        if entry.data.get(CONF_PROVIDER) == "Settings":
-            return entry
-    return None
 
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
@@ -473,7 +463,7 @@ async def _remember(
         else:
             title = "Motion detected"
 
-        await timeline.remember(
+        await timeline.create_event(
             start=start,
             end=dt_util.now() + timedelta(minutes=1),
             label=title,
@@ -621,111 +611,6 @@ class ServiceCallData:
 
     def get_service_call_data(self):
         return self
-
-
-# API Views for Timeline events
-class TimelineEventsView(HomeAssistantView):
-    """View to handle timeline events.
-    Returns:
-        - 200: List of events
-    """
-
-    url = "/api/llmvision/timeline/events"
-    name = "api:llmvision:timeline:events"
-    requires_auth = True
-
-    async def get(self, request):
-        hass = request.app["hass"]
-
-        settings_entry = await async_get_settings_entry(hass)
-        # Parse request params
-        try:
-            # Limit: minimum 1, maximum 100
-            limit = max(1, min(int(request.query.get("limit", 10)), 100))
-        except ValueError:
-            limit = 10
-
-        cameras = request.query.get("cameras", None)
-        categories = request.query.get("categories", None)
-        days = request.query.get("days", None)
-
-        def _parse_list_param(val):
-            if val is None:
-                return None
-            if isinstance(val, str):
-                parts = [p.strip() for p in val.split(",") if p.strip()]
-                return parts if parts else None
-            # if already a list-like, normalize items to str
-            try:
-                return [str(p).strip() for p in val if str(p).strip()]
-            except Exception:
-                return None
-
-        cameras = _parse_list_param(cameras)
-        categories = _parse_list_param(categories)
-        start = None
-        end = None
-
-        # If days is provided, calculate start and end dates
-        if days is not None:
-            try:
-                days = int(days)
-                end_date = dt_util.now()
-                start_date = end_date - timedelta(days=days)
-                start = start_date.isoformat()
-                end = end_date.isoformat()
-            except ValueError:
-                start = None
-                end = None
-
-        timeline = Timeline(hass, settings_entry)
-        events = await timeline.get_events_raw(
-            limit=limit,
-            cameras=cameras,
-            categories=categories,
-            start=start,
-            end=end,
-        )
-        return self.json({"events": json.loads(json_dumps(events))})
-
-
-class TimelineEventView(HomeAssistantView):
-    """View to handle individual timeline events.
-    Parameters:
-        - event_id: ID of the event to delete (uid)
-    Returns:
-        - 200: Event deleted successfully
-        - 404: Event not found
-        - 500: Error deleting event
-    """
-
-    url = "/api/llmvision/timeline/event/{event_id}"
-    name = "api:llmvision:timeline:event"
-    requires_auth = True
-
-    async def get(self, request, event_id):
-        hass = request.app["hass"]
-        settings_entry = await async_get_settings_entry(hass)
-        if settings_entry is None:
-            return self.json_message("Settings config entry not found", status_code=404)
-        timeline = Timeline(hass, settings_entry)
-        event = await timeline.get_event(event_id)
-        if event is None:
-            return self.json_message("Event not found", status_code=404)
-        return self.json({"event": json.loads(json_dumps(event))})
-
-    async def delete(self, request, event_id):
-        hass = request.app["hass"]
-        settings_entry = await async_get_settings_entry(hass)
-        if settings_entry is None:
-            return self.json_message("Settings config entry not found", status_code=404)
-        timeline = Timeline(hass, settings_entry)
-        try:
-            await timeline.async_delete_event(event_id)
-        except Exception as e:
-            _LOGGER.error(f"Error deleting event {event_id}: {e}")
-            return self.json_message("Error deleting event", status_code=500)
-        return self.json({"event_id": event_id, "status": "deleted"})
 
 
 def setup(hass, config):
@@ -964,7 +849,7 @@ def setup(hass, config):
 
         timeline = Timeline(hass, config_entry)
 
-        await timeline.remember(
+        await timeline.create_event(
             start=call.start_time,
             end=call.end_time,
             label=call.title,
@@ -1003,5 +888,6 @@ def setup(hass, config):
     )
     hass.http.register_view(TimelineEventsView)
     hass.http.register_view(TimelineEventView)
+    hass.http.register_view(TimelineEventCreateView)
 
     return True

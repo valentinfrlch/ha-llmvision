@@ -1,74 +1,65 @@
 {
     "categories": {
-        "people": {
-            "objects": {
-                "osoba": "mdi:walk",
-                "jednotlivec": "mdi:walk",
-                "postava": "mdi:walk",
-                "lidé": "mdi:walk",
-                "dítě": "mdi:walk",
-                "žena": "mdi:walk",
-                "muž": "mdi:walk",
-                "člověk": "mdi:walk",
-                "cyklista": "mdi:bike"
+        "person": {
+            "labels": {
+                "osoba": "person",
+                "jednotlivec": "person",
+                "postava": "person",
+                "lidé": "person",
+                "dítě": "person",
+                "žena": "person",
+                "muž": "person",
+                "člověk": "person"
             }
         },
-        "vehicles": {
-            "objects": {
-                "kurýr": "mdi:truck-delivery",
-                "pošťák": "mdi:truck-delivery",
-                "kolo": "mdi:bike",
-                "bicykl": "mdi:bike",
-                "motocykl": "mdi:motorbike",
-                "motorka": "mdi:motorbike",
-                "autobus": "mdi:bus",
-                "auto": "mdi:car",
-                "dodávka": "mdi:car",
-                "suv": "mdi:car",
-                "vozidlo": "mdi:car",
-                "nákladní auto": "mdi:truck",
-                "ulice": "mdi:road-variant",
-                "chodník": "mdi:road-variant",
-                "příjezdová cesta": "mdi:road-variant"
+        "vehicle": {
+            "labels": {
+                "kurýr": "truck",
+                "pošťák": "truck",
+                "kolo": "bicycle",
+                "bicykl": "bicycle",
+                "motocykl": "motorcycle",
+                "motorka": "motorcycle",
+                "autobus": "bus",
+                "auto": "car",
+                "dodávka": "car",
+                "suv": "car",
+                "vozidlo": "car",
+                "nákladní auto": "truck"
             }
         },
-        "animals": {
-            "objects": {
-                "pes": "mdi:dog",
-                "kočka": "mdi:cat",
-                "pták": "mdi:duck",
-                "domácí zvíře": "mdi:dog",
-                "zvíře": "mdi:dog"
+        "animal": {
+            "labels": {
+                "pes": "dog",
+                "kočka": "cat",
+                "pták": "bird",
+                "domácí zvíře": "dog",
+                "zvíře": "dog"
             }
         },
-        "packages": {
-            "objects": {
-                "krabice": "mdi:package-variant-closed",
-                "balík": "mdi:package-variant-closed",
-                "zásilka": "mdi:package-variant-closed",
-                "dopis": "mdi:email"
+        "package": {
+            "labels": {
+                "krabice": "package",
+                "balík": "package",
+                "zásilka": "package"
             }
         },
-        "entities": {
-            "objects": {
-                "kamera": "mdi:cctv",
-                "senzor": "mdi:access-point",
-                "světlo": "mdi:lightbulb",
-                "klíč": "mdi:key",
-                "zámek": "mdi:lock",
-                "alarm": "mdi:alarm-light",
-                "dům": "mdi:home",
-                "veranda": "mdi:door-closed",
-                "dveře": "mdi:door-closed",
-                "okno": "mdi:window-closed-variant"
+        "entity": {
+            "labels": {
+                "kamera": "camera",
+                "senzor": "sensor",
+                "světlo": "light",
+                "klíč": "key",
+                "zámek": "lock",
+                "alarm": "alarm"
             }
         },
         "nature": {
-            "objects": {
-                "zahrada": "mdi:flower",
-                "rostlina": "mdi:flower",
-                "kytka": "mdi:flower",
-                "strom": "mdi:tree"
+            "labels": {
+                "zahrada": "plant",
+                "rostlina": "plant",
+                "kytka": "plant",
+                "strom": "tree"
             }
         }
     },

@@ -1,68 +1,59 @@
 {
     "categories": {
-        "people": {
-            "objects": {
-                "persona": "mdi:walk",
-                "gente": "mdi:walk",
-                "bambino": "mdi:walk",
-                "donna": "mdi:walk",
-                "uomo": "mdi:walk",
-                "umano": "mdi:walk"
+        "person": {
+            "labels": {
+                "persona": "person",
+                "gente": "person",
+                "bambino": "person",
+                "donna": "person",
+                "uomo": "person",
+                "umano": "person"
             }
         },
-        "vehicles": {
-            "objects": {
-                "furgone": "mdi:truck-delivery",
-                "postino": "mdi:truck-delivery",
-                "bicicletta": "mdi:bike",
-                "motocicletta": "mdi:motorbike",
-                "autobus": "mdi:bus",
-                "macchina": "mdi:car",
-                "fuoristrada": "mdi:car",
-                "suv": "mdi:car",
-                "veicolo": "mdi:car",
-                "camion": "mdi:truck",
-                "strada": "mdi:road-variant",
-                "vialetto": "mdi:road-variant"
+        "vehicle": {
+            "labels": {
+                "furgone": "truck",
+                "postino": "truck",
+                "bicicletta": "bicycle",
+                "motocicletta": "motorcycle",
+                "autobus": "bus",
+                "macchina": "car",
+                "fuoristrada": "car",
+                "suv": "car",
+                "veicolo": "car",
+                "camion": "truck"
             }
         },
-        "animals": {
-            "objects": {
-                "cane": "mdi:dog",
-                "gatto": "mdi:cat",
-                "gatti": "mdi:cat",
-                "papero": "mdi:duck",
-                "cucciolo": "mdi:dog",
-                "animale": "mdi:dog"
+        "animal": {
+            "labels": {
+                "cane": "dog",
+                "gatto": "cat",
+                "gatti": "cat",
+                "papero": "bird"
             }
         },
-        "packages": {
-            "objects": {
-                "cassa": "mdi:package-variant-closed",
-                "pacchetto": "mdi:package-variant-closed",
-                "posta": "mdi:email"
+        "package": {
+            "labels": {
+                "cassa": "package",
+                "pacchetto": "package"
             }
         },
-        "entities": {
-            "objects": {
-                "telecamera": "mdi:cctv",
-                "sensore": "mdi:access-point",
-                "luce": "mdi:lightbulb",
-                "chiave": "mdi:key",
-                "serratura": "mdi:lock",
-                "allarme": "mdi:alarm-light",
-                "casa": "mdi:home",
-                "entrata": "mdi:door-closed",
-                "porta": "mdi:door-closed",
-                "finestra": "mdi:window-closed-variant"
+        "entity": {
+            "labels": {
+                "telecamera": "camera",
+                "sensore": "sensor",
+                "luce": "light",
+                "chiave": "key",
+                "serratura": "lock",
+                "allarme": "alarm"
             }
         },
         "nature": {
-            "objects": {
-                "giardino": "mdi:flower",
-                "pianta": "mdi:flower",
-                "fiore": "mdi:flower",
-                "albero": "mdi:tree"
+            "labels": {
+                "giardino": "plant",
+                "pianta": "plant",
+                "fiore": "plant",
+                "albero": "tree"
             }
         }
     },

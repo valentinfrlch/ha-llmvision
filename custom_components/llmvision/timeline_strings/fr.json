@@ -1,69 +1,57 @@
 {
     "categories": {
-        "people": {
-            "objects": {
-                "personne": "mdi:walk",
-                "gens": "mdi:walk",
-                "enfant": "mdi:walk",
-                "femme": "mdi:walk",
-                "homme": "mdi:walk",
-                "humain": "mdi:walk",
-                "cycliste": "mdi:bike"
+        "person": {
+            "labels": {
+                "personne": "person",
+                "gens": "person",
+                "enfant": "person",
+                "femme": "person",
+                "homme": "person",
+                "humain": "person"
             }
         },
-        "vehicles": {
-            "objects": {
-                "facteur": "mdi:truck-delivery",
-                "livreur": "mdi:truck-delivery",
-                "vélo": "mdi:bike",
-                "moto": "mdi:motorbike",
-                "bus": "mdi:bus",
-                "voiture": "mdi:car",
-                "fourgon": "mdi:car",
-                "suv": "mdi:car",
-                "véhicule": "mdi:car",
-                "camion": "mdi:truck",
-                "rue": "mdi:road-variant",
-                "chemin": "mdi:road-variant",
-                "voie": "mdi:road-variant"
+        "vehicle": {
+            "labels": {
+                "facteur": "truck",
+                "livreur": "truck",
+                "vélo": "bicycle",
+                "moto": "motorcycle",
+                "bus": "bus",
+                "voiture": "car",
+                "fourgon": "car",
+                "suv": "car",
+                "véhicule": "car"
             }
         },
-        "animals": {
-            "objects": {
-                "chien": "mdi:dog",
-                "chat": "mdi:cat",
-                "oiseau": "mdi:duck",
-                "animal de compagnie": "mdi:dog",
-                "animal": "mdi:dog"
+        "animal": {
+            "labels": {
+                "chien": "dog",
+                "chat": "cat",
+                "oiseau": "bird"
             }
         },
-        "packages": {
-            "objects": {
-                "boîte": "mdi:package-variant-closed",
-                "colis": "mdi:package-variant-closed",
-                "lettre": "mdi:email"
+        "package": {
+            "labels": {
+                "boîte": "package",
+                "colis": "package"
             }
         },
-        "entities": {
-            "objects": {
-                "caméra": "mdi:cctv",
-                "capteur": "mdi:access-point",
-                "lumière": "mdi:lightbulb",
-                "clé": "mdi:key",
-                "serrure": "mdi:lock",
-                "alarme": "mdi:alarm-light",
-                "maison": "mdi:home",
-                "entrée": "mdi:door-closed",
-                "porte": "mdi:door-closed",
-                "fenêtre": "mdi:window-closed-variant"
+        "entity": {
+            "labels": {
+                "caméra": "camera",
+                "capteur": "sensor",
+                "lumière": "light",
+                "clé": "key",
+                "serrure": "lock",
+                "alarme": "alarm"
             }
         },
         "nature": {
-            "objects": {
-                "jardin": "mdi:flower",
-                "plante": "mdi:flower",
-                "fleur": "mdi:flower",
-                "arbre": "mdi:tree"
+            "labels": {
+                "jardin": "plant",
+                "plante": "plant",
+                "fleur": "flower",
+                "arbre": "tree"
             }
         }
     },

@@ -1,74 +1,64 @@
 {
     "categories": {
-        "people": {
-            "objects": {
-                "person": "mdi:walk",
-                "individual": "mdi:walk",
-                "figure": "mdi:walk",
-                "people": "mdi:walk",
-                "child": "mdi:walk",
-                "woman": "mdi:walk",
-                "man": "mdi:walk",
-                "human": "mdi:walk",
-                "cyclist": "mdi:bike"
+        "person": {
+            "labels": {
+                "person": "person",
+                "individual": "person",
+                "figure": "person",
+                "people": "person",
+                "child": "person",
+                "woman": "person",
+                "man": "person",
+                "human": "person",
+                "cyclist": "person"
             }
         },
-        "vehicles": {
-            "objects": {
-                "courier": "mdi:truck-delivery",
-                "mailman": "mdi:truck-delivery",
-                "bike": "mdi:bike",
-                "bicycle": "mdi:bike",
-                "motorcycle": "mdi:motorbike",
-                "motorbike": "mdi:motorbike",
-                "bus": "mdi:bus",
-                "car": "mdi:car",
-                "van": "mdi:car",
-                "suv": "mdi:car",
-                "vehicle": "mdi:car",
-                "truck": "mdi:truck",
-                "street": "mdi:road-variant",
-                "path": "mdi:road-variant",
-                "driveway": "mdi:road-variant"
+        "vehicle": {
+            "labels": {
+                "courier": "truck",
+                "mailman": "truck",
+                "bike": "bicycle",
+                "bicycle": "bicycle",
+                "motorcycle": "motorcycle",
+                "motorbike": "motorcycle",
+                "bus": "bus",
+                "car": "car",
+                "van": "van",
+                "suv": "car",
+                "vehicle": "car",
+                "truck": "truck"
             }
         },
-        "animals": {
-            "objects": {
-                "dog": "mdi:dog",
-                "cat": "mdi:cat",
-                "bird": "mdi:duck",
-                "pet": "mdi:dog",
-                "animal": "mdi:dog"
+        "animal": {
+            "labels": {
+                "dog": "dog",
+                "cat": "cat",
+                "bird": "bird"
             }
         },
-        "packages": {
-            "objects": {
-                "box": "mdi:package-variant-closed",
-                "package": "mdi:package-variant-closed",
-                "parcel": "mdi:package-variant-closed",
-                "letter": "mdi:email"
+        "package": {
+            "labels": {
+                "box": "package",
+                "package": "package",
+                "parcel": "package"
             }
         },
-        "entities": {
-            "objects": {
-                "camera": "mdi:cctv",
-                "sensor": "mdi:access-point",
-                "light": "mdi:lightbulb",
-                "key": "mdi:key",
-                "lock": "mdi:lock",
-                "alarm": "mdi:alarm-light",
-                "house": "mdi:home",
-                "porch": "mdi:door-closed",
-                "door": "mdi:door-closed",
-                "window": "mdi:window-closed-variant"
+        "entity": {
+            "labels": {
+                "camera": "camera",
+                "sensor": "sensor",
+                "light": "light",
+                "key": "key",
+                "lock": "lock",
+                "alarm": "alarm"
             }
         },
         "nature": {
-            "objects": {
-                "garden": "mdi:flower",
-                "plant": "mdi:flower",
-                "flower": "mdi:flower",
-                "tree": "mdi:tree"
+            "labels": {
+                "garden": "plant",
+                "plant": "plant",
+                "flower": "plant",
+                "tree": "tree"
             }
         }
     },

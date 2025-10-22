@@ -1,70 +1,58 @@
 {
     "categories": {
-        "people": {
-            "objects": {
-                "person": "mdi:walk",
-                "menschen": "mdi:walk",
-                "kind": "mdi:walk",
-                "frau": "mdi:walk",
-                "mann": "mdi:walk",
-                "mensch": "mdi:walk",
-                "radfahrer": "mdi:bike",
-                "fahrradfahrer": "mdi:bike"
+        "person": {
+            "labels": {
+                "person": "person",
+                "menschen": "person",
+                "kind": "person",
+                "frau": "person",
+                "mann": "person",
+                "mensch": "person"
             }
         },
-        "vehicles": {
-            "objects": {
-                "briefträger": "mdi:truck-delivery",
-                "postbote": "mdi:truck-delivery",
-                "fahrrad": "mdi:bike",
-                "motorrad": "mdi:motorbike",
-                "bus": "mdi:bus",
-                "auto": "mdi:car",
-                "van": "mdi:car",
-                "suv": "mdi:car",
-                "fahrzeug": "mdi:car",
-                "lastwagen": "mdi:truck",
-                "strasse": "mdi:road-variant",
-                "weg": "mdi:road-variant",
-                "einfahrt": "mdi:road-variant"
+        "vehicle": {
+            "labels": {
+                "briefträger": "truck",
+                "postbote": "truck",
+                "fahrrad": "bicycle",
+                "motorrad": "motorcycle",
+                "bus": "bus",
+                "auto": "car",
+                "van": "car",
+                "suv": "car",
+                "fahrzeug": "car",
+                "lastwagen": "truck"
             }
         },
-        "animals": {
-            "objects": {
-                "hund": "mdi:dog",
-                "katze": "mdi:cat",
-                "vogel": "mdi:duck",
-                "haustier": "mdi:dog",
-                "tier": "mdi:dog"
+        "animal": {
+            "labels": {
+                "hund": "dog",
+                "katze": "cat",
+                "vogel": "bird"
             }
         },
-        "packages": {
-            "objects": {
-                "box": "mdi:package-variant-closed",
-                "packet": "mdi:package-variant-closed",
-                "brief": "mdi:email"
+        "package": {
+            "labels": {
+                "box": "package",
+                "packet": "package"
             }
         },
-        "entities": {
-            "objects": {
-                "kamera": "mdi:cctv",
-                "sensor": "mdi:access-point",
-                "licht": "mdi:lightbulb",
-                "schlüssel": "mdi:key",
-                "schloss": "mdi:lock",
-                "alarm": "mdi:alarm-light",
-                "haus": "mdi:home",
-                "eingang": "mdi:door-closed",
-                "tür": "mdi:door-closed",
-                "fenster": "mdi:window-closed-variant"
+        "entity": {
+            "labels": {
+                "kamera": "camera",
+                "sensor": "sensor",
+                "licht": "light",
+                "schlüssel": "key",
+                "schloss": "lock",
+                "alarm": "alarm"
             }
         },
         "nature": {
-            "objects": {
-                "garten": "mdi:flower",
-                "pflanze": "mdi:flower",
-                "blume": "mdi:flower",
-                "baum": "mdi:tree"
+            "labels": {
+                "garten": "plant",
+                "pflanze": "plant",
+                "blume": "plant",
+                "baum": "tree"
             }
         }
     },

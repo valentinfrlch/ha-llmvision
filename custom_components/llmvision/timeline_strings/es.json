@@ -1,69 +1,60 @@
 {
     "categories": {
-        "people": {
-            "objects": {
-                "persona": "mdi:walk",
-                "gente": "mdi:walk",
-                "niño": "mdi:walk",
-                "mujer": "mdi:walk",
-                "hombre": "mdi:walk",
-                "humano": "mdi:walk",
-                "ciclista": "mdi:bike"
+        "person": {
+            "labels": {
+                "persona": "person",
+                "gente": "person",
+                "niño": "person",
+                "mujer": "person",
+                "hombre": "person",
+                "humano": "person"
             }
         },
-        "vehicles": {
-            "objects": {
-                "cartero": "mdi:truck-delivery",
-                "mensajero": "mdi:truck-delivery",
-                "bicicleta": "mdi:bike",
-                "moto": "mdi:motorbike",
-                "autobús": "mdi:bus",
-                "coche": "mdi:car",
-                "furgoneta": "mdi:car",
-                "suv": "mdi:car",
-                "vehículo": "mdi:car",
-                "camión": "mdi:truck",
-                "calle": "mdi:road-variant",
-                "carretera": "mdi:road-variant",
-                "calzada": "mdi:road-variant"
+        "vehicle": {
+            "labels": {
+                "cartero": "truck",
+                "mensajero": "truck",
+                "bicicleta": "bicycle",
+                "moto": "motorcycle",
+                "autobús": "bus",
+                "coche": "car",
+                "furgoneta": "car",
+                "suv": "car",
+                "vehículo": "car",
+                "camión": "truck"
             }
         },
-        "animals": {
-            "objects": {
-                "perro": "mdi:dog",
-                "gato": "mdi:cat",
-                "pájaro": "mdi:duck",
-                "mascota": "mdi:dog",
-                "animal": "mdi:dog"
+        "animal": {
+            "labels": {
+                "perro": "dog",
+                "gato": "cat",
+                "pájaro": "bird",
+                "mascota": "dog",
+                "animal": "dog"
             }
         },
-        "packages": {
-            "objects": {
-                "caja": "mdi:package-variant-closed",
-                "paquete": "mdi:package-variant-closed",
-                "carta": "mdi:email"
+        "package": {
+            "labels": {
+                "caja": "package",
+                "paquete": "package"
             }
         },
-        "entities": {
-            "objects": {
-                "cámara": "mdi:cctv",
-                "sensor": "mdi:access-point",
-                "luz": "mdi:lightbulb",
-                "llave": "mdi:key",
-                "cerradura": "mdi:lock",
-                "alarma": "mdi:alarm-light",
-                "casa": "mdi:home",
-                "entrada": "mdi:door-closed",
-                "puerta": "mdi:door-closed",
-                "ventana": "mdi:window-closed-variant"
+        "entity": {
+            "labels": {
+                "cámara": "camera",
+                "sensor": "sensor",
+                "luz": "light",
+                "llave": "key",
+                "cerradura": "lock",
+                "alarma": "alarm"
             }
         },
         "nature": {
-            "objects": {
-                "jardín": "mdi:flower",
-                "planta": "mdi:flower",
-                "flor": "mdi:flower",
-                "árbol": "mdi:tree"
+            "labels": {
+                "jardín": "plant",
+                "planta": "plant",
+                "flor": "plant",
+                "árbol": "tree"
             }
         }
     },

@@ -1,83 +1,73 @@
 {
     "categories": {
-        "people": {
+        "person": {
             "name": "Personer",
-            "objects": {
-                "person": "mdi:walk",
-                "individ": "mdi:walk",
-                "figur": "mdi:walk",
-                "personer": "mdi:walk",
-                "barn": "mdi:walk",
-                "kvinna": "mdi:walk",
-                "man": "mdi:walk",
-                "människa": "mdi:walk",
-                "folk": "mdi:walk",
-                "människor": "mdi:walk"
+            "labels": {
+                "person": "person",
+                "individ": "person",
+                "figur": "person",
+                "personer": "person",
+                "barn": "person",
+                "kvinna": "person",
+                "man": "person",
+                "människa": "person",
+                "folk": "person",
+                "människor": "person"
             }
         },
-        "vehicles": {
+        "vehicle": {
             "name": "Fordon",
-            "objects": {
-                "kurir": "mdi:truck-delivery",
-                "brevbärare": "mdi:truck-delivery",
-                "cykel": "mdi:bike",
-                "motorcykel": "mdi:motorbike",
-                "moped": "mdi:motorbike",
-                "buss": "mdi:bus",
-                "bil": "mdi:car",
-                "skåpbil": "mdi:car",
-                "jeep": "mdi:car",
-                "fordon": "mdi:car",
-                "lastbil": "mdi:truck",
-                "gata": "mdi:road-variant",
-                "uppfart": "mdi:road-variant",
-                "väg": "mdi:road-variant"
+            "labels": {
+                "kurir": "truck",
+                "brevbärare": "truck",
+                "cykel": "bicycle",
+                "motorcykel": "motorcycle",
+                "moped": "motorcycle",
+                "buss": "bus",
+                "bil": "car",
+                "skåpbil": "car",
+                "jeep": "car",
+                "fordon": "car",
+                "lastbil": "truck"
             }
         },
-        "animals": {
+        "animal": {
             "name": "Djur",
-            "objects": {
-                "hund": "mdi:dog",
-                "katt": "mdi:cat",
-                "fågel": "mdi:duck",
-                "husdjur": "mdi:dog",
-                "djur": "mdi:dog"
+            "labels": {
+                "hund": "dog",
+                "katt": "cat",
+                "fågel": "bird",
+                "husdjur": "dog",
+                "djur": "dog"
             }
         },
-        "packages": {
+        "package": {
             "name": "Paket",
-            "objects": {
-                "låda": "mdi:package-variant-closed",
-                "paket": "mdi:package-variant-closed",
-                "försändelse": "mdi:package-variant-closed",
-                "brev": "mdi:email",
-                "post": "mdi:email"
+            "labels": {
+                "låda": "package",
+                "paket": "package",
+                "försändelse": "package"
             }
         },
-        "entities": {
+        "entity": {
             "name": "Enheter",
-            "objects": {
-                "kamera": "mdi:cctv",
-                "sensor": "mdi:access-point",
-                "ljus": "mdi:lightbulb",
-                "lampa": "mdi:lightbulb",
-                "nyckel": "mdi:key",
-                "lås": "mdi:lock",
-                "alarm": "mdi:alarm-light",
-                "hus": "mdi:home",
-                "bostad": "mdi:home",
-                "veranda": "mdi:door-closed",
-                "dörr": "mdi:door-closed",
-                "fönster": "mdi:window-closed-variant"
+            "labels": {
+                "kamera": "camera",
+                "sensor": "sensor",
+                "ljus": "light",
+                "lampa": "light",
+                "nyckel": "key",
+                "lås": "lock",
+                "alarm": "alarm"
             }
         },
         "nature": {
             "name": "Natur",
-            "objects": {
-                "trädgård": "mdi:flower",
-                "växt": "mdi:flower",
-                "blomma": "mdi:flower",
-                "träd": "mdi:tree"
+            "labels": {
+                "trädgård": "plant",
+                "växt": "plant",
+                "blomma": "plant",
+                "träd": "tree"
             }
         }
     },
