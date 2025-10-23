@@ -48,7 +48,7 @@ CONF_MEMORY_STRINGS = "memory_strings"
 
 # SERVICE CALL CONSTANTS
 MESSAGE = "message"
-REMEMBER = "remember"
+STORE_IN_TIMELINE = "store_in_timeline"
 USE_MEMORY = "use_memory"
 PROVIDER = "provider"
 MAXTOKENS = "max_tokens"

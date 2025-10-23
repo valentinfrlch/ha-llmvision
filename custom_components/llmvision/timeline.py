@@ -17,12 +17,19 @@ _LOGGER = logging.getLogger(__name__)
 DB_VERSION = 4
 
 
-def _get_category_and_label(config_entry: ConfigEntry, query: str) -> tuple[str, str]:
+async def _get_category_and_label(
+    hass: HomeAssistant, config_entry: ConfigEntry, query: str
+) -> tuple[str, str]:
     """Return (category, label) for the best match in the query using the language regex template.
     - category: top-level category key (e.g., 'people', 'vehicles', ...)
     - label: canonical label mapped from the matched synonym (e.g., 'person', 'car', ...)
     Returns ("", "") when no match is found.
     """
+
+    def load_lang_json(path: str) -> dict:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
     # Determine language (fallback to 'en')
     language = config_entry.options.get(CONF_TIMELINE_LANGUAGE) or "English"
 
@@ -57,8 +64,7 @@ def _get_category_and_label(config_entry: ConfigEntry, query: str) -> tuple[str,
         )
 
     try:
-        with open(lang_file_path, "r", encoding="utf-8") as lang_file:
-            lang_data = json.load(lang_file)
+        lang_data = await hass.async_add_executor_job(load_lang_json, lang_file_path)
     except Exception as e:
         _LOGGER.error(f"Error loading language file {lang_file_path}: {e}")
         return ("", "")
@@ -162,8 +168,11 @@ class Event:
         self.category = category
         self.label = label
 
-    def delete(self):
-        pass
+    def __repr__(self):
+        return f"Event(uid={self.uid}, title={self.title}, start={self.start}, end={self.end}, description={self.description}, key_frame={self.key_frame}, camera_name={self.camera_name}, category={self.category}, label={self.label})"
+
+    def __str__(self):
+        return self.__repr__()
 
 
 class Timeline:
@@ -295,7 +304,7 @@ class Timeline:
                 event_counter = 0
                 for event in data:
                     await self.hass.loop.create_task(
-                        self.async_create_event(
+                        self.create_event(
                             dtstart=datetime.datetime.fromisoformat(event["start"]),
                             dtend=datetime.datetime.fromisoformat(event["end"]),
                             summary=event["summary"],
@@ -454,8 +463,8 @@ class Timeline:
                             for row in rows:
                                 uid = row[0]
                                 title = row[1]
-                                (category, label) = _get_category_and_label(
-                                    self._config_entry, title
+                                (category, label) = await _get_category_and_label(
+                                    self.hass, self._config_entry, title
                                 )
                                 await db.execute(
                                     """UPDATE events SET label = ? WHERE uid = ?""",
@@ -635,35 +644,34 @@ class Timeline:
 
         return events
 
-    async def create_event(self, **kwargs: any) -> None:
+    async def create_event(
+        self,
+        start: datetime.datetime,
+        end: datetime.datetime,
+        title: str,
+        description: str,
+        key_frame: str,
+        camera_name: str,
+        category: str = "",
+        label: str = "",
+    ) -> None:
         """Adds a new event to calendar"""
-        _LOGGER.info(f"Creating event: {kwargs}")
         await self.load_events()
-        dtstart = kwargs.get("start", "")
-        dtend = kwargs.get("end", "")
-        start: datetime.datetime
-        end: datetime.datetime
-        title = kwargs.get("title", "")
-        description = kwargs.get("description", "")
-        category = kwargs.get("category", "")
-        key_frame = kwargs.get("key_frame", "")
-        camera_name = kwargs.get("camera_name", "")
-        label = kwargs.get("label", "")
 
         # Ensure dtstart and dtend are datetime objects
-        if isinstance(dtstart, str):
-            dtstart = datetime.datetime.fromisoformat(dtstart)
-        if isinstance(dtend, str):
-            dtend = datetime.datetime.fromisoformat(dtend)
+        if isinstance(start, str):
+            start = datetime.datetime.fromisoformat(start)
+        if isinstance(end, str):
+            end = datetime.datetime.fromisoformat(end)
 
-        start = dt_util.as_local(dtstart)
-        end = dt_util.as_local(dtend)
+        start = dt_util.as_local(start)
+        end = dt_util.as_local(end)
 
-        # Resolve category and label
+        # Resolve category and label if not provided
         if not label or not category:
             try:
-                (auto_category, auto_label) = _get_category_and_label(
-                    self._config_entry, label
+                (auto_category, auto_label) = await _get_category_and_label(
+                    self.hass, self._config_entry, label
                 )
                 if not category:
                     category = auto_category
@@ -673,8 +681,10 @@ class Timeline:
                 _LOGGER.warning(f"Failed to resolve category: {e}")
 
         # Mark key_frame as pending so cleanup won't remove it before DB insert
+        pending_name = None
         if key_frame:
-            self._pending_key_frames.add(key_frame)
+            pending_name = (os.path.basename(key_frame) or "").lower()
+            self._pending_key_frames.add(pending_name)
         try:
             event = Event(
                 uid=str(uuid.uuid4()),
@@ -687,11 +697,12 @@ class Timeline:
                 category=category,
                 label=label,
             )
+            _LOGGER.info(f"Creating event: {event}")
             await self._insert_event(event)
         finally:
-            # Remove from pending
-            if key_frame:
-                self._pending_key_frames.discard(key_frame)
+            # Remove from pending once DB insert is done
+            if pending_name:
+                self._pending_key_frames.discard(pending_name)
 
     async def _insert_event(self, event: Event) -> None:
         """Inserts a new event into the database"""
@@ -772,46 +783,48 @@ class Timeline:
         GRACE_SECONDS = 10
 
         async with self._cleanup_lock:
-            filenames = set(await self.get_linked_images())
-            pending_basenames = {os.path.basename(p) for p in self._pending_key_frames}
-            protected = filenames | pending_basenames
+            linked_frames = {
+                (os.path.basename(n) or "").lower()
+                for n in await self.get_linked_images()
+            }
 
-            def delete_files(path, protected_names, grace, now_ts):
-                removed = 0
-                try:
-                    for file in os.listdir(path):
-                        file_path = os.path.join(path, file)
-                        if not os.path.isfile(file_path):
-                            continue
-                        # Skip protected
-                        if file in protected_names:
-                            continue
-                        # Skip very new files (grace window)
-                        try:
-                            mtime = os.path.getmtime(file_path)
-                            if (now_ts - mtime) < grace:
-                                continue
-                        except OSError:
-                            continue
-                        _LOGGER.info(f"[CLEANUP] Removing unlinked snapshot: {file}")
-                        try:
-                            os.remove(file_path)
-                            removed += 1
-                        except OSError as e:
-                            _LOGGER.warning(
-                                f"[CLEANUP] Failed to remove {file_path}: {e}"
-                            )
-                except FileNotFoundError:
-                    return
-                if removed:
-                    _LOGGER.debug(f"[CLEANUP] Removed {removed} orphaned snapshot(s)")
+        # List files in snapshots dir (in executor, non-blocking)
+        try:
+            files = await self.hass.async_add_executor_job(os.listdir, self._media_path)
+        except FileNotFoundError:
+            return
 
-            now_ts = datetime.datetime.now().timestamp()
-            await self.hass.loop.run_in_executor(
-                None,
-                delete_files,
-                self._media_path,
-                protected,
-                GRACE_SECONDS,
-                now_ts,
-            )
+        now_ts = datetime.datetime.now().timestamp()
+        removed = 0
+
+        for file in files:
+            file_path = os.path.join(self._media_path, file)
+            is_file = await self.hass.async_add_executor_job(os.path.isfile, file_path)
+            if not is_file:
+                continue
+
+            base = (file or "").lower()
+
+            # Protect if linked to an event or pending
+            if base in linked_frames or base in self._protected_frames:
+                continue
+
+            # Protect new files (grace window)
+            try:
+                mtime = await self.hass.async_add_executor_job(
+                    os.path.getmtime, file_path
+                )
+                if (now_ts - mtime) < GRACE_SECONDS:
+                    continue
+            except OSError:
+                continue
+
+            _LOGGER.info(f"[CLEANUP] Removing unlinked snapshot: {file}")
+            try:
+                await self.hass.async_add_executor_job(os.remove, file_path)
+                removed += 1
+            except OSError as e:
+                _LOGGER.warning(f"[CLEANUP] Failed to remove {file_path}: {e}")
+
+        if removed:
+            _LOGGER.debug(f"[CLEANUP] Removed {removed} orphaned snapshot(s)")

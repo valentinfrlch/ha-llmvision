@@ -25,10 +25,10 @@ image_analyzer:
       selector:
         text:
           multiline: true
-    remember:
-      name: Remember
+    store_in_timeline:
+      name: Store in Timeline
       required: false
-      description: 'Store this event in the timeline'
+      description: 'Create a new event in the timeline for this detection.'
       example: true
       default: false
       selector:
@@ -87,7 +87,7 @@ image_analyzer:
     generate_title:
       name: Generate Title
       required: false
-      description: Generate a title. (Used for notifications and remembered events)
+      description: Generate a title. (Used for notifications and events)
       default: false
       selector:
         boolean:
@@ -154,10 +154,10 @@ video_analyzer:
       selector:
         text:
           multiline: true
-    remember:
-      name: Remember
+    store_in_timeline:
+      name: Store in Timeline
       required: false
-      description: 'Store this event in the timeline'
+      description: 'Create a new event in the timeline for this detection.'
       example: true
       default: false
       selector:
@@ -226,7 +226,7 @@ video_analyzer:
     generate_title:
       name: Generate Title
       required: false
-      description: Generate a title. (Used for notifications and remembered events)
+      description: Generate a title. (Used for notifications and events)
       default: false
       selector:
         boolean:
@@ -293,10 +293,10 @@ stream_analyzer:
       selector:
         text:
           multiline: true
-    remember:
-      name: Remember
+    store_in_timeline:
+      name: Store in Timeline
       required: false
-      description: 'Store this event in the timeline'
+      description: 'Create a new event in the timeline for this detection.'
       example: true
       default: false
       selector:
@@ -368,7 +368,7 @@ stream_analyzer:
     generate_title:
       name: Generate Title
       required: false
-      description: Generate a title. (Used for notifications and remembered events)
+      description: Generate a title. (Used for notifications and events)
       default: false
       selector:
         boolean:
@@ -436,10 +436,10 @@ data_analyzer:
       selector:
         text:
           multiline: true
-    remember:
-      name: Remember
+    store_in_timeline:
+      name: Store in Timeline
       required: false
-      description: 'Store this event in the timeline'
+      description: 'Create a new event in the timeline for this detection.'
       example: true
       default: false
       selector:
@@ -507,7 +507,7 @@ data_analyzer:
     generate_title:
       name: Generate Title
       required: false
-      description: Generate a title. (Used for notifications and remembered events)
+      description: Generate a title. (Used for notifications and events)
       default: false
       selector:
         boolean:
@@ -532,8 +532,8 @@ create_event:
       selector:
         text:
           multiline: false
-    summary:
-      name: Summary
+    description:
+      name: Description
       required: true
       description: 'Event Description'
       example: "A car was seen pulling into a driveway"
@@ -541,7 +541,7 @@ create_event:
         text:
           multiline: true
     category:
-      name: category
+      name: Category
       required: false
       description: 'Category to assign the event to'
       example: 'Vehicle'
@@ -555,6 +555,34 @@ create_event:
             - Nature
             - Objects
             - Entities
+    label:
+      name: Label
+      required: false
+      description: 'Label to assign the event to'
+      example: 'Car'
+      selector:
+        select:
+          options:
+            - Alarm
+            - Bike
+            - Bird
+            - Bus
+            - Camera
+            - Car
+            - Cat
+            - Dog
+            - Door
+            - Key
+            - Light
+            - Lock
+            - Motorcycle
+            - Package
+            - Person
+            - Plant
+            - Sensor
+            - Tree
+            - Truck
+            - Van
     image_path:
       name: Image Path
       required: false

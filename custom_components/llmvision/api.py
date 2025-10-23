@@ -192,7 +192,7 @@ class TimelineEventView(HomeAssistantView):
             return self.json_message("Settings config entry not found", status_code=404)
         timeline = Timeline(hass, settings_entry)
         try:
-            await timeline.async_delete_event(event_id)
+            await timeline.delete_event(event_id)
         except Exception as e:
             _LOGGER.error(f"Error deleting event {event_id}: {e}")
             return self.json_message("Error deleting event", status_code=500)
