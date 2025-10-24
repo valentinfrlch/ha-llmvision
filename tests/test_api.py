@@ -84,19 +84,19 @@ def test_list_events_basic():
     s.headers.update(_auth_headers())
 
     # Basic list
-    r = s.get(LIST_URL, json={}, timeout=10)
+    r = s.get(LIST_URL, timeout=10)
     assert r.status_code == 200, f"List failed: {r.status_code} {r.text}"
     data = r.json()
     assert "events" in data and isinstance(data["events"], list)
 
     # List with limit
-    r = s.get(LIST_URL, json={"limit": 1}, timeout=10)
+    r = s.get(LIST_URL+"?limit=1", timeout=10)
     assert r.status_code == 200, f"List with limit failed: {r.status_code} {r.text}"
     events = r.json().get("events", [])
     assert isinstance(events, list) and len(events) <= 1
 
     # List with invalid days (should still succeed)
-    r = s.get(LIST_URL, json={"days": "not-a-number"}, timeout=10)
+    r = s.get(LIST_URL+"?days=not-a-number", timeout=10)
     assert (
         r.status_code == 200
     ), f"List with invalid days failed: {r.status_code} {r.text}"
