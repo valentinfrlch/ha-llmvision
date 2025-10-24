@@ -67,6 +67,7 @@ from .const import (
     DEFAULT_OPENWEBUI_MODEL,
     CONF_CONTEXT_WINDOW,
     CONF_KEEP_ALIVE,
+    CONF_SAMPLING_MODE
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -85,6 +86,7 @@ async def async_setup_entry(hass, entry):
         CONF_HTTPS: entry.data.get(CONF_HTTPS),
         CONF_DEFAULT_MODEL: entry.data.get(CONF_DEFAULT_MODEL),
         CONF_TEMPERATURE: entry.data.get(CONF_TEMPERATURE),
+        CONF_SAMPLING_MODE: entry.data.get(CONF_SAMPLING_MODE),
         CONF_TOP_P: entry.data.get(CONF_TOP_P),
         # Ollama specific
         CONF_CONTEXT_WINDOW: entry.data.get(CONF_CONTEXT_WINDOW),

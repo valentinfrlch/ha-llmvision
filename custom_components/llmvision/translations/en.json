@@ -160,11 +160,13 @@
                         "description": "Set default model parameters",
                         "data": {
                             "default_model": "Default model",
+                            "sampling_mode": "Sampling mode",
                             "temperature": "Temperature",
                             "top_p": "Top P"
                         },
                         "data_description": {
                             "default_model": "The default model to use when no other model is specified.",
+                            "sampling_mode": "Anthropic allows to only select one of 'temperature' or 'top_p' sampling modes at a time.",
                             "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
                             "top_p": "Controls the diversity of the output. Lower values make the output more focused."
                         }

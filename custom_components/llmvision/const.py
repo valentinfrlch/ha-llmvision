@@ -12,6 +12,7 @@ CONF_HTTPS = "https"
 CONF_DEFAULT_MODEL = "default_model"
 CONF_TEMPERATURE = "temperature"
 CONF_TOP_P = "top_p"
+CONF_SAMPLING_MODE = "sampling_mode"
 CONF_CONTEXT_WINDOW = "context_window"  # (ollama: num_ctx)
 CONF_KEEP_ALIVE = "keep_alive"
 
@@ -84,7 +85,7 @@ DATA_EXTRACTION_PROMPT = "Analyze the image(s) and extract only the requested in
 
 # Models
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
-DEFAULT_ANTHROPIC_MODEL = "claude-3-7-sonnet-latest"
+DEFAULT_ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 DEFAULT_AZURE_MODEL = "gpt-4o-mini"
 DEFAULT_GOOGLE_MODEL = "gemini-2.0-flash"
 DEFAULT_GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"

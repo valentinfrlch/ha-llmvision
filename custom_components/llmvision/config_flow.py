@@ -26,6 +26,7 @@ from .const import (
     CONF_DEFAULT_MODEL,
     CONF_TEMPERATURE,
     CONF_TOP_P,
+    CONF_SAMPLING_MODE,
     CONF_AZURE_VERSION,
     CONF_AZURE_BASE_URL,
     CONF_AZURE_DEPLOYMENT,
@@ -710,6 +711,53 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_anthropic(self, user_input=None):
+        # Determine which sampling mode to use
+        sampling_mode = "temperature"
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            config_data = self._get_reconfigure_entry().data
+            sampling_mode = config_data.get(CONF_SAMPLING_MODE, "temperature")
+        elif hasattr(self, "init_info") and CONF_SAMPLING_MODE in self.init_info:
+            sampling_mode = self.init_info.get(CONF_SAMPLING_MODE, "temperature")
+
+        # Build the model section schema based on sampling mode
+        model_fields = {
+            vol.Required(
+                CONF_DEFAULT_MODEL, default=DEFAULT_ANTHROPIC_MODEL
+            ): str,
+            vol.Required(CONF_SAMPLING_MODE, default="temperature"): selector(
+                {
+                    "select": {
+                        "options": [
+                            {"label": "Temperature", "value": "temperature"},
+                            {"label": "Top P", "value": "top_p"},
+                        ],
+                        "mode": "dropdown",
+                    }
+                }
+            ),
+        }
+
+        model_fields[vol.Optional(CONF_TEMPERATURE, default=0.5)] = selector(
+            {
+                "number": {
+                    "min": 0,
+                    "max": 1,
+                    "step": 0.1,
+                    "mode": "slider",
+                }
+            }
+        )
+        model_fields[vol.Optional(CONF_TOP_P, default=0.9)] = selector(
+            {
+                "number": {
+                    "min": 0,
+                    "max": 1,
+                    "step": 0.1,
+                    "mode": "slider",
+                }
+            }
+        )
+
         data_schema = vol.Schema(
             {
                 vol.Optional("connection_section"): section(
@@ -723,33 +771,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     {"collapsed": False},
                 ),
                 vol.Optional("model_section"): section(
-                    vol.Schema(
-                        {
-                            vol.Required(
-                                CONF_DEFAULT_MODEL, default=DEFAULT_ANTHROPIC_MODEL
-                            ): str,
-                            vol.Optional(CONF_TEMPERATURE, default=0.5): selector(
-                                {
-                                    "number": {
-                                        "min": 0,
-                                        "max": 1,
-                                        "step": 0.1,
-                                        "mode": "slider",
-                                    }
-                                }
-                            ),
-                            vol.Optional(CONF_TOP_P, default=0.9): selector(
-                                {
-                                    "number": {
-                                        "min": 0,
-                                        "max": 1,
-                                        "step": 0.1,
-                                        "mode": "slider",
-                                    }
-                                }
-                            ),
-                        }
-                    ),
+                    vol.Schema(model_fields),
                     {"collapsed": False},
                 ),
             }
@@ -759,15 +781,21 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # load existing configuration and add it to the dialog
             self.init_info = self._get_reconfigure_entry().data
             # Re-nest the flat config entry data into sections
+            model_suggested = {
+                CONF_DEFAULT_MODEL: self.init_info.get(
+                    CONF_DEFAULT_MODEL, DEFAULT_ANTHROPIC_MODEL
+                ),
+                CONF_SAMPLING_MODE: self.init_info.get(
+                    CONF_SAMPLING_MODE, "temperature"
+                ),
+            }
+
+            model_suggested[CONF_TEMPERATURE] = self.init_info.get(CONF_TEMPERATURE, 0.5)
+            model_suggested[CONF_TOP_P] = self.init_info.get(CONF_TOP_P, 0.9)
+
             suggested = {
                 "connection_section": {CONF_API_KEY: self.init_info.get(CONF_API_KEY)},
-                "model_section": {
-                    CONF_DEFAULT_MODEL: self.init_info.get(
-                        CONF_DEFAULT_MODEL, DEFAULT_ANTHROPIC_MODEL
-                    ),
-                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
-                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
-                },
+                "model_section": model_suggested,
             }
             data_schema = self.add_suggested_values_to_schema(data_schema, suggested)
 
@@ -776,6 +804,16 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
             # flatten dict to remove nested keys
             user_input = flatten_dict(user_input)
+
+            # Ensure we have default values for both parameters
+            # but the unused one will be ignored by the provider
+            if CONF_TEMPERATURE not in user_input:
+                user_input[CONF_TEMPERATURE] = 0.5
+            if CONF_TOP_P not in user_input:
+                user_input[CONF_TOP_P] = 0.9
+            if CONF_SAMPLING_MODE not in user_input:
+                user_input[CONF_SAMPLING_MODE] = "temperature"
+
             try:
                 anthropic = Anthropic(
                     self.hass,

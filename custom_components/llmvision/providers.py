@@ -52,6 +52,7 @@ from .const import (
     CONF_CONTEXT_WINDOW,
     CONF_TEMPERATURE,
     CONF_TOP_P,
+    CONF_SAMPLING_MODE,
     CONF_SYSTEM_PROMPT,
     CONF_TITLE_PROMPT,
     DEFAULT_SYSTEM_PROMPT,
@@ -621,13 +622,21 @@ class Anthropic(Provider):
 
     def _prepare_vision_data(self, call: dict) -> dict:
         default_parameters = self._get_default_parameters(call)
+
         payload = {
             "model": self.model,
             "messages": [{"role": "user", "content": []}],
             "max_tokens": call.max_tokens,
-            "temperature": default_parameters.get("temperature"),
-            "top_p": default_parameters.get("top_p"),
         }
+
+        # Add only the selected sampling parameter
+        sampling_mode=default_parameters.get(CONF_SAMPLING_MODE)
+        _LOGGER.debug(f"Sampling mode {sampling_mode}")
+        if default_parameters.get(CONF_SAMPLING_MODE) == "top_p":
+            payload["top_p"] = default_parameters.get("top_p")
+        else:
+            payload["temperature"] = default_parameters.get("temperature")
+
         for image, filename in zip(call.base64_images, call.filenames):
             tag = (
                 ("Image " + str(call.base64_images.index(image) + 1))
@@ -664,16 +673,25 @@ class Anthropic(Provider):
     def _prepare_text_data(self, call: dict) -> dict:
         default_parameters = self._get_default_parameters(call)
         title_prompt = self._get_title_prompt()
-        return {
+
+        payload = {
             "model": self.model,
             "messages": [
                 {"role": "user", "content": [{"type": "text", "text": title_prompt}]},
                 {"role": "user", "content": [{"type": "text", "text": call.message}]},
             ],
             "max_tokens": call.max_tokens,
-            "temperature": default_parameters.get("temperature"),
-            "top_p": default_parameters.get("top_p"),
         }
+
+        # Add only the selected sampling parameter
+        sampling_mode=default_parameters.get(CONF_SAMPLING_MODE)
+        _LOGGER.debug(f"Sampling mode {sampling_mode}")
+        if default_parameters.get(CONF_SAMPLING_MODE) == "top_p":
+            payload["top_p"] = default_parameters.get("top_p")
+        else:
+            payload["temperature"] = default_parameters.get("temperature")
+
+        return payload
 
     async def validate(self) -> None | ServiceValidationError:
         if not self.api_key:
