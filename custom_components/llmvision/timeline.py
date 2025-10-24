@@ -92,12 +92,11 @@ async def _get_category_and_label(
                 fl |= re.MULTILINE
             if "s" in f:
                 fl |= re.DOTALL
-            # 'u' (unicode) is default in Python 3; no need to set
             return fl
 
         try:
             if isinstance(regex_template, str):
-                # Expect something like: "`\\b${key}s?\\b`, 'i'"
+                # Expect format: "`\\b${key}s?\\b`, 'i'"
                 m = re.search(r"`([^`]*)`(?:\s*,\s*'([a-zA-Z]+)')?", regex_template)
                 if m:
                     tpl_pat = m.group(1)

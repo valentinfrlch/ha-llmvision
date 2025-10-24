@@ -540,21 +540,6 @@ create_event:
       selector:
         text:
           multiline: true
-    category:
-      name: Category
-      required: false
-      description: 'Category to assign the event to'
-      example: 'Vehicle'
-      selector:
-        select:
-          options:
-            - People
-            - Vehicles
-            - Animals
-            - Packages
-            - Nature
-            - Objects
-            - Entities
     label:
       name: Label
       required: false

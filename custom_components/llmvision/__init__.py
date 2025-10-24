@@ -586,7 +586,6 @@ class ServiceCallData:
         self.end_time = self._convert_time_input_to_datetime(self.end_time)
         self.image_path = data_call.data.get("image_path", "")
         self.camera_entity = data_call.data.get("camera_entity", "")
-        self.category = data_call.data.get("category", "")
         self.label = data_call.data.get("label", "")
 
         # ------------ Added during call ------------
@@ -858,8 +857,8 @@ def setup(hass, config):
             description=call.description,
             key_frame=call.image_path,
             camera_name=call.camera_entity,
-            category=call.category,
-            label=call.label,
+            category="",
+            label=call.label.lower(),
         )
 
     # Register actions
