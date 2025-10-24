@@ -489,6 +489,10 @@ class Timeline:
             dt = dt.replace(tzinfo=datetime.timezone.utc)
         return dt
 
+    async def _get_category_from_label(self, label: str) -> str:
+        """Returns the category for a given label using the language regex template."""
+        return (await _get_category_and_label(self.hass, self._config_entry, label))[0]
+
     async def get_linked_images(self):
         """Returns the filenames of key_frames associated with events"""
         await self.load_events()
@@ -546,6 +550,26 @@ class Timeline:
     async def get_all_events(self) -> list[Event]:
         """Returns calendar events"""
         return self.events
+
+    async def get_event(self, uid: str) -> dict | None:
+        """Returns a single event by UID as a dict. Used by the API."""
+        await self.load_events()
+        for event in self.events:
+            if event.uid == uid:
+                # return event as dict
+                event_dict = {
+                    "uid": event.uid,
+                    "title": event.title,
+                    "start": event.start.isoformat() if event.start else None,
+                    "end": event.end.isoformat() if event.end else None,
+                    "description": event.description,
+                    "key_frame": event.key_frame,
+                    "camera_name": event.camera_name,
+                    "category": event.category,
+                    "label": event.label,
+                }
+                return event_dict
+        return None
 
     async def get_events_json(
         self, limit=100, cameras=[], categories=[], start=None, end=None
@@ -651,11 +675,11 @@ class Timeline:
         description: str,
         key_frame: str,
         camera_name: str,
-        category: str = "",
         label: str = "",
     ) -> None:
         """Adds a new event to calendar"""
         await self.load_events()
+        category = ""
 
         # Ensure dtstart and dtend are datetime objects
         if isinstance(start, str):
@@ -667,7 +691,7 @@ class Timeline:
         end = dt_util.as_local(end)
 
         # Resolve category and label if not provided
-        if not label or not category:
+        if not label:
             try:
                 (auto_category, auto_label) = await _get_category_and_label(
                     self.hass, self._config_entry, label
@@ -678,6 +702,8 @@ class Timeline:
                     label = auto_label
             except Exception as e:
                 _LOGGER.warning(f"Failed to resolve category: {e}")
+        else:
+            category = await self._get_category_from_label(label)
 
         # Mark key_frame as pending so cleanup won't remove it before DB insert
         pending_name = None
@@ -731,6 +757,55 @@ class Timeline:
                 await self.load_events()
         except aiosqlite.Error as e:
             _LOGGER.error(f"Error inserting event into database: {e}")
+
+    async def update_event(
+        self,
+        uid: str,
+        start: datetime.datetime,
+        end: datetime.datetime,
+        title: str,
+        description: str,
+        key_frame: str,
+        camera_name: str,
+        label: str,
+    ) -> None:
+        """Updates an existing event in the calendar."""
+        await self.load_events()
+
+        # Ensure dtstart and dtend are datetime objects
+        if isinstance(start, str):
+            start = datetime.datetime.fromisoformat(start)
+        if isinstance(end, str):
+            end = datetime.datetime.fromisoformat(end)
+
+        start = dt_util.as_local(start)
+        end = dt_util.as_local(end)
+
+        try:
+            async with aiosqlite.connect(self._db_path) as db:
+                _LOGGER.info(f"Updating event with UID {uid}")
+                await db.execute(
+                    """
+                    UPDATE events
+                    SET title = ?, start = ?, end = ?, description = ?, key_frame = ?, camera_name = ?, category = ?, label = ?
+                    WHERE uid = ?
+                """,
+                    (
+                        title,
+                        dt_util.as_local(self._ensure_datetime(start)).isoformat(),
+                        dt_util.as_local(self._ensure_datetime(end)).isoformat(),
+                        description,
+                        key_frame,
+                        camera_name,
+                        await self._get_category_from_label(label),
+                        label,
+                        uid,
+                    ),
+                )
+                await db.commit()
+                await self.load_events()
+        except aiosqlite.Error as e:
+            _LOGGER.error(f"Error updating event in database: {e}")
 
     async def delete_event(
         self,
@@ -805,7 +880,7 @@ class Timeline:
             base = (file or "").lower()
 
             # Protect if linked to an event or pending
-            if base in linked_frames or base in self._protected_frames:
+            if base in linked_frames or base in self._pending_key_frames:
                 continue
 
             # Protect new files (grace window)
