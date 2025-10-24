@@ -32,24 +32,16 @@ class TimelineEventsView(HomeAssistantView):
         hass = request.app["hass"]
 
         settings_entry = await async_get_settings_entry(hass)
-        # Parse JSON body instead of query parameters
+        # Parse request params
         try:
-            data = await request.json()
-            if not isinstance(data, dict):
-                data = {}
-        except Exception:
-            data = {}
-
-        # Limit: minimum 1, maximum 100
-        try:
-            limit = int(data.get("limit", 10))
-            limit = max(1, min(limit, 100))
-        except (TypeError, ValueError):
+            # Limit: minimum 1, maximum 100
+            limit = max(1, min(int(request.query.get("limit", 10)), 100))
+        except ValueError:
             limit = 10
 
-        cameras = data.get("cameras", None)
-        categories = data.get("categories", None)
-        days = data.get("days", None)
+        cameras = request.query.get("cameras", None)
+        categories = request.query.get("categories", None)
+        days = request.query.get("days", None)
 
         def _parse_list_param(val):
             if val is None:
