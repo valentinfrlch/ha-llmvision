@@ -33,9 +33,7 @@ def _pick_event_id(event):
     return None
 
 
-def _create_event(
-    session, label="car", camera_name="camera.demo_camera"
-):
+def _create_event(session, label="car", camera_name="camera.demo_camera"):
     resp = session.post(
         CREATE_URL,
         json={
@@ -53,7 +51,7 @@ def _create_event(
 
     if not event:
         # Fallback to most recent
-        lst = session.get(LIST_URL, params={"limit": 1}, timeout=10)
+        lst = session.get(LIST_URL, json={"limit": 1}, timeout=10)
         assert (
             lst.status_code == 200
         ), f"List after create failed: {lst.status_code} {lst.text}"
@@ -86,19 +84,19 @@ def test_list_events_basic():
     s.headers.update(_auth_headers())
 
     # Basic list
-    r = s.get(LIST_URL, timeout=10)
+    r = s.get(LIST_URL, json={}, timeout=10)
     assert r.status_code == 200, f"List failed: {r.status_code} {r.text}"
     data = r.json()
     assert "events" in data and isinstance(data["events"], list)
 
     # List with limit
-    r = s.get(LIST_URL, params={"limit": 1}, timeout=10)
+    r = s.get(LIST_URL, json={"limit": 1}, timeout=10)
     assert r.status_code == 200, f"List with limit failed: {r.status_code} {r.text}"
     events = r.json().get("events", [])
     assert isinstance(events, list) and len(events) <= 1
 
     # List with invalid days (should still succeed)
-    r = s.get(LIST_URL, params={"days": "not-a-number"}, timeout=10)
+    r = s.get(LIST_URL, json={"days": "not-a-number"}, timeout=10)
     assert (
         r.status_code == 200
     ), f"List with invalid days failed: {r.status_code} {r.text}"
@@ -163,20 +161,15 @@ def test_list_with_filters_and_days():
     s.headers.update(_auth_headers())
 
     # Create two events to ensure there is data
-    e1_id, _ = _create_event(
-        s, label="Nature", camera_name="CamA"
-    )
-    e2_id, _ = _create_event(
-        s, label="Person", camera_name="CamB"
-    )
+    e1_id, _ = _create_event(s, label="Nature", camera_name="CamA")
+    e2_id, _ = _create_event(s, label="Person", camera_name="CamB")
 
     try:
         # Apply filters; we only assert the API works and returns a list
         r = s.get(
             LIST_URL,
-            params={
-                # "categories": "['nature']",
-                "cameras": "['camera.demo_camera']",
+            json={
+                "cameras": ["camera.demo_camera"],
                 "days": 1,
                 "limit": 5,
             },

@@ -3,3 +3,5 @@ playground.py
 .gitignore
 .token
 .instance
+__pycache__/
+.settings

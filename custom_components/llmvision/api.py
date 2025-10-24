@@ -32,16 +32,24 @@ class TimelineEventsView(HomeAssistantView):
         hass = request.app["hass"]
 
         settings_entry = await async_get_settings_entry(hass)
-        # Parse request params
+        # Parse JSON body instead of query parameters
         try:
-            # Limit: minimum 1, maximum 100
-            limit = max(1, min(int(request.query.get("limit", 10)), 100))
-        except ValueError:
+            data = await request.json()
+            if not isinstance(data, dict):
+                data = {}
+        except Exception:
+            data = {}
+
+        # Limit: minimum 1, maximum 100
+        try:
+            limit = int(data.get("limit", 10))
+            limit = max(1, min(limit, 100))
+        except (TypeError, ValueError):
             limit = 10
 
-        cameras = request.query.get("cameras", None)
-        categories = request.query.get("categories", None)
-        days = request.query.get("days", None)
+        cameras = data.get("cameras", None)
+        categories = data.get("categories", None)
+        days = data.get("days", None)
 
         def _parse_list_param(val):
             if val is None:
@@ -189,7 +197,7 @@ class TimelineEventView(HomeAssistantView):
         return self.json({"event_id": event_id, "status": "deleted"})
 
     async def post(self, request, event_id):
-        """Update an existing timeline event (same behavior as the former UpdateView)."""
+        """Update an existing timeline event."""
         hass = request.app["hass"]
         settings_entry = await async_get_settings_entry(hass)
         if settings_entry is None:
@@ -264,102 +272,6 @@ class TimelineEventView(HomeAssistantView):
             _LOGGER.error(f"Error updating event {event_id}: {e}")
             return self.json_message("Error updating event", status_code=500)
 
-        try:
-            updated = await timeline.get_event_json(event_id)
-            return self.json({"event": json.loads(json_dumps(updated))})
-        except Exception:
-            return self.json({"event_id": event_id, "status": "updated"})
-
-
-class TimelineEventUpdateView(HomeAssistantView):
-    """View to modify an existing timeline event via POST.
-    URL: /api/llmvision/timeline/event/{event_id}
-    Requires JSON body with any of the editable fields.
-    """
-
-    url = "/api/llmvision/timeline/event/{event_id}"
-    name = "api:llmvision:timeline:event:update"
-    requires_auth = True
-
-    async def post(self, request, event_id):
-        hass = request.app["hass"]
-        settings_entry = await async_get_settings_entry(hass)
-        if settings_entry is None:
-            return self.json_message("Settings config entry not found", status_code=404)
-
-        try:
-            data = await request.json()
-        except Exception:
-            return self.json_message("Invalid JSON body", status_code=400)
-
-        timeline = Timeline(hass, settings_entry)
-
-        # Ensure the event exists
-        try:
-            existing = await timeline.get_event(event_id)
-        except Exception as e:
-            _LOGGER.error(f"Error retrieving event {event_id}: {e}")
-            return self.json_message("Error retrieving event", status_code=500)
-
-        if existing is None:
-            return self.json_message("Event not found", status_code=404)
-
-        # Local time parser (accepts ISO strings or timestamps)
-        def _parse_time(val):
-            if val is None:
-                return None
-            if isinstance(val, (int, float)):
-                return datetime.fromtimestamp(val)
-            if isinstance(val, str):
-                dt = dt_util.parse_datetime(val)
-                if dt is None:
-                    try:
-                        return datetime.fromisoformat(val)
-                    except Exception:
-                        return None
-                return dt
-            if isinstance(val, datetime):
-                return val
-            return None
-
-        # Build full payload by merging provided fields over existing values
-        # Known updatable fields
-        fields = {
-            "title": data.get("title", existing.get("title", "")),
-            "description": data.get("description", existing.get("description", "")),
-            "key_frame": data.get("key_frame", existing.get("key_frame", "")),
-            "camera_name": data.get(
-                "camera_name",
-                data.get("camera_entity", existing.get("camera_name", "")),
-            ),
-            "label": data.get("label", existing.get("label", "")),
-        }
-
-        # Times: prefer provided values; otherwise parse existing if possible
-        start_in = data.get("start", existing.get("start"))
-        end_in = data.get("end", existing.get("end"))
-        start_dt = _parse_time(start_in)
-        end_dt = _parse_time(end_in)
-
-        if start_dt is None or end_dt is None:
-            return self.json_message("Invalid start/end time", status_code=400)
-
-        try:
-            await timeline.update_event(
-                event_id=event_id,
-                start=start_dt,
-                end=end_dt,
-                title=fields["title"],
-                description=fields["description"],
-                key_frame=fields["key_frame"],
-                camera_name=fields["camera_name"],
-                label=fields["label"].lower(),
-            )
-        except Exception as e:
-            _LOGGER.error(f"Error updating event {event_id}: {e}")
-            return self.json_message("Error updating event", status_code=500)
-
-        # Return the updated event
         try:
             updated = await timeline.get_event_json(event_id)
             return self.json({"event": json.loads(json_dumps(updated))})
