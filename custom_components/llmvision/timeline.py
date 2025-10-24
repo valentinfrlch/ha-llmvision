@@ -188,6 +188,7 @@ class Timeline:
         self._pending_key_frames: set[str] = set()
         self._cleanup_lock = asyncio.Lock()
         self._config_entry = config_entry
+        self._migrating = True
 
         # Path to the JSON file where events are stored
         self._db_path = os.path.join(self.hass.config.path("llmvision"), "events.db")
@@ -289,6 +290,7 @@ class Timeline:
         """Handles migration for events.db (current v4)"""
         current_version = await self._get_db_version()
         if current_version >= DB_VERSION:
+            self._migrating = False
             return
 
         _LOGGER.info(
@@ -480,6 +482,7 @@ class Timeline:
         # Mark migration complete by setting user_version
         await self._set_db_version(DB_VERSION)
         _LOGGER.info(f"DB migration complete (user_version={DB_VERSION})")
+        self._migrating = False
 
     def _ensure_datetime(self, dt):
         """Ensures the input is a datetime.datetime object"""
@@ -854,6 +857,10 @@ class Timeline:
           - Pending key_frames (event insert in progress).
           - Very new files (grace period).
         """
+        if getattr(self, "_migrating", False):
+            # Skip cleanup during migration
+            return
+
         GRACE_SECONDS = 10
 
         async with self._cleanup_lock:

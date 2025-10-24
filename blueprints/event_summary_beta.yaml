@@ -3,7 +3,7 @@
 # Take snapshot of triggered camera entity if using multiple cameras (? help needed)
 # Snooze blueprint or notifications
 blueprint:
-  name: AI Event Summary (v1.5.2)
+  name: AI Event Summary (v1.6.0)
   author: valentinfrlch
   homeassistant:
     min_version: 2024.10.0
@@ -80,7 +80,7 @@ blueprint:
       icon: mdi:brain
       collapsed: true
       input:
-        remember:
+        store_in_timeline:
           name: Store in Timeline
           description: Stores this event in the Timeline so you can ask about it. If important is enabled, only events classified as Normal or Critical will be saved.
           default: true
@@ -423,7 +423,7 @@ blueprint:
 
 variables:
   important: !input important
-  remember: !input remember
+  store_in_timeline: !input store_in_timeline
   cooldown: !input cooldown
   preview_mode: !input preview_mode
   analysis_mode: !input analysis_mode
@@ -627,9 +627,9 @@ action:
       model: !input model
       message: !input message
       use_memory: !input use_memory
-      remember: !input remember
-      expose_images: "{{preview_mode == 'Snapshot' or remember}}"
-      generate_title: !input remember
+      store_in_timeline: !input store_in_timeline
+      expose_images: "{{preview_mode == 'Snapshot' or store_in_timeline}}"
+      generate_title: !input store_in_timeline
       include_filename: true
       max_frames: !input max_frames
       target_width: !input target_width

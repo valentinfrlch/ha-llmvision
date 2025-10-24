@@ -119,6 +119,7 @@ paths:
             minimum: 1
             maximum: 100
             default: 10
+            example: 20
           description: Maximum number of events to return.
         - name: cameras
           in: query
@@ -127,8 +128,11 @@ paths:
             type: array
             items:
               type: string
-            style: form
-            explode: false
+            example:
+              - camera.front_door
+              - camera.driveway
+          style: form
+          explode: false
           description: Comma-separated list of camera entity_ids.
         - name: categories
           in: query
@@ -137,15 +141,25 @@ paths:
             type: array
             items:
               type: string
-            style: form
-            explode: false
+            example:
+              - person
+              - package
+          style: form
+          explode: false
           description: Comma-separated list of categories.
         - name: days
           in: query
           required: false
           schema:
             type: integer
+            example: 2
           description: Time window [now - days, now].
+      x-codeSamples:
+        - lang: curl
+          label: Example request
+          source: |
+            curl -H "Authorization: Bearer $TOKEN" \
+              "https://homeassistant.local:8123/api/llmvision/timeline/events?limit=20&cameras=camera.front_door,camera.driveway&categories=person,package&days=2"
       responses:
         '200':
           description: Successful response
