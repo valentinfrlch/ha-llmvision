@@ -472,7 +472,6 @@ async def _create_event(
             description=response["response_text"],
             key_frame=key_frame,
             camera_name=camera_name,
-            category="",
             label="",
         )
 
@@ -857,7 +856,6 @@ def setup(hass, config):
             description=call.description,
             key_frame=call.image_path,
             camera_name=call.camera_entity,
-            category="",
             label=call.label.lower(),
         )
 
