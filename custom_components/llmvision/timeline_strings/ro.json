@@ -1,0 +1,66 @@
+{
+    "categories": {
+        "person": {
+            "labels": {
+                "persoană": "person",
+                "individ": "person",
+                "figură": "person",
+                "persoane": "person",
+                "copil": "person",
+                "femeie": "person",
+                "bărbat": "person",
+                "om": "person",
+                "ciclist": "person"
+            }
+        },
+        "vehicle": {
+            "labels": {
+                "curier": "truck",
+                "poștaș": "truck",
+                "ciletă": "bicycle",
+                "bicicletă": "bicycle",
+                "motoretă": "motorcycle",
+                "motobiciletă": "motorcycle",
+                "autobuz": "bus",
+                "mașină": "car",
+                "dubă": "van",
+                "suv": "car",
+                "vehicul": "car",
+                "camion": "truck"
+            }
+        },
+        "animal": {
+            "labels": {
+                "câine": "dog",
+                "pisică": "cat",
+                "pasăre": "bird"
+            }
+        },
+        "package": {
+            "labels": {
+                "cutie": "package",
+                "pachet": "package",
+                "colet": "package"
+            }
+        },
+        "entity": {
+            "labels": {
+                "cameră": "camera",
+                "senzor": "sensor",
+                "lumină": "light",
+                "cheie": "key",
+                "zăvor": "lock",
+                "alarmă": "alarm"
+            }
+        },
+        "nature": {
+            "labels": {
+                "grădină": "plant",
+                "plantă": "plant",
+                "floare": "plant",
+                "copac": "tree"
+            }
+        }
+    },
+    "regex": "`\\b${key}s?\\b`, 'i'"
+}
