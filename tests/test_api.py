@@ -1,12 +1,32 @@
+"""Integration tests for API endpoints.
+
+These tests require a running Home Assistant instance and are excluded from
+regular test runs. To run these tests:
+
+1. Create tests/.instance with your HA URL (e.g., http://localhost:8123)
+2. Create tests/.token with a long-lived access token
+3. Run: pytest tests/test_api.py -v
+
+These tests are marked as 'integration' and can be skipped with:
+    pytest tests/ -m "not integration"
+"""
+import pytest
 import requests
+
+# Mark all tests in this file as integration tests
+pytestmark = pytest.mark.integration
 
 BASE_URL = ""
 TOKEN = ""
-with open("tests/.instance") as f:
-    BASE_URL = f.read().strip()
 
-with open("tests/.token") as f:
-    TOKEN = f.read().strip()
+try:
+    with open("tests/.instance") as f:
+        BASE_URL = f.read().strip()
+    with open("tests/.token") as f:
+        TOKEN = f.read().strip()
+except FileNotFoundError:
+    # Files don't exist - tests will be skipped
+    pass
 
 LIST_URL = f"{BASE_URL}/api/llmvision/timeline/events"
 CREATE_URL = f"{BASE_URL}/api/llmvision/timeline/events/new"
@@ -79,6 +99,7 @@ def _delete_event(session, event_id):
     return resp
 
 
+@pytest.mark.skipif(not BASE_URL or not TOKEN, reason="Integration test requires .instance and .token files")
 def test_list_events_basic():
     s = requests.Session()
     s.headers.update(_auth_headers())
@@ -102,6 +123,7 @@ def test_list_events_basic():
     ), f"List with invalid days failed: {r.status_code} {r.text}"
 
 
+@pytest.mark.skipif(not BASE_URL or not TOKEN, reason="Integration test requires .instance and .token files")
 def test_event_lifecycle_create_get_update_delete():
     s = requests.Session()
     s.headers.update(_auth_headers())
@@ -156,6 +178,7 @@ def test_event_lifecycle_create_get_update_delete():
     ), f"Expected 404 after delete, got {r.status_code} {r.text}"
 
 
+@pytest.mark.skipif(not BASE_URL or not TOKEN, reason="Integration test requires .instance and .token files")
 def test_list_with_filters_and_days():
     s = requests.Session()
     s.headers.update(_auth_headers())
@@ -184,6 +207,7 @@ def test_list_with_filters_and_days():
         _delete_event(s, e2_id)
 
 
+@pytest.mark.skipif(not BASE_URL or not TOKEN, reason="Integration test requires .instance and .token files")
 def test_update_nonexistent_event():
     s = requests.Session()
     s.headers.update(_auth_headers())

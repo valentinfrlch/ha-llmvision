@@ -1,0 +1,43 @@
+# Testing Framework
+pytest==8.4.2
+pytest-asyncio==1.2.0
+pytest-cov==7.0.0
+pytest-mock==3.15.1
+pytest-timeout==2.4.0
+pytest-xdist==3.8.0
+
+# Home Assistant Testing
+pytest-homeassistant-custom-component==0.13.296
+
+# Mocking and Testing Utilities
+pytest-aiohttp==1.1.0
+pytest-freezer==0.4.9
+pytest-socket==0.7.0
+pytest-picked==0.5.1
+pytest-sugar==1.0.0
+pytest-unordered==0.7.0
+pytest-github-actions-annotate-failures==0.3.0
+respx==0.22.0
+syrupy==5.0.0
+
+# Code Quality
+coverage==7.10.6
+
+# Additional Testing Tools
+requests-mock==1.12.1
+aioresponses==0.7.8
+
+# Required for the component itself
+aiohttp==3.13.2
+aiohttp-asyncmdnsresolver==0.1.1
+aiohttp-cors==0.8.1
+aiohttp-fast-zlib==0.3.0
+aiosqlite==0.21.0
+aiofile==3.9.0
+pillow==12.0.0
+numpy==2.3.2
+homeassistant==2025.11.2
+voluptuous==0.15.2
+voluptuous-openapi==0.1.0
+voluptuous-serialize==2.7.0
+boto3==1.41.2
