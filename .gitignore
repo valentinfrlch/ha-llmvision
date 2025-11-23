@@ -5,3 +5,19 @@ playground.py
 .instance
 __pycache__/
 .settings
+
+# Testing artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.cover
+*.py,cover
+coverage.xml
+*.log
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
