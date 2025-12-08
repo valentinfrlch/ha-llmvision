@@ -54,6 +54,8 @@ from .const import (
     EXPOSE_IMAGES,
     GENERATE_TITLE,
     SENSOR_ENTITY,
+    PARSE_JSON_RESPONSE,
+    JSON_SUMMARY_FIELD,
     DATA_EXTRACTION_PROMPT,
     DEFAULT_OPENAI_MODEL,
     DEFAULT_ANTHROPIC_MODEL,
@@ -459,14 +461,24 @@ async def _remember(
         else:
             title = "Motion detected"
 
+        # Use timeline_summary if available (from JSON parsing), otherwise response_text
+        summary_text = response.get("timeline_summary", response["response_text"])
+        
+        # Store full JSON if parsed
+        structured_data = ""
+        if "parsed_json" in response:
+            import json
+            structured_data = json.dumps(response["parsed_json"])
+
         await timeline.remember(
             start=start,
             end=dt_util.now() + timedelta(minutes=1),
             label=title,
-            summary=response["response_text"],
+            summary=summary_text,
             key_frame=key_frame,
             camera_name=camera_name,
             today_summary=today_summary,
+            structured_data=structured_data,
         )
 
 
@@ -564,6 +576,8 @@ class ServiceCallData:
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)
         self.sensor_entity = data_call.data.get(SENSOR_ENTITY, "")
+        self.parse_json_response = data_call.data.get(PARSE_JSON_RESPONSE, False)
+        self.json_summary_field = data_call.data.get(JSON_SUMMARY_FIELD, "summary")
 
         # ------------ Remember ------------
         self.title = data_call.data.get("title")

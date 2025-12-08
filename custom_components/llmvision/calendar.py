@@ -110,6 +110,20 @@ class Timeline(CalendarEntity):
                         )
                         await db.commit()
                         _LOGGER.info("Migration complete")
+                    if "structured_data" not in column_names:
+                        _LOGGER.info(
+                            "Migrating events.db to include structured_data column"
+                        )
+                        try:
+                            await db.execute(
+                                """
+                                ALTER TABLE events ADD COLUMN structured_data TEXT
+                            """
+                            )
+                            await db.commit()
+                            _LOGGER.info("Migration complete")
+                        except aiosqlite.Error:
+                            pass
         except aiosqlite.Error as e:
             _LOGGER.error(f"Error migrating events.db: {e}")
 
@@ -205,6 +219,7 @@ class Timeline(CalendarEntity):
                 )
                 for event in events
             ],
+            "structured_data": [getattr(event, "_structured_data", "") for event in events],
             "today_summary": self._today_summary,
         }
 
@@ -243,7 +258,8 @@ class Timeline(CalendarEntity):
                         description TEXT,
                         key_frame TEXT,
                         camera_name TEXT,
-                        today_summary TEXT
+                        today_summary TEXT,
+                        structured_data TEXT
                     )
                 """
                 )
@@ -291,8 +307,9 @@ class Timeline(CalendarEntity):
         async with aiosqlite.connect(self._db_path) as db:
             async with db.execute("SELECT * FROM events") as cursor:
                 rows = await cursor.fetchall()
-                self._events = [
-                    CalendarEvent(
+                self._events = []
+                for row in rows:
+                    event = CalendarEvent(
                         uid=row[0],
                         summary=row[1],
                         start=dt_util.as_local(dt_util.parse_datetime(row[2])),
@@ -300,8 +317,10 @@ class Timeline(CalendarEntity):
                         description=row[4],
                         location=f"{row[5]},{row[6]}" if row[6] else row[5],
                     )
-                    for row in rows
-                ]
+                    # Store structured_data as custom attribute
+                    if len(row) > 8 and row[8]:
+                        event._structured_data = row[8]
+                    self._events.append(event)
                 self._events.sort(key=lambda event: event.start, reverse=True)
                 self._today_summary = rows[-1][7] if rows and len(rows) != 0 else ""
 
@@ -340,6 +359,7 @@ class Timeline(CalendarEntity):
         key_frame = kwargs.get("key_frame", "")
         camera_name = kwargs.get("camera_name", "")
         today_summary = kwargs.get("today_summary", "")
+        structured_data = kwargs.get("structured_data", "")
 
         # Ensure dtstart and dtend are datetime objects
         if isinstance(dtstart, str):
@@ -358,17 +378,17 @@ class Timeline(CalendarEntity):
             description=description,
             location=f"{key_frame},{camera_name}",
         )
-        await self._insert_event(event, today_summary)
+        await self._insert_event(event, today_summary, structured_data)
 
-    async def _insert_event(self, event: CalendarEvent, today_summary: str) -> None:
+    async def _insert_event(self, event: CalendarEvent, today_summary: str, structured_data: str = "") -> None:
         """Inserts a new event into the database"""
         try:
             async with aiosqlite.connect(self._db_path) as db:
                 _LOGGER.info(f"Inserting event into database: {event}")
                 await db.execute(
                     """
-                    INSERT INTO events (uid, summary, start, end, description, key_frame, camera_name, today_summary)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO events (uid, summary, start, end, description, key_frame, camera_name, today_summary, structured_data)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                     (
                         event.uid,
@@ -385,6 +405,7 @@ class Timeline(CalendarEntity):
                             else ""
                         ),
                         today_summary,
+                        structured_data,
                     ),
                 )
                 await db.commit()
@@ -490,7 +511,7 @@ class Timeline(CalendarEntity):
         return events_summaries
 
     async def remember(
-        self, start, end, label, key_frame, summary, camera_name="", today_summary=""
+        self, start, end, label, key_frame, summary, camera_name="", today_summary="", structured_data=""
     ):
         """Remembers the event"""
         _LOGGER.info(
@@ -508,6 +529,7 @@ class Timeline(CalendarEntity):
                 key_frame=key_frame,
                 camera_name=camera_name,
                 today_summary=today_summary,
+                structured_data=structured_data,
             )
         finally:
             # Remove from pending

@@ -66,6 +66,8 @@ INCLUDE_FILENAME = "include_filename"
 EXPOSE_IMAGES = "expose_images"
 GENERATE_TITLE = "generate_title"
 SENSOR_ENTITY = "sensor_entity"
+PARSE_JSON_RESPONSE = "parse_json_response"
+JSON_SUMMARY_FIELD = "json_summary_field"
 
 # Error messages
 ERROR_NOT_CONFIGURED = "{provider} is not configured"

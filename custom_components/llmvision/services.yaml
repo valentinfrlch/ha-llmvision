@@ -99,6 +99,22 @@ image_analyzer:
       default: false
       selector:
         boolean:
+    parse_json_response:
+      name: Parse JSON Response
+      description: 'Parse LLM response as JSON. Your prompt must instruct the model to respond with JSON only. Parsed data available in response.parsed_json'
+      required: false
+      example: false
+      default: false
+      selector:
+        boolean:
+    json_summary_field:
+      name: JSON Summary Field
+      description: 'JSON field to use for timeline summary (e.g., "summary"). Only used when parse_json_response is enabled.'
+      required: false
+      example: "summary"
+      default: "summary"
+      selector:
+        text:
 
 video_analyzer:
   name: Video Analyzer
@@ -211,6 +227,22 @@ video_analyzer:
       default: false
       selector:
         boolean:
+    parse_json_response:
+      name: Parse JSON Response
+      description: 'Parse LLM response as JSON. Your prompt must instruct the model to respond with JSON only. Parsed data available in response.parsed_json'
+      required: false
+      example: false
+      default: false
+      selector:
+        boolean:
+    json_summary_field:
+      name: JSON Summary Field
+      description: 'JSON field to use for timeline summary (e.g., "summary"). Only used when parse_json_response is enabled.'
+      required: false
+      example: "summary"
+      default: "summary"
+      selector:
+        text:
 
 stream_analyzer:
   name: Stream Analyzer
@@ -326,6 +358,22 @@ stream_analyzer:
       default: false
       selector:
         boolean:
+    parse_json_response:
+      name: Parse JSON Response
+      description: 'Parse LLM response as JSON. Your prompt must instruct the model to respond with JSON only. Parsed data available in response.parsed_json'
+      required: false
+      example: false
+      default: false
+      selector:
+        boolean:
+    json_summary_field:
+      name: JSON Summary Field
+      description: 'JSON field to use for timeline summary (e.g., "summary"). Only used when parse_json_response is enabled.'
+      required: false
+      example: "summary"
+      default: "summary"
+      selector:
+        text:
 
 data_analyzer:
   name: Data Analyzer

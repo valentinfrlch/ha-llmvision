@@ -228,10 +228,29 @@ class Request:
             else:
                 gen_title = "Event Detected"
 
-        result = {}
+        result = {"response_text": response_text}
+
+        # Parse JSON if requested
+        if getattr(call, "parse_json_response", False):
+            try:
+                # Strip markdown code blocks if present
+                text = response_text.strip()
+                if text.startswith("```"):
+                    lines = text.split("\n")
+                    text = "\n".join(lines[1:-1]) if len(lines) > 2 else text
+                    text = text.strip()
+                
+                parsed = json.loads(text)
+                result["parsed_json"] = parsed
+                # Extract summary field for timeline
+                summary_field = getattr(call, "json_summary_field", "summary")
+                if summary_field in parsed:
+                    result["timeline_summary"] = parsed[summary_field]
+            except json.JSONDecodeError:
+                _LOGGER.warning("Failed to parse response as JSON, using raw text")
+
         if gen_title is not None:
             result["title"] = re.sub(r"[^a-zA-Z0-9ŽžÀ-ÿ\s]", "", gen_title)
-        result["response_text"] = response_text
         return result
 
     def add_frame(self, base64_image, filename):
