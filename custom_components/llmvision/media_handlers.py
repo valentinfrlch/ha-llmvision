@@ -214,16 +214,17 @@ class MediaProcessor:
 
         return base64_image
 
-    async def _fetch(self, url, target_file=None, max_retries=2, retry_delay=1):
+    async def _fetch(self, url, target_file=None, max_retries=2, retry_delay=1, entity_name=None):
         """Fetch image from url and return image data"""
         retries = 0
+        entity_prefix = f"Camera {entity_name}: " if entity_name else ""
         while retries < max_retries:
             _LOGGER.info(f"Fetching {url} (attempt {retries + 1}/{max_retries})")
             try:
                 async with self.session.get(url) as response:
                     if not response.ok:
                         _LOGGER.warning(
-                            f"Couldn't fetch frame (status code: {response.status})"
+                            f"{entity_prefix}Couldn't fetch frame (status code: {response.status})"
                         )
                         retries += 1
                         await asyncio.sleep(retry_delay)
@@ -247,10 +248,10 @@ class MediaProcessor:
 
                         return None
             except Exception as e:
-                _LOGGER.error(f"Fetch failed: {e}")
+                _LOGGER.error(f"{entity_prefix}Fetch failed: {e}")
                 retries += 1
                 await asyncio.sleep(retry_delay)
-        _LOGGER.warning(f"Failed to fetch {url} after {max_retries} retries")
+        _LOGGER.warning(f"{entity_prefix}Failed to fetch {url} after {max_retries} retries")
 
     async def record(
         self,
@@ -281,6 +282,8 @@ class MediaProcessor:
             interval = 5
         camera_frames = {}
         first_frames = {}
+        # Track successful image entities (cameras that successfully captured frames)
+        successful_image_entities = set()
 
         # Record on a separate thread for each camera
         async def record_camera(image_entity, camera_number):
@@ -294,13 +297,28 @@ class MediaProcessor:
 
             while time.time() - start < duration + iteration_time:
                 fetch_start_time = time.time()
-                frame_url = base_url + self.hass.states.get(
-                    image_entity
-                ).attributes.get("entity_picture")
-                frame_data = await self._fetch(frame_url)
+                entity_state = self.hass.states.get(image_entity)
+
+                # Check if entity exists
+                if entity_state is None:
+                    _LOGGER.error(f"Camera {image_entity} does not exist")
+                    await asyncio.sleep(interval)
+                    continue
+
+                entity_picture = entity_state.attributes.get("entity_picture")
+
+                # Skip if camera is offline or entity_picture unavailable
+                if not entity_picture:
+                    _LOGGER.warning(f"Camera {image_entity} is offline or does not have entity_picture attribute")
+                    await asyncio.sleep(interval)
+                    continue
+
+                frame_url = base_url + entity_picture
+                frame_data = await self._fetch(frame_url, entity_name=image_entity)
 
                 # Skip frame if fetch failed
                 if not frame_data:
+                    await asyncio.sleep(interval)
                     continue
 
                 fetch_duration = time.time() - fetch_start_time
@@ -368,6 +386,8 @@ class MediaProcessor:
                             ]
                         frame_label = "-".join(parts)
                         first_frames[image_entity] = (frame_label, first_bytes)
+                        # Mark this camera as successful
+                        successful_image_entities.add(image_entity)
                         frame_counter += 1
 
                 preprocessing_duration = time.time() - preprocessing_start_time
@@ -401,6 +421,12 @@ class MediaProcessor:
                 for image_entity in image_entities
             )
         )
+
+        # Check if any cameras successfully captured frames
+        if len(successful_image_entities) == 0:
+            raise ServiceValidationError(
+                "No cameras available - all cameras offline or unavailable"
+            )
 
         # Extract frames and their SSIM scores
         frames_with_scores = []
@@ -465,21 +491,33 @@ class MediaProcessor:
     ):
         """Wrapper for client.add_frame for images"""
         base_url = get_url(self.hass)
+        # Track successful image entities (cameras that successfully provided frames)
+        successful_image_entities = 0
 
         if image_entities:
             for image_entity in image_entities:
                 try:
-                    image_url = base_url + self.hass.states.get(
-                        image_entity
-                    ).attributes.get("entity_picture")
-                    image_data = await self._fetch(image_url)
+                    entity_state = self.hass.states.get(image_entity)
+
+                    # Check if entity exists
+                    if entity_state is None:
+                        _LOGGER.error(f"Camera {image_entity} does not exist")
+                        continue
+
+                    entity_picture = entity_state.attributes.get("entity_picture")
+
+                    # Skip if camera is offline or entity_picture unavailable
+                    if not entity_picture:
+                        _LOGGER.warning(f"Camera {image_entity} is offline or does not have entity_picture attribute")
+                        continue
+
+                    image_url = base_url + entity_picture
+                    image_data = await self._fetch(image_url, entity_name=image_entity)
 
                     # Skip frame if fetch failed
                     if not image_data:
-                        if len(image_entities) == 1:
-                            raise ServiceValidationError(
-                                f"Failed to fetch image from {image_entity}"
-                            )
+                        _LOGGER.warning(f"Camera {image_entity}: Failed to fetch image")
+                        continue
 
                     # If entity snapshot requested, use entity name as 'filename'
                     resized_image = await self.resize_image(
@@ -488,9 +526,7 @@ class MediaProcessor:
                     self.client.add_frame(
                         base64_image=resized_image,
                         filename=(
-                            self.hass.states.get(image_entity).attributes.get(
-                                "friendly_name"
-                            )
+                            entity_state.attributes.get("friendly_name")
                             if include_filename
                             else ""
                         ),
@@ -503,10 +539,19 @@ class MediaProcessor:
                             uid=str(uuid.uuid4())[:8],
                         )
 
+                    successful_image_entities += 1
+
                 except AttributeError as e:
+                    _LOGGER.error(f"Camera {image_entity}: AttributeError accessing entity attributes: {e}")
                     raise ServiceValidationError(
-                        f"Entity {image_entity} does not exist"
+                        f"Error accessing camera entity {image_entity}: {e}"
                     )
+
+            # Check if any cameras were successful
+            if successful_image_entities == 0:
+                raise ServiceValidationError(
+                    "No cameras available - all cameras offline or unavailable"
+                )
         if image_paths:
             for image_path in image_paths:
                 try:
