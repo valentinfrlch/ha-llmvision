@@ -425,8 +425,9 @@ class OpenAI(Provider):
             "top_p": default_parameters.get("top_p"),
         }
 
-        # Remove temperature and top_p if model is gpt-5
-        if self.model in ["gpt-5", "gpt-5-mini", "gpt-5-nano"]:
+        # Remove temperature and top_p if model is gpt-5 (any variant)
+        # GPT-5 models don't support custom temperature/top_p values
+        if self.model and self.model.lower().startswith("gpt-5"):
             payload = {
                 k: v for k, v in payload.items() if k not in ("temperature", "top_p")
             }
@@ -477,8 +478,9 @@ class OpenAI(Provider):
             "top_p": default_parameters.get("top_p"),
         }
 
-        # Remove temperature and top_p if model is gpt-5
-        if self.model in ["gpt-5", "gpt-5-mini", "gpt-5-nano"]:
+        # Remove temperature and top_p if model is gpt-5 (any variant)
+        # GPT-5 models don't support custom temperature/top_p values
+        if self.model and self.model.lower().startswith("gpt-5"):
             payload = {
                 k: v for k, v in payload.items() if k not in ("temperature", "top_p")
             }
@@ -520,8 +522,12 @@ class AzureOpenAI(Provider):
 
     async def _make_request(self, data: dict) -> str:
         headers = self._generate_headers()
+        # Ensure base_url ends with trailing slash
+        azure_endpoint = self.endpoint.get("endpoint", "")
+        if azure_endpoint and not azure_endpoint.endswith("/"):
+            azure_endpoint += "/"
         endpoint = self.endpoint.get("base_url").format(
-            base_url=self.endpoint.get("endpoint"),
+            base_url=azure_endpoint,
             deployment=self.endpoint.get("deployment"),
             api_version=self.endpoint.get("api_version"),
         )
@@ -534,11 +540,19 @@ class AzureOpenAI(Provider):
         default_parameters = self._get_default_parameters(call)
         payload = {
             "messages": [{"role": "user", "content": []}],
-            "max_tokens": call.max_tokens,
+            "max_completion_tokens": call.max_tokens,
             "temperature": default_parameters.get("temperature"),
             "top_p": default_parameters.get("top_p"),
             "stream": False,
         }
+
+        # Remove temperature and top_p if model is gpt-5 (any variant)
+        # GPT-5 models don't support custom temperature/top_p values
+        if self.model and self.model.lower().startswith("gpt-5"):
+            payload = {
+                k: v for k, v in payload.items() if k not in ("temperature", "top_p")
+            }
+
         for image, filename in zip(call.base64_images, call.filenames):
             tag = (
                 ("Image " + str(call.base64_images.index(image) + 1))
@@ -572,31 +586,42 @@ class AzureOpenAI(Provider):
     def _prepare_text_data(self, call: dict) -> dict:
         default_parameters = self._get_default_parameters(call)
         title_prompt = self._get_title_prompt()
-        return {
+        payload = {
             "messages": [
                 {"role": "user", "content": [{"type": "text", "text": title_prompt}]},
                 {"role": "user", "content": [{"type": "text", "text": call.message}]},
             ],
-            "max_tokens": call.max_tokens,
+            "max_completion_tokens": call.max_tokens,
             "temperature": default_parameters.get("temperature"),
             "top_p": default_parameters.get("top_p"),
             "stream": False,
         }
 
+        # Remove temperature and top_p if model is gpt-5 (any variant)
+        # GPT-5 models don't support custom temperature/top_p values
+        if self.model and self.model.lower().startswith("gpt-5"):
+            payload = {
+                k: v for k, v in payload.items() if k not in ("temperature", "top_p")
+            }
+        return payload
+
     async def validate(self) -> None | ServiceValidationError:
         if not self.api_key:
             raise ServiceValidationError("empty_api_key")
 
+        # Ensure base_url ends with trailing slash
+        azure_endpoint = self.endpoint.get("endpoint", "")
+        if azure_endpoint and not azure_endpoint.endswith("/"):
+            azure_endpoint += "/"
         endpoint = self.endpoint.get("base_url").format(
-            base_url=self.endpoint.get("endpoint"),
+            base_url=azure_endpoint,
             deployment=self.endpoint.get("deployment"),
             api_version=self.endpoint.get("api_version"),
         )
         headers = self._generate_headers()
         data = {
             "messages": [{"role": "user", "content": [{"type": "text", "text": "Hi"}]}],
-            "max_tokens": 1,
-            "temperature": 0.5,
+            "max_completion_tokens": 10,
             "stream": False,
         }
         await self._post(url=endpoint, headers=headers, data=data)
