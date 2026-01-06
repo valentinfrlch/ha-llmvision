@@ -230,7 +230,7 @@ class Request:
 
         result = {}
         if gen_title is not None:
-            result["title"] = re.sub(r"[^a-zA-Z0-9ŽžÀ-ÿ\s]", "", gen_title)
+            result["title"] = re.sub(r"[^a-zA-Z0-9À-ÖØ-öø-ɏ\s]", "", gen_title)
         result["response_text"] = response_text
         return result
 
