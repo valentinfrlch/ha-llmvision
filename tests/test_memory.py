@@ -120,7 +120,7 @@ class TestMemory:
         memory = Memory(mock_hass)
         result = memory._get_memory_images(memory_type="Unknown")
         
-        assert result is None
+        assert result == []
 
     def test_str_representation(self, mock_hass):
         """Test __str__ method."""
