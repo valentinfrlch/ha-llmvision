@@ -681,7 +681,6 @@ class Timeline:
         label: str = "",
     ) -> None:
         """Adds a new event to calendar"""
-        await self.load_events()
         category = ""
 
         # Ensure dtstart and dtend are datetime objects
@@ -693,44 +692,49 @@ class Timeline:
         start = dt_util.as_local(start)
         end = dt_util.as_local(end)
 
-        # Resolve category and label if not provided
-        if not label:
-            try:
-                (auto_category, auto_label) = await _get_category_and_label(
-                    self.hass, self._config_entry, label
-                )
-                if not category:
-                    category = auto_category
-                if not label:
-                    label = auto_label
-            except Exception as e:
-                _LOGGER.warning(f"Failed to resolve category: {e}")
-        else:
-            category = await self._get_category_from_label(label)
-
         # Mark key_frame as pending so cleanup won't remove it before DB insert
-        pending_name = None
-        if key_frame:
-            pending_name = (os.path.basename(key_frame) or "").lower()
-            self._pending_key_frames.add(pending_name)
-        try:
-            event = Event(
-                uid=str(uuid.uuid4()),
-                title=title,
-                start=start,
-                end=end,
-                description=description,
-                key_frame=key_frame,
-                camera_name=camera_name,
-                category=category,
-                label=label,
-            )
-            _LOGGER.info(f"Creating event: {event}")
-            await self._insert_event(event)
-        finally:
-            # Remove from pending once DB insert is done
+        pending_name = (
+            (os.path.basename(key_frame) or "").lower() if key_frame else None
+        )
+
+        async with self._cleanup_lock:
             if pending_name:
-                self._pending_key_frames.discard(pending_name)
+                self._pending_key_frames.add(pending_name)
+            try:
+                await self.load_events()
+
+                # Resolve category and label if not provided
+                if not label:
+                    try:
+                        (auto_category, auto_label) = await _get_category_and_label(
+                            self.hass, self._config_entry, label
+                        )
+                        if not category:
+                            category = auto_category
+                        if not label:
+                            label = auto_label
+                    except Exception as e:
+                        _LOGGER.warning(f"Failed to resolve category: {e}")
+                else:
+                    category = await self._get_category_from_label(label)
+
+                event = Event(
+                    uid=str(uuid.uuid4()),
+                    title=title,
+                    start=start,
+                    end=end,
+                    description=description,
+                    key_frame=key_frame,
+                    camera_name=camera_name,
+                    category=category,
+                    label=label,
+                )
+                _LOGGER.info(f"Creating event: {event}")
+                await self._insert_event(event)
+            finally:
+                # Remove from pending once DB insert is done
+                if pending_name:
+                    self._pending_key_frames.discard(pending_name)
 
     async def _insert_event(self, event: Event) -> None:
         """Inserts a new event into the database"""
@@ -869,43 +873,47 @@ class Timeline:
                 for n in await self.get_linked_images()
             }
 
-        # List files in snapshots dir (in executor, non-blocking)
-        try:
-            files = await self.hass.async_add_executor_job(os.listdir, self._media_path)
-        except FileNotFoundError:
-            return
-
-        now_ts = datetime.datetime.now().timestamp()
-        removed = 0
-
-        for file in files:
-            file_path = os.path.join(self._media_path, file)
-            is_file = await self.hass.async_add_executor_job(os.path.isfile, file_path)
-            if not is_file:
-                continue
-
-            base = (file or "").lower()
-
-            # Protect if linked to an event or pending
-            if base in linked_frames or base in self._pending_key_frames:
-                continue
-
-            # Protect new files (grace window)
+            # List files in snapshots dir (in executor, non-blocking)
             try:
-                mtime = await self.hass.async_add_executor_job(
-                    os.path.getmtime, file_path
+                files = await self.hass.async_add_executor_job(
+                    os.listdir, self._media_path
                 )
-                if (now_ts - mtime) < GRACE_SECONDS:
+            except FileNotFoundError:
+                return
+
+            now_ts = datetime.datetime.now().timestamp()
+            removed = 0
+
+            for file in files:
+                file_path = os.path.join(self._media_path, file)
+                is_file = await self.hass.async_add_executor_job(
+                    os.path.isfile, file_path
+                )
+                if not is_file:
                     continue
-            except OSError:
-                continue
 
-            _LOGGER.info(f"[CLEANUP] Removing unlinked snapshot: {file}")
-            try:
-                await self.hass.async_add_executor_job(os.remove, file_path)
-                removed += 1
-            except OSError as e:
-                _LOGGER.warning(f"[CLEANUP] Failed to remove {file_path}: {e}")
+                base = (file or "").lower()
 
-        if removed:
-            _LOGGER.debug(f"[CLEANUP] Removed {removed} orphaned snapshot(s)")
+                # Protect if linked to an event or pending
+                if base in linked_frames or base in self._pending_key_frames:
+                    continue
+
+                # Protect new files (grace window)
+                try:
+                    mtime = await self.hass.async_add_executor_job(
+                        os.path.getmtime, file_path
+                    )
+                    if (now_ts - mtime) < GRACE_SECONDS:
+                        continue
+                except OSError:
+                    continue
+
+                _LOGGER.info(f"[CLEANUP] Removing unlinked snapshot: {file}")
+                try:
+                    await self.hass.async_add_executor_job(os.remove, file_path)
+                    removed += 1
+                except OSError as e:
+                    _LOGGER.warning(f"[CLEANUP] Failed to remove {file_path}: {e}")
+
+            if removed:
+                _LOGGER.debug(f"[CLEANUP] Removed {removed} orphaned snapshot(s)")
