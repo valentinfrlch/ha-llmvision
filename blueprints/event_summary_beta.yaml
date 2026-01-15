@@ -138,8 +138,8 @@ blueprint:
               mode: slider
         max_tokens:
           name: Maximum Tokens
-          description: Maximum number of tokens to generate. Use this to control the
-            length of the summaries.
+          description: >
+            Maximum number of tokens to generate. Use this to control the length of the summaries.
           default: 20
           selector:
             number:
