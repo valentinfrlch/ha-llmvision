@@ -710,8 +710,13 @@ class Timeline:
                 # Resolve category and label if not provided
                 if not label:
                     try:
+                        query_text = " ".join(
+                            part
+                            for part in (title or "", description or "")
+                            if part
+                        )
                         (auto_category, auto_label) = await _get_category_and_label(
-                            self.hass, self._config_entry, label
+                            self.hass, self._config_entry, query_text
                         )
                         if not category:
                             category = auto_category
