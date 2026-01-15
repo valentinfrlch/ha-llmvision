@@ -21,3 +21,4 @@ coverage.xml
 venv/
 ENV/
 env/
+.vscode/settings.json

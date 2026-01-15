@@ -145,12 +145,13 @@ async def _get_category_and_label(
 
 
 class Event:
+
     def __init__(
         self,
         uid: str,
         title: str,
-        start: datetime.datetime,
-        end: datetime.datetime,
+        start: datetime.datetime | None,
+        end: datetime.datetime | None,
         description: str,
         key_frame: str,
         camera_name: str,
@@ -207,7 +208,9 @@ class Timeline:
             async with aiosqlite.connect(self._db_path) as db:
                 async with db.execute("PRAGMA user_version") as cur:
                     row = await cur.fetchone()
-                    return int(row[0] or 0)
+                    if not row or row[0] is None:
+                        return 0
+                    return int(row[0])
         except Exception as e:
             _LOGGER.debug(f"Failed to read DB user_version: {e}")
             return 0
@@ -306,16 +309,17 @@ class Timeline:
                 for event in data:
                     await self.hass.loop.create_task(
                         self.create_event(
-                            dtstart=datetime.datetime.fromisoformat(event["start"]),
-                            dtend=datetime.datetime.fromisoformat(event["end"]),
-                            summary=event["summary"],
+                            start=datetime.datetime.fromisoformat(event["start"]),
+                            end=datetime.datetime.fromisoformat(event["end"]),
+                            title=event.get("summary", ""),
+                            description=event.get("description", ""),
                             key_frame=event["location"].split(",")[0],
                             camera_name=(
                                 event["location"].split(",")[1]
                                 if len(event["location"].split(",")) > 1
                                 else ""
                             ),
-                            today_summary="",
+                            label=event.get("label", ""),
                         )
                     )
                     event_counter += 1

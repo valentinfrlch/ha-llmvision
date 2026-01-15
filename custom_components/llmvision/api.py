@@ -1,7 +1,8 @@
 import json
 import logging
 from datetime import datetime, timedelta
-from homeassistant.components.http import HomeAssistantView
+from typing import Any, Optional
+from homeassistant.helpers.http import HomeAssistantView
 from homeassistant.helpers.json import json_dumps
 from homeassistant.util import dt as dt_util
 from .calendar import Timeline
@@ -32,6 +33,8 @@ class TimelineEventsView(HomeAssistantView):
         hass = request.app["hass"]
 
         settings_entry = await async_get_settings_entry(hass)
+        if settings_entry is None:
+            return self.json_message("Settings config entry not found", status_code=404)
         # Parse request params
         try:
             # Limit: minimum 1, maximum 100
@@ -170,7 +173,7 @@ class TimelineEventView(HomeAssistantView):
         if settings_entry is None:
             return self.json_message("Settings config entry not found", status_code=404)
         timeline = Timeline(hass, settings_entry)
-        event: dict = await timeline.get_event(event_id)
+        event: Optional[dict[str, Any]] = await timeline.get_event(event_id)
         if event is None:
             return self.json_message("Event not found", status_code=404)
         return self.json({"event": json.loads(json_dumps(event))})
@@ -265,7 +268,9 @@ class TimelineEventView(HomeAssistantView):
             return self.json_message("Error updating event", status_code=500)
 
         try:
-            updated = await timeline.get_event_json(event_id)
+            updated = await timeline.get_event(event_id)
+            if updated is None:
+                return self.json({"event_id": event_id, "status": "updated"})
             return self.json({"event": json.loads(json_dumps(updated))})
         except Exception:
             return self.json({"event_id": event_id, "status": "updated"})

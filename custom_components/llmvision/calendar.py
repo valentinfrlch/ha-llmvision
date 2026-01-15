@@ -3,8 +3,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.components.calendar import (
     CalendarEntity,
     CalendarEvent,
-    CalendarEntityFeature,
 )
+from homeassistant.components.calendar.const import CalendarEntityFeature
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
 from .timeline import Timeline
@@ -27,7 +27,7 @@ class Calendar(CalendarEntity):
         self._attr_supported_features = CalendarEntityFeature.DELETE_EVENT
 
     @property
-    def icon(self) -> str:
+    def icon(self) -> str:  # type: ignore
         """Return the icon to use in the frontend"""
         return "mdi:timeline-outline"
 
@@ -47,17 +47,25 @@ class Calendar(CalendarEntity):
     async def async_update(self) -> None:
         """Loads events from database"""
         events = await self.timeline.get_all_events()
-        self._events = [
-            CalendarEvent(
-                uid=event.uid,
-                summary=event.title,
-                start=event.start,
-                end=event.end,
-                description=event.description,
+        calendar_events: list[CalendarEvent] = []
+        for event in events:
+            if event.start is None or event.end is None:
+                continue
+            event_start = self._ensure_datetime(event.start)
+            event_end = self._ensure_datetime(event.end)
+            calendar_events.append(
+                CalendarEvent(
+                    uid=event.uid,
+                    summary=event.title,
+                    start=event_start,
+                    end=event_end,
+                    description=event.description,
+                )
             )
-            for event in events
-        ]
-        self._events.sort(key=lambda event: event.start, reverse=True)
+        calendar_events.sort(
+            key=lambda calendar_event: calendar_event.start, reverse=True
+        )
+        self._events = calendar_events
 
     async def async_get_events(
         self,
@@ -74,6 +82,8 @@ class Calendar(CalendarEntity):
         end_date = self._ensure_datetime(end_date)
 
         for event in timeline_events:
+            if event.start is None or event.end is None:
+                continue
             # Ensure event.end and event.start are datetime.datetime objects and timezone-aware
             event_end = self._ensure_datetime(event.end)
             event_start = self._ensure_datetime(event.start)
@@ -82,8 +92,8 @@ class Calendar(CalendarEntity):
                 calendar_event = CalendarEvent(
                     uid=event.uid,
                     summary=event.title,
-                    start=event.start,
-                    end=event.end,
+                    start=event_start,
+                    end=event_end,
                     description=event.description,
                 )
                 calendar_events.append(calendar_event)

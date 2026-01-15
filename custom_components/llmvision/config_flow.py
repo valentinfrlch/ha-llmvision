@@ -1237,6 +1237,20 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_settings(self, user_input=None):
         _LOGGER.debug("Settings step")
+        domain_data = self.hass.data.get(DOMAIN) or {}
+        _LOGGER.debug(f"Domain data: {domain_data}")
+        fallback_options = [{"label": "No Fallback", "value": "no_fallback"}]
+        for entry_id, entry_data in domain_data.items():
+            provider_label = entry_data.get(CONF_PROVIDER, entry_id)
+            if provider_label in ("Settings", "Timeline"):
+                continue
+            fallback_options.append(
+                {
+                    "label": provider_label,
+                    "value": entry_id,
+                }
+            )
+        _LOGGER.debug(f"Fallback options: {fallback_options}")
         data_schema = vol.Schema(
             {
                 vol.Optional("general_section"): section(
@@ -1245,35 +1259,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         {
                             vol.Optional(
                                 CONF_FALLBACK_PROVIDER, default="no_fallback"
-                            ): selector(
-                                {
-                                    "select": {
-                                        "options": (
-                                            [
-                                                {
-                                                    "label": "No Fallback",
-                                                    "value": "no_fallback",
-                                                }
-                                            ]
-                                            + [
-                                                {
-                                                    "label": self.hass.data[DOMAIN]
-                                                    .get(provider, {})
-                                                    .get(CONF_PROVIDER, provider),
-                                                    "value": provider,
-                                                }
-                                                for provider in (
-                                                    self.hass.data.get(DOMAIN) or {}
-                                                ).keys()
-                                                if self.hass.data[DOMAIN]
-                                                .get(provider, {})
-                                                .get(CONF_PROVIDER, provider)
-                                                not in ("Settings", "Timeline")
-                                            ]
-                                        )
-                                    }
-                                }
-                            )
+                            ): selector({"select": {"options": fallback_options}})
                         }
                     ),
                     {"collapsed": False},
@@ -1298,7 +1284,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional("timeline_section"): section(
                     vol.Schema(
                         {
-                            vol.Required(CONF_TIMELINE_LANGUAGE): selector(
+                            vol.Required(
+                                CONF_TIMELINE_LANGUAGE, default="English"
+                            ): selector(
                                 {
                                     "select": {
                                         "options": [
@@ -1315,10 +1303,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                             "Portuguese",
                                             "Slovak",
                                             "Spanish",
-                                            "Swedish"
+                                            "Swedish",
                                         ],
                                         "mode": "dropdown",
-                                        "default": "English",
                                     }
                                 }
                             ),
@@ -1326,21 +1313,12 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 {
                                     "number": {
                                         "min": 0,
-                                        "max": 30,
+                                        "max": 90,
                                         "step": 1,
                                         "mode": "slider",
                                     }
                                 }
                             ),
-                            # vol.Optional(CONF_TIMELINE_TODAY_SUMMARY, default=False): selector({
-                            #     "boolean": {}
-                            # }),
-                            # vol.Optional(CONF_TIMELINE_SUMMARY_PROMPT, default=DEFAULT_SUMMARY_PROMPT): selector({
-                            #     "text": {
-                            #         "multiline": True,
-                            #         "multiple": False
-                            #     }
-                            # }),
                         }
                     ),
                     {"collapsed": True},
@@ -1349,10 +1327,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Schema(
                         {
                             vol.Optional(CONF_MEMORY_PATHS): selector(
-                                {"text": {"multiline": False, "multiple": True}}
+                                {"text": {"multiline": True}}
                             ),
                             vol.Optional(CONF_MEMORY_STRINGS): selector(
-                                {"text": {"multiline": False, "multiple": True}}
+                                {"text": {"multiline": True}}
                             ),
                         }
                     ),
@@ -1360,6 +1338,8 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ),
             }
         )
+
+        _LOGGER.debug(f"Data schema: {data_schema}")
 
         if self.source == config_entries.SOURCE_RECONFIGURE:
             _LOGGER.debug("Reconfigure Settings step")
@@ -1384,7 +1364,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
             "timeline_section": {
                 CONF_TIMELINE_LANGUAGE: self.init_info.get(
-                    CONF_TIMELINE_LANGUAGE, "en"
+                    CONF_TIMELINE_LANGUAGE, "English"
                 ),
                 CONF_RETENTION_TIME: self.init_info.get(CONF_RETENTION_TIME, 7),
                 # CONF_TIMELINE_TODAY_SUMMARY: self.init_info.get(CONF_TIMELINE_TODAY_SUMMARY, False),
@@ -1396,7 +1376,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_MEMORY_STRINGS: self.init_info.get(CONF_MEMORY_STRINGS),
             },
         }
+        _LOGGER.debug(f"Suggested values: {suggested}, adding to schema...")
         data_schema = self.add_suggested_values_to_schema(data_schema, suggested)
+        _LOGGER.debug(f"Data schema after suggestions: {data_schema}")
 
         if user_input is not None:
             user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]

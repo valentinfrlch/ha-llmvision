@@ -11,7 +11,9 @@ from datetime import timedelta
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.components.http.auth import async_sign_path
 from homeassistant.components.media_source import is_media_source_id
-from homeassistant.components.media_player import async_process_play_media_url
+from homeassistant.components.media_player.browse_media import (
+    async_process_play_media_url,
+)
 
 from urllib.parse import urlparse
 from functools import partial
@@ -163,6 +165,8 @@ class MediaProcessor:
         self, target_width, image_path=None, image_data=None, img=None
     ):
         """Resize image to target_width"""
+        base64_image = None
+
         if image_path:
             # Open the image file
             img = await self.hass.loop.run_in_executor(None, Image.open, image_path)
@@ -212,9 +216,14 @@ class MediaProcessor:
 
                 base64_image = await self._encode_image(img)
 
+        if base64_image is None:
+            raise ServiceValidationError("No image data provided for resize_image")
+
         return base64_image
 
-    async def _fetch(self, url, target_file=None, max_retries=2, retry_delay=1, entity_name=None):
+    async def _fetch(
+        self, url, target_file=None, max_retries=2, retry_delay=1, entity_name=None
+    ):
         """Fetch image from url and return image data"""
         retries = 0
         entity_prefix = f"Camera {entity_name}: " if entity_name else ""
@@ -251,7 +260,9 @@ class MediaProcessor:
                 _LOGGER.error(f"{entity_prefix}Fetch failed: {e}")
                 retries += 1
                 await asyncio.sleep(retry_delay)
-        _LOGGER.warning(f"{entity_prefix}Failed to fetch {url} after {max_retries} retries")
+        _LOGGER.warning(
+            f"{entity_prefix}Failed to fetch {url} after {max_retries} retries"
+        )
 
     async def record(
         self,
@@ -309,7 +320,9 @@ class MediaProcessor:
 
                 # Skip if camera is offline or entity_picture unavailable
                 if not entity_picture:
-                    _LOGGER.warning(f"Camera {image_entity} is offline or does not have entity_picture attribute")
+                    _LOGGER.warning(
+                        f"Camera {image_entity} is offline or does not have entity_picture attribute"
+                    )
                     await asyncio.sleep(interval)
                     continue
 
@@ -508,7 +521,9 @@ class MediaProcessor:
 
                     # Skip if camera is offline or entity_picture unavailable
                     if not entity_picture:
-                        _LOGGER.warning(f"Camera {image_entity} is offline or does not have entity_picture attribute")
+                        _LOGGER.warning(
+                            f"Camera {image_entity} is offline or does not have entity_picture attribute"
+                        )
                         continue
 
                     image_url = base_url + entity_picture
@@ -542,7 +557,9 @@ class MediaProcessor:
                     successful_image_entities += 1
 
                 except AttributeError as e:
-                    _LOGGER.error(f"Camera {image_entity}: AttributeError accessing entity attributes: {e}")
+                    _LOGGER.error(
+                        f"Camera {image_entity}: AttributeError accessing entity attributes: {e}"
+                    )
                     raise ServiceValidationError(
                         f"Error accessing camera entity {image_entity}: {e}"
                     )
@@ -856,14 +873,6 @@ class MediaProcessor:
             best_rest.sort(key=lambda x: x[2])
             selected_frames.extend(best_rest)
 
-            # Expose keyframe if requested
-            if expose_images and selected_frames:
-                reference_bytes = selected_frames[0][0]
-                candidate_bytes = [fd for (fd, _, _) in selected_frames]
-                key_idx = await self._select_keyframe_index(
-                    reference_bytes, candidate_bytes
-                )
-
             # Add frames to client
             resized_base64 = []
             for idx, (frame_data, _, _) in enumerate(selected_frames, start=1):
@@ -881,6 +890,12 @@ class MediaProcessor:
                 )
 
             if expose_images and selected_frames:
+                # Expose keyframe if requested
+                reference_bytes = selected_frames[0][0]
+                candidate_bytes = [fd for (fd, _, _) in selected_frames]
+                key_idx = await self._select_keyframe_index(
+                    reference_bytes, candidate_bytes
+                )
                 # selected_frames items are (frame_bytes, score, original_index)
                 frame_idx_label = (selected_frames[key_idx][2] or 0) + 1
                 await self._expose_image(
