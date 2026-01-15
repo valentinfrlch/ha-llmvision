@@ -14,6 +14,7 @@ CONF_TEMPERATURE = "temperature"
 CONF_TOP_P = "top_p"
 CONF_CONTEXT_WINDOW = "context_window"  # (ollama: num_ctx)
 CONF_KEEP_ALIVE = "keep_alive"
+CONF_REQUEST_TIMEOUT = "request_timeout"
 
 # Azure specific
 CONF_AZURE_BASE_URL = "azure_base_url"
