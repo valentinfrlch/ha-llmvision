@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from aiohttp import ClientTimeout
 import boto3
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -51,6 +52,10 @@ from .const import (
     CONF_CONTEXT_WINDOW,
     CONF_TEMPERATURE,
     CONF_TOP_P,
+    CONF_SYSTEM_PROMPT,
+    CONF_TITLE_PROMPT,
+    DEFAULT_SYSTEM_PROMPT,
+    DEFAULT_TITLE_PROMPT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -110,7 +115,8 @@ class Request:
             "LocalAI": DEFAULT_LOCALAI_MODEL,
             "Ollama": DEFAULT_OLLAMA_MODEL,
             "Custom OpenAI": DEFAULT_CUSTOM_OPENAI_MODEL,
-            "AWS": DEFAULT_AWS_MODEL,
+            "AWS Bedrock": DEFAULT_AWS_MODEL,
+            "AWS": DEFAULT_AWS_MODEL,  # For backwards compatibility
             "Open WebUI": DEFAULT_OPENWEBUI_MODEL,
             "OpenRouter": DEFAULT_OPENROUTER_MODEL,
         }.get(provider_name)
@@ -120,7 +126,7 @@ class Request:
 
         # if not call.model set default model for provider
         if not call.model:
-            call.model = self._get_default_model(call.provider)
+            call.model = self.get_default_model(call.provider)
         # Check image input
         if not call.base64_images:
             raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
@@ -137,20 +143,7 @@ class Request:
     async def call(self, call, _is_fallback_retry=False):
         """
         Forwards a request to the specified provider and optionally generates a title.
-
-        Args:
-            call (object): The call object containing request details.
-
-        Raises:
-            ServiceValidationError: If the provider is invalid.
-
-        Returns:
-            dict: A dictionary containing the generated title (if any) and the response text.
         """
-        entry_id = call.provider
-        config = self.hass.data.get(DOMAIN).get(entry_id)
-
-        # Check config exists
         entry_id = call.provider
         config = self.hass.data.get(DOMAIN).get(entry_id)
         if config is None:
@@ -158,10 +151,9 @@ class Request:
                 f"Provider config not found for entry_id: {entry_id}"
             )
 
-        provider = Request.get_provider(self.hass, entry_id)
-        api_key = config.get(CONF_API_KEY)
-        model = getattr(call, "model", None)
-        setattr(call, "model", model if model else self.get_default_model(entry_id))
+        provider_name = Request.get_provider(self.hass, entry_id)
+        # Ensure model defaults are respected
+        call.model = getattr(call, "model", None) or self.get_default_model(entry_id)
         call.temperature = config.get(CONF_TEMPERATURE, 0.5)
         call.top_p = config.get(CONF_TOP_P, 0.9)
         call.base64_images = self.base64_images
@@ -175,140 +167,29 @@ class Request:
             if entry.data.get("provider") == "Settings":
                 settings_entry = entry.data
                 break
-        _LOGGER.debug("Settings entry: %s", settings_entry)
         fallback_provider = (
             settings_entry.get("fallback_provider", None) if settings_entry else None
         )
         _LOGGER.debug("Fallback provider: %s", fallback_provider)
 
-        if provider == "OpenAI":
-            api_key = config.get(CONF_API_KEY)
-            provider_instance = OpenAI(
-                hass=self.hass, api_key=api_key, model=call.model
-            )
-
-        elif provider == "Azure":
-            api_key = config.get(CONF_API_KEY)
-            endpoint = config.get(CONF_AZURE_BASE_URL)
-            deployment = config.get(CONF_AZURE_DEPLOYMENT)
-            version = config.get(CONF_AZURE_VERSION)
-
-            provider_instance = AzureOpenAI(
-                self.hass,
-                api_key=api_key,
-                model=call.model,
-                endpoint={
-                    "base_url": ENDPOINT_AZURE,
-                    "endpoint": endpoint,
-                    "deployment": deployment,
-                    "api_version": version,
-                },
-            )
-
-        elif provider == "Anthropic":
-            api_key = config.get(CONF_API_KEY)
-            provider_instance = Anthropic(self.hass, api_key=api_key, model=call.model)
-
-        elif provider == "Google":
-            api_key = config.get(CONF_API_KEY)
-            provider_instance = Google(
-                self.hass,
-                api_key=api_key,
-                model=call.model,
-                endpoint={"base_url": ENDPOINT_GOOGLE},
-            )
-
-        elif provider == "Groq":
-            api_key = config.get(CONF_API_KEY)
-            provider_instance = Groq(self.hass, api_key=api_key, model=call.model)
-
-        elif provider == "LocalAI":
-            ip_address = config.get(CONF_IP_ADDRESS)
-            port = config.get(CONF_PORT)
-            https = config.get(CONF_HTTPS, False)
-
-            provider_instance = LocalAI(
-                self.hass,
-                api_key="",
-                model=call.model,
-                endpoint={"ip_address": ip_address, "port": port, "https": https},
-            )
-
-        elif provider == "Ollama":
-            ip_address = config.get(CONF_IP_ADDRESS)
-            port = config.get(CONF_PORT)
-            https = config.get(CONF_HTTPS, False)
-
-            provider_instance = Ollama(
-                self.hass,
-                api_key="",
-                model=call.model,
-                endpoint={
-                    "ip_address": ip_address,
-                    "port": port,
-                    "https": https,
-                    "keep_alive": config.get(CONF_KEEP_ALIVE, 5),
-                    "context_window": config.get(CONF_CONTEXT_WINDOW, 2048),
-                },
-            )
-
-        elif provider == "Custom OpenAI":
-            api_key = config.get(CONF_API_KEY)
-            endpoint = config.get(CONF_CUSTOM_OPENAI_ENDPOINT)
-            provider_instance = OpenAI(
-                self.hass,
-                api_key=api_key,
-                model=call.model,
-                endpoint={"base_url": endpoint},
-            )
-
-        elif provider == "AWS Bedrock":
-            provider_instance = AWSBedrock(
-                self.hass,
-                aws_access_key_id=config.get(CONF_AWS_ACCESS_KEY_ID),
-                aws_secret_access_key=config.get(CONF_AWS_SECRET_ACCESS_KEY),
-                aws_region_name=config.get(CONF_AWS_REGION_NAME),
+        # Instantiate via factory
+        try:
+            provider_instance = ProviderFactory.create(
+                hass=self.hass,
+                provider_name=provider_name,
+                config=config,
                 model=call.model,
             )
-
-        elif provider == "OpenWebUI":
-            ip_address = config.get(CONF_IP_ADDRESS)
-            port = config.get(CONF_PORT)
-            https = config.get(CONF_HTTPS, False)
-            api_key = config.get(CONF_API_KEY)
-
-            endpoint = ENDPOINT_OPENWEBUI.format(
-                ip_address=ip_address,
-                port=port,
-                protocol="https" if https else "http",
-            )
-
-            provider_instance = OpenAI(
-                self.hass,
-                api_key=api_key,
-                model=call.model,
-                endpoint={"base_url": endpoint},
-            )
-
-        elif provider == "OpenRouter":
-            api_key = config.get(CONF_API_KEY)
-            provider_instance = OpenAI(
-                self.hass,
-                api_key=api_key,
-                model=call.model,
-                endpoint={"base_url": ENDPOINT_OPENROUTER},
-            )
-
-        else:
+        except Exception as e:
+            _LOGGER.error(f"Provider factory failed for {provider_name}: {e}")
             raise ServiceValidationError("invalid_provider")
 
         try:
             # Make call to provider
             response_text = await provider_instance.vision_request(call)
         except Exception as e:
-            _LOGGER.error(f"Provider {provider} failed: {e}")
-            # Only try fallback if not already tried and fallback is set and different from current
-            print(f"Fallback provider: {fallback_provider}")
+            _LOGGER.error(f"Provider {provider_name} failed: {e}")
+            # Try fallback if configured and not already tried
             if (
                 fallback_provider
                 and fallback_provider != "no_fallback"
@@ -321,6 +202,7 @@ class Request:
                 return await self.call(call, _is_fallback_retry=True)
             else:
                 response_text = "Couldn't generate content. Check logs for details."
+
         gen_title = None
         try:
             if call.generate_title:
@@ -331,20 +213,21 @@ class Request:
                 )
                 gen_title = await provider_instance.title_request(call)
         except Exception as e:
-            _LOGGER.error(f"Provider {provider} failed: {e}")
-            # Only try fallback if not already tried and fallback is set and different from current
+            _LOGGER.error(f"Provider {provider_name} failed to generate title: {e}")
+            # Try fallback if configured and not already tried
             if (
                 fallback_provider
                 and fallback_provider != "no_fallback"
                 and not _is_fallback_retry
                 and fallback_provider != call.provider
             ):
-                _LOGGER.info(f"Trying fallback provider: {fallback_provider}")
+                _LOGGER.info(f"Trying fallback provider for title: {fallback_provider}")
                 call.provider = fallback_provider
                 call.model = None
                 return await self.call(call, _is_fallback_retry=True)
             else:
                 gen_title = "Event Detected"
+
         result = {}
         if gen_title is not None:
             result["title"] = re.sub(r"[^a-zA-Z0-9ŽžÀ-ÿ\s]", "", gen_title)
@@ -354,26 +237,6 @@ class Request:
     def add_frame(self, base64_image, filename):
         self.base64_images.append(base64_image)
         self.filenames.append(filename)
-
-    async def _resolve_error(self, response, provider):
-        """Translate response status to error message"""
-        full_response_text = await response.text()
-        _LOGGER.debug(f"[INFO] Full Response: {full_response_text}")
-
-        try:
-            response_json = json.loads(full_response_text)
-            if provider == "anthropic":
-                error_info = response_json.get("error", {})
-                error_message = f"{error_info.get('type', 'Unknown error')}: {error_info.get('message', 'Unknown error')}"
-            elif provider == "ollama":
-                error_message = response_json.get("error", "Unknown error")
-            else:
-                error_info = response_json.get("error", {})
-                error_message = error_info.get("message", "Unknown error")
-        except json.JSONDecodeError:
-            error_message = "Unknown error"
-
-        return error_message
 
 
 class Provider(ABC):
@@ -428,7 +291,8 @@ class Provider(ABC):
     def _get_default_parameters(self, call: dict) -> dict:
         """Get default parameters from config entry"""
         entry_id = call.provider
-        config = self.hass.data.get(DOMAIN).get(entry_id)
+        domain_data = self.hass.data.get(DOMAIN) or {}
+        config = domain_data.get(entry_id) or {}
         default_parameters = {
             "temperature": config.get(CONF_TEMPERATURE, 0.5),
             "top_p": config.get(CONF_TOP_P, 0.9),
@@ -436,6 +300,22 @@ class Provider(ABC):
             "context_window": config.get(CONF_CONTEXT_WINDOW, 2048),
         }
         return default_parameters
+
+    def _get_system_prompt(self) -> str:
+        """Fetch system prompt from the Settings config entry stored in hass.data."""
+        domain_data = self.hass.data.get(DOMAIN) or {}
+        for _, data in domain_data.items():
+            if data.get(CONF_PROVIDER) == "Settings":
+                return data.get(CONF_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT)
+        return DEFAULT_SYSTEM_PROMPT
+
+    def _get_title_prompt(self) -> str:
+        """Fetch title prompt from the Settings config entry stored in hass.data."""
+        domain_data = self.hass.data.get(DOMAIN) or {}
+        for _, data in domain_data.items():
+            if data.get(CONF_PROVIDER) == "Settings":
+                return data.get(CONF_TITLE_PROMPT, DEFAULT_TITLE_PROMPT)
+        return DEFAULT_TITLE_PROMPT
 
     async def vision_request(self, call: dict) -> str:
         data = self._prepare_vision_data(call)
@@ -453,7 +333,9 @@ class Provider(ABC):
         san_url = re.sub(r"\?key=[^&]*", "", url)
         try:
             _LOGGER.debug(f"Posting to {san_url}")
-            response = await self.session.post(url, headers=headers, json=data)
+            response = await self.session.post(
+                url, headers=headers, json=data, timeout=ClientTimeout(total=60)
+            )
         except Exception as e:
             raise ServiceValidationError(f"Request failed: {e}")
 
@@ -467,25 +349,44 @@ class Provider(ABC):
             _LOGGER.debug(f"Response data: {response_data}")
             return response_data
 
-    async def _resolve_error(self, response: dict, provider: str) -> str:
-        """Translate response status to error message"""
-        full_response_text = await response.text()
+    async def _resolve_error(self, response, provider: str) -> str:
+        """Translate response status to error message for both HTTP and SDK responses"""
+        # Try to get text body if response is aiohttp
+        try:
+            if hasattr(response, "text"):
+                full_response_text = await response.text()
+            else:
+                # Fallback for dict responses from SDKs (boto3 from AWS)
+                full_response_text = json.dumps(response)
+        except Exception:
+            full_response_text = str(response)
+
         _LOGGER.debug(f"[INFO] Full Response: {full_response_text}")
 
+        # Try to parse JSON
         try:
             response_json = json.loads(full_response_text)
+        except Exception:
+            response_json = {} if not isinstance(response, dict) else response
+
+        try:
             if provider == "anthropic":
                 error_info = response_json.get("error", {})
-                error_message = f"{error_info.get('type', 'Unknown error')}: {error_info.get('message', 'Unknown error')}"
+                return f"{error_info.get('type', 'Unknown error')}: {error_info.get('message', 'Unknown error')}"
             elif provider == "ollama":
-                error_message = response_json.get("error", "Unknown error")
+                return response_json.get("error", "Unknown error")
             else:
-                error_info = response_json.get("error", {})
-                error_message = error_info.get("message", "Unknown error")
-        except json.JSONDecodeError:
-            error_message = "Unknown error"
-
-        return error_message
+                error_info = response_json.get("error", response_json)
+                if isinstance(error_info, dict):
+                    return (
+                        error_info.get("message")
+                        or error_info.get("Message")
+                        or error_info.get("errorMessage")
+                        or "Unknown error"
+                    )
+                return str(error_info) if error_info else "Unknown error"
+        except Exception:
+            return "Unknown error"
 
 
 class OpenAI(Provider):
@@ -514,7 +415,7 @@ class OpenAI(Provider):
         response_text = response.get("choices")[0].get("message").get("content")
         return response_text
 
-    def _prepare_vision_data(self, call: dict) -> list:
+    def _prepare_vision_data(self, call: dict) -> dict:
         default_parameters = self._get_default_parameters(call)
         payload = {
             "model": self.model,
@@ -546,33 +447,36 @@ class OpenAI(Provider):
                 }
             )
 
+        # User message
         payload["messages"][0]["content"].append({"type": "text", "text": call.message})
+        # System prompt
+        system_prompt = self._get_system_prompt()
+        payload["messages"].insert(0, {"role": "system", "content": system_prompt})
 
-        if call.use_memory:
+        # Memory if use_memory is set
+        if getattr(call, "use_memory", False):
             memory_content = call.memory._get_memory_images(memory_type="OpenAI")
-            system_prompt = call.memory.system_prompt
             if memory_content:
                 payload["messages"].insert(
-                    0, {"role": "user", "content": memory_content}
-                )
-            if system_prompt:
-                payload["messages"].insert(
-                    0, {"role": "developer", "content": system_prompt}
+                    1, {"role": "user", "content": memory_content}
                 )
 
         return payload
 
-    def _prepare_text_data(self, call: dict) -> list:
+    def _prepare_text_data(self, call: dict) -> dict:
         default_parameters = self._get_default_parameters(call)
+        title_prompt = self._get_title_prompt()
         payload = {
             "model": self.model,
             "messages": [
-                {"role": "user", "content": [{"type": "text", "text": call.message}]}
+                {"role": "user", "content": [{"type": "text", "text": title_prompt}]},
+                {"role": "user", "content": [{"type": "text", "text": call.message}]},
             ],
             "max_completion_tokens": call.max_tokens,
             "temperature": default_parameters.get("temperature"),
             "top_p": default_parameters.get("top_p"),
         }
+
         # Remove temperature and top_p if model is gpt-5
         if self.model in ["gpt-5", "gpt-5-mini", "gpt-5-nano"]:
             payload = {
@@ -587,7 +491,7 @@ class OpenAI(Provider):
                 "model": self.model,
                 "messages": [
                     {"role": "user", "content": [{"type": "text", "text": "Hi"}]}
-                ]
+                ],
             }
             await self._post(
                 url=self.endpoint.get("base_url"), headers=headers, data=data
@@ -626,7 +530,7 @@ class AzureOpenAI(Provider):
         response_text = response.get("choices")[0].get("message").get("content")
         return response_text
 
-    def _prepare_vision_data(self, call: dict) -> list:
+    def _prepare_vision_data(self, call: dict) -> dict:
         default_parameters = self._get_default_parameters(call)
         payload = {
             "messages": [{"role": "user", "content": []}],
@@ -650,26 +554,28 @@ class AzureOpenAI(Provider):
                     "image_url": {"url": f"data:image/jpeg;base64,{image}"},
                 }
             )
+        # User message
         payload["messages"][0]["content"].append({"type": "text", "text": call.message})
+        # System prompt
+        system_prompt = self._get_system_prompt()
+        payload["messages"].insert(0, {"role": "system", "content": system_prompt})
 
-        if call.use_memory:
+        # Memory if use_memory is set
+        if getattr(call, "use_memory", False):
             memory_content = call.memory._get_memory_images(memory_type="OpenAI")
-            system_prompt = call.memory.system_prompt
             if memory_content:
                 payload["messages"].insert(
-                    0, {"role": "user", "content": memory_content}
-                )
-            if system_prompt:
-                payload["messages"].insert(
-                    0, {"role": "developer", "content": system_prompt}
+                    1, {"role": "user", "content": memory_content}
                 )
         return payload
 
-    def _prepare_text_data(self, call: dict) -> list:
+    def _prepare_text_data(self, call: dict) -> dict:
         default_parameters = self._get_default_parameters(call)
+        title_prompt = self._get_title_prompt()
         return {
             "messages": [
-                {"role": "user", "content": [{"type": "text", "text": call.message}]}
+                {"role": "user", "content": [{"type": "text", "text": title_prompt}]},
+                {"role": "user", "content": [{"type": "text", "text": call.message}]},
             ],
             "max_tokens": call.max_tokens,
             "temperature": default_parameters.get("temperature"),
@@ -741,26 +647,28 @@ class Anthropic(Provider):
                     },
                 }
             )
+        # User message
         payload["messages"][0]["content"].append({"type": "text", "text": call.message})
+        # System prompt
+        payload["system"] = self._get_system_prompt()
 
-        if call.use_memory:
+        # Memory images if use_memory is set
+        if getattr(call, "use_memory", False):
             memory_content = call.memory._get_memory_images(memory_type="Anthropic")
-            system_prompt = call.memory.system_prompt
             if memory_content:
                 payload["messages"].insert(
                     0, {"role": "user", "content": memory_content}
                 )
-            if system_prompt:
-                payload["system"] = system_prompt
-
         return payload
 
     def _prepare_text_data(self, call: dict) -> dict:
         default_parameters = self._get_default_parameters(call)
+        title_prompt = self._get_title_prompt()
         return {
             "model": self.model,
             "messages": [
-                {"role": "user", "content": [{"type": "text", "text": call.message}]}
+                {"role": "user", "content": [{"type": "text", "text": title_prompt}]},
+                {"role": "user", "content": [{"type": "text", "text": call.message}]},
             ],
             "max_tokens": call.max_tokens,
             "temperature": default_parameters.get("temperature"),
@@ -773,7 +681,7 @@ class Anthropic(Provider):
 
         header = self._generate_headers()
         payload = {
-            "model": DEFAULT_ANTHROPIC_MODEL,
+            "model": self.model,
             "messages": [{"role": "user", "content": "Hi"}],
             "max_tokens": 1,
             "temperature": 0.5,
@@ -839,22 +747,29 @@ class Google(Provider):
             payload["contents"][0]["parts"].append(
                 {"inline_data": {"mime_type": "image/jpeg", "data": image}}
             )
+        # User message
         payload["contents"][0]["parts"].append({"text": call.message})
-
-        if call.use_memory:
+        # System prompt
+        system_prompt = self._get_system_prompt()
+        payload["contents"].insert(
+            0, {"role": "user", "parts": [{"text": system_prompt}]}
+        )
+        # Memory if use_memory is set
+        if getattr(call, "use_memory", False):
             memory_content = call.memory._get_memory_images(memory_type="Google")
-            system_prompt = call.memory.system_prompt
             if memory_content:
                 payload["contents"].insert(0, {"role": "user", "parts": memory_content})
-            if system_prompt:
-                payload["system_instruction"] = {"parts": {"text": system_prompt}}
 
         return payload
 
     def _prepare_text_data(self, call: dict) -> dict:
         default_parameters = self._get_default_parameters(call)
+        title_prompt = self._get_title_prompt()
         return {
-            "contents": [{"role": "user", "parts": [{"text": call.message + ":"}]}],
+            "contents": [
+                {"role": "user", "parts": [{"text": title_prompt}]},
+                {"role": "user", "parts": [{"text": call.message}]},
+            ],
             "generationConfig": {
                 "maxOutputTokens": call.max_tokens,
                 "temperature": default_parameters.get("temperature"),
@@ -873,7 +788,7 @@ class Google(Provider):
         }
         await self._post(
             url=self.endpoint.get("base_url").format(
-                model=DEFAULT_GOOGLE_MODEL, api_key=self.api_key
+                model=self.model, api_key=self.api_key
             ),
             headers=headers,
             data=data,
@@ -920,18 +835,19 @@ class Groq(Provider):
             "top_p": default_parameters.get("top_p"),
         }
 
-        system_prompt = call.memory.system_prompt
         payload["messages"].insert(
-            0, {"role": "user", "content": "System Prompt:" + system_prompt}
+            0, {"role": "system", "content": self._get_system_prompt()}
         )
-
+        # Groq does not support multiple images, so no memory
         return payload
 
     def _prepare_text_data(self, call: dict) -> dict:
         default_parameters = self._get_default_parameters(call)
+        title_prompt = self._get_title_prompt()
         return {
             "messages": [
-                {"role": "user", "content": [{"type": "text", "text": call.message}]}
+                {"role": "system", "content": title_prompt},
+                {"role": "user", "content": [{"type": "text", "text": call.message}]},
             ],
             "model": self.model,
             "max_completion_tokens": call.max_tokens,
@@ -944,7 +860,7 @@ class Groq(Provider):
             raise ServiceValidationError("empty_api_key")
         headers = self._generate_headers()
         data = {
-            "model": DEFAULT_GROQ_MODEL,
+            "model": self.model,
             "messages": [{"role": "user", "content": "Hi"}],
         }
         await self._post(url=ENDPOINT_GROQ, headers=headers, data=data)
@@ -996,28 +912,30 @@ class LocalAI(Provider):
                     "image_url": {"url": f"data:image/jpeg;base64,{image}"},
                 }
             )
+        # User message
         payload["messages"][0]["content"].append({"type": "text", "text": call.message})
+        # System prompt
+        payload["messages"].insert(
+            0, {"role": "system", "content": self._get_system_prompt()}
+        )
 
-        if call.use_memory:
+        # Memory if use_memory is set
+        if getattr(call, "use_memory", False):
             memory_content = call.memory._get_memory_images(memory_type="OpenAI")
-            system_prompt = call.memory.system_prompt
             if memory_content:
                 payload["messages"].insert(
-                    0, {"role": "user", "content": memory_content}
+                    1, {"role": "user", "content": memory_content}
                 )
-            if system_prompt:
-                payload["messages"].insert(
-                    0, {"role": "system", "content": system_prompt}
-                )
-
         return payload
 
     def _prepare_text_data(self, call: dict) -> dict:
         default_parameters = self._get_default_parameters(call)
+        title_prompt = self._get_title_prompt()
         return {
             "model": self.model,
             "messages": [
-                {"role": "user", "content": [{"type": "text", "text": call.message}]}
+                {"role": "user", "content": [{"type": "text", "text": title_prompt}]},
+                {"role": "user", "content": [{"type": "text", "text": call.message}]},
             ],
             "max_tokens": call.max_tokens,
             "temperature": default_parameters.get("temperature"),
@@ -1077,14 +995,6 @@ class Ollama(Provider):
             },
         }
 
-        if call.use_memory:
-            memory_content = call.memory._get_memory_images(memory_type="Ollama")
-            system_prompt = call.memory.system_prompt
-            if memory_content:
-                payload["messages"].extend(memory_content)
-            if system_prompt:
-                payload["system"] = system_prompt
-
         for image, filename in zip(call.base64_images, call.filenames):
             tag = (
                 ("Image " + str(call.base64_images.index(image) + 1))
@@ -1094,17 +1004,30 @@ class Ollama(Provider):
             image_message = {"role": "user", "content": tag + ":", "images": [image]}
             payload["messages"].append(image_message)
         prompt_message = {"role": "user", "content": call.message}
+        # User message
         payload["messages"].append(prompt_message)
+        # System prompt
+        payload["system"] = self._get_system_prompt()
+
+        # Memory if use_memory is set
+        if getattr(call, "use_memory", False):
+            memory_content = call.memory._get_memory_images(memory_type="Ollama")
+            if memory_content:
+                payload["messages"].extend(memory_content)
 
         return payload
 
     def _prepare_text_data(self, call: dict) -> dict:
         default_parameters = self._get_default_parameters(call)
+        title_prompt = self._get_title_prompt()
         return {
             "model": self.model,
-            "messages": [{"role": "user", "content": call.message}],
+            "messages": [
+                {"role": "user", "content": title_prompt},
+                {"role": "user", "content": call.message},
+            ],
             "stream": False,
-            "keep_alive": default_parameters.get("keep_alive"),
+            "keep_alive": default_parameters.get("keep_alive", "5m"),
             "options": {
                 "num_predict": call.max_tokens,
                 "temperature": default_parameters.get("temperature"),
@@ -1208,7 +1131,7 @@ class AWSBedrock(Provider):
             _LOGGER.debug(f"AWS Bedrock call response data: {response_data}")
             return response_data
 
-    def _prepare_vision_data(self, call: dict) -> list:
+    def _prepare_vision_data(self, call: dict) -> dict:
         _LOGGER.debug(f"Found model type `{self.model}` for AWS Bedrock call.")
         default_parameters = self._get_default_parameters(call)
         # We need to generate the correct format for the respective models
@@ -1236,25 +1159,30 @@ class AWSBedrock(Provider):
                     }
                 }
             )
+        # User message
         payload["messages"][0]["content"].append({"text": call.message})
+        # System prompt
+        payload["messages"].insert(
+            0, {"role": "user", "content": [{"text": self._get_system_prompt()}]}
+        )
 
-        if call.use_memory:
+        # Memory images only when enabled
+        if getattr(call, "use_memory", False):
             memory_content = call.memory._get_memory_images(memory_type="AWS")
-            system_prompt = call.memory.system_prompt
             if memory_content:
                 payload["messages"].insert(
-                    0, {"role": "user", "content": memory_content}
-                )
-            if system_prompt:
-                payload["messages"].insert(
-                    0, {"role": "user", "content": [{"text": system_prompt}]}
+                    1, {"role": "user", "content": memory_content}
                 )
 
         return payload
 
-    def _prepare_text_data(self, call: dict) -> list:
+    def _prepare_text_data(self, call: dict) -> dict:
+        title_prompt = self._get_title_prompt()
         return {
-            "messages": [{"role": "user", "content": [{"text": call.message}]}],
+            "messages": [
+                {"role": "user", "content": [{"text": title_prompt}]},
+                {"role": "user", "content": [{"text": call.message}]},
+            ],
             "inferenceConfig": {
                 "maxTokens": call.max_tokens,
                 "temperature": call.temperature,
@@ -1266,4 +1194,112 @@ class AWSBedrock(Provider):
             "messages": [{"role": "user", "content": [{"text": "Hi"}]}],
             "inferenceConfig": {"maxTokens": 10, "temperature": 0.5},
         }
-        await self.invoke_bedrock(model=DEFAULT_AWS_MODEL, data=data)
+        await self.invoke_bedrock(model=self.model, data=data)
+
+
+class ProviderFactory:
+    """
+    Factory to create provider instances from a provider name and config
+    """
+
+    @staticmethod
+    def create(hass, provider_name: str, config: dict, model: str) -> Provider:
+        if provider_name == "OpenAI":
+            return OpenAI(
+                hass=hass,
+                api_key=config.get(CONF_API_KEY),
+                model=model,
+            )
+
+        if provider_name == "Azure":
+            return AzureOpenAI(
+                hass,
+                api_key=config.get(CONF_API_KEY),
+                model=model,
+                endpoint={
+                    "base_url": ENDPOINT_AZURE,
+                    "endpoint": config.get(CONF_AZURE_BASE_URL),
+                    "deployment": config.get(CONF_AZURE_DEPLOYMENT),
+                    "api_version": config.get(CONF_AZURE_VERSION),
+                },
+            )
+
+        if provider_name == "Anthropic":
+            return Anthropic(hass, api_key=config.get(CONF_API_KEY), model=model)
+
+        if provider_name == "Google":
+            return Google(
+                hass,
+                api_key=config.get(CONF_API_KEY),
+                model=model,
+                endpoint={"base_url": ENDPOINT_GOOGLE},
+            )
+
+        if provider_name == "Groq":
+            return Groq(hass, api_key=config.get(CONF_API_KEY), model=model)
+
+        if provider_name == "LocalAI":
+            return LocalAI(
+                hass,
+                api_key="",
+                model=model,
+                endpoint={
+                    "ip_address": config.get(CONF_IP_ADDRESS),
+                    "port": config.get(CONF_PORT),
+                    "https": config.get(CONF_HTTPS, False),
+                },
+            )
+
+        if provider_name == "Ollama":
+            return Ollama(
+                hass,
+                api_key="",
+                model=model,
+                endpoint={
+                    "ip_address": config.get(CONF_IP_ADDRESS),
+                    "port": config.get(CONF_PORT),
+                    "https": config.get(CONF_HTTPS, False),
+                    "keep_alive": config.get(CONF_KEEP_ALIVE, 5),
+                    "context_window": config.get(CONF_CONTEXT_WINDOW, 2048),
+                },
+            )
+
+        if provider_name == "Custom OpenAI":
+            return OpenAI(
+                hass,
+                api_key=config.get(CONF_API_KEY),
+                model=model,
+                endpoint={"base_url": config.get(CONF_CUSTOM_OPENAI_ENDPOINT)},
+            )
+
+        if provider_name == "AWS Bedrock":
+            return AWSBedrock(
+                hass,
+                aws_access_key_id=config.get(CONF_AWS_ACCESS_KEY_ID),
+                aws_secret_access_key=config.get(CONF_AWS_SECRET_ACCESS_KEY),
+                aws_region_name=config.get(CONF_AWS_REGION_NAME),
+                model=model,
+            )
+
+        if provider_name == "OpenWebUI":
+            endpoint = ENDPOINT_OPENWEBUI.format(
+                ip_address=config.get(CONF_IP_ADDRESS),
+                port=config.get(CONF_PORT),
+                protocol="https" if config.get(CONF_HTTPS, False) else "http",
+            )
+            return OpenAI(
+                hass,
+                api_key=config.get(CONF_API_KEY),
+                model=model,
+                endpoint={"base_url": endpoint},
+            )
+
+        if provider_name == "OpenRouter":
+            return OpenAI(
+                hass,
+                api_key=config.get(CONF_API_KEY),
+                model=model,
+                endpoint={"base_url": ENDPOINT_OPENROUTER},
+            )
+
+        raise ServiceValidationError("invalid_provider")

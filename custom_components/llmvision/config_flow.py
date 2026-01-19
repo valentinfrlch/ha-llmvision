@@ -1375,6 +1375,11 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # flatten dict to remove nested keys
             user_input = flatten_dict(user_input)
 
+            # Ensure both memory fields are always present, even if empty
+            for _key in (CONF_MEMORY_PATHS, CONF_MEMORY_STRINGS):
+                if _key not in user_input:
+                    user_input[_key] = []
+
             errors = {}
             if len(user_input.get(CONF_MEMORY_PATHS, [])) != len(
                 user_input.get(CONF_MEMORY_STRINGS, [])

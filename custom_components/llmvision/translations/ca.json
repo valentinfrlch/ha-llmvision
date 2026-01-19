@@ -1,0 +1,420 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Configuració de LLM Vision",
+                "description": "Seleccioneu el proveïdor que voleu configurar."
+            },
+            "localai": {
+                "title": "Connectar al vostre servidor LocalAI",
+                "description": "Proporcioneu l'adreça IP i el port del vostre servidor LocalAI.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexió",
+                        "description": "Connexió del servidor",
+                        "data": {
+                            "ip_address": "Adreça IP",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Utilitzeu HTTPS per a connexions segures"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Configureu els paràmetres predeterminats del model",
+                        "data": {
+                            "default_model": "Model predeterminat",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
+                            "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                        }
+                    }
+                }
+            },
+            "ollama": {
+                "title": "Configurar Ollama",
+                "description": "Proporcioneu l'adreça IP i el port del vostre servidor Ollama.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexió",
+                        "description": "Connexió del servidor",
+                        "data": {
+                            "ip_address": "Adreça IP",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Utilitzeu HTTPS per a connexions segures"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Configureu els paràmetres predeterminats del model",
+                        "data": {
+                            "default_model": "Model predeterminat",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
+                            "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Avançat",
+                        "description": "Paràmetres avançats del model",
+                        "data": {
+                            "context_window": "Longitud del context",
+                            "keep_alive": "Mantenir actiu"
+                        },
+                        "data_description": {
+                            "context_window": "Estableix la mida de la finestra de context utilitzada per generar el següent token.",
+                            "keep_alive": "Controla quant de temps el model es mantindrà carregat a la memòria després de la sol·licitud. Per defecte: 5m (5 minuts), -1: mantenir a la memòria indefinidament, 0: descarregar immediatament"
+                        }
+                    }
+                }
+            },
+            "openai": {
+                "title": "Configurar OpenAI",
+                "description": "Proporcioneu una clau API vàlida d'OpenAI.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexió",
+                        "description": "Autenticació d'OpenAI",
+                        "data": {
+                            "api_key": "Clau API"
+                        },
+                        "data_description": {
+                            "api_key": "Assegureu-vos d'afegir crèdit al vostre compte d'OpenAI."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Configureu els paràmetres predeterminats del model",
+                        "data": {
+                            "default_model": "Model predeterminat",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
+                            "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                        }
+                    }
+                }
+            },
+            "azure": {
+                "title": "Configurar Azure",
+                "description": "Proporcioneu una clau API vàlida d'Azure, una URL base, un desplegament i una versió d'API.\nLa URL base ha de tenir el format `https://domain.openai.azure.com/` incloent la barra final.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexió",
+                        "description": "Autenticació d'Azure",
+                        "data": {
+                            "api_key": "Clau API",
+                            "azure_base_url": "URL base",
+                            "azure_deployment": "Desplegament",
+                            "azure_version": "Versió de l'API"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Configureu els paràmetres predeterminats del model",
+                        "data": {
+                            "default_model": "Model predeterminat",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
+                            "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                        }
+                    }
+                }
+            },
+            "anthropic": {
+                "title": "Configurar Anthropic Claude",
+                "description": "Proporcioneu una clau API vàlida d'Anthropic.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexió",
+                        "description": "Autenticació d'Anthropic",
+                        "data": {
+                            "api_key": "Clau API"
+                        },
+                        "data_description": {
+                            "api_key": "Assegureu-vos d'afegir crèdit al vostre compte d'Anthropic."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Configureu els paràmetres predeterminats del model",
+                        "data": {
+                            "default_model": "Model predeterminat",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
+                            "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                        }
+                    }
+                }
+            },
+            "google": {
+                "title": "Configurar Google Gemini",
+                "description": "Proporcioneu una clau API vàlida de Google Gemini.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexió",
+                        "description": "Autenticació de Google",
+                        "data": {
+                            "api_key": "Clau API"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Configureu els paràmetres predeterminats del model",
+                        "data": {
+                            "default_model": "Model predeterminat",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
+                            "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                        }
+                    }
+                }
+            },
+            "groq": {
+                "title": "Configurar Groq",
+                "description": "Proporcioneu una clau API vàlida de Groq.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexió",
+                        "description": "Autenticació de Groq",
+                        "data": {
+                            "api_key": "Clau API"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Configureu els paràmetres predeterminats del model",
+                        "data": {
+                            "default_model": "Model predeterminat",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
+                            "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                        }
+                    }
+                }
+            },
+            "custom_openai": {
+                "title": "Configurar proveïdor personalitzat d'OpenAI",
+                "description": "**Important**: Només funciona si l'API és compatible amb l'API d'OpenAI. Si l'API no requereix una clau API, introduïu un valor fictici. El punt final ha de tenir el format següent: `http(s)://baseURL(:port)/some/endpoint`",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexió",
+                        "description": "Autenticació d'OpenAI personalitzat",
+                        "data": {
+                            "custom_openai_endpoint": "Punt final personalitzat",
+                            "api_key": "Clau API"
+                        },
+                        "data_description": {
+                            "endpoint": "El punt final de l'API seguint aquest format: http(s)://baseURL(:port)/some/endpoint",
+                            "api_key": "Clau API o 'openai', si no en cal cap."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Configureu els paràmetres predeterminats del model",
+                        "data": {
+                            "default_model": "Model predeterminat",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
+                            "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                        }
+                    }
+                }
+            },
+            "aws_bedrock": {
+                "title": "Configurar proveïdor AWS Bedrock",
+                "description": "**Important**: Actualment només suporta els models següents: Nova, Anthropic Claude",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexió",
+                        "description": "Autenticació d'AWS",
+                        "data": {
+                            "aws_access_key_id": "Clau d'accés",
+                            "aws_secret_access_key": "Clau secreta",
+                            "aws_region_name": "Cadena de regió"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Configureu els paràmetres predeterminats del model",
+                        "data": {
+                            "default_model": "Model predeterminat",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
+                            "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                        }
+                    }
+                }
+            },
+            "openwebui": {
+                "title": "Configurar Open WebUI",
+                "description": "Proporcioneu la clau API (token JWT), adreça IP, port, HTTP(S) i el model predeterminat.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexió",
+                        "description": "Autenticació d'Open WebUI",
+                        "data": {
+                            "api_key": "Clau API (token JWT)",
+                            "ip_address": "Adreça IP",
+                            "port": "Port",
+                            "https": "Utilitzar HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Utilitzeu HTTPS per a connexions segures si el vostre servidor ho suporta."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Configureu els paràmetres predeterminats del model",
+                        "data": {
+                            "default_model": "Model predeterminat",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
+                            "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                        }
+                    }
+                }
+            },
+            "openrouter": {
+                "title": "Configurar OpenRouter",
+                "description": "OpenRouter és una plataforma que proporciona accés a diversos models d'IA. Podeu utilitzar-la per connectar-vos a models com OpenAI, Anthropic i més.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexió",
+                        "description": "Autenticació d'OpenRouter",
+                        "data": {
+                            "api_key": "Clau API"
+                        },
+                        "data_description": {
+                            "api_key": "La vostra clau API d'OpenRouter. Assegureu-vos d'afegir primer crèdit al vostre compte d'OpenRouter."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Configureu els paràmetres predeterminats del model",
+                        "data": {
+                            "default_model": "Model predeterminat",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
+                            "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "title": "Configuració",
+                "description": "Configureu la integració de LLM Vision. Aquesta entrada és necessària abans de configurar altres proveïdors. Si voleu utilitzar la configuració predeterminada, simplement premeu 'Enviar'.",
+                "sections": {
+                    "general_section": {
+                        "name": "General",
+                        "description": "Establiu el proveïdor preferit a utilitzar quan el proveïdor seleccionat no estigui disponible.",
+                        "data": {
+                            "fallback_provider": "Proveïdor de reserva"
+                        },
+                        "data_description": {
+                            "fallback_provider": "LLM Vision tornarà a intentar la sol·licitud amb el proveïdor seleccionat si el proveïdor actual falla."
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "Consignes del sistema",
+                        "description": "Les consignes del sistema s'utilitzen per canviar com es comporta i respon el model.",
+                        "data": {
+                            "system_prompt": "Consigna del sistema",
+                            "title_prompt": "Consigna del títol"
+                        },
+                        "data_description": {
+                            "system_prompt": "Utilitzeu la consigna del sistema per canviar com es comporta i respon el model.",
+                            "title_prompt": "La instrucció donada al model per generar un títol."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Cronologia",
+                        "description": "La cronologia emmagatzema els esdeveniments d'avui per mostrar-los utilitzant la targeta de LLM Vision al vostre tauler.",
+                        "data": {
+                            "retention_time": "Temps de retenció",
+                            "timeline_today_summary": "Resum de la cronologia",
+                            "timeline_summary_prompt": "Consigna del resum d'avui"
+                        },
+                        "data_description": {
+                            "retention_time": "Suprimeix automàticament els esdeveniments després de (dies). Establiu a 0 per desactivar la supressió automàtica.",
+                            "timeline_today_summary": "Activeu el resum de la cronologia per generar automàticament un resum dels esdeveniments d'avui.",
+                            "timeline_summary_prompt": "La instrucció donada al model per generar un resum dels esdeveniments d'avui."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Memòria (Beta)",
+                        "description": "El contingut a la memòria se sincronitza entre proveïdors i s'utilitza per proporcionar context addicional al model.",
+                        "data": {
+                            "memory_paths": "Ruta del fitxer d'imatge",
+                            "memory_strings": "Descripció de la imatge"
+                        },
+                        "data_description": {
+                            "memory_paths": "Proporcioneu la ruta al fitxer d'imatge.",
+                            "memory_strings": "Proporcioneu una descripció de la imatge (p. ex.: 'Aquest és Cookie, el meu gos'). Les imatges i descripcions han d'estar en el mateix ordre, i hi ha d'haver tantes descripcions com imatges."
+                        }
+                    }
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "No s'ha pogut connectar al servidor. Comproveu la vostra clau API o IP i port",
+            "empty_api_key": "Clau API no vàlida",
+            "invalid_provider": "Proveïdor seleccionat no vàlid",
+            "memory_not_supported": "Aquest proveïdor no suporta la memòria",
+            "invalid_image_path": "Una o més rutes d'imatge no són vàlides",
+            "mismatched_lengths": "El nombre de rutes d'imatge i descripcions ha de coincidir"
+        },
+        "abort": {
+            "unknown_provider": "Proveïdor desconegut",
+            "reconfigure_successful": "Configuració desada correctament"
+        }
+    }
+}

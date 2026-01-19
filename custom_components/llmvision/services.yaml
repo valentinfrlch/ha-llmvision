@@ -79,9 +79,9 @@ image_analyzer:
     max_tokens:
       name: Maximum Tokens
       description: 'Maximum number of tokens to generate'
-      required: true
-      example: 1000
-      default: 1000
+      required: false
+      example: 3000
+      default: 3000
       selector:
         number:
     generate_title:
@@ -93,7 +93,7 @@ image_analyzer:
         boolean:
     expose_images:
       name: Expose Images
-      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response.
+      description: Save the key frame. This will save analyzed frames in /media/llmvision/snapshots so they can be used for notifications. The file path will be included in the response.
       required: false
       example: false
       default: false
@@ -146,7 +146,7 @@ video_analyzer:
     video_file:
       name: Video File
       required: false
-      description: 'Local path to video'
+      description: 'One or multiple local paths or URLs to video. Use a new line to separate multiple entries.'
       example: "/config/www/recordings/front_door.mp4"
       selector:
         text:
@@ -159,30 +159,6 @@ video_analyzer:
       selector:
         text:
           multiline: true
-    frigate_retry_attempts:
-      name: Frigate Retry Attempts
-      description: How many times to retry fetching the video clip from Frigate. Clips are not always available from Frigate as soon as the event has ended.  
-          Slower machines or longer clips may need additional attempts. Increase this if you see errors fetching the clips from Frigate in your automation traces.
-      required: false
-      example: 2
-      default: 2
-      selector:
-        number:
-          min: 1
-          max: 10
-          step: 1
-    frigate_retry_seconds:
-      name: Frigate Retry Seconds
-      description: How long to wait between retries to fetch the video clip from Frigate. Clips are not always available from Frigate as soon as the event has ended.  
-          Slower machines or longer clips may need additional attempts. Increase this if you see errors fetching the clips from Frigate in your automation traces.
-      required: false
-      example: 1
-      default: 1
-      selector:
-        number:
-          min: 1
-          max: 10
-          step: 1
     max_frames:
       name: Max Frames
       description: How many frames to analyze. Picks frames with the most movement.
@@ -215,9 +191,9 @@ video_analyzer:
     max_tokens:
       name: Maximum Tokens
       description: 'Maximum number of tokens to generate'
-      required: true
-      example: 1000
-      default: 1000
+      required: false
+      example: 3000
+      default: 3000
       selector:
         number:
     generate_title:
@@ -229,7 +205,7 @@ video_analyzer:
         boolean:
     expose_images:
       name: Expose Images
-      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response.
+      description: Save the key frame. This will save analyzed frames in /media/llmvision/snapshots so they can be used for notifications. The file path will be included in the response.
       required: false
       example: false
       default: false
@@ -330,9 +306,9 @@ stream_analyzer:
     max_tokens:
       name: Maximum Tokens
       description: 'Maximum number of tokens to generate'
-      required: true
-      example: 1000
-      default: 1000
+      required: false
+      example: 3000
+      default: 3000
       selector:
         number:
     generate_title:
@@ -344,7 +320,7 @@ stream_analyzer:
         boolean:
     expose_images:
       name: Expose Images
-      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response.
+      description: Save the key frame. This will save analyzed frames in /media/llmvision/snapshots so they can be used for notifications. The file path will be included in the response.
       required: false
       example: false
       default: false
@@ -442,9 +418,9 @@ data_analyzer:
     max_tokens:
       name: Maximum Tokens
       description: 'Maximum number of tokens to generate'
-      required: true
-      example: 1000
-      default: 1000
+      required: false
+      example: 3000
+      default: 3000
       selector:
         number:
     generate_title:
@@ -456,7 +432,7 @@ data_analyzer:
         boolean:
     expose_images:
       name: Expose Images
-      description: Save the key frame. This will save analyzed frames in /www/llmvision so they can be used for notifications. The file path will be included in the response.
+      description: Save the key frame. This will save analyzed frames in /media/llmvision/snapshots so they can be used for notifications. The file path will be included in the response.
       required: false
       example: false
       default: false
@@ -486,8 +462,8 @@ remember:
     image_path:
       name: Image Path
       required: false
-      description: Image of the event. Must be stored in "/www/llmvision/"
-      example: '/config/www/llmvision/example.jpg'
+      description: Image of the event. Must be stored in "/media/llmvision/snapshots/"
+      example: '/config/media/llmvision/snapshots/example.jpg'
       selector:
         text:
           multiline: false
