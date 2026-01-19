@@ -3,7 +3,7 @@
 # Take snapshot of triggered camera entity if using multiple cameras (? help needed)
 # Snooze blueprint or notifications
 blueprint:
-  name: AI Event Summary (v1.5.1)
+  name: AI Event Summary (v1.5.2)
   author: valentinfrlch
   homeassistant:
     min_version: 2024.10.0
@@ -121,12 +121,10 @@ blueprint:
               max: 3840
         max_tokens:
           name: Maximum Tokens
-          description: Maximum number of tokens to generate. Use this to control the length of the summaries.
-          default: 20
+          description: "Maximum number of tokens to generate. **Note: Newer and reasoning models may require significantly more tokens. At least 5000 is recommended.**"
+          default: 5000
           selector:
             number:
-              min: 1
-              max: 300
     # Notificaion Section
     notification_section:
       name: Notification Settings
@@ -207,12 +205,12 @@ blueprint:
           name: File Path - To send snapshot in Dynamic Mode with Snapshot Preview Mode
           description: "The file path to store the most current snapshot for the FIRST camera if using multiple camera entities. You can specifiy a custom location as well.\n\nDefaults
             to `Media Folder - Secured` that references **/media/snapshots/<CAMERA_NAME>/last_motion.jpg** \n\n Try the `Public Folder - Unsecured` option that references **/config/www/snapshots/{{ camera_file_path }}/last_motion.jpg** if you are having issues ***Note that this is unsecured and exposes the images to the web.***"
-          default: '/media/snapshots/{{ camera_file_path }}/last_motion.jpg'
+          default: '/media/llmvision/snapshots_blueprint/{{ camera_file_path }}/last_motion.jpg'
           selector:
             select:
               options:
                 - label: Media Folder - Secured
-                  value: '/media/snapshots/{{ camera_file_path }}/last_motion.jpg'
+                  value: '/media/llmvision/snapshots_blueprint/{{ camera_file_path }}/last_motion.jpg'
 
                 - label: Public Folder - Unsecured
                   value: '/config/www/snapshots/{{ camera_file_path }}/last_motion.jpg'
@@ -458,11 +456,13 @@ variables:
   camera_entities_list: !input camera_entities
   motion_sensors_list: !input motion_sensors
   camera_entity: >
-    {% if motion_sensors_list and not trigger.entity_id.startswith("camera") %}
-      {% set index = motion_sensors_list.index(trigger.entity_id) %}
-        {{ camera_entities_list[index] }}
-    {% else %}
+    {% if motion_sensors_list and trigger is defined and trigger.entity_id is defined and not trigger.entity_id.startswith("camera") %}
+      {% set sensor_index = motion_sensors_list.index(trigger.entity_id) if trigger.entity_id in motion_sensors_list else 0 %}
+      {{ camera_entities_list[sensor_index] if sensor_index < camera_entities_list|length else camera_entities_list[0] }}
+    {% elif trigger is defined and trigger.entity_id is defined %}
       {{ trigger.entity_id }}
+    {% else %}
+      {{ camera_entities_list[0] if camera_entities_list else '' }}
     {% endif %}
   tag: >
     {{ camera_entity + int(as_timestamp(now()))|string }}
@@ -485,12 +485,12 @@ variables:
 max_exceeded: silent
 mode: single
 
-triggers:
-  - trigger: state
+trigger:
+  - platform: state
     entity_id: !input camera_entities
     to: !input trigger_state
     id: 'camera_trigger'
-  - trigger: state
+  - platform: state
     entity_id: !input motion_sensors
     to: 'on'
     id: 'motion_sensor_trigger'
@@ -667,7 +667,7 @@ action:
                         title: "{{ label }} {{ notification_time }}"
                         message: "{{response.response_text}}"
                         data:
-                          image: "{{response.key_frame.replace('/config/media', '/media') }}"
+                          image: "{{response.key_frame.replace('/media','/media/local') }}"
                           url: !input tap_navigate #iOS
                           clickAction: !input tap_navigate #Android
                           tag: "{{tag}}"
@@ -691,7 +691,7 @@ action:
                           actions:
                           - action: 'URI'
                             title: 'See Snapshot'
-                            uri: "{{response.key_frame.replace('/config/media', '/media') }}"
+                            uri: "{{response.key_frame.replace('/media','/media/local') }}"
 
             - conditions:
                 - condition: template
@@ -724,8 +724,7 @@ action:
                             actions:
                             - action: 'URI'
                               title: 'See Snapshot'
-                              uri: "{{response.key_frame.replace('/config/media', '/media') }}"
-
+                              uri: "{{response.key_frame.replace('/media','/media/local') }}"
 
       - if:
         - condition: template

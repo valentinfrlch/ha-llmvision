@@ -78,13 +78,13 @@ VERSION_ANTHROPIC = "2023-06-01"  # https://docs.anthropic.com/en/api/versioning
 VERSION_AZURE = "2025-04-01-preview"  # https://learn.microsoft.com/en-us/azure/ai-foundry/openai/api-version-lifecycle?tabs=key
 
 # Defaults
-DEFAULT_SYSTEM_PROMPT = "Your task is to analyze a series of images and provide a concise event description based on user instructions. Focus on identifying and describing the actions of people, pet and dynamic objects (e.g., vehicles) rather than static background details. When multiple images are provided, track and summarize movements or changes over time (e.g., 'A person walks to the front door' or 'A car pulls out of the driveway'). Keep responses brief objective, and aligned with the user's prompt. Avoid speculation and prioritize observable activity. The length of the summary must be less than 255 characters, so you must summarise it to the best readability within 255 chaaracters."
-DEFAULT_TITLE_PROMPT = "Provide a short and concise event title based on the description provided. The title should summarize the key actions or events captured in the images and be suitable for use in a notification or alert. Keep the title clear, relevant to the content of the images and shorter than 6 words. Avoid unnecessary details or subjective interpretations. The title should be in the format: '<Object> seen at <location>. For example: 'Person seen at front door'. Ensure the title accurately reflects the content of the images, can include names."
-DATA_EXTRACTION_PROMPT = "You are an advanced image analysis assistant specializing in extracting precise data from images captured by a home security camera. Your task is to analyze one or more images and extract specific information as requested by the user (e.g., the number of cars or a license plate). Provide only the requested information in your response, with no additional text or commentary. Your response must be a {data_format} Ensure the extracted data is accurate and reflects the content of the images."
+DEFAULT_SYSTEM_PROMPT = "Analyze the images and give a concise, objective event summary (<255 chars). Focus on people, pets, and moving objects; track changes across images. Exclude static details, avoid speculation, and follow user instructions."
+DEFAULT_TITLE_PROMPT = "Generate a clear event title (<6 words) from the description. Use format: <Object> seen at <location>. Keep it concise, factual, and alert-ready. Include names if given. Avoid extra details or interpretations."
+DATA_EXTRACTION_PROMPT = "Analyze the image(s) and extract only the requested info (e.g., object count, license plate). Output strictly in {data_format}. Double-check accuracy and ensure results reflect the image content. Do not explain or add extra info."
 
 # Models
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
-DEFAULT_ANTHROPIC_MODEL = "claude-3-5-sonnet-latest"
+DEFAULT_ANTHROPIC_MODEL = "claude-3-7-sonnet-latest"
 DEFAULT_AZURE_MODEL = "gpt-4o-mini"
 DEFAULT_GOOGLE_MODEL = "gemini-2.0-flash"
 DEFAULT_GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"

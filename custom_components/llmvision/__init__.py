@@ -1,5 +1,4 @@
 from datetime import datetime
-import json
 from .calendar import Timeline
 from .providers import Request
 from .memory import Memory
@@ -48,8 +47,6 @@ from .const import (
     IMAGE_ENTITY,
     VIDEO_FILE,
     EVENT_ID,
-    FRIGATE_RETRY_ATTEMPTS,
-    FRIGATE_RETRY_SECONDS,
     INTERVAL,
     DURATION,
     MAX_FRAMES,
@@ -559,12 +556,10 @@ class ServiceCallData:
         )
         self.interval = int(data_call.data.get(INTERVAL, 2))
         self.duration = int(data_call.data.get(DURATION, 10))
-        self.frigate_retry_attempts = int(data_call.data.get(FRIGATE_RETRY_ATTEMPTS, 2))
-        self.frigate_retry_seconds = int(data_call.data.get(FRIGATE_RETRY_SECONDS, 1))
         self.max_frames = int(data_call.data.get(MAX_FRAMES, 3))
         self.target_width = data_call.data.get(TARGET_WIDTH, 3840)
         self.temperature = float()
-        self.max_tokens = int(data_call.data.get(MAXTOKENS, 100))
+        self.max_tokens = int(data_call.data.get(MAXTOKENS, 3000))
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)
@@ -683,8 +678,6 @@ def setup(hass, config):
             target_width=call.target_width,
             include_filename=call.include_filename,
             expose_images=call.expose_images,
-            frigate_retry_attempts=call.frigate_retry_attempts,
-            frigate_retry_seconds=call.frigate_retry_seconds,
         )
         call.memory = Memory(hass)
         await call.memory._update_memory()

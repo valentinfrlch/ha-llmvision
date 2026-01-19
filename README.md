@@ -6,10 +6,10 @@
 </p>
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Default-orange.svg>
-<img src="https://img.shields.io/maintenance/yes/2025.svg">
-<img src=https://img.shields.io/badge/version-1.5.1-blue>
+<img src="https://img.shields.io/maintenance/yes/2026.svg">
+<img src=https://img.shields.io/badge/version-1.5.2-blue>
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-llmvision?color=0088ff">
-<img alt="Static Badge" src="https://img.shields.io/badge/support-buymeacoffee?logo=buymeacoffee&logoColor=black&color=%23FFDD00&link=https%3A%2F%2Fbuymeacoffee.com%2Fvalentinfrlch">
+<img alt="Static Badge" src="https://img.shields.io/badge/support-buymeacoffee?logo=buymeacoffee&logoColor=black&color=%23FFDD00&link=https%3A%2F%2Fbuymeacoffee.com%2Fllmvision">
     <p align=center style="font-weight:bold">
       Visual intelligence for your smart home.
     </p>
@@ -61,13 +61,7 @@ See the [website](https://llmvision.org) for the latest features and examples.
 2. **Restart** Home Assistant
 3. **Search for `LLM Vision`** in Home Assistant Settings/Devices & services
 4. **Press submit** to continue setup with default settings
-5. **Set up the media folder** LLM Vision uses the more secure `/media` folder for storing snapshots. Add the following to your `configuration.yaml`:
-   ```yaml
-   homeassistant:
-     media_dirs:
-       llmvision: /config/media/llmvision
-   ```
-   Then restart Home Assistant again to apply the changes.
+5. **Set up the media folder** LLM Vision uses the more secure `/media` folder for storing snapshots. If you're running Home Assistant Container, you may need to mount a folder to `/media` in your container settings. See the docs for more details.
 6. **Return to the LLM Vision Integration Page** 
 7. **Press 'Add Entry'** to add your first AI Provider
 
@@ -87,8 +81,10 @@ With the easy to use blueprint, you'll get camera event notifications intelligen
 Check the docs for detailed instructions on how to set up LLM Vision and each of the supported providers, get inspiration from examples or join the discussion on the Home Assistant Community and Discord.
 
 <a href="https://llmvision.org"><img alt="Static Badge" src="https://img.shields.io/badge/website-teal?style=for-the-badge&&logoColor=white&link=https%3A%2F%2Fvalentinfrlch.github.io%2Fllmvision%2F"></a>
-<a href="https://llm-vision.gitbook.io/getting-started"><img src="https://img.shields.io/badge/Documentation-blue?style=for-the-badge&logo=gitbook&logoColor=white&color=18bcf2"/> </a><a href="https://llmvision.org/gallery/"><img src="https://img.shields.io/badge/Examples-blue?style=for-the-badge&logo=gitbook&logoColor=black&color=39ffc2"/></a> </a><a href="https://community.home-assistant.io/t/llm-vision-let-home-assistant-see/729241"><img src="https://img.shields.io/badge/Community-blue?style=for-the-badge&logo=homeassistant&logoColor=white&color=03a9f4"/></a>
+<a href="https://llm-vision.gitbook.io/getting-started"><img src="https://img.shields.io/badge/Documentation-blue?style=for-the-badge&logo=gitbook&logoColor=white&color=18bcf2"/> </a><a href="https://llmvision.org/gallery/"><img src="https://img.shields.io/badge/Examples-blue?style=for-the-badge&logo=gitbook&logoColor=black&color=39ffc2"/></a> </a>
 <a href="https://discord.gg/wuFeMfCMRB"><img src="https://img.shields.io/badge/Discord-blue?style=for-the-badge&logo=discord&logoColor=white&color=7289da"/> </a>
+<a href="https://community.home-assistant.io/t/llm-vision-let-home-assistant-see/729241"><img src="https://img.shields.io/badge/Community-blue?style=for-the-badge&logo=homeassistant&logoColor=white&color=03a9f4"/></a>
+
 
 For technical questions see the discussions tab.
 
@@ -109,4 +105,4 @@ For technical questions see the discussions tab.
 ## Support
 You can support this project by starring this GitHub repository. If you want, you can also buy me a coffee here:  
 <br>
-<a href="https://www.buymeacoffee.com/valentinfrlch"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=valentinfrlch&button_colour=FFDD00&font_colour=000000&font_family=Inter&outline_colour=000000&coffee_colour=ffffff" /></a>
+<img alt="Static Badge" src="https://img.shields.io/badge/support-buymeacoffee?logo=buymeacoffee&logoColor=black&color=%23FFDD00&link=https%3A%2F%2Fbuymeacoffee.com%2Fllmvision">
