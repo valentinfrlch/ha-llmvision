@@ -1327,10 +1327,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Schema(
                         {
                             vol.Optional(CONF_MEMORY_PATHS): selector(
-                                {"text": {"multiline": True}}
+                                {"text": {"multiline": False, "multiple": True}}
                             ),
                             vol.Optional(CONF_MEMORY_STRINGS): selector(
-                                {"text": {"multiline": True}}
+                                {"text": {"multiline": False, "multiple": True}}
                             ),
                         }
                     ),
