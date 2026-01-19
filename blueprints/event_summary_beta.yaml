@@ -1,7 +1,7 @@
 
 # Snooze blueprint or notifications
 blueprint:
-  name: AI Event Summary (v1.5.2)
+  name: AI Event Summary (v1.5.3)
   author: valentinfrlch
   homeassistant:
     min_version: 2024.10.0
@@ -413,6 +413,13 @@ blueprint:
           default: false
           selector:
             boolean:
+        importance_prompt:
+          name: Importance Prompt (Experimental)
+          description: Customize the prompt used to classify events as Critical, Normal or Low importance.
+          default: "Classify the security event based on this image. Choose from the following options: 'passive' for unimportant events, 'time-sensitive' for notable but non-critical events such as a person at the front door, and 'critical' only for potential burglaries or highly suspicious activity. Respond with one of these options exactly, without additional explanation."
+          selector:
+            text:
+              multiline: true
         # Add Customized Actions
         additional_actions:
           name: Additional Actions (Experimental)
@@ -471,8 +478,7 @@ variables:
     {{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize }}
   camera: >
     {{ camera_entities_list[0].replace("camera.", "").replace("_", " ") | title }}
-  importance_prompt: >
-    Classify the security event based on this image. Choose from the following options: "passive" for unimportant events, "time-sensitive" for notable but non-critical events such as a person at the front door, and "critical" only for potential burglaries or highly suspicious activity. Respond with one of these options exactly, without additional explanation.
+  importance_prompt: !input importance_prompt
   camera_entity_snapshot: >
     {{ camera_entities_list[0] }}
   camera_file_path: >
