@@ -318,10 +318,12 @@ blueprint:
             Use `Alarm` to use the device's loud alarm notification sound. You can also type in your own channel name.
             [Learn More](https://companion.home-assistant.io/docs/notifications/notification-commands/#volume-level)
             (default = Camera Name == {{ camera_entity_snapshot }} Snapshot). 
-          default: '{{ camera }} Snapshot'
+          default: 'LLMVision Snapshot'
           selector:
             select:
               options:
+              - label: Camera Name
+                value: 'LLMVision Snapshot'
               - label: Camera Name
                 value: '{{ camera }} Snapshot'
               - label: Alarm
