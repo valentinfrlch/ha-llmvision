@@ -322,7 +322,7 @@ blueprint:
           selector:
             select:
               options:
-              - label: Camera Name
+              - label: LLMVision Snapshot
                 value: 'LLMVision Snapshot'
               - label: Camera Name
                 value: '{{ camera }} Snapshot'
