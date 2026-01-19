@@ -315,7 +315,7 @@ blueprint:
             directly on the Android device -> Home Assistant App Setting -> Notifications.
             Use `Alarm` to use the device's loud alarm notification sound. You can also type in your own channel name.
             [Learn More](https://companion.home-assistant.io/docs/notifications/notification-commands/#volume-level)
-            (default = Camera Name == {{ camera_entity_snapshot }} Snapshot). 
+            (default = 'LLMVision Snapshot').
           default: 'LLMVision Snapshot'
           selector:
             select:
