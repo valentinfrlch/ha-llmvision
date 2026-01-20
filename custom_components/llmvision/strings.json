@@ -357,10 +357,12 @@
                         "name": "General",
                         "description": "Set preferred provider to use when the selected provider is unavailable.",
                         "data": {
-                            "fallback_provider": "Fallback provider"
+                            "fallback_provider": "Fallback provider",
+                            "request_timeout": "Request timeout (seconds)"
                         },
                         "data_description": {
-                            "fallback_provider": "LLM Vision will retry the request with the selected provider if the current provider fails."
+                            "fallback_provider": "LLM Vision will retry the request with the selected provider if the current provider fails.",
+                            "request_timeout": "Total time to wait for a provider response before failing the request."
                         }
                     },
                     "prompt_section": {

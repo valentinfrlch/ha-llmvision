@@ -69,6 +69,7 @@ from .const import (
     DEFAULT_OPENWEBUI_MODEL,
     CONF_CONTEXT_WINDOW,
     CONF_KEEP_ALIVE,
+    CONF_REQUEST_TIMEOUT,
     RESPONSE_FORMAT,
     STRUCTURE,
     TITLE_FIELD,
@@ -93,6 +94,7 @@ async def async_setup_entry(hass, entry):
         CONF_DEFAULT_MODEL: entry.data.get(CONF_DEFAULT_MODEL),
         CONF_TEMPERATURE: entry.data.get(CONF_TEMPERATURE),
         CONF_TOP_P: entry.data.get(CONF_TOP_P),
+        CONF_REQUEST_TIMEOUT: entry.data.get(CONF_REQUEST_TIMEOUT),
         # Ollama specific
         CONF_CONTEXT_WINDOW: entry.data.get(CONF_CONTEXT_WINDOW),
         CONF_KEEP_ALIVE: entry.data.get(CONF_KEEP_ALIVE),

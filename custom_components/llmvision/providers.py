@@ -54,6 +54,7 @@ from .const import (
     CONF_CONTEXT_WINDOW,
     CONF_TEMPERATURE,
     CONF_TOP_P,
+    CONF_REQUEST_TIMEOUT,
     CONF_SYSTEM_PROMPT,
     CONF_TITLE_PROMPT,
     DEFAULT_SYSTEM_PROMPT,
@@ -305,6 +306,7 @@ class Provider(ABC):
         self.api_key = api_key
         self.model = model
         self.endpoint = endpoint
+        self.request_timeout = self._resolve_request_timeout()
         _LOGGER.debug(
             f"Provider initialized: {self.__class__.__name__.title()}(model={self.model}, endpoint={self.endpoint})"
         )
@@ -358,6 +360,19 @@ class Provider(ABC):
                 return data.get(CONF_TITLE_PROMPT, DEFAULT_TITLE_PROMPT)
         return DEFAULT_TITLE_PROMPT
 
+    def _resolve_request_timeout(self) -> int:
+        """Resolve request timeout (seconds) from the Settings config entry stored in hass.data."""
+        domain_data = self.hass.data.get(DOMAIN) or {}
+        for _, data in domain_data.items():
+            if data.get(CONF_PROVIDER) == "Settings":
+                timeout = data.get(CONF_REQUEST_TIMEOUT, 60)
+                try:
+                    timeout_int = int(timeout)
+                    return timeout_int if timeout_int > 0 else 60
+                except (TypeError, ValueError):
+                    return 60
+        return 60
+
     async def vision_request(self, call: dict) -> str:
         data = self._prepare_vision_data(call)
         return await self._make_request(data)
@@ -375,7 +390,10 @@ class Provider(ABC):
         try:
             _LOGGER.debug(f"Posting to {san_url}")
             response = await self.session.post(
-                url, headers=headers, json=data, timeout=ClientTimeout(total=60)
+                url,
+                headers=headers,
+                json=data,
+                timeout=ClientTimeout(total=self.request_timeout),
             )
         except Exception as e:
             raise ServiceValidationError(f"Request failed: {e}")

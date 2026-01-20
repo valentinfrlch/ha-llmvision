@@ -37,6 +37,7 @@ from .const import (
     CONF_MEMORY_STRINGS,
     CONF_SYSTEM_PROMPT,
     CONF_TITLE_PROMPT,
+    CONF_REQUEST_TIMEOUT,
     CONF_AWS_ACCESS_KEY_ID,
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
@@ -1259,7 +1260,47 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         {
                             vol.Optional(
                                 CONF_FALLBACK_PROVIDER, default="no_fallback"
-                            ): selector({"select": {"options": fallback_options}})
+                            ): selector(
+                                {
+                                    "select": {
+                                        "options": (
+                                            [
+                                                {
+                                                    "label": "No Fallback",
+                                                    "value": "no_fallback",
+                                                }
+                                            ]
+                                            + [
+                                                {
+                                                    "label": self.hass.data[DOMAIN]
+                                                    .get(provider, {})
+                                                    .get(CONF_PROVIDER, provider),
+                                                    "value": provider,
+                                                }
+                                                for provider in (
+                                                    self.hass.data.get(DOMAIN) or {}
+                                                ).keys()
+                                                if self.hass.data[DOMAIN]
+                                                .get(provider, {})
+                                                .get(CONF_PROVIDER, provider)
+                                                not in ("Settings", "Timeline")
+                                            ]
+                                        )
+                                    }
+                                }
+                            ),
+                            vol.Optional(
+                                CONF_REQUEST_TIMEOUT, default=60
+                            ): selector(
+                                {
+                                    "number": {
+                                        "min": 10,
+                                        "max": 600,
+                                        "step": 10,
+                                        "mode": "slider",
+                                    }
+                                }
+                            ),
                         }
                     ),
                     {"collapsed": False},
@@ -1352,7 +1393,8 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "general_section": {
                 CONF_FALLBACK_PROVIDER: self.init_info.get(
                     CONF_FALLBACK_PROVIDER, "no_fallback"
-                )
+                ),
+                CONF_REQUEST_TIMEOUT: self.init_info.get(CONF_REQUEST_TIMEOUT, 60),
             },
             "prompt_section": {
                 CONF_SYSTEM_PROMPT: self.init_info.get(
