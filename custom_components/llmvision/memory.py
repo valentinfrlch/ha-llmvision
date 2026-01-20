@@ -130,7 +130,7 @@ class Memory:
                     }
                 )
         else:
-            return None
+            return []
 
         return content
 
@@ -186,6 +186,10 @@ class Memory:
     async def _update_memory(self):
         """Manage encoded images"""
         # check if len(memory_paths) != len(memory_images)
+        if self.entry is None:
+            _LOGGER.debug("Memory entry not found; skipping memory update.")
+            return
+
         if len(self.memory_paths) != len(self.memory_images):
             self.memory_images = await self._encode_images(self.memory_paths)
 

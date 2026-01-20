@@ -379,11 +379,13 @@
             "name": "Tijdlijn",
             "description": "Tijdlijn slaat de gebeurtenissen van vandaag op om weer te geven met behulp van de LLM Vision-kaart op uw dashboard.",
             "data": {
+              "timeline_language": "Tijdlijn taal",
               "retention_time": "Bewaartijd",
               "timeline_today_summary": "Tijdlijn Samenvatting",
               "timeline_summary_prompt": "Vandaag Samenvatting Prompt"
             },
             "data_description": {
+              "timeline_language": "Selecteer de taal die wordt gebruikt voor tijdlijnstrings en categorieën.",
               "retention_time": "Gebeurtenissen automatisch verwijderen na (dagen). Stel in op 0 om automatisch verwijderen uit te schakelen.",
               "timeline_today_summary": "Schakel tijdlijn samenvatting in om automatisch een samenvatting van de gebeurtenissen van vandaag te genereren.",
               "timeline_summary_prompt": "De instructie die aan het model wordt gegeven om een samenvatting van de gebeurtenissen van vandaag te genereren."
