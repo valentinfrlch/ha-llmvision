@@ -1,7 +1,7 @@
 
 # Snooze blueprint or notifications
 blueprint:
-  name: AI Event Summary (v1.5.3)
+  name: AI Event Summary (v1.6.0)
   author: valentinfrlch
   homeassistant:
     min_version: 2024.10.0
