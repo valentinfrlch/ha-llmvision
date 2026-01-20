@@ -379,11 +379,13 @@
                         "name": "Timeline",
                         "description": "Die Timeline speichert Ereignisse für die LLM Vision Card auf deinem Dashboard.",
                         "data": {
+                            "timeline_language": "Timeline Sprache",
                             "retention_time": "Aufbewahrungsdauer",
                             "timeline_today_summary": "Timeline-Zusammenfassung",
                             "timeline_summary_prompt": "Zusammenfassungs-Prompt für heute"
                         },
                         "data_description": {
+                            "timeline_language": "Wähle die Sprache aus, die verwendet wird, um Symbole aus Ereignissen zu generieren.",
                             "retention_time": "Ereignisse nach (Tagen) automatisch löschen. 0 deaktiviert das automatische Löschen.",
                             "timeline_today_summary": "Aktiviere die Timeline-Zusammenfassung, um automatisch eine Zusammenfassung der heutigen Ereignisse zu erstellen.",
                             "timeline_summary_prompt": "Die Anweisung, die dem Modell gegeben wird, um eine Zusammenfassung der heutigen Ereignisse zu generieren."

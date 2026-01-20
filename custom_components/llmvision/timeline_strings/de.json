@@ -1,0 +1,60 @@
+{
+    "categories": {
+        "person": {
+            "labels": {
+                "person": "person",
+                "menschen": "person",
+                "kind": "person",
+                "frau": "person",
+                "mann": "person",
+                "mensch": "person"
+            }
+        },
+        "vehicle": {
+            "labels": {
+                "briefträger": "truck",
+                "postbote": "truck",
+                "fahrrad": "bicycle",
+                "motorrad": "motorcycle",
+                "bus": "bus",
+                "auto": "car",
+                "van": "car",
+                "suv": "car",
+                "fahrzeug": "car",
+                "lastwagen": "truck"
+            }
+        },
+        "animal": {
+            "labels": {
+                "hund": "dog",
+                "katze": "cat",
+                "vogel": "bird"
+            }
+        },
+        "package": {
+            "labels": {
+                "box": "package",
+                "packet": "package"
+            }
+        },
+        "entity": {
+            "labels": {
+                "kamera": "camera",
+                "sensor": "sensor",
+                "licht": "light",
+                "schlüssel": "key",
+                "schloss": "lock",
+                "alarm": "alarm"
+            }
+        },
+        "nature": {
+            "labels": {
+                "garten": "plant",
+                "pflanze": "plant",
+                "blume": "plant",
+                "baum": "tree"
+            }
+        }
+    },
+    "regex": "`\\b${key}(?:en|s)?\\b`, 'i'"
+}

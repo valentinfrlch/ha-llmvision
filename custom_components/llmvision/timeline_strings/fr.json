@@ -1,0 +1,59 @@
+{
+    "categories": {
+        "person": {
+            "labels": {
+                "personne": "person",
+                "gens": "person",
+                "enfant": "person",
+                "femme": "person",
+                "homme": "person",
+                "humain": "person"
+            }
+        },
+        "vehicle": {
+            "labels": {
+                "facteur": "truck",
+                "livreur": "truck",
+                "vélo": "bicycle",
+                "moto": "motorcycle",
+                "bus": "bus",
+                "voiture": "car",
+                "fourgon": "car",
+                "suv": "car",
+                "véhicule": "car"
+            }
+        },
+        "animal": {
+            "labels": {
+                "chien": "dog",
+                "chat": "cat",
+                "oiseau": "bird"
+            }
+        },
+        "package": {
+            "labels": {
+                "boîte": "package",
+                "colis": "package"
+            }
+        },
+        "entity": {
+            "labels": {
+                "caméra": "camera",
+                "capteur": "sensor",
+                "lumière": "light",
+                "clé": "key",
+                "serrure": "lock",
+                "alarme": "alarm"
+            }
+        },
+        "nature": {
+            "labels": {
+                "jardin": "plant",
+                "plante": "plant",
+                "fleur": "flower",
+                "arbre": "tree"
+            }
+        }
+    },
+    "regex": "`\\b${key}(?:s|x|aux|eaux|eux)?\\b`, 'iu'"
+}
