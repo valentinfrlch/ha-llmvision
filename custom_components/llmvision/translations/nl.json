@@ -357,10 +357,12 @@
             "name": "Algemeen",
             "description": "Stel de voorkeursprovider in die moet worden gebruikt wanneer de geselecteerde provider niet beschikbaar is.",
             "data": {
-              "fallback_provider": "Terugvalprovider"
+              "fallback_provider": "Terugvalprovider",
+              "request_timeout": "Time-out voor verzoeken (seconden)"
             },
             "data_description": {
-              "fallback_provider": "LLM Vision zal het verzoek opnieuw proberen met de geselecteerde provider als de huidige provider faalt."
+              "fallback_provider": "LLM Vision zal het verzoek opnieuw proberen met de geselecteerde provider als de huidige provider faalt.",
+              "request_timeout": "Maximale wachttijd voor een reactie van de provider (seconden)."
             }
           },
           "prompt_section": {

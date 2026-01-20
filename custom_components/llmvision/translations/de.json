@@ -350,25 +350,27 @@
                 }
             },
             "settings": {
-                "title": "Settings",
-                "description": "Configure the LLM Vision integration. This entry is required before setting up other providers. If you wish to use the default settings, just press 'Submit'.",
+                "title": "Einstellungen",
+                "description": "Konfiguriere die LLM Vision-Integration. Dieser Eintrag ist erforderlich, bevor andere Anbieter eingerichtet werden können. Wenn Sie die Standardeinstellungen verwenden möchten, drücken Sie einfach 'Absenden'.",
                 "sections": {
                     "general_section": {
-                        "name": "General",
-                        "description": "Set preferred provider to use when the selected provider is unavailable.",
+                        "name": "Allgemein",
+                        "description": "Legen Sie den bevorzugten Anbieter fest, der verwendet wird, wenn der ausgewählte Anbieter nicht verfügbar ist.",
                         "data": {
-                            "fallback_provider": "Fallback provider"
+                            "fallback_provider": "Fallback-Anbieter",
+                            "request_timeout": "Anfrage-Timeout (Sekunden)"
+
                         },
                         "data_description": {
-                            "fallback_provider": "LLM will retry the request with the selected provider if the current provider fails."
+                            "fallback_provider": "LLM Vision wird die Anfrage mit dem ausgewählten Anbieter erneut versuchen, wenn der aktuelle Anbieter fehlschlägt."
                         }
                     },
                     "prompt_section": {
                         "name": "System Prompts",
                         "description": "System Prompts ändern wie das Modell antwortet und sich verhält.",
                         "data": {
-                            "system_prompt": "System prompt",
-                            "title_prompt": "Title prompt"
+                            "system_prompt": "System Prompt",
+                            "title_prompt": "Titel Prompt"
                         },
                         "data_description": {
                             "system_prompt": "Nutze System Prompts um das Verhalten des Modells zu verändern.",

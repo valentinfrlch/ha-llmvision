@@ -357,10 +357,12 @@
                         "name": "Allmänt",
                         "description": "Ställ in föredragen leverantör att använda när vald leverantör inte är tillgänglig.",
                         "data": {
-                            "fallback_provider": "Reservleverantör"
+                            "fallback_provider": "Reservleverantör",
+                            "request_timeout": "Request timeout (sekunder)"
                         },
                         "data_description": {
-                            "fallback_provider": "LLM Vision försöker igen med vald leverantör om nuvarande leverantör misslyckas."
+                            "fallback_provider": "LLM Vision försöker igen med vald leverantör om nuvarande leverantör misslyckas.",
+                            "request_timeout": "Maximal väntetid för svar från leverantören (sekunder)."
                         }
                     },
                     "prompt_section": {

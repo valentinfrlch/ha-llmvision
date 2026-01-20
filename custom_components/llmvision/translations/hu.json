@@ -357,10 +357,12 @@
                         "name": "Általános",
                         "description": "Állítsd be azt a szolgáltatót, amelyet használni kívánsz, ha a kiválasztott nem elérhető.",
                         "data": {
-                            "fallback_provider": "Tartalék szolgáltató"
+                            "fallback_provider": "Tartalék szolgáltató",
+                            "request_timeout": "Kérés időtúllépése (másodperc)"
                         },
                         "data_description": {
-                            "fallback_provider": "Az LLM Vision újrapróbálkozik a kéréssel a kiválasztott szolgáltatóval, ha a jelenlegi szolgáltató hibát jelez."
+                            "fallback_provider": "Az LLM Vision újrapróbálkozik a kéréssel a kiválasztott szolgáltatóval, ha a jelenlegi szolgáltató hibát jelez.",
+                            "request_timeout": "Maximális várakozási idő a szolgáltató válaszára (másodperc)."
                         }
                     },
                     "prompt_section": {

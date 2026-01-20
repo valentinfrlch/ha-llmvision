@@ -357,10 +357,12 @@
                         "name": "Général",
                         "description": "Définir le fournisseur préféré à utiliser lorsque le fournisseur sélectionné n'est pas disponible.",
                         "data": {
-                            "fallback_provider": "Fournisseur de secours"
+                            "fallback_provider": "Fournisseur de secours",
+                            "request_timeout": "Délai d'attente de la requête (secondes)"
                         },
                         "data_description": {
-                            "fallback_provider": "LLM Vision réessaiera la requête avec le fournisseur sélectionné si le fournisseur actuel échoue."
+                            "fallback_provider": "LLM Vision réessaiera la requête avec le fournisseur sélectionné si le fournisseur actuel échoue.",
+                            "request_timeout": "Durée maximale d'attente de la réponse du fournisseur (secondes)."
                         }
                     },
                     "prompt_section": {

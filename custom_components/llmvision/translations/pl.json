@@ -357,10 +357,12 @@
                         "name": "Ogólne",
                         "description": "Ustaw preferowanego dostawcę do użycia, gdy wybrany dostawca jest niedostępny.",
                         "data": {
-                            "fallback_provider": "Dostawca zapasowy"
+                            "fallback_provider": "Dostawca zapasowy",
+                            "request_timeout": "Limit czasu żądania (sekundy)"
                         },
                         "data_description": {
-                            "fallback_provider": "LLM Vision spróbuje ponownie wysłać żądanie z wybranym dostawcą, jeśli bieżący dostawca zawiedzie."
+                            "fallback_provider": "LLM Vision spróbuje ponownie wysłać żądanie z wybranym dostawcą, jeśli bieżący dostawca zawiedzie.",
+                            "request_timeout": "Maksymalny czas oczekiwania na odpowiedź od dostawcy (sekundy)."
                         }
                     },
                     "prompt_section": {

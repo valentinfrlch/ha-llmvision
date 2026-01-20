@@ -357,10 +357,12 @@
                         "name": "Genel",
                         "description": "Seçilen sağlayıcı kullanılamadığında kullanılacak tercih edilen sağlayıcıyı ayarlayın.",
                         "data": {
-                            "fallback_provider": "Yedek sağlayıcı"
+                            "fallback_provider": "Yedek sağlayıcı",
+                            "request_timeout": "İstek zaman aşımı (saniye)"
                         },
                         "data_description": {
-                            "fallback_provider": "Mevcut sağlayıcı başarısız olursa LLM Vision isteği seçilen sağlayıcı ile yeniden deneyecektir."
+                            "fallback_provider": "Mevcut sağlayıcı başarısız olursa LLM Vision isteği seçilen sağlayıcı ile yeniden deneyecektir.",
+                            "request_timeout": "Sağlayıcıdan yanıt için maksimum bekleme süresi (saniye)."
                         }
                     },
                     "prompt_section": {
@@ -379,11 +381,13 @@
                         "name": "Zaman Çizelgesi",
                         "description": "Zaman çizelgesi, kontrol panelinizdeki LLM Vision Kartı kullanılarak görüntülenmek üzere bugünün olaylarını saklar.",
                         "data": {
+                            "timeline_language": "Zaman Çizelgesi Dili",
                             "retention_time": "Saklama süresi",
                             "timeline_today_summary": "Zaman Çizelgesi Özeti",
                             "timeline_summary_prompt": "Bugün Özeti İstemi"
                         },
                         "data_description": {
+                            "timeline_language": "Zaman çizelgesi olayları için kullanılacak dil.",
                             "retention_time": "Olayları belirtilen gün sonunda otomatik sil. Otomatik silmeyi devre dışı bırakmak için 0 olarak ayarlayın.",
                             "timeline_today_summary": "Bugünün olaylarının özetini otomatik olarak oluşturmak için zaman çizelgesi özetini etkinleştirin.",
                             "timeline_summary_prompt": "Modele bugünün olaylarının özetini oluşturması için verilen talimat."

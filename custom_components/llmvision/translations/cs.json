@@ -357,10 +357,12 @@
                         "name": "Obecné",
                         "description": "Nastavení preferovaného poskytovatele pro použití, pokud vybraný poskytovatel nebude k dispozici.",
                         "data": {
-                            "fallback_provider": "Záložní poskytovatel"
+                            "fallback_provider": "Záložní poskytovatel",
+                            "request_timeout": "Časový limit požadavku (v sekundách)"
                         },
                         "data_description": {
-                            "fallback_provider": "LLM bude opakovat požadavek na vybraného poskytovatele, pokud aktuání poskytovatel selže."
+                            "fallback_provider": "LLM bude opakovat požadavek na vybraného poskytovatele, pokud aktuání poskytovatel selže.",
+                            "request_timeout": "Maximální doba čekání na odpověď poskytovatele (v sekundách)."
                         }
                     },
                     "prompt_section": {

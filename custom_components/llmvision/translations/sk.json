@@ -357,10 +357,12 @@
                         "name": "Všeobecné",
                         "description": "Nastavte preferovaného poskytovateľa, ktorý sa použije, ak vybraný poskytovateľ nie je dostupný.",
                         "data": {
-                            "fallback_provider": "Záložný poskytovateľ"
+                            "fallback_provider": "Záložný poskytovateľ",
+                            "request_timeout": "Časový limit požiadavky (sekundy)"
                         },
                         "data_description": {
-                            "fallback_provider": "LLM Vision zopakuje požiadavku s vybraným poskytovateľom, ak aktuálny zlyhá."
+                            "fallback_provider": "LLM Vision zopakuje požiadavku s vybraným poskytovateľom, ak aktuálny zlyhá.",
+                            "request_timeout": "Maximálny čas čakania na odpoveď od poskytovateľa (sekundy)."
                         }
                     },
                     "prompt_section": {

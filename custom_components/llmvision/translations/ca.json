@@ -357,10 +357,12 @@
                         "name": "General",
                         "description": "Establiu el proveïdor preferit a utilitzar quan el proveïdor seleccionat no estigui disponible.",
                         "data": {
-                            "fallback_provider": "Proveïdor de reserva"
+                            "fallback_provider": "Proveïdor de reserva",
+                            "request_timeout": "Temps d'espera de la sol·licitud (segons)"
                         },
                         "data_description": {
-                            "fallback_provider": "LLM Vision tornarà a intentar la sol·licitud amb el proveïdor seleccionat si el proveïdor actual falla."
+                            "fallback_provider": "LLM Vision tornarà a intentar la sol·licitud amb el proveïdor seleccionat si el proveïdor actual falla.",
+                            "request_timeout": "Temps total d'espera per a una resposta del proveïdor abans de fallar la sol·licitud."
                         }
                     },
                     "prompt_section": {

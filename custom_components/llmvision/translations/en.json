@@ -387,7 +387,7 @@
                             "timeline_summary_prompt": "Today Summary Prompt"
                         },
                         "data_description": {
-                            "timeline_language": "Select the language for timeline strings and categories.",
+                            "timeline_language": "Select the language used to generate icons from events.",
                             "retention_time": "Auto delete events after (days). Set to 0 to disable auto deletion.",
                             "timeline_today_summary": "Enable timeline summary to automatically generate a summary of today's events.",
                             "timeline_summary_prompt": "The instruction given to the model to generate a summary of today's events."
