@@ -1,3 +1,4 @@
+# Snooze blueprint or notifications
 blueprint:
   name: AI Event Summary (v1.6.0)
   author: valentinfrlch
@@ -355,16 +356,17 @@ blueprint:
         notification_channel:
           name: Custom Notification Channel or Alarm Mode - Android Only
           description: Create a new channel for notifications to allow custom notification
-            sounds, vibration patterns, and override Do Not Disturb mode. Camera Name
-            uses first Camera Entity if using multiple cameras. Configured directly
-            on the Android device -> Home Assistant App Setting -> Notifications.
-            Use `Alarm` to use the device's loud alarm notification sound. You can
-            also type in your own channel name. [Learn More](https://companion.home-assistant.io/docs/notifications/notification-commands/#volume-level)
-            (default = Camera Name == {{ camera_entity_snapshot }} Snapshot).
-          default: '{{ camera }} Snapshot'
+            sounds, vibration patterns, and override Do Not Disturb mode. Camera Name uses first Camera Entity if using multiple cameras. Configured
+            directly on the Android device -> Home Assistant App Setting -> Notifications.
+            Use `Alarm` to use the device's loud alarm notification sound. You can also type in your own channel name.
+            [Learn More](https://companion.home-assistant.io/docs/notifications/notification-commands/#volume-level)
+            (default = 'LLM Vision Snapshot').
+          default: 'LLM Vision Snapshot'
           selector:
             select:
               options:
+              - label: LLM Vision Snapshot
+                value: 'LLM Vision Snapshot'
               - label: Camera Name
                 value: '{{ camera }} Snapshot'
               - label: Alarm
@@ -449,14 +451,21 @@ blueprint:
       input:
         important:
           name: Important (Experimental)
-          description: 'Use AI to classify events as Critical, Normal or Low. Notifications
+          description: >
+            'Use AI to classify events as Critical, Normal or Low. Notifications
             are sent only for events classified as Normal or higher. Critical events
-            override ''Do Not Disturb'' settings. Use with caution: AI can make mistakes.
-
-            '
+            override ''Do Not Disturb'' settings. Use with caution: AI can make mistakes.'
           default: false
           selector:
-            boolean: {}
+            boolean:
+        importance_prompt:
+          name: Importance Prompt (Experimental)
+          description: Customize the prompt used to classify events as Critical, Normal or Low importance.
+          default: "Classify the security event based on this image. Choose from the following options: 'passive' for unimportant events, 'time-sensitive' for notable but non-critical events such as a person at the front door, and 'critical' only for potential burglaries or highly suspicious activity. Respond with one of these options exactly, without additional explanation."
+          selector:
+            text:
+              multiline: true
+        # Add Customized Actions
         additional_actions:
           name: Additional Actions (Experimental)
           description: Additional actions to run after the AI analysis and notification.
@@ -501,31 +510,17 @@ variables:
     else camera_entities_list[0] }}\n{% elif trigger is defined and trigger.entity_id
     is defined %}\n  {{ trigger.entity_id }}\n{% else %}\n  {{ camera_entities_list[0]
     if camera_entities_list else '' }}\n{% endif %}\n"
-  tag: '{{ camera_entity + int(as_timestamp(now()))|string }}
-
-    '
+  tag: "{{ camera_entity + int(as_timestamp(now()))|string }}"
   label: Motion detected
-  camera_message: '{{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize
-    }}
-
-    '
-  camera: '{{ camera_entities_list[0].replace("camera.", "").replace("_", " ") | title
-    }}
-
-    '
-  importance_prompt: 'Classify the security event based on this image. Choose from
-    the following options: "passive" for unimportant events, "time-sensitive" for
-    notable but non-critical events such as a person at the front door, and "critical"
-    only for potential burglaries or highly suspicious activity. Respond with one
-    of these options exactly, without additional explanation.
-
-    '
-  camera_entity_snapshot: '{{ camera_entities_list[0] }}
-
-    '
-  camera_file_path: '{{ camera_entity_snapshot.replace("camera.", "")}}
-
-    '
+  camera_message: >
+    {{ camera_entity.replace("camera.", "").replace("_", " ")|capitalize }}
+  camera: >
+    {{ camera_entities_list[0].replace("camera.", "").replace("_", " ") | title }}
+  importance_prompt: !input importance_prompt
+  camera_entity_snapshot: >
+    {{ camera_entities_list[0] }}
+  camera_file_path: >
+    {{ camera_entity_snapshot.replace("camera.", "")}}
   file_path: !input file_path
   snapshot_access_file_path: '{{ file_path | replace(''/config/www'', ''/local'')
     | replace(''/media'', ''/media/local'') }}'
