@@ -357,10 +357,12 @@
                         "name": "Obecné",
                         "description": "Nastavení preferovaného poskytovatele pro použití, pokud vybraný poskytovatel nebude k dispozici.",
                         "data": {
-                            "fallback_provider": "Záložní poskytovatel"
+                            "fallback_provider": "Záložní poskytovatel",
+                            "request_timeout": "Časový limit požadavku (v sekundách)"
                         },
                         "data_description": {
-                            "fallback_provider": "LLM bude opakovat požadavek na vybraného poskytovatele, pokud aktuání poskytovatel selže."
+                            "fallback_provider": "LLM bude opakovat požadavek na vybraného poskytovatele, pokud aktuání poskytovatel selže.",
+                            "request_timeout": "Maximální doba čekání na odpověď poskytovatele (v sekundách)."
                         }
                     },
                     "prompt_section": {
@@ -379,11 +381,13 @@
                         "name": "Časová osa",
                         "description": "Časová osa ukládá dnešní události pro zobrazení pomocí LLM Vision karty na vaší nástěnce.",
                         "data": {
+                            "timeline_language": "Jazyk časové osy",
                             "retention_time": "Doba uchování",
                             "timeline_today_summary": "Souhrn dne",
                             "timeline_summary_prompt": "Prompt pro souhrn dne"
                         },
                         "data_description": {
+                            "timeline_language": "Vyberte jazyk používaný pro generování ikon z událostí.",
                             "retention_time": "Automaticky smazat události po (dnech). Nastavte na 0 pro vypnutí automatického mazání.",
                             "timeline_today_summary": "Povolit souhrn dne pro automatické generování souhrnu dnešních událostí.",
                             "timeline_summary_prompt": "Instrukce pro model k vygenerování souhrnu dnešních událostí."

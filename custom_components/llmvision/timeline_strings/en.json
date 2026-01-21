@@ -1,0 +1,66 @@
+{
+    "categories": {
+        "person": {
+            "labels": {
+                "person": "person",
+                "individual": "person",
+                "figure": "person",
+                "people": "person",
+                "child": "person",
+                "woman": "person",
+                "man": "person",
+                "human": "person",
+                "cyclist": "person"
+            }
+        },
+        "vehicle": {
+            "labels": {
+                "courier": "truck",
+                "mailman": "truck",
+                "bike": "bicycle",
+                "bicycle": "bicycle",
+                "motorcycle": "motorcycle",
+                "motorbike": "motorcycle",
+                "bus": "bus",
+                "car": "car",
+                "van": "van",
+                "suv": "car",
+                "vehicle": "car",
+                "truck": "truck"
+            }
+        },
+        "animal": {
+            "labels": {
+                "dog": "dog",
+                "cat": "cat",
+                "bird": "bird"
+            }
+        },
+        "package": {
+            "labels": {
+                "box": "package",
+                "package": "package",
+                "parcel": "package"
+            }
+        },
+        "entity": {
+            "labels": {
+                "camera": "camera",
+                "sensor": "sensor",
+                "light": "light",
+                "key": "key",
+                "lock": "lock",
+                "alarm": "alarm"
+            }
+        },
+        "nature": {
+            "labels": {
+                "garden": "plant",
+                "plant": "plant",
+                "flower": "plant",
+                "tree": "tree"
+            }
+        }
+    },
+    "regex": "`\\b${key}s?\\b`, 'i'"
+}

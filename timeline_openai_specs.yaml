@@ -1,0 +1,294 @@
+openapi: 3.1.0
+info:
+  title: LLM Vision Timeline API
+  version: "1.6.0"
+  description: |
+    REST API for interacting with the Home Assistant LLM Vision Timeline.
+tags:
+  - name: reference
+    x-page-title: Reference
+    x-page-icon: brackets-curly
+
+servers:
+  - url: https://{ha_url}/api/llmvision/timeline
+    variables:
+      ha_url:
+        default: homeassistant.local:8123
+        description: Base Home Assistant URL
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: token
+
+  schemas:
+    Event:
+      type: object
+      required: [uid, title, start, end, key_frame, camera_name, category, label]
+      properties:
+        uid:
+          type: string
+          format: uuid
+          example: f2a82dcd-f37b-459a-afdf-3a115631ed69
+        title:
+          type: string
+          example: Delivery person seen
+        start:
+          type: string
+          format: date-time
+          example: 2025-10-24T09:04:51.433879+02:00
+        end:
+          type: string
+          format: date-time
+          example: 2025-10-24T09:05:51.433879+02:00
+        description:
+          type: string
+          example: A delivery person approaches the front door.
+        key_frame:
+          type: string
+          example: /media/llmvision/snapshots/37ddf64a-0.jpg
+        camera_name:
+          type: string
+          example: camera.front_door
+        category:
+          type: string
+          example: person
+        label:
+          type: string
+          example: person
+
+    EventListResponse:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
+
+    EventResponse:
+      type: object
+      properties:
+        event:
+          $ref: '#/components/schemas/Event'
+
+    StatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: created
+
+    UpdateResponse:
+      type: object
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          example: updated
+
+    DeleteResponse:
+      type: object
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          example: deleted
+
+paths:
+  /events:
+    get:
+      summary: Get all events
+      tags:
+        - reference
+      operationId: listEvents
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 20
+          description: Maximum number of events to return.
+        - name: cameras
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+            example:
+              - camera.front_door
+              - camera.driveway
+          style: form
+          explode: false
+          description: Comma-separated list of camera entity_ids.
+        - name: categories
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+            example:
+              - person
+              - package
+          style: form
+          explode: false
+          description: Comma-separated list of categories.
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 2
+          description: Time window [now - days, now].
+      x-codeSamples:
+        - lang: curl
+          label: Example request
+          source: |
+            curl -H "Authorization: Bearer $TOKEN" \
+              "https://homeassistant.local:8123/api/llmvision/timeline/events?limit=20&cameras=camera.front_door,camera.driveway&categories=person,package&days=2"
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventListResponse'
+
+  /event/{event_id}:
+    get:
+      summary: Get a single event
+      tags:
+        - reference
+      operationId: getEvent
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '404':
+          description: Event not found
+
+    post:
+      summary: Update an existing event
+      tags:
+        - reference
+      operationId: updateEvent
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Event'
+      responses:
+        '200':
+          description: Event updated
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EventResponse'
+                  - $ref: '#/components/schemas/UpdateResponse'
+        '400':
+          description: Invalid request body
+        '404':
+          description: Event not found
+        '500':
+          description: Server error
+
+    delete:
+      summary: Delete an event
+      tags:
+        - reference
+      operationId: deleteEvent
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '404':
+          description: Event not found
+        '500':
+          description: Error deleting event
+
+  /events/new:
+    post:
+      summary: Create a new event
+      tags:
+        - reference
+      operationId: createEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                key_frame:
+                  type: string
+                camera_name:
+                  type: string
+                label:
+                  type: string
+                start:
+                  type: string
+                  description: ISO 8601 string or Unix timestamp
+                end:
+                  type: string
+                  description: ISO 8601 string or Unix timestamp
+      responses:
+        '200':
+          description: Event created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '400':
+          description: Invalid JSON body
+        '404':
+          description: Settings config entry not found
+        '500':
+          description: Error creating event

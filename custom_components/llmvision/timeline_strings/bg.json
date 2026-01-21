@@ -1,0 +1,65 @@
+{
+    "categories": {
+        "person": {
+            "labels": {
+                "човек": "person",
+                "индивид": "person",
+                "фигура": "person",
+                "хора": "person",
+                "дете": "person",
+                "жена": "person",
+                "мъж": "person"
+            }
+        },
+        "vehicle": {
+            "labels": {
+                "куриер": "truck",
+                "пощальон": "truck",
+                "колело": "bicycle",
+                "мотор": "motorcycle",
+                "мотоциклет": "motorcycle",
+                "автобус": "bus",
+                "кола": "car",
+                "ван": "car",
+                "джип": "car",
+                "камион": "truck"
+            }
+        },
+        "animal": {
+            "labels": {
+                "куче": "dog",
+                "котка": "cat",
+                "птица": "bird",
+                "домашен любимец": "dog",
+                "животно": "dog"
+            }
+        },
+        "package": {
+            "labels": {
+                "кутия": "package",
+                "пакет": "package",
+                "парцел": "package"
+            }
+        },
+        "entity": {
+            "labels": {
+                "камера": "camera",
+                "сензор": "sensor",
+                "светлина": "light",
+                "крушка": "light",
+                "ключ": "key",
+                "ключалка": "lock",
+                "аларма": "alarm"
+            }
+        },
+        "nature": {
+            "labels": {
+                "градина": "plant",
+                "растение": "plant",
+                "цвете": "plant",
+                "дърво": "tree"
+            }
+        }
+    },
+    "regex": "`\\b${key}(а|ът|та|то|те|ите|ове|ове|и|я|ю|е|ен|на|но|ни|ни)?\\b`, 'i'"
+}

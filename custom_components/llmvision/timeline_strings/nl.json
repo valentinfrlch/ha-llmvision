@@ -1,0 +1,64 @@
+{
+    "categories": {
+        "person": {
+            "labels": {
+                "persoon": "person",
+                "individu": "person",
+                "figuur": "person",
+                "mensen": "person",
+                "kind": "person",
+                "vrouw": "person",
+                "man": "person",
+                "mens": "person"
+            }
+        },
+        "vehicle": {
+            "labels": {
+                "koerier": "truck",
+                "postbode": "truck",
+                "fiets": "bicycle",
+                "bromfiets": "motorcycle",
+                "motorfiets": "motorcycle",
+                "bus": "bus",
+                "auto": "car",
+                "bestelwagen": "car",
+                "suv": "car",
+                "voertuig": "car",
+                "vrachtwagen": "truck"
+            }
+        },
+        "animal": {
+            "labels": {
+                "hond": "dog",
+                "kat": "cat",
+                "vogel": "bird"
+            }
+        },
+        "package": {
+            "labels": {
+                "doos": "package",
+                "pakket": "package",
+                "pakje": "package"
+            }
+        },
+        "entity": {
+            "labels": {
+                "camera": "camera",
+                "sensor": "sensor",
+                "licht": "light",
+                "sleutel": "key",
+                "slot": "lock",
+                "alarm": "alarm"
+            }
+        },
+        "nature": {
+            "labels": {
+                "tuin": "plant",
+                "plant": "plant",
+                "bloem": "plant",
+                "boom": "tree"
+            }
+        }
+    },
+    "regex": "`\\b${key}(?:en|s|'s|s'|jes|eren)?\\b`, 'iu'"
+}

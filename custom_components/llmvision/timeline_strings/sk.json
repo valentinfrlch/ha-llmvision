@@ -1,0 +1,66 @@
+{
+    "categories": {
+        "person": {
+            "labels": {
+                "osoba": "person",
+                "jednotlivec": "person",
+                "postava": "person",
+                "ľudia": "person",
+                "dieťa": "person",
+                "žena": "person",
+                "muž": "person",
+                "človek": "person"
+            }
+        },
+        "vehicle": {
+            "labels": {
+                "kuriér": "truck",
+                "poštár": "truck",
+                "bicykel": "bicycle",
+                "motocykel": "motorcycle",
+                "motorka": "motorcycle",
+                "autobus": "bus",
+                "auto": "car",
+                "dodávka": "car",
+                "suv": "car",
+                "vozidlo": "car",
+                "nákladné auto": "truck"
+            }
+        },
+        "animal": {
+            "labels": {
+                "pes": "dog",
+                "mačka": "cat",
+                "vták": "bird",
+                "domáce zviera": "dog",
+                "zviera": "dog"
+            }
+        },
+        "package": {
+            "labels": {
+                "krabica": "package",
+                "balík": "package",
+                "zásielka": "package"
+            }
+        },
+        "entity": {
+            "labels": {
+                "kamera": "camera",
+                "senzor": "sensor",
+                "svetlo": "light",
+                "kľúč": "key",
+                "zámok": "lock",
+                "alarm": "alarm"
+            }
+        },
+        "nature": {
+            "labels": {
+                "záhrada": "plant",
+                "rastlina": "plant",
+                "kvet": "plant",
+                "strom": "tree"
+            }
+        }
+    },
+    "regex": "`\\b${key}(?:y|i|ovia|ov|e|a|á|é|ia)?\\b`, 'iu'"
+}

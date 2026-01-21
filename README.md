@@ -7,12 +7,12 @@
 <p align=center>
 <img src=https://img.shields.io/badge/HACS-Default-orange.svg>
 <img src="https://img.shields.io/maintenance/yes/2026.svg">
-<img src=https://img.shields.io/badge/version-1.5.2-blue>
+<img src=https://img.shields.io/badge/version-1.6.0-blue>
 <img alt="Issues" src="https://img.shields.io/github/issues/valentinfrlch/ha-llmvision?color=0088ff">
 <img alt="Static Badge" src="https://img.shields.io/badge/support-buymeacoffee?logo=buymeacoffee&logoColor=black&color=%23FFDD00&link=https%3A%2F%2Fbuymeacoffee.com%2Fllmvision">
-    <p align=center style="font-weight:bold">
-      Visual intelligence for your smart home.
-    </p>
+    <h2 align=center style="font-weight:bold">
+      Visual Intelligence for your Home.
+    </h2>
 </p>
 
   <p align="center">

@@ -1,0 +1,64 @@
+{
+    "categories": {
+        "person": {
+            "labels": {
+                "személy": "person",
+                "egyén": "person",
+                "alak": "person",
+                "személyek": "person",
+                "gyermek": "person",
+                "nő": "person",
+                "férfi": "person",
+                "ember": "person"
+            }
+        },
+        "vehicle": {
+            "labels": {
+                "futár": "truck",
+                "postás": "truck",
+                "kerékpár": "bicycle",
+                "motorkerékpár": "motorcycle",
+                "busz": "bus",
+                "autó": "car",
+                "furgon": "car",
+                "suv": "car",
+                "jármű": "car",
+                "teherautó": "truck"
+            }
+        },
+        "animal": {
+            "labels": {
+                "kutya": "dog",
+                "macska": "cat",
+                "madár": "bird",
+                "háziállat": "dog",
+                "állat": "dog"
+            }
+        },
+        "package": {
+            "labels": {
+                "doboz": "package",
+                "csomag": "package"
+            }
+        },
+        "entity": {
+            "labels": {
+                "kamera": "camera",
+                "érzékelő": "sensor",
+                "világítás": "light",
+                "kulcs": "key",
+                "zár": "lock",
+                "riasztó": "alarm"
+            }
+        },
+        "nature": {
+            "labels": {
+                "kert": "plant",
+                "növény": "plant",
+                "virág": "plant",
+                "fa": "tree"
+            }
+        }
+    },
+    "regex": "`\\b${key}(?:k|ek|ok|ök|ak|uk|ák|ők)?\\b`, 'iu'"
+}

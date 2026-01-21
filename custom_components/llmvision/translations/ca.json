@@ -357,10 +357,12 @@
                         "name": "General",
                         "description": "Establiu el proveïdor preferit a utilitzar quan el proveïdor seleccionat no estigui disponible.",
                         "data": {
-                            "fallback_provider": "Proveïdor de reserva"
+                            "fallback_provider": "Proveïdor de reserva",
+                            "request_timeout": "Temps d'espera de la sol·licitud (segons)"
                         },
                         "data_description": {
-                            "fallback_provider": "LLM Vision tornarà a intentar la sol·licitud amb el proveïdor seleccionat si el proveïdor actual falla."
+                            "fallback_provider": "LLM Vision tornarà a intentar la sol·licitud amb el proveïdor seleccionat si el proveïdor actual falla.",
+                            "request_timeout": "Temps total d'espera per a una resposta del proveïdor abans de fallar la sol·licitud."
                         }
                     },
                     "prompt_section": {
@@ -379,11 +381,13 @@
                         "name": "Cronologia",
                         "description": "La cronologia emmagatzema els esdeveniments d'avui per mostrar-los utilitzant la targeta de LLM Vision al vostre tauler.",
                         "data": {
+                            "timeline_language": "Llengua de la cronologia",
                             "retention_time": "Temps de retenció",
                             "timeline_today_summary": "Resum de la cronologia",
                             "timeline_summary_prompt": "Consigna del resum d'avui"
                         },
                         "data_description": {
+                            "timeline_language": "Seleccioneu la llengua utilitzada per generar icones a partir dels esdeveniments.",
                             "retention_time": "Suprimeix automàticament els esdeveniments després de (dies). Establiu a 0 per desactivar la supressió automàtica.",
                             "timeline_today_summary": "Activeu el resum de la cronologia per generar automàticament un resum dels esdeveniments d'avui.",
                             "timeline_summary_prompt": "La instrucció donada al model per generar un resum dels esdeveniments d'avui."

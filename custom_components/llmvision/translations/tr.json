@@ -1,0 +1,424 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "LLM Vision Kurulumu",
+                "description": "Kurmak istediğiniz sağlayıcıyı seçin."
+            },
+            "localai": {
+                "title": "LocalAI sunucunuza bağlanın",
+                "description": "LocalAI sunucunuzun IP adresini ve portunu girin.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Bağlantı",
+                        "description": "Sunucu bağlantısı",
+                        "data": {
+                            "ip_address": "IP adresi",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Güvenli bağlantılar için HTTPS kullanın"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Varsayılan model parametrelerini ayarlayın",
+                        "data": {
+                            "default_model": "Varsayılan model",
+                            "temperature": "Sıcaklık",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
+                            "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                        }
+                    }
+                }
+            },
+            "ollama": {
+                "title": "Ollama Yapılandırması",
+                "description": "Ollama sunucunuzun IP adresini ve portunu girin.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Bağlantı",
+                        "description": "Sunucu bağlantısı",
+                        "data": {
+                            "ip_address": "IP adresi",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Güvenli bağlantılar için HTTPS kullanın"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Varsayılan model parametrelerini ayarlayın",
+                        "data": {
+                            "default_model": "Varsayılan model",
+                            "temperature": "Sıcaklık",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
+                            "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Gelişmiş",
+                        "description": "Gelişmiş model parametreleri",
+                        "data": {
+                            "context_window": "Bağlam uzunluğu",
+                            "keep_alive": "Canlı tut"
+                        },
+                        "data_description": {
+                            "context_window": "Sonraki token'ı oluşturmak için kullanılan bağlam penceresinin boyutunu ayarlar.",
+                            "keep_alive": "İstek sonrasında modelin bellekte ne kadar süre kalacağını kontrol eder. Varsayılan: 5m (5 dakika), -1: süresiz bellekte tut, 0: hemen kaldır"
+                        }
+                    }
+                }
+            },
+            "openai": {
+                "title": "OpenAI Yapılandırması",
+                "description": "Geçerli bir OpenAI API anahtarı girin.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Bağlantı",
+                        "description": "OpenAI kimlik doğrulama",
+                        "data": {
+                            "api_key": "API anahtarı"
+                        },
+                        "data_description": {
+                            "api_key": "OpenAI hesabınıza kredi eklediğinizden emin olun."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Varsayılan model parametrelerini ayarlayın",
+                        "data": {
+                            "default_model": "Varsayılan model",
+                            "temperature": "Sıcaklık",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
+                            "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                        }
+                    }
+                }
+            },
+            "azure": {
+                "title": "Azure Yapılandırması",
+                "description": "Geçerli bir Azure API anahtarı, temel URL, dağıtım ve API sürümü girin.\nTemel URL şu biçimde olmalıdır: `https://alan.openai.azure.com/` (sondaki eğik çizgi dahil).",
+                "sections": {
+                    "connection_section": {
+                        "name": "Bağlantı",
+                        "description": "Azure kimlik doğrulama",
+                        "data": {
+                            "api_key": "API anahtarı",
+                            "azure_base_url": "Temel URL",
+                            "azure_deployment": "Dağıtım",
+                            "azure_version": "API Sürümü"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Varsayılan model parametrelerini ayarlayın",
+                        "data": {
+                            "default_model": "Varsayılan model",
+                            "temperature": "Sıcaklık",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
+                            "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                        }
+                    }
+                }
+            },
+            "anthropic": {
+                "title": "Anthropic Claude Yapılandırması",
+                "description": "Geçerli bir Anthropic API anahtarı girin.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Bağlantı",
+                        "description": "Anthropic kimlik doğrulama",
+                        "data": {
+                            "api_key": "API anahtarı"
+                        },
+                        "data_description": {
+                            "api_key": "Anthropic hesabınıza kredi eklediğinizden emin olun."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Varsayılan model parametrelerini ayarlayın",
+                        "data": {
+                            "default_model": "Varsayılan model",
+                            "temperature": "Sıcaklık",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
+                            "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                        }
+                    }
+                }
+            },
+            "google": {
+                "title": "Google Gemini Yapılandırması",
+                "description": "Geçerli bir Google Gemini API anahtarı girin.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Bağlantı",
+                        "description": "Google kimlik doğrulama",
+                        "data": {
+                            "api_key": "API anahtarı"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Varsayılan model parametrelerini ayarlayın",
+                        "data": {
+                            "default_model": "Varsayılan model",
+                            "temperature": "Sıcaklık",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
+                            "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                        }
+                    }
+                }
+            },
+            "groq": {
+                "title": "Groq Yapılandırması",
+                "description": "Geçerli bir Groq API anahtarı girin.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Bağlantı",
+                        "description": "Groq kimlik doğrulama",
+                        "data": {
+                            "api_key": "API anahtarı"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Varsayılan model parametrelerini ayarlayın",
+                        "data": {
+                            "default_model": "Varsayılan model",
+                            "temperature": "Sıcaklık",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
+                            "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                        }
+                    }
+                }
+            },
+            "custom_openai": {
+                "title": "Özel OpenAI Sağlayıcı Yapılandırması",
+                "description": "**Önemli**: Yalnızca API, OpenAI'nin API'si ile uyumluysa çalışır. API bir API anahtarı gerektirmiyorsa, geçici bir değer girin. Endpoint şu biçimde olmalıdır: `http(s)://temelURL(:port)/bir/endpoint`",
+                "sections": {
+                    "connection_section": {
+                        "name": "Bağlantı",
+                        "description": "Özel OpenAI kimlik doğrulama",
+                        "data": {
+                            "custom_openai_endpoint": "Özel Endpoint",
+                            "api_key": "API anahtarı"
+                        },
+                        "data_description": {
+                            "endpoint": "API endpoint'i şu biçimde: http(s)://temelURL(:port)/bir/endpoint",
+                            "api_key": "API anahtarı veya gerekli değilse 'openai'."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Varsayılan model parametrelerini ayarlayın",
+                        "data": {
+                            "default_model": "Varsayılan model",
+                            "temperature": "Sıcaklık",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
+                            "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                        }
+                    }
+                }
+            },
+            "aws_bedrock": {
+                "title": "AWS Bedrock Sağlayıcı Yapılandırması",
+                "description": "**Önemli**: Bu şu anda yalnızca şu modelleri destekler: Nova, Anthropic Claude",
+                "sections": {
+                    "connection_section": {
+                        "name": "Bağlantı",
+                        "description": "AWS kimlik doğrulama",
+                        "data": {
+                            "aws_access_key_id": "Erişim Anahtarı",
+                            "aws_secret_access_key": "Gizli Anahtar",
+                            "aws_region_name": "Bölge dizesi"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Varsayılan model parametrelerini ayarlayın",
+                        "data": {
+                            "default_model": "Varsayılan model",
+                            "temperature": "Sıcaklık",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
+                            "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                        }
+                    }
+                }
+            },
+            "openwebui": {
+                "title": "Open WebUI Yapılandırması",
+                "description": "API anahtarı (JWT token), IP Adresi, Port, HTTP(S) ve varsayılan model bilgilerini girin.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Bağlantı",
+                        "description": "Open WebUI kimlik doğrulama",
+                        "data": {
+                            "api_key": "API Anahtarı (JWT token)",
+                            "ip_address": "IP Adresi",
+                            "port": "Port",
+                            "https": "HTTPS Kullan"
+                        },
+                        "data_description": {
+                            "https": "Sunucunuz destekliyorsa güvenli bağlantılar için HTTPS kullanın."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Varsayılan model parametrelerini ayarlayın",
+                        "data": {
+                            "default_model": "Varsayılan model",
+                            "temperature": "Sıcaklık",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
+                            "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                        }
+                    }
+                }
+            },
+            "openrouter": {
+                "title": "OpenRouter Yapılandırması",
+                "description": "OpenRouter, çeşitli yapay zeka modellerine erişim sağlayan bir platformdur. OpenAI, Anthropic ve daha fazla modele bağlanmak için kullanabilirsiniz.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Bağlantı",
+                        "description": "OpenRouter kimlik doğrulama",
+                        "data": {
+                            "api_key": "API anahtarı"
+                        },
+                        "data_description": {
+                            "api_key": "OpenRouter API anahtarınız. Önce OpenRouter hesabınıza kredi eklediğinizden emin olun."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Varsayılan model parametrelerini ayarlayın",
+                        "data": {
+                            "default_model": "Varsayılan model",
+                            "temperature": "Sıcaklık",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
+                            "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "title": "Ayarlar",
+                "description": "LLM Vision entegrasyonunu yapılandırın. Bu giriş, diğer sağlayıcıları kurmadan önce gereklidir. Varsayılan ayarları kullanmak istiyorsanız, sadece 'Gönder' butonuna basın.",
+                "sections": {
+                    "general_section": {
+                        "name": "Genel",
+                        "description": "Seçilen sağlayıcı kullanılamadığında kullanılacak tercih edilen sağlayıcıyı ayarlayın.",
+                        "data": {
+                            "fallback_provider": "Yedek sağlayıcı",
+                            "request_timeout": "İstek zaman aşımı (saniye)"
+                        },
+                        "data_description": {
+                            "fallback_provider": "Mevcut sağlayıcı başarısız olursa LLM Vision isteği seçilen sağlayıcı ile yeniden deneyecektir.",
+                            "request_timeout": "Sağlayıcıdan yanıt için maksimum bekleme süresi (saniye)."
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "Sistem İstemleri",
+                        "description": "Sistem istemleri, modelin nasıl davranacağını ve yanıt vereceğini değiştirmek için kullanılır.",
+                        "data": {
+                            "system_prompt": "Sistem istemi",
+                            "title_prompt": "Başlık istemi"
+                        },
+                        "data_description": {
+                            "system_prompt": "Modelin nasıl davranacağını ve yanıt vereceğini değiştirmek için sistem istemini kullanın.",
+                            "title_prompt": "Modele başlık oluşturması için verilen talimat."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Zaman Çizelgesi",
+                        "description": "Zaman çizelgesi, kontrol panelinizdeki LLM Vision Kartı kullanılarak görüntülenmek üzere bugünün olaylarını saklar.",
+                        "data": {
+                            "timeline_language": "Zaman Çizelgesi Dili",
+                            "retention_time": "Saklama süresi",
+                            "timeline_today_summary": "Zaman Çizelgesi Özeti",
+                            "timeline_summary_prompt": "Bugün Özeti İstemi"
+                        },
+                        "data_description": {
+                            "timeline_language": "Zaman çizelgesi olayları için kullanılacak dil.",
+                            "retention_time": "Olayları belirtilen gün sonunda otomatik sil. Otomatik silmeyi devre dışı bırakmak için 0 olarak ayarlayın.",
+                            "timeline_today_summary": "Bugünün olaylarının özetini otomatik olarak oluşturmak için zaman çizelgesi özetini etkinleştirin.",
+                            "timeline_summary_prompt": "Modele bugünün olaylarının özetini oluşturması için verilen talimat."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Hafıza (Beta)",
+                        "description": "Hafızadaki içerik sağlayıcılar arasında senkronize edilir ve modele ek bağlam sağlamak için kullanılır.",
+                        "data": {
+                            "memory_paths": "Görsel dosya yolu",
+                            "memory_strings": "Görsel açıklaması"
+                        },
+                        "data_description": {
+                            "memory_paths": "Görsel dosyasının yolunu girin.",
+                            "memory_strings": "Görselin açıklamasını girin (örn: 'Bu Cookie, benim köpeğim'). Görseller ve açıklamalar aynı sırada olmalı ve açıklama sayısı görsel sayısı kadar olmalıdır."
+                        }
+                    }
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "Sunucuya bağlanılamadı. API anahtarınızı veya IP ve port bilgilerini kontrol edin",
+            "empty_api_key": "Geçersiz API anahtarı",
+            "invalid_provider": "Geçersiz sağlayıcı seçildi",
+            "memory_not_supported": "Bu sağlayıcı hafızayı desteklemiyor",
+            "invalid_image_path": "Bir veya daha fazla görsel yolu geçersiz",
+            "mismatched_lengths": "Görsel yolları ve açıklamaların sayısı eşleşmelidir"
+        },
+        "abort": {
+            "unknown_provider": "Bilinmeyen sağlayıcı",
+            "reconfigure_successful": "Ayarlar başarıyla kaydedildi"
+        }
+    }
+}

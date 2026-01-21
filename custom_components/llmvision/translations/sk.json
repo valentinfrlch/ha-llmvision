@@ -357,10 +357,12 @@
                         "name": "Všeobecné",
                         "description": "Nastavte preferovaného poskytovateľa, ktorý sa použije, ak vybraný poskytovateľ nie je dostupný.",
                         "data": {
-                            "fallback_provider": "Záložný poskytovateľ"
+                            "fallback_provider": "Záložný poskytovateľ",
+                            "request_timeout": "Časový limit požiadavky (sekundy)"
                         },
                         "data_description": {
-                            "fallback_provider": "LLM Vision zopakuje požiadavku s vybraným poskytovateľom, ak aktuálny zlyhá."
+                            "fallback_provider": "LLM Vision zopakuje požiadavku s vybraným poskytovateľom, ak aktuálny zlyhá.",
+                            "request_timeout": "Maximálny čas čakania na odpoveď od poskytovateľa (sekundy)."
                         }
                     },
                     "prompt_section": {
@@ -379,11 +381,13 @@
                         "name": "Časová os",
                         "description": "Časová os ukladá dnešné udalosti na zobrazenie v LLM Vision karte na vašom paneli.",
                         "data": {
+                            "timeline_language": "Jazyk časovej osi",
                             "retention_time": "Doba uchovania",
                             "timeline_today_summary": "Súhrn časovej osi",
                             "timeline_summary_prompt": "Výzva na súhrn dňa"
                         },
                         "data_description": {
+                            "timeline_language": "Vyberte jazyk používaný pre reťazce a kategórie časovej osi.",
                             "retention_time": "Automaticky vymazať udalosti po (dňoch). Nastavte na 0 pre vypnutie automatického mazania.",
                             "timeline_today_summary": "Povoliť automatické generovanie súhrnu dnešných udalostí.",
                             "timeline_summary_prompt": "Inštrukcia pre model na generovanie súhrnu dnešných udalostí."
