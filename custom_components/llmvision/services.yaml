@@ -112,18 +112,26 @@ image_analyzer:
             - "json"
     structure:
       name: Structure
-      description: 'JSON schema defining the expected response structure (only used when response_format is json). To enable automatic title generation for calendar events, include a field in your schema for the title (e.g., "title": {"type": "string", "description": "Event title"}) and specify the field name below.'
+      description: 'JSON schema defining the expected response structure (only used when response_format is json). To enable automatic title generation for timeline events, include a field in your schema for the title (e.g., "title": {"type": "string", "description": "Event title"}) and specify the field names below.'
       required: false
-      example: '{"type": "object", "properties": {"package_detected": {"type": "boolean", "description": "Is a package visible"}, "confidence": {"type": "number", "minimum": 0, "maximum": 100}}, "required": ["package_detected"]}'
+      example: '{"type": "object", "properties": {"title": {"type": "string", "description": "Event title"}, "description": {"type": "string", "description": "Event description"}, "confidence": {"type": "number", "minimum": 0, "maximum": 100}}, "required": ["title", "description", "confidence"], "additionalProperties": false}'
       selector:
         text:
           multiline: true
     title_field:
       name: Title Field Name
-      description: 'Name of the field in your JSON schema that contains the event title (used for calendar entries and notifications). Leave empty to use fallback title "Motion detected".'
+      description: 'Name of the field in your JSON schema that contains the event title (used for timeline). Leave empty to use fallback title "Motion detected".'
       required: false
       example: 'title'
-      default: ''
+      default: 'title'
+      selector:
+        text:
+    description_field:
+      name: Description Field Name
+      description: 'Name of the field in your JSON schema that contains the event description (used for timeline).'
+      required: false
+      example: 'description'
+      default: 'description'
       selector:
         text:
 
@@ -251,18 +259,26 @@ video_analyzer:
             - "json"
     structure:
       name: Structure
-      description: 'JSON schema defining the expected response structure (only used when response_format is json). To enable automatic title generation for calendar events, include a field in your schema for the title (e.g., "title": {"type": "string", "description": "Event title"}) and specify the field name below.'
+      description: 'JSON schema defining the expected response structure (only used when response_format is json). To enable automatic title generation for timeline events, include a field in your schema for the title (e.g., "title": {"type": "string", "description": "Event title"}) and specify the field names below.'
       required: false
-      example: '{"type": "object", "properties": {"package_detected": {"type": "boolean", "description": "Is a package visible"}, "confidence": {"type": "number", "minimum": 0, "maximum": 100}}, "required": ["package_detected"]}'
+      example: '{"type": "object", "properties": {"title": {"type": "string", "description": "Event title"}, "description": {"type": "string", "description": "Event description"}, "confidence": {"type": "number", "minimum": 0, "maximum": 100}}, "required": ["title", "description", "confidence"], "additionalProperties": false}'
       selector:
         text:
           multiline: true
     title_field:
       name: Title Field Name
-      description: 'Name of the field in your JSON schema that contains the event title (used for calendar entries and notifications). Leave empty to use fallback title "Motion detected".'
+      description: 'Name of the field in your JSON schema that contains the event title (used for timeline). Leave empty to use fallback title "Motion detected".'
       required: false
       example: 'title'
-      default: ''
+      default: 'title'
+      selector:
+        text:
+    description_field:
+      name: Description Field Name
+      description: 'Name of the field in your JSON schema that contains the event description (used for timeline).'
+      required: false
+      example: 'description'
+      default: 'description'
       selector:
         text:
 
@@ -393,18 +409,26 @@ stream_analyzer:
             - "json"
     structure:
       name: Structure
-      description: 'JSON schema defining the expected response structure (only used when response_format is json). To enable automatic title generation for calendar events, include a field in your schema for the title (e.g., "title": {"type": "string", "description": "Event title"}) and specify the field name below.'
+      description: 'JSON schema defining the expected response structure (only used when response_format is json). To enable automatic title generation for timeline events, include a field in your schema for the title (e.g., "title": {"type": "string", "description": "Event title"}) and specify the field names below.'
       required: false
-      example: '{"type": "object", "properties": {"package_detected": {"type": "boolean", "description": "Is a package visible"}, "confidence": {"type": "number", "minimum": 0, "maximum": 100}}, "required": ["package_detected"]}'
+      example: '{"type": "object", "properties": {"title": {"type": "string", "description": "Event title"}, "description": {"type": "string", "description": "Event description"}, "confidence": {"type": "number", "minimum": 0, "maximum": 100}}, "required": ["title", "description", "confidence"], "additionalProperties": false}'
       selector:
         text:
           multiline: true
     title_field:
       name: Title Field Name
-      description: 'Name of the field in your JSON schema that contains the event title (used for calendar entries and notifications). Leave empty to use fallback title "Motion detected".'
+      description: 'Name of the field in your JSON schema that contains the event title (used for timeline). Leave empty to use fallback title "Motion detected".'
       required: false
       example: 'title'
-      default: ''
+      default: 'title'
+      selector:
+        text:
+    description_field:
+      name: Description Field Name
+      description: 'Name of the field in your JSON schema that contains the event description (used for timeline).'
+      required: false
+      example: 'description'
+      default: 'description'
       selector:
         text:
 

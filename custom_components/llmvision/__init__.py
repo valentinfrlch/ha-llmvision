@@ -73,6 +73,7 @@ from .const import (
     RESPONSE_FORMAT,
     STRUCTURE,
     TITLE_FIELD,
+    DESCPRIPTION_FIELD,
 )
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -472,6 +473,7 @@ class ServiceCallData:
         self.response_format = data_call.data.get(RESPONSE_FORMAT, "text")
         self.structure = data_call.data.get(STRUCTURE, None)
         self.title_field = data_call.data.get(TITLE_FIELD, "")
+        self.description_field = data_call.data.get(DESCPRIPTION_FIELD, "")
         self.memory: Memory | None = None
 
         # ------------ Create Event ------------
@@ -555,11 +557,24 @@ async def _create_event(
         title = response.get("title") or "Motion detected"
         title = str(title)
 
+        description = response.get("response_text", "")
+        structured_response = response.get("structured_response")
+
+        # Handle structured response for description extraction
+        if (
+            call.response_format == "json"
+            and call.description_field
+            and isinstance(structured_response, dict)
+        ):
+            description_field_value = structured_response.get(call.description_field)
+            if description_field_value is not None:
+                description = str(description_field_value)
+
         await timeline.create_event(
             start=start,
             end=dt_util.now() + timedelta(minutes=1),
             title=title,
-            description=response["response_text"],
+            description=description,
             key_frame=key_frame,
             camera_name=camera_name,
             label="",

@@ -265,8 +265,9 @@ class Request:
                 # If parsing fails, return as text
                 result["response_text"] = response_text
             else:
-                # Also keep text version for backward compatibility
-                result["response_text"] = response_text
+                # drop response_text if structured_response is present
+                if "structured_response" in result:
+                    del result["response_text"]
         else:
             result["response_text"] = response_text
 
