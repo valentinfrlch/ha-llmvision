@@ -314,7 +314,6 @@ class TestGoogle:
             assert headers["content-type"] == "application/json"
 
 
-
 class TestProviderBase:
     """Test Provider base class methods."""
 
@@ -330,26 +329,27 @@ class TestProviderBase:
                 }
             }
         }
-        
+
         with patch('custom_components.llmvision.providers.async_get_clientsession'):
             provider = OpenAI(mock_hass_with_session, "test_key", "gpt-4")
             call = Mock()
             call.provider = "test_provider"
-            
+            call.model_is_glimpse = Mock(return_value=False)
+
             result = provider._get_default_parameters(call)
-            
+
             assert result["temperature"] == 0.8
             assert result["top_p"] == 0.95
 
     def test_get_system_prompt_default(self, mock_hass_with_session):
         """Test _get_system_prompt returns default."""
         mock_hass_with_session.data = {DOMAIN: {}}
-        
+
         with patch('custom_components.llmvision.providers.async_get_clientsession'):
             provider = OpenAI(mock_hass_with_session, "test_key", "gpt-4")
-            
+
             result = provider._get_system_prompt()
-            
+
             assert isinstance(result, str)
             assert len(result) > 0
 
@@ -363,23 +363,23 @@ class TestProviderBase:
                 }
             }
         }
-        
+
         with patch('custom_components.llmvision.providers.async_get_clientsession'):
             provider = OpenAI(mock_hass_with_session, "test_key", "gpt-4")
-            
+
             result = provider._get_system_prompt()
-            
+
             assert result == "Custom system prompt"
 
     def test_get_title_prompt_default(self, mock_hass_with_session):
         """Test _get_title_prompt returns default."""
         mock_hass_with_session.data = {DOMAIN: {}}
-        
+
         with patch('custom_components.llmvision.providers.async_get_clientsession'):
             provider = OpenAI(mock_hass_with_session, "test_key", "gpt-4")
-            
+
             result = provider._get_title_prompt()
-            
+
             assert isinstance(result, str)
             assert len(result) > 0
 
@@ -388,10 +388,10 @@ class TestProviderBase:
         with patch('custom_components.llmvision.providers.async_get_clientsession'):
             # Create a basic provider that doesn't override the method
             from custom_components.llmvision.providers import Provider
-            
+
             # We can't instantiate abstract class, so test through OpenAI
             provider = OpenAI(mock_hass_with_session, "test_key", "gpt-4")
-            
+
             # OpenAI overrides this, so it should return True
             assert provider.supports_structured_output() is True
 
@@ -470,7 +470,6 @@ class TestGroq:
             groq = Groq(mock_hass_with_session, "test_api_key", "llama-3")
             
             assert groq.supports_structured_output() is True
-
 
 
 class TestLocalAI:

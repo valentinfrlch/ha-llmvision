@@ -521,6 +521,10 @@ class ServiceCallData:
     def get_service_call_data(self):
         return self
 
+    def model_is_glimpse(self) -> bool:
+        """Check if model is Glimpse-v1 like based on model name"""
+        return bool(self.model and "glimpse-v1" in self.model.lower())
+
 
 async def _create_event(
     hass,

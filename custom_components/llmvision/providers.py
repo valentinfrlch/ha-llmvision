@@ -59,6 +59,7 @@ from .const import (
     CONF_TITLE_PROMPT,
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_TITLE_PROMPT,
+    GLIMPSE_V1_INSTRUCTIONS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -214,6 +215,31 @@ class Request:
                 return await self.call(call, _is_fallback_retry=True)
             else:
                 response_text = "Couldn't generate content. Check logs for details."
+        # Handle Glimpse-v1 responses
+        try:
+            _LOGGER.debug(
+                f"Provider: {provider_name}, Model: {call.model}, Response: {response_text}"
+            )
+            _LOGGER.debug(f"Is Glimpse Model: {call.model_is_glimpse()}")
+            if hasattr(call, "model_is_glimpse") and call.model_is_glimpse():
+                try:
+                    parsed = json.loads(response_text)
+                    result = {}
+                    if isinstance(parsed, dict):
+                        title_val = parsed.get("title")
+                        desc_val = parsed.get("description")
+                        if title_val is not None:
+                            result["title"] = re.sub(
+                                r"[^a-zA-Z0-9À-ÖØ-öø-ɏ\s]", "", str(title_val)
+                            )
+                        if desc_val is not None:
+                            result["description"] = str(desc_val)
+                        # Return early with title/description (no response_text)
+                        return result
+                except Exception as e:
+                    _LOGGER.debug(f"Ollama Glimpse JSON parse failed: {e}")
+        except Exception:
+            pass
 
         gen_title = None
         try:
@@ -341,8 +367,12 @@ class Provider(ABC):
             "temperature": config.get(CONF_TEMPERATURE, 0.5),
             "top_p": config.get(CONF_TOP_P, 0.9),
             "keep_alive": config.get(CONF_KEEP_ALIVE, 5),
-            "context_window": config.get(CONF_CONTEXT_WINDOW, 2048),
+            "context_window": config.get(CONF_CONTEXT_WINDOW, 4096),
         }
+        if call.model_is_glimpse():
+            # Set 0.95 top_p, 0.1 temperature for Glimpse-v1
+            default_parameters["temperature"] = 0.1
+            default_parameters["top_p"] = 0.95
         return default_parameters
 
     def _get_system_prompt(self) -> str:
@@ -1432,10 +1462,9 @@ class Ollama(Provider):
         )
 
         response = await self._post(url=endpoint, headers={}, data=data)
-        message = response.get("message") if isinstance(response, dict) else None
-        if not isinstance(message, dict):
+        if not isinstance(response, dict):
             raise ServiceValidationError("invalid_response")
-        response_text = message.get("content")
+        response_text = response.get("response")
         if response_text is None:
             raise ServiceValidationError("invalid_response")
         return response_text
@@ -1444,12 +1473,17 @@ class Ollama(Provider):
         default_parameters = self._get_default_parameters(call)
         payload = {
             "model": self.model,
-            "messages": [],
+            "system": self._get_system_prompt() if not call.model_is_glimpse() else "",
+            "prompt": (
+                call.message if not call.model_is_glimpse() else GLIMPSE_V1_INSTRUCTIONS
+            ),
+            "images": call.base64_images,
             "stream": False,
             "keep_alive": default_parameters.get("keep_alive"),
             "options": {
                 "num_predict": call.max_tokens,
                 "temperature": default_parameters.get("temperature"),
+                "top_p": default_parameters.get("top_p"),
                 "num_ctx": default_parameters.get("context_window"),
             },
         }
@@ -1469,20 +1503,6 @@ class Ollama(Provider):
                 raise ServiceValidationError(
                     f"Invalid JSON in structure parameter: {str(e)}"
                 )
-
-        for image, filename in zip(call.base64_images, call.filenames):
-            tag = (
-                ("Image " + str(call.base64_images.index(image) + 1))
-                if filename == ""
-                else filename
-            )
-            image_message = {"role": "user", "content": tag + ":", "images": [image]}
-            payload["messages"].append(image_message)
-        prompt_message = {"role": "user", "content": call.message}
-        # User message
-        payload["messages"].append(prompt_message)
-        # System prompt
-        payload["system"] = self._get_system_prompt()
 
         # Memory if use_memory is set
         if getattr(call, "use_memory", False):
@@ -1506,6 +1526,7 @@ class Ollama(Provider):
             "options": {
                 "num_predict": call.max_tokens,
                 "temperature": default_parameters.get("temperature"),
+                "top_p": default_parameters.get("top_p"),
                 "num_ctx": default_parameters.get("context_window"),
             },
         }

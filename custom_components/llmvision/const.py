@@ -88,7 +88,47 @@ VERSION_AZURE = "2025-04-01-preview"  # https://learn.microsoft.com/en-us/azure/
 DEFAULT_SYSTEM_PROMPT = "Analyze the images and give a concise, objective event summary (<255 chars). Focus on people, pets, and moving objects; track changes across images. Exclude static details, avoid speculation, and follow user instructions."
 DEFAULT_TITLE_PROMPT = "Generate a clear event title (<6 words) from the description. Use format: <Object> seen at <location>. Keep it concise, factual, and alert-ready. Include names if given. Avoid extra details or interpretations."
 DATA_EXTRACTION_PROMPT = "Analyze the image(s) and extract only the requested info (e.g., object count, license plate). Output strictly in {data_format}. Double-check accuracy and ensure results reflect the image content. Do not explain or add extra info."
+GLIMPSE_V1_INSTRUCTIONS = """
+Task: Analyze the provided security camera image and generate a smart-home event notification.
 
+Output:
+Return a single valid JSON object with exactly two string fields:
+- "title": a short summary (2–5 words)
+- "description": a brief factual description of what is happening
+
+Title Rules:
+The "title" must:
+- Be 2-5 words
+- Be short and glanceable
+- Avoid long phrases or full sentences
+The title should summarize the event category and location.
+All additional detail belongs in "description".
+
+Delivery Inference Rules:
+If a person is:
+- Holding or placing a package or letters
+- and wearing a delivery uniform
+- or a delivery vehicle is visible
+Then:
+- the title must contain the word "delivery":
+  - Use a delivery-style title (2-5 words) (examples: "Package delivery", "Delivery at porch", "Courier delivery")
+  - Include the carrier name in the description if the carrier branding is visually identifiable (e.g. "Amazon delivery", "FedEx delivery")
+
+Empty scene handling:
+- If no clear activity or relevant objects (such as people, vehicles, or animals) are present, set:
+  - "title" to exactly: "No activity"
+  - "description" to a brief statement describing that nothing notable is seen
+
+Description Rules:
+- 1–2 short sentences
+- Do not include explanations or reasoning
+- Do not repeat the task or rules
+- Use present tense
+- Neutral and factual
+- Describe what is happening
+
+Do not mention camera angle, lighting quality, or image clarity.
+"""
 # Models
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 DEFAULT_ANTHROPIC_MODEL = "claude-3-7-sonnet-latest"
@@ -110,7 +150,7 @@ ENDPOINT_ANTHROPIC = "https://api.anthropic.com/v1/messages"
 ENDPOINT_GOOGLE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 ENDPOINT_GROQ = "https://api.groq.com/openai/v1/chat/completions"
 ENDPOINT_LOCALAI = "{protocol}://{ip_address}:{port}/v1/chat/completions"
-ENDPOINT_OLLAMA = "{protocol}://{ip_address}:{port}/api/chat"
+ENDPOINT_OLLAMA = "{protocol}://{ip_address}:{port}/api/generate"
 ENDPOINT_OPENWEBUI = "{protocol}://{ip_address}:{port}/api/chat/completions"
 ENDPOINT_AZURE = "{base_url}openai/deployments/{deployment}/chat/completions?api-version={api_version}"
 ENDPOINT_OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
