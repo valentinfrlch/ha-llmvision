@@ -1012,7 +1012,7 @@ class Google(Provider):
         thinking_budget = getattr(call, "thinking_budget", 0)
         if thinking_budget > 0:
             payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": thinking_budget}
-        elif "gemini-2.5" in self.model or "gemini-3" in self.model:
+        elif "gemini-2.0" in self.model or "gemini-2.5" in self.model or "gemini-3" in self.model:
             payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
 
         # Add structured output support
@@ -1075,7 +1075,7 @@ class Google(Provider):
         thinking_budget = getattr(call, "thinking_budget", 0)
         if thinking_budget > 0:
             payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": thinking_budget}
-        elif "gemini-2.5" in self.model or "gemini-3" in self.model:
+        elif "gemini-2.0" in self.model or "gemini-2.5" in self.model or "gemini-3" in self.model:
             payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
 
         # Add structured output support
