@@ -26,6 +26,7 @@ from .const import (
     CONF_DEFAULT_MODEL,
     CONF_TEMPERATURE,
     CONF_TOP_P,
+    CONF_THINKING_BUDGET,
     CONF_AZURE_VERSION,
     CONF_AZURE_BASE_URL,
     CONF_AZURE_DEPLOYMENT,
@@ -850,6 +851,14 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                     }
                                 }
                             ),
+                            vol.Optional(CONF_THINKING_BUDGET, default=0): selector(
+                                {
+                                    "number": {
+                                        "min": 0,
+                                        "mode": "box",
+                                    }
+                                }
+                            ),
                         }
                     ),
                     {"collapsed": False},
@@ -869,6 +878,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ),
                     CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
                     CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                    CONF_THINKING_BUDGET: self.init_info.get(CONF_THINKING_BUDGET, 0),
                 },
             }
             data_schema = self.add_suggested_values_to_schema(data_schema, suggested)

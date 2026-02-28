@@ -188,12 +188,14 @@
                         "data": {
                             "default_model": "Default model",
                             "temperature": "Temperature",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Thinking Budget"
                         },
                         "data_description": {
                             "default_model": "The default model to use when no other model is specified.",
                             "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
-                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused.",
+                            "thinking_budget": "Token budget for model thinking/reasoning (Gemini 2.5+ only). Set to 0 to disable. Pro models require thinking (min 128). Note: thinking tokens consume the max_tokens budget."
                         }
                     }
                 }

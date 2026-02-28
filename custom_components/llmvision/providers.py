@@ -54,6 +54,7 @@ from .const import (
     CONF_CONTEXT_WINDOW,
     CONF_TEMPERATURE,
     CONF_TOP_P,
+    CONF_THINKING_BUDGET,
     CONF_REQUEST_TIMEOUT,
     CONF_SYSTEM_PROMPT,
     CONF_TITLE_PROMPT,
@@ -166,6 +167,8 @@ class Request:
         call.model = getattr(call, "model", None) or self.get_default_model(entry_id)
         call.temperature = config.get(CONF_TEMPERATURE, 0.5)
         call.top_p = config.get(CONF_TOP_P, 0.9)
+        if getattr(call, "thinking_budget", None) is None:
+            call.thinking_budget = config.get(CONF_THINKING_BUDGET, 0)
         call.base64_images = self.base64_images
         call.filenames = self.filenames
 

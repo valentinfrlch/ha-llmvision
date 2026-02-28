@@ -467,7 +467,7 @@ class ServiceCallData:
         self.target_width = data_call.data.get(TARGET_WIDTH, 3840)
         self.temperature = float()
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 3000))
-        self.thinking_budget = int(data_call.data.get(THINKING_BUDGET, 0)) if data_call.data.get(THINKING_BUDGET) else 0
+        self.thinking_budget = int(data_call.data[THINKING_BUDGET]) if THINKING_BUDGET in data_call.data else None
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)
