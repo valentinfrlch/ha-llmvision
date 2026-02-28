@@ -1009,11 +1009,17 @@ class Google(Provider):
             },
         }
 
-        thinking_budget = getattr(call, "thinking_budget", 0)
-        if thinking_budget > 0:
-            payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": thinking_budget}
-        elif "gemini-2.0" in self.model or "gemini-2.5" in self.model or "gemini-3" in self.model:
-            payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
+        # Configure thinking for Gemini 2.5+ models.
+        # Flash models: disable thinking by default (thinkingBudget=0) to prevent
+        # thinking tokens from consuming the maxOutputTokens budget.
+        # Pro models: require thinking and reject thinkingBudget=0, so only
+        # send thinkingConfig when user explicitly sets a budget.
+        if "gemini-2.5" in self.model or "gemini-3" in self.model:
+            thinking_budget = getattr(call, "thinking_budget", 0)
+            if thinking_budget > 0:
+                payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": thinking_budget}
+            elif "pro" not in self.model.lower():
+                payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
 
         # Add structured output support
         if call.response_format == "json" and call.structure:
@@ -1072,11 +1078,17 @@ class Google(Provider):
             },
         }
 
-        thinking_budget = getattr(call, "thinking_budget", 0)
-        if thinking_budget > 0:
-            payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": thinking_budget}
-        elif "gemini-2.0" in self.model or "gemini-2.5" in self.model or "gemini-3" in self.model:
-            payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
+        # Configure thinking for Gemini 2.5+ models.
+        # Flash models: disable thinking by default (thinkingBudget=0) to prevent
+        # thinking tokens from consuming the maxOutputTokens budget.
+        # Pro models: require thinking and reject thinkingBudget=0, so only
+        # send thinkingConfig when user explicitly sets a budget.
+        if "gemini-2.5" in self.model or "gemini-3" in self.model:
+            thinking_budget = getattr(call, "thinking_budget", 0)
+            if thinking_budget > 0:
+                payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": thinking_budget}
+            elif "pro" not in self.model.lower():
+                payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
 
         # Add structured output support
         if call.response_format == "json" and call.structure:

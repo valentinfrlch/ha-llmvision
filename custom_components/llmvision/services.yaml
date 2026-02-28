@@ -86,12 +86,14 @@ image_analyzer:
         number:
     thinking_budget:
       name: Thinking Budget
-      description: 'Minimum tokens reserved for model thinking/reasoning (for compatible models like Gemini 2.5). Set to 0 to disable thinking.'
+      description: 'Token budget for model thinking/reasoning (Gemini 2.5+ Flash/Gemini 3 Flash). Set to 0 (default) to disable thinking. Pro models require thinking (min 128) and ignore this when set to 0.'
       required: false
       example: 0
       default: 0
       selector:
         number:
+          min: 0
+          mode: box
     generate_title:
       name: Generate Title
       required: false
@@ -241,12 +243,14 @@ video_analyzer:
         number:
     thinking_budget:
       name: Thinking Budget
-      description: 'Minimum tokens reserved for model thinking/reasoning (for compatible models like Gemini 2.5). Set to 0 to disable thinking.'
+      description: 'Token budget for model thinking/reasoning (Gemini 2.5+ Flash/Gemini 3 Flash). Set to 0 (default) to disable thinking. Pro models require thinking (min 128) and ignore this when set to 0.'
       required: false
       example: 0
       default: 0
       selector:
         number:
+          min: 0
+          mode: box
     generate_title:
       name: Generate Title
       required: false
@@ -399,12 +403,14 @@ stream_analyzer:
         number:
     thinking_budget:
       name: Thinking Budget
-      description: 'Minimum tokens reserved for model thinking/reasoning (for compatible models like Gemini 2.5). Set to 0 to disable thinking.'
+      description: 'Token budget for model thinking/reasoning (Gemini 2.5+ Flash/Gemini 3 Flash). Set to 0 (default) to disable thinking. Pro models require thinking (min 128) and ignore this when set to 0.'
       required: false
       example: 0
       default: 0
       selector:
         number:
+          min: 0
+          mode: box
     generate_title:
       name: Generate Title
       required: false
@@ -554,12 +560,14 @@ data_analyzer:
         number:
     thinking_budget:
       name: Thinking Budget
-      description: 'Minimum tokens reserved for model thinking/reasoning (for compatible models like Gemini 2.5). Set to 0 to disable thinking.'
+      description: 'Token budget for model thinking/reasoning (Gemini 2.5+ Flash/Gemini 3 Flash). Set to 0 (default) to disable thinking. Pro models require thinking (min 128) and ignore this when set to 0.'
       required: false
       example: 0
       default: 0
       selector:
         number:
+          min: 0
+          mode: box
     generate_title:
       name: Generate Title
       required: false
