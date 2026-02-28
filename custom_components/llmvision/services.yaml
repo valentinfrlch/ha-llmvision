@@ -84,6 +84,14 @@ image_analyzer:
       default: 3000
       selector:
         number:
+    thinking_budget:
+      name: Thinking Budget
+      description: 'Minimum tokens reserved for model thinking/reasoning (for compatible models like Gemini 2.5). Set to 0 to disable thinking.'
+      required: false
+      example: 0
+      default: 0
+      selector:
+        number:
     generate_title:
       name: Generate Title
       required: false
@@ -229,6 +237,14 @@ video_analyzer:
       required: false
       example: 3000
       default: 3000
+      selector:
+        number:
+    thinking_budget:
+      name: Thinking Budget
+      description: 'Minimum tokens reserved for model thinking/reasoning (for compatible models like Gemini 2.5). Set to 0 to disable thinking.'
+      required: false
+      example: 0
+      default: 0
       selector:
         number:
     generate_title:
@@ -381,6 +397,14 @@ stream_analyzer:
       default: 3000
       selector:
         number:
+    thinking_budget:
+      name: Thinking Budget
+      description: 'Minimum tokens reserved for model thinking/reasoning (for compatible models like Gemini 2.5). Set to 0 to disable thinking.'
+      required: false
+      example: 0
+      default: 0
+      selector:
+        number:
     generate_title:
       name: Generate Title
       required: false
@@ -526,6 +550,14 @@ data_analyzer:
       required: false
       example: 3000
       default: 3000
+      selector:
+        number:
+    thinking_budget:
+      name: Thinking Budget
+      description: 'Minimum tokens reserved for model thinking/reasoning (for compatible models like Gemini 2.5). Set to 0 to disable thinking.'
+      required: false
+      example: 0
+      default: 0
       selector:
         number:
     generate_title:

@@ -44,6 +44,7 @@ from .const import (
     MODEL,
     PROVIDER,
     MAXTOKENS,
+    THINKING_BUDGET,
     TARGET_WIDTH,
     IMAGE_FILE,
     IMAGE_ENTITY,
@@ -466,6 +467,7 @@ class ServiceCallData:
         self.target_width = data_call.data.get(TARGET_WIDTH, 3840)
         self.temperature = float()
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 3000))
+        self.thinking_budget = int(data_call.data.get(THINKING_BUDGET, 0)) if data_call.data.get(THINKING_BUDGET) else 0
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)

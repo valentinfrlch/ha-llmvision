@@ -1009,6 +1009,12 @@ class Google(Provider):
             },
         }
 
+        thinking_budget = getattr(call, "thinking_budget", 0)
+        if thinking_budget > 0:
+            payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": thinking_budget}
+        elif "gemini-2.5" in self.model or "gemini-3" in self.model:
+            payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
+
         # Add structured output support
         if call.response_format == "json" and call.structure:
             import json
@@ -1065,6 +1071,12 @@ class Google(Provider):
                 "topP": default_parameters.get("top_p"),
             },
         }
+
+        thinking_budget = getattr(call, "thinking_budget", 0)
+        if thinking_budget > 0:
+            payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": thinking_budget}
+        elif "gemini-2.5" in self.model or "gemini-3" in self.model:
+            payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
 
         # Add structured output support
         if call.response_format == "json" and call.structure:
