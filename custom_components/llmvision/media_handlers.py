@@ -466,16 +466,21 @@ class MediaProcessor:
                 remaining -= 1
 
         # Fill remaining slots with best scored frames
+        best_rest = []
         for name, data, score in frames_with_scores:
             if remaining <= 0:
                 break
-            selected_frames.append((name, data, score))
+            best_rest.append((name, data, score))
             remaining -= 1
+
+        # Keep chronological order for the rest
+        best_rest.sort(key=lambda x: int(x[0].rsplit("-", 1)[-1]))
+        selected_frames.extend(best_rest)
 
         # Add selected frames to client
         if selected_frames:
-            # Choose keyframe among the selected frames using the last as reference
-            reference_bytes = selected_frames[-1][1]
+            # Choose keyframe among the selected frames using the first as reference
+            reference_bytes = selected_frames[0][1]
             candidate_bytes = [data for _, data, _ in selected_frames]
             key_idx = await self._select_keyframe_index(
                 reference_bytes, candidate_bytes
