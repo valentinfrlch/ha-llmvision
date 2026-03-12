@@ -41,6 +41,7 @@ async def _get_category_and_label(
         "English": "en",
         "Spanish": "es",
         "French": "fr",
+        "Greek": "el",
         "Hungarian": "hu",
         "Italian": "it",
         "Dutch": "nl",
