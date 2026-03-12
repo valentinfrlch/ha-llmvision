@@ -141,12 +141,12 @@ blueprint:
           name: Maximum Tokens
           description: >
             Maximum number of tokens to generate. Use this to control the length of the summaries.
-          default: 20
+          default: 4000
           selector:
             number:
-              min: 1.0
-              max: 300.0
-              step: 1.0
+              min: 1
+              max: 10000
+              step: 1
               mode: slider
     notification_section:
       name: Notification Settings
@@ -553,7 +553,7 @@ action:
         message: '{{importance_prompt}}'
         include_filename: true
         target_width: 1280
-        max_tokens: 3
+        max_tokens: 4000
       response_variable: importance
 - choose:
   - conditions:
