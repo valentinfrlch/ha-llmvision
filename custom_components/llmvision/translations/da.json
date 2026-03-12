@@ -1,0 +1,237 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "LLM Vision opsætning",
+                "description": "Vælg den udbyder, du vil konfigurere."
+            },
+            "localai": {
+                "title": "Forbind til din LocalAI server",
+                "description": "Angiv IP-adresse og port på din LocalAI server.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "Serverforbindelse",
+                        "data": {
+                            "ip_address": "IP-adresse",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Brug HTTPS for sikre forbindelser"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standard modelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen der bruges, når ingen anden model er valgt.",
+                            "temperature": "Styrer tilfældigheden i output. Lavere værdier giver mere forudsigelige svar.",
+                            "top_p": "Styrer variationen i output. Lavere værdier giver mere fokuserede svar."
+                        }
+                    }
+                }
+            },
+            "ollama": {
+                "title": "Konfigurer Ollama",
+                "description": "Angiv IP-adresse og port på din Ollama server.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "Serverforbindelse",
+                        "data": {
+                            "ip_address": "IP-adresse",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Brug HTTPS for sikre forbindelser"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standard modelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen der bruges, når ingen anden model er valgt.",
+                            "temperature": "Styrer tilfældigheden i output. Lavere værdier giver mere forudsigelige svar.",
+                            "top_p": "Styrer variationen i output. Lavere værdier giver mere fokuserede svar."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Avanceret",
+                        "description": "Avancerede modelparametre",
+                        "data": {
+                            "context_window": "Kontekstlængde",
+                            "keep_alive": "Hold aktiv"
+                        },
+                        "data_description": {
+                            "context_window": "Angiver størrelsen på kontekstvinduet til generering af næste token.",
+                            "keep_alive": "Bestemmer hvor længe modellen forbliver indlæst i hukommelsen. Standard: 5m, -1: behold i hukommelsen, 0: aflæs straks"
+                        }
+                    }
+                }
+            },
+            "openai": {
+                "title": "Konfigurer OpenAI",
+                "description": "Indtast en gyldig OpenAI API-nøgle.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "OpenAI godkendelse",
+                        "data": {
+                            "api_key": "API-nøgle"
+                        },
+                        "data_description": {
+                            "api_key": "Sørg for at have saldo på din OpenAI konto."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standard modelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen der bruges, når ingen anden model er valgt.",
+                            "temperature": "Styrer tilfældigheden i output. Lavere værdier giver mere forudsigelige svar.",
+                            "top_p": "Styrer variationen i output. Lavere værdier giver mere fokuserede svar."
+                        }
+                    }
+                }
+            },
+            "azure": {
+                "title": "Konfigurer Azure",
+                "description": "Indtast en gyldig Azure API-nøgle, base URL, deployment og API-version.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "Azure godkendelse",
+                        "data": {
+                            "api_key": "API-nøgle",
+                            "azure_base_url": "Base URL",
+                            "azure_deployment": "Deployment",
+                            "azure_version": "API-version"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standard modelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen der bruges, når ingen anden model er valgt.",
+                            "temperature": "Styrer tilfældigheden i output.",
+                            "top_p": "Styrer variationen i output."
+                        }
+                    }
+                }
+            },
+            "anthropic": {
+                "title": "Konfigurer Anthropic Claude",
+                "description": "Indtast en gyldig Anthropic API-nøgle.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "Anthropic godkendelse",
+                        "data": {
+                            "api_key": "API-nøgle"
+                        },
+                        "data_description": {
+                            "api_key": "Sørg for at have saldo på din Anthropic konto."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standard modelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        }
+                    }
+                }
+            },
+            "google": {
+                "title": "Konfigurer Google Gemini",
+                "description": "Indtast en gyldig Google Gemini API-nøgle.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "Google godkendelse",
+                        "data": {
+                            "api_key": "API-nøgle"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standard modelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "title": "Indstillinger",
+                "description": "Konfigurer LLM Vision integrationen.",
+                "sections": {
+                    "general_section": {
+                        "name": "Generelt",
+                        "description": "Vælg fallback-udbyder hvis den valgte ikke er tilgængelig.",
+                        "data": {
+                            "fallback_provider": "Fallback udbyder",
+                            "request_timeout": "Timeout (sekunder)"
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Tidslinje",
+                        "description": "Tidslinjen gemmer dagens hændelser.",
+                        "data": {
+                            "timeline_language": "Sprog",
+                            "retention_time": "Opbevaringstid",
+                            "timeline_today_summary": "Aktivér dagsopsummering",
+                            "timeline_summary_prompt": "Prompt til opsummering"
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Hukommelse (Beta)",
+                        "description": "Bruges til ekstra kontekst.",
+                        "data": {
+                            "memory_paths": "Billedsti",
+                            "memory_strings": "Beskrivelse"
+                        }
+                    }
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "Kunne ikke forbinde til serveren. Tjek API-nøgle, IP og port",
+            "empty_api_key": "Ugyldig API-nøgle",
+            "invalid_provider": "Ugyldig udbyder valgt",
+            "memory_not_supported": "Denne udbyder understøtter ikke hukommelse",
+            "invalid_image_path": "En eller flere billedstier er ugyldige",
+            "mismatched_lengths": "Antallet af billeder og beskrivelser skal være ens"
+        },
+        "abort": {
+            "unknown_provider": "Ukendt udbyder",
+            "reconfigure_successful": "Indstillinger gemt"
+        }
+    }
+}

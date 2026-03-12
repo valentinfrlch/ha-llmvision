@@ -1334,6 +1334,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                             "Bulgarian",
                                             "Catalan",
                                             "Czech",
+                                            "Danish",
                                             "Dutch",
                                             "English",
                                             "French",

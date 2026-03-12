@@ -37,6 +37,7 @@ async def _get_category_and_label(
         "Bulgarian": "bg",
         "Catalan": "ca",
         "Czech": "cs",
+        "Danish": "da",
         "German": "de",
         "English": "en",
         "Spanish": "es",
