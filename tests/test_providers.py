@@ -1,4 +1,5 @@
 """Unit tests for providers.py module."""
+import json
 import pytest
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from homeassistant.exceptions import ServiceValidationError
@@ -33,7 +34,7 @@ class TestRequest:
         """Test Request initialization."""
         with patch('custom_components.llmvision.providers.async_get_clientsession'):
             request = Request(mock_hass_with_session, "test message", 1000, 0.5)
-        
+
             assert request.hass == mock_hass_with_session
             assert request.message == "test message"
             assert request.max_tokens == 1000
@@ -45,7 +46,7 @@ class TestRequest:
         """Test sanitize_data with dictionary."""
         data = {"key": "value", "long_string": "a" * 500}
         result = Request.sanitize_data(data)
-        
+
         assert result["key"] == "value"
         assert result["long_string"] == "<long_string>"
 
@@ -53,7 +54,7 @@ class TestRequest:
         """Test sanitize_data with list."""
         data = ["short", "a" * 500]
         result = Request.sanitize_data(data)
-        
+
         assert result[0] == "short"
         assert result[1] == "<long_string>"
 
@@ -61,7 +62,7 @@ class TestRequest:
         """Test sanitize_data with bytes."""
         data = {"bytes": b"a" * 500}
         result = Request.sanitize_data(data)
-        
+
         assert result["bytes"] == "<long_bytes>"
 
     def test_get_provider(self, mock_hass):
@@ -71,17 +72,17 @@ class TestRequest:
                 "test_uid": {"provider": "OpenAI"}
             }
         }
-        
+
         result = Request.get_provider(mock_hass, "test_uid")
-        
+
         assert result == "OpenAI"
 
     def test_get_provider_not_found(self, mock_hass):
         """Test get_provider when provider not found."""
         mock_hass.data = {}
-        
+
         result = Request.get_provider(mock_hass, "nonexistent")
-        
+
         assert result is None
 
     def test_get_default_model_from_config(self, mock_hass_with_session):
@@ -96,9 +97,9 @@ class TestRequest:
         }
         with patch('custom_components.llmvision.providers.async_get_clientsession'):
             request = Request(mock_hass_with_session, "test", 1000, 0.5)
-            
+
             result = request.get_default_model("test_provider")
-            
+
             assert result == "gpt-4"
 
     def test_get_default_model_fallback(self, mock_hass_with_session):
@@ -112,21 +113,71 @@ class TestRequest:
         }
         with patch('custom_components.llmvision.providers.async_get_clientsession'):
             request = Request(mock_hass_with_session, "test", 1000, 0.5)
-            
+
             result = request.get_default_model("test_provider")
-            
+
             assert result == "gpt-4o-mini"
 
     def test_add_frame(self, mock_hass_with_session):
         """Test add_frame method."""
         with patch('custom_components.llmvision.providers.async_get_clientsession'):
             request = Request(mock_hass_with_session, "test", 1000, 0.5)
-            
+
             request.add_frame("base64_image_data", "test_filename")
-            
+
             assert len(request.base64_images) == 1
             assert request.base64_images[0] == "base64_image_data"
             assert request.filenames[0] == "test_filename"
+
+    def test_heal_json_unterminated_string(self, mock_hass_with_session):
+        """Test heal_json fixes unterminated string values."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            request = Request(mock_hass_with_session, "test", 1000, 0.5)
+
+            broken = '{"title":"Front Door","description":"Person at door}'
+            healed = request.heal_json(broken)
+            parsed = json.loads(healed)
+
+            assert parsed["title"] == "Front Door"
+            assert parsed["description"] == "Person at door"
+
+    def test_heal_json_unterminated_string_and_brackets(self, mock_hass_with_session):
+        """Test heal_json fixes unterminated string values."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            request = Request(mock_hass_with_session, "test", 1000, 0.5)
+
+            broken = '{"title": "No activity", "description": "No people, vehicles, or animals are present'
+            healed = request.heal_json(broken)
+            parsed = json.loads(healed)
+
+            assert parsed["title"] == "No activity"
+            assert (
+                parsed["description"] == "No people, vehicles, or animals are present"
+            )
+
+    def test_heal_json_unescaped_inner_quotes(self, mock_hass_with_session):
+        """Test heal_json escapes inner quotes in string values."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            request = Request(mock_hass_with_session, "test", 1000, 0.5)
+
+            broken = '{"description":"height is 5"9 and moving","ok":true}'
+            healed = request.heal_json(broken)
+            parsed = json.loads(healed)
+
+            assert parsed["description"] == 'height is 5"9 and moving'
+            assert parsed["ok"] is True
+
+    def test_heal_json_balances_open_containers(self, mock_hass_with_session):
+        """Test heal_json closes missing brackets/braces."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            request = Request(mock_hass_with_session, "test", 1000, 0.5)
+
+            broken = '{"events":[{"name":"door"}'
+            healed = request.heal_json(broken)
+            parsed = json.loads(healed)
+
+            assert isinstance(parsed["events"], list)
+            assert parsed["events"][0]["name"] == "door"
 
     def test_validate_no_images(self, mock_hass_with_session):
         """Test validate raises error when no images provided."""
@@ -136,7 +187,7 @@ class TestRequest:
             call.model = "gpt-4"
             call.base64_images = []
             call.provider = "test_provider"
-            
+
             with pytest.raises(ServiceValidationError):
                 request.validate(call)
 
@@ -153,7 +204,7 @@ class TestRequest:
             call.model = "test-model"
             call.base64_images = ["img1", "img2"]
             call.provider = "test_provider"
-            
+
             with pytest.raises(ServiceValidationError):
                 request.validate(call)
 
@@ -170,7 +221,7 @@ class TestRequest:
             call.model = "gpt-4"
             call.base64_images = ["img1"]
             call.provider = "test_provider"
-            
+
             # Should not raise
             request.validate(call)
 

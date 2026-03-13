@@ -223,7 +223,7 @@ class Request:
             _LOGGER.debug(f"Is Glimpse Model: {call.model_is_glimpse()}")
             if hasattr(call, "model_is_glimpse") and call.model_is_glimpse():
                 try:
-                    parsed = json.loads(response_text)
+                    parsed = json.loads(self.heal_json(response_text))
                     result = {}
                     if isinstance(parsed, dict):
                         title_val = parsed.get("title")
@@ -233,8 +233,7 @@ class Request:
                                 r"[^a-zA-Z0-9À-ÖØ-öø-ɏ\s]", "", str(title_val)
                             )
                         if desc_val is not None:
-                            result["description"] = str(desc_val)
-                        # Return early with title/description (no response_text)
+                            result["response_text"] = str(desc_val)
                         return result
                 except Exception as e:
                     _LOGGER.debug(f"Ollama Glimpse JSON parse failed: {e}")
@@ -302,6 +301,84 @@ class Request:
     def add_frame(self, base64_image, filename):
         self.base64_images.append(base64_image)
         self.filenames.append(filename)
+
+    def heal_json(self, text):
+        """Attempt to heal malformed JSON for common LLM output issues."""
+        if not isinstance(text, str):
+            return text
+        try:
+            json.loads(text)
+            return text
+        except json.JSONDecodeError:
+            pass
+        healed_chars = []
+        stack = []
+        in_string = False
+        escaped = False
+        def _is_value_boundary(ch: str) -> bool:
+            return ch in {",", ":", "}", "]"}
+        for idx, ch in enumerate(text):
+            next_char = text[idx + 1] if idx + 1 < len(text) else ""
+
+            if in_string:
+                if escaped:
+                    healed_chars.append(ch)
+                    escaped = False
+                    continue
+                if ch == "\\":
+                    healed_chars.append(ch)
+                    escaped = True
+                    continue
+                if ch == '"':
+                    # If quote is likely part of the string content (e.g. 5"), escape it.
+                    # Keep quote unescaped only when it looks like a real string terminator.
+                    if not (
+                        next_char == ""
+                        or _is_value_boundary(next_char)
+                        or next_char.isspace()
+                    ):
+                        healed_chars.append('\\"')
+                        continue
+
+                    healed_chars.append(ch)
+                    in_string = False
+                    continue
+                healed_chars.append(ch)
+                continue
+            # Outside string
+            if ch == '"':
+                healed_chars.append(ch)
+                in_string = True
+                continue
+            if ch == "{":
+                stack.append("}")
+            elif ch == "[":
+                stack.append("]")
+            elif ch in {"}", "]"}:
+                if stack and stack[-1] == ch:
+                    stack.pop()
+
+            healed_chars.append(ch)
+        # If the payload ends while still in a string, trailing delimiters are often
+        # intended as structure (e.g. ..."description":"text}). Move those outside.
+        trailing_closers = []
+        if in_string:
+            while stack and healed_chars and healed_chars[-1] == stack[-1]:
+                trailing_closers.append(healed_chars.pop())
+                stack.pop()
+        # Close unterminated string first, then close open containers.
+        if in_string:
+            healed_chars.append('"')
+        while trailing_closers:
+            healed_chars.append(trailing_closers.pop())
+        while stack:
+            healed_chars.append(stack.pop())
+        healed = "".join(healed_chars)
+        try:
+            json.loads(healed)
+            return healed
+        except json.JSONDecodeError:
+            return text
 
 
 class Provider(ABC):
@@ -1464,7 +1541,7 @@ class Ollama(Provider):
         response = await self._post(url=endpoint, headers={}, data=data)
         if not isinstance(response, dict):
             raise ServiceValidationError("invalid_response")
-        response_text = response.get("response")
+        response_text = response.get("message", {}).get("content")
         if response_text is None:
             raise ServiceValidationError("invalid_response")
         return response_text
@@ -1474,12 +1551,22 @@ class Ollama(Provider):
         payload = {
             "model": self.model,
             "system": self._get_system_prompt() if not call.model_is_glimpse() else "",
-            "prompt": (
-                call.message if not call.model_is_glimpse() else GLIMPSE_V1_INSTRUCTIONS
-            ),
+            "messages": [
+                {
+                    "role": "user",
+                    "content": (
+                        call.message
+                        if not call.model_is_glimpse()
+                        else GLIMPSE_V1_INSTRUCTIONS
+                    ),
+                    "images": call.base64_images,
+                },
+            ],
+            "prompt": (),
             "images": call.base64_images,
             "stream": False,
             "keep_alive": default_parameters.get("keep_alive"),
+            "think": False,
             "options": {
                 "num_predict": call.max_tokens,
                 "temperature": default_parameters.get("temperature"),

@@ -89,45 +89,19 @@ DEFAULT_SYSTEM_PROMPT = "Analyze the images and give a concise, objective event 
 DEFAULT_TITLE_PROMPT = "Generate a clear event title (<6 words) from the description. Use format: <Object> seen at <location>. Keep it concise, factual, and alert-ready. Include names if given. Avoid extra details or interpretations."
 DATA_EXTRACTION_PROMPT = "Analyze the image(s) and extract only the requested info (e.g., object count, license plate). Output strictly in {data_format}. Double-check accuracy and ensure results reflect the image content. Do not explain or add extra info."
 GLIMPSE_V1_INSTRUCTIONS = """
-Task: Analyze the provided security camera image and generate a smart-home event notification.
+Analyze the security camera image and respond with ONLY a valid JSON object. No markdown, no code blocks, no explanation — just the raw JSON.
 
-Output:
-Return a single valid JSON object with exactly two string fields:
-- "title": a short summary (2–5 words)
-- "description": a brief factual description of what is happening
+Output format:
+{"title": "<2–5 word summary>", "description": "<1–2 factual sentences in present tense>"}
 
-Title Rules:
-The "title" must:
-- Be 2-5 words
-- Be short and glanceable
-- Avoid long phrases or full sentences
-The title should summarize the event category and location.
-All additional detail belongs in "description".
+Example:
+{"title": "Package delivery", "description": "A person in a FedEx uniform places a package at the front door. A delivery van is parked at the curb."}
 
-Delivery Inference Rules:
-If a person is:
-- Holding or placing a package or letters
-- and wearing a delivery uniform
-- or a delivery vehicle is visible
-Then:
-- the title must contain the word "delivery":
-  - Use a delivery-style title (2-5 words) (examples: "Package delivery", "Delivery at porch", "Courier delivery")
-  - Include the carrier name in the description if the carrier branding is visually identifiable (e.g. "Amazon delivery", "FedEx delivery")
-
-Empty scene handling:
-- If no clear activity or relevant objects (such as people, vehicles, or animals) are present, set:
-  - "title" to exactly: "No activity"
-  - "description" to a brief statement describing that nothing notable is seen
-
-Description Rules:
-- 1–2 short sentences
-- Do not include explanations or reasoning
-- Do not repeat the task or rules
-- Use present tense
-- Neutral and factual
-- Describe what is happening
-
-Do not mention camera angle, lighting quality, or image clarity.
+Rules:
+- Title: short and glanceable (2–5 words). All detail goes in description.
+- Description: factual, present tense, 1–2 sentences. Do not mention camera angle, lighting, or image quality.
+- If a delivery is occurring (person handling a package, wearing a delivery uniform, or delivery vehicle visible): title must contain the word "delivery". Include carrier name in description if branding is visible (e.g. FedEx, UPS, Amazon).
+- If no people, vehicles, or animals are present: title must be exactly "No activity" and description must state nothing notable is observed.
 """
 # Models
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
@@ -150,7 +124,7 @@ ENDPOINT_ANTHROPIC = "https://api.anthropic.com/v1/messages"
 ENDPOINT_GOOGLE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 ENDPOINT_GROQ = "https://api.groq.com/openai/v1/chat/completions"
 ENDPOINT_LOCALAI = "{protocol}://{ip_address}:{port}/v1/chat/completions"
-ENDPOINT_OLLAMA = "{protocol}://{ip_address}:{port}/api/generate"
+ENDPOINT_OLLAMA = "{protocol}://{ip_address}:{port}/api/chat"
 ENDPOINT_OPENWEBUI = "{protocol}://{ip_address}:{port}/api/chat/completions"
 ENDPOINT_AZURE = "{base_url}openai/deployments/{deployment}/chat/completions?api-version={api_version}"
 ENDPOINT_OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
