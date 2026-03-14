@@ -442,13 +442,12 @@ class Provider(ABC):
         config = domain_data.get(entry_id) or {}
         default_parameters = {
             "temperature": config.get(CONF_TEMPERATURE, 0.5),
-            "top_p": config.get(CONF_TOP_P, 0.9),
+            "top_p": config.get(CONF_TOP_P, 0.95),
             "keep_alive": config.get(CONF_KEEP_ALIVE, 5),
             "context_window": config.get(CONF_CONTEXT_WINDOW, 4096),
         }
         if call.model_is_glimpse():
-            # Set 0.95 top_p, 0.1 temperature for Glimpse-v1
-            default_parameters["temperature"] = 0.1
+            default_parameters["temperature"] = 0.3
             default_parameters["top_p"] = 0.95
         return default_parameters
 
