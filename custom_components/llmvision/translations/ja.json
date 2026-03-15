@@ -1,0 +1,434 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "LLM ビジョンのセットアップ",
+                "description": "設定したいプロバイダーを選択します。"
+            },
+            "localai": {
+                "title": "LocalAI サーバーに接続します",
+                "description": "LocalAI サーバーの IP アドレスとポートを指定します。",
+                "sections": {
+                    "connection_section": {
+                        "name": "繋がり",
+                        "description": "サーバー接続",
+                        "data": {
+                            "ip_address": "IPアドレス",
+                            "port": "ポート",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "安全な接続のために HTTPS を使用する"
+                        }
+                    },
+                    "model_section": {
+                        "name": "モデル",
+                        "description": "デフォルトのモデルパラメータを設定する",
+                        "data": {
+                            "default_model": "デフォルトモデル",
+                            "temperature": "温度",
+                            "top_p": "トップP"
+                        },
+                        "data_description": {
+                            "default_model": "他のモデルが指定されていない場合に使用するデフォルトのモデル。",
+                            "temperature": "出力のランダム性を制御します。値を低くすると、出力がより確定的になります。",
+                            "top_p": "出力の多様性を制御します。値を低くすると、出力がより集中します。"
+                        }
+                    }
+                }
+            },
+            "ollama": {
+                "title": "オラマの構成",
+                "description": "Ollama サーバーの IP アドレスとポートを指定します。",
+                "sections": {
+                    "connection_section": {
+                        "name": "繋がり",
+                        "description": "サーバー接続",
+                        "data": {
+                            "ip_address": "IPアドレス",
+                            "port": "ポート",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "安全な接続のために HTTPS を使用する"
+                        }
+                    },
+                    "model_section": {
+                        "name": "モデル",
+                        "description": "デフォルトのモデルパラメータを設定する",
+                        "data": {
+                            "default_model": "デフォルトモデル",
+                            "temperature": "温度",
+                            "top_p": "トップP",
+                            "think": "考える"
+                        },
+                        "data_description": {
+                            "default_model": "他のモデルが指定されていない場合に使用するデフォルトのモデル。",
+                            "temperature": "出力のランダム性を制御します。値を低くすると、出力がより確定的になります。",
+                            "top_p": "出力の多様性を制御します。値を低くすると、出力がより集中します。",
+                            "think": "思考モードをサポートするモデルに対して思考モードを有効にします。"
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "高度な",
+                        "description": "高度なモデルパラメータ",
+                        "data": {
+                            "context_window": "コンテキストの長さ",
+                            "keep_alive": "生き続ける"
+                        },
+                        "data_description": {
+                            "context_window": "次のトークンの生成に使用されるコンテキスト ウィンドウのサイズを設定します。",
+                            "keep_alive": "リクエスト後にモデルがメモリにロードされたままになる時間を制御します。デフォルト: 5m (5 分)、-1: メモリに無期限に保持、0: すぐにアンロード"
+                        }
+                    }
+                }
+            },
+            "openai": {
+                "title": "OpenAIを構成する",
+                "description": "waleed openai API キーを提供します。",
+                "sections": {
+                    "connection_section": {
+                        "name": "繋がり",
+                        "description": "OpenAI認証",
+                        "data": {
+                            "api_key": "APIキー"
+                        },
+                        "data_description": {
+                            "api_key": "OpenAI アカウントにクレジットを追加してください。"
+                        }
+                    },
+                    "model_section": {
+                        "name": "モデル",
+                        "description": "デフォルトのモデルパラメータを設定する",
+                        "data": {
+                            "default_model": "デフォルトモデル",
+                            "temperature": "温度",
+                            "top_p": "トップP",
+                            "reasoning_effort": "推論の努力"
+                        },
+                        "data_description": {
+                            "default_model": "他のモデルが指定されていない場合に使用するデフォルトのモデル。",
+                            "temperature": "出力のランダム性を制御します。値を低くすると、出力がより確定的になります。",
+                            "top_p": "出力の多様性を制御します。値を低くすると、出力がより集中します。",
+                            "reasoning_effort": "それをサポートするモデルの推論作業を制御します。"
+                        }
+                    }
+                }
+            },
+            "azure": {
+                "title": "Azureを構成する",
+                "description": "有効な Azure API キー、ベース URL、デプロイメント、および API バージョンを指定します。",
+                "sections": {
+                    "connection_section": {
+                        "name": "繋がり",
+                        "description": "Azure認証",
+                        "data": {
+                            "api_key": "APIキー",
+                            "azure_base_url": "ベース URL",
+                            "azure_deployment": "導入",
+                            "azure_version": "APIバージョン"
+                        }
+                    },
+                    "model_section": {
+                        "name": "モデル",
+                        "description": "デフォルトのモデルパラメータを設定する",
+                        "data": {
+                            "default_model": "デフォルトモデル",
+                            "temperature": "温度",
+                            "top_p": "トップP"
+                        },
+                        "data_description": {
+                            "default_model": "他のモデルが指定されていない場合に使用するデフォルトのモデル。",
+                            "temperature": "出力のランダム性を制御します。値を低くすると、出力がより確定的になります。",
+                            "top_p": "出力の多様性を制御します。値を低くすると、出力がより集中します。"
+                        }
+                    }
+                }
+            },
+            "anthropic": {
+                "title": "人間性クロードの設定",
+                "description": "有効な Anthropic API キーを指定します。",
+                "sections": {
+                    "connection_section": {
+                        "name": "繋がり",
+                        "description": "人間認証",
+                        "data": {
+                            "api_key": "APIキー"
+                        },
+                        "data_description": {
+                            "api_key": "Anthropic アカウントにクレジットを必ず追加してください。"
+                        }
+                    },
+                    "model_section": {
+                        "name": "モデル",
+                        "description": "デフォルトのモデルパラメータを設定する",
+                        "data": {
+                            "default_model": "デフォルトモデル",
+                            "temperature": "温度",
+                            "top_p": "トップP",
+                            "thinking_budget": "予算を考える"
+                        },
+                        "data_description": {
+                            "default_model": "他のモデルが指定されていない場合に使用するデフォルトのモデル。",
+                            "temperature": "出力のランダム性を制御します。値を低くすると、出力がより確定的になります。",
+                            "top_p": "出力の多様性を制御します。値を低くすると、出力がより集中します。",
+                            "thinking_budget": "それをサポートするモデルの思考予算を制御します。値を大きくすると、より複雑な推論が可能になりますが、応答時間とコストが増加する可能性があります。"
+                        }
+                    }
+                }
+            },
+            "google": {
+                "title": "Google Gemini を構成する",
+                "description": "有効な Google Gemini API キーを指定します。",
+                "sections": {
+                    "connection_section": {
+                        "name": "繋がり",
+                        "description": "Google認証",
+                        "data": {
+                            "api_key": "APIキー"
+                        }
+                    },
+                    "model_section": {
+                        "name": "モデル",
+                        "description": "デフォルトのモデルパラメータを設定する",
+                        "data": {
+                            "default_model": "デフォルトモデル",
+                            "temperature": "温度",
+                            "top_p": "トップP",
+                            "thinking_budget": "予算を考える"
+                        },
+                        "data_description": {
+                            "default_model": "他のモデルが指定されていない場合に使用するデフォルトのモデル。",
+                            "temperature": "出力のランダム性を制御します。値を低くすると、出力がより確定的になります。",
+                            "top_p": "出力の多様性を制御します。値を低くすると、出力がより集中します。",
+                            "thinking_budget": "それをサポートするモデルの思考予算を制御します。値を大きくすると、より複雑な推論が可能になりますが、応答時間とコストが増加する可能性があります。"
+                        }
+                    }
+                }
+            },
+            "groq": {
+                "title": "Groq の構成",
+                "description": "有効な Groq API キーを指定します。",
+                "sections": {
+                    "connection_section": {
+                        "name": "繋がり",
+                        "description": "Groq 認証",
+                        "data": {
+                            "api_key": "APIキー"
+                        }
+                    },
+                    "model_section": {
+                        "name": "モデル",
+                        "description": "デフォルトのモデルパラメータを設定する",
+                        "data": {
+                            "default_model": "デフォルトモデル",
+                            "temperature": "温度",
+                            "top_p": "トップP"
+                        },
+                        "data_description": {
+                            "default_model": "他のモデルが指定されていない場合に使用するデフォルトのモデル。",
+                            "temperature": "出力のランダム性を制御します。値を低くすると、出力がより確定的になります。",
+                            "top_p": "出力の多様性を制御します。値を低くすると、出力がより集中します。"
+                        }
+                    }
+                }
+            },
+            "custom_openai": {
+                "title": "カスタム OpenAI プロバイダーの構成",
+                "description": "**重要**: API が OpenAI の API と互換性がある場合にのみ機能します。 API に API キーが必要ない場合は、ダミーの値を入力します。エンドポイントは次の形式である必要があります: `http(s)://baseURL(:port)/some/endpoint`",
+                "sections": {
+                    "connection_section": {
+                        "name": "繋がり",
+                        "description": "カスタム OpenAI 認証",
+                        "data": {
+                            "custom_openai_endpoint": "カスタムエンドポイント",
+                            "api_key": "APIキー"
+                        },
+                        "data_description": {
+                            "endpoint": "次の形式の API エンドポイント: https)://baseURL(:port)/someone/endpoint",
+                            "api_key": "API キーまたは「openai」（何も必要ない場合）。"
+                        }
+                    },
+                    "model_section": {
+                        "name": "モデル",
+                        "description": "デフォルトのモデルパラメータを設定する",
+                        "data": {
+                            "default_model": "デフォルトモデル",
+                            "temperature": "温度",
+                            "top_p": "トップP"
+                        },
+                        "data_description": {
+                            "default_model": "他のモデルが指定されていない場合に使用するデフォルトのモデル。",
+                            "temperature": "出力のランダム性を制御します。値を低くすると、出力がより確定的になります。",
+                            "top_p": "出力の多様性を制御します。値を低くすると、出力がより集中します。"
+                        }
+                    }
+                }
+            },
+            "aws_bedrock": {
+                "title": "AWS Bedrock プロバイダーを構成する",
+                "description": "**重要**: 現在、これは次のモデルのみをサポートしています: Nova、Anthropic Claude",
+                "sections": {
+                    "connection_section": {
+                        "name": "繋がり",
+                        "description": "AWS認証",
+                        "data": {
+                            "aws_access_key_id": "アクセスキー",
+                            "aws_secret_access_key": "秘密鍵",
+                            "aws_region_name": "地域文字列"
+                        }
+                    },
+                    "model_section": {
+                        "name": "モデル",
+                        "description": "デフォルトのモデルパラメータを設定する",
+                        "data": {
+                            "default_model": "デフォルトモデル",
+                            "temperature": "温度",
+                            "top_p": "トップP"
+                        },
+                        "data_description": {
+                            "default_model": "他のモデルが指定されていない場合に使用するデフォルトのモデル。",
+                            "temperature": "出力のランダム性を制御します。値を低くすると、出力がより確定的になります。",
+                            "top_p": "出力の多様性を制御します。値を低くすると、出力がより集中します。"
+                        }
+                    }
+                }
+            },
+            "openwebui": {
+                "title": "オープン WebUI の構成",
+                "description": "API キー (JWT トークン)、IP アドレス、ポート、HTTP(S)、およびデフォルトのモデルを指定します。",
+                "sections": {
+                    "connection_section": {
+                        "name": "繋がり",
+                        "description": "オープンWebUI認証",
+                        "data": {
+                            "api_key": "APIキー（JWTトークン）",
+                            "ip_address": "IPアドレス",
+                            "port": "ポート",
+                            "https": "HTTPSを使用する"
+                        },
+                        "data_description": {
+                            "https": "サーバーがサポートしている場合は、安全な接続に HTTPS を使用してください。"
+                        }
+                    },
+                    "model_section": {
+                        "name": "モデル",
+                        "description": "デフォルトのモデルパラメータを設定する",
+                        "data": {
+                            "default_model": "デフォルトモデル",
+                            "temperature": "温度",
+                            "top_p": "トップP"
+                        },
+                        "data_description": {
+                            "default_model": "他のモデルが指定されていない場合に使用するデフォルトのモデル。",
+                            "temperature": "出力のランダム性を制御します。値を低くすると、出力がより確定的になります。",
+                            "top_p": "出力の多様性を制御します。値を低くすると、出力がより集中します。"
+                        }
+                    }
+                }
+            },
+            "openrouter": {
+                "title": "OpenRouterの構成",
+                "description": "OpenRouter は、さまざまな AI モデルへのアクセスを提供するプラットフォームです。これを使用して、OpenAI、Anthropic などのモデルに接続できます。",
+                "sections": {
+                    "connection_section": {
+                        "name": "繋がり",
+                        "description": "OpenRouter認証",
+                        "data": {
+                            "api_key": "APIキー"
+                        },
+                        "data_description": {
+                            "api_key": "OpenRouter API キー。最初に OpenRouter アカウントにクレジットを追加してください。"
+                        }
+                    },
+                    "model_section": {
+                        "name": "モデル",
+                        "description": "デフォルトのモデルパラメータを設定する",
+                        "data": {
+                            "default_model": "デフォルトモデル",
+                            "temperature": "温度",
+                            "top_p": "トップP",
+                            "reasoning_effort": "推論の努力"
+                        },
+                        "data_description": {
+                            "default_model": "他のモデルが指定されていない場合に使用するデフォルトのモデル。",
+                            "temperature": "出力のランダム性を制御します。値を低くすると、出力がより確定的になります。",
+                            "top_p": "出力の多様性を制御します。値を低くすると、出力がより集中します。",
+                            "reasoning_effort": "それをサポートするモデルの推論作業を制御します。"
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "title": "設定",
+                "description": "LLM Vision 統合を構成します。このエントリは、他のプロバイダーを設定する前に必要です。デフォルト設定を使用したい場合は、「送信」をクリックしてください。",
+                "sections": {
+                    "general_section": {
+                        "name": "一般的な",
+                        "description": "選択したプロバイダーが利用できない場合に使用する優先プロバイダーを設定します。",
+                        "data": {
+                            "fallback_provider": "フォールバックプロバイダー",
+                            "request_timeout": "リクエストのタイムアウト (秒)"
+                        },
+                        "data_description": {
+                            "fallback_provider": "現在のプロバイダーが失敗した場合、LLM Vision は選択したプロバイダーでリクエストを再試行します。",
+                            "request_timeout": "リクエストが失敗するまでにプロバイダーの応答を待機する合計時間。"
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "システムプロンプト",
+                        "description": "システム プロンプトは、モデルの動作と応答を変更するために使用されます。",
+                        "data": {
+                            "system_prompt": "システムプロンプト",
+                            "title_prompt": "タイトルプロンプト"
+                        },
+                        "data_description": {
+                            "system_prompt": "システム プロンプトを使用して、モデルの動作と応答を変更します。",
+                            "title_prompt": "タイトルを生成するためにモデルに与えられる命令。"
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "タイムライン",
+                        "description": "タイムラインには今日のイベントが保存され、LLM Vision Card を使用してダッシュボードに表示されます。",
+                        "data": {
+                            "timeline_language": "タイムライン言語",
+                            "retention_time": "保持時間",
+                            "timeline_today_summary": "タイムラインの概要",
+                            "timeline_summary_prompt": "今日の概要プロンプト"
+                        },
+                        "data_description": {
+                            "timeline_language": "イベントからアイコンを生成するために使用する言語を選択します。",
+                            "retention_time": "(日) 後にイベントを自動削除します。自動削除を無効にするには 0 に設定します。",
+                            "timeline_today_summary": "タイムラインの概要を有効にすると、今日のイベントの概要が自動的に生成されます。",
+                            "timeline_summary_prompt": "今日のイベントの概要を生成するようにモデルに与えられる指示。"
+                        }
+                    },
+                    "memory_section": {
+                        "name": "メモリ (ベータ版)",
+                        "description": "メモリ内のコンテンツはプロバイダ間で同期され、モデルに追加のコンテキストを提供するために使用されます。",
+                        "data": {
+                            "memory_paths": "画像ファイルのパス",
+                            "memory_strings": "画像の説明"
+                        },
+                        "data_description": {
+                            "memory_paths": "画像ファイルへのパスを指定します。",
+                            "memory_strings": "画像の説明を入力します (例: 「これは私の犬のクッキーです」)。画像と説明は同じ順序である必要があり、画像と同数の説明が必要です。"
+                        }
+                    }
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "サーバーに接続できませんでした。 API キーまたは IP とポートを確認してください",
+            "empty_api_key": "無効な API キー",
+            "invalid_provider": "無効なプロバイダーが選択されました",
+            "memory_not_supported": "このプロバイダーはメモリをサポートしていません",
+            "invalid_image_path": "1 つ以上の画像パスが無効です",
+            "mismatched_lengths": "画像パスと説明の数は一致する必要があります"
+        },
+        "abort": {
+            "unknown_provider": "不明なプロバイダー",
+            "reconfigure_successful": "設定が正常に保存されました"
+        }
+    }
+}

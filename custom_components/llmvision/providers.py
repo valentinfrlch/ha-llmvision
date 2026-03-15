@@ -54,6 +54,9 @@ from .const import (
     CONF_CONTEXT_WINDOW,
     CONF_TEMPERATURE,
     CONF_TOP_P,
+    CONF_THINKING_BUDGET,
+    CONF_THINK,
+    CONF_REASONING_EFFORT,
     CONF_REQUEST_TIMEOUT,
     CONF_SYSTEM_PROMPT,
     CONF_TITLE_PROMPT,
@@ -315,8 +318,10 @@ class Request:
         stack = []
         in_string = False
         escaped = False
+
         def _is_value_boundary(ch: str) -> bool:
             return ch in {",", ":", "}", "]"}
+
         for idx, ch in enumerate(text):
             next_char = text[idx + 1] if idx + 1 < len(text) else ""
 
@@ -439,12 +444,16 @@ class Provider(ABC):
         """Get default parameters from config entry"""
         entry_id = call.provider
         domain_data = self.hass.data.get(DOMAIN) or {}
+
         config = domain_data.get(entry_id) or {}
         default_parameters = {
             "temperature": config.get(CONF_TEMPERATURE, 0.5),
             "top_p": config.get(CONF_TOP_P, 0.95),
             "keep_alive": config.get(CONF_KEEP_ALIVE, 5),
             "context_window": config.get(CONF_CONTEXT_WINDOW, 4096),
+            "thinking_budget": config.get(CONF_THINKING_BUDGET, 0),
+            "think": config.get(CONF_THINK, False),
+            "reasoning_effort": config.get(CONF_REASONING_EFFORT, "none"),
         }
         if call.model_is_glimpse():
             default_parameters["temperature"] = 0.3
@@ -570,6 +579,24 @@ class OpenAI(Provider):
         """OpenAI supports structured output via JSON Schema."""
         return True
 
+    def _model_supports_thinking(self, max_effort: str) -> str | bool:
+        """Returns the highest supported reasoning effort for the model that is <= the reasoning effort from config"""
+        models = {
+            "gpt-5.4": ["none", "low", "medium", "high", "xhigh"],
+            "gpt-5.1": ["none", "low", "medium", "high"],
+            "gpt-5-pro": ["high"],
+            "gpt-5-mini": ["medium"],
+            "gpt-5-nano": ["medium"],
+        }
+        effort_order = ["none", "low", "medium", "high", "xhigh"]
+        for model_prefix, efforts in models.items():
+            if self.model.startswith(model_prefix):
+                # return the highest reasoning effort supported by the model that is less than or equal to the requested max_effort
+                for effort in reversed(effort_order):
+                    if effort in efforts and effort_order.index(effort) <= effort_order.index(max_effort):
+                        return effort
+        return False
+
     def _generate_headers(self) -> dict:
         return {
             "Content-type": "application/json",
@@ -616,6 +643,14 @@ class OpenAI(Provider):
             "temperature": default_parameters.get("temperature"),
             "top_p": default_parameters.get("top_p"),
         }
+
+        # Add reasoning effort if enabled and supported by model
+        max_effort = default_parameters.get("reasoning_effort", "none")
+        if (
+            max_effort not in ["none", None]
+            and self._model_supports_thinking(max_effort) != False
+        ):
+            payload["reasoning_effort"] = self._model_supports_thinking(max_effort)
 
         # Remove temperature and top_p if model is gpt-5
         if self.model in ["gpt-5", "gpt-5-mini", "gpt-5-nano"]:
@@ -693,6 +728,14 @@ class OpenAI(Provider):
             "temperature": default_parameters.get("temperature"),
             "top_p": default_parameters.get("top_p"),
         }
+
+        # Add reasoning effort if enabled and supported by model
+        max_effort = default_parameters.get("reasoning_effort", "none")
+        if (
+            max_effort not in ["none", None]
+            and self._model_supports_thinking(max_effort) != False
+        ):
+            payload["reasoning_effort"] = self._model_supports_thinking(max_effort)
 
         # Remove temperature and top_p if model is gpt-5
         if self.model in ["gpt-5", "gpt-5-mini", "gpt-5-nano"]:
@@ -942,6 +985,10 @@ class Anthropic(Provider):
             "messages": [{"role": "user", "content": []}],
             "max_tokens": call.max_tokens,
             "temperature": default_parameters.get("temperature"),
+            "thinking": {
+                "type": "enabled",
+                "budget_tokens": default_parameters.get("thinking_budget", 0),
+            },
         }
 
         # Add structured output support using tools
@@ -1015,6 +1062,10 @@ class Anthropic(Provider):
             ],
             "max_tokens": call.max_tokens,
             "temperature": default_parameters.get("temperature"),
+            "thinking": {
+                "type": "enabled",
+                "budget_tokens": default_parameters.get("thinking_budget", 0),
+            },
         }
 
         # Add structured output support using tools
@@ -1064,7 +1115,6 @@ class Anthropic(Provider):
 
 
 class Google(Provider):
-    # 🔥 This is the Google provider that will be tested
     def __init__(
         self,
         hass: HomeAssistant,
@@ -1077,6 +1127,9 @@ class Google(Provider):
     def supports_structured_output(self) -> bool:
         """Return True if provider supports structured output."""
         return True
+
+    def _model_supports_thinking(self) -> bool:
+        return any(m in self.model for m in ["gemini-2.5", "gemini-3"])
 
     def _generate_headers(self) -> dict:
         return {"content-type": "application/json"}
@@ -1114,6 +1167,15 @@ class Google(Provider):
                 "topP": default_parameters.get("top_p"),
             },
         }
+
+        # Add thinking budget based on current model and config
+        if (
+            self._model_supports_thinking()
+            and default_parameters.get("thinking_budget", 0) > 0
+        ):
+            payload["generationConfig"]["thinkingConfig"] = {
+                "thinkingBudget": default_parameters.get("thinking_budget", 0)
+            }
 
         # Add structured output support
         if call.response_format == "json" and call.structure:
@@ -1171,6 +1233,15 @@ class Google(Provider):
                 "topP": default_parameters.get("top_p"),
             },
         }
+
+        # Add thinking budget based on current model and config
+        if (
+            self._model_supports_thinking()
+            and default_parameters.get("thinking_budget", 0) > 0
+        ):
+            payload["generationConfig"]["thinkingConfig"] = {
+                "thinkingBudget": default_parameters.get("thinking_budget", 0)
+            }
 
         # Add structured output support
         if call.response_format == "json" and call.structure:
@@ -1528,6 +1599,12 @@ class Ollama(Provider):
         """Return True if provider supports structured output."""
         return True
 
+    def _model_supports_thinking(self) -> bool:
+        thinking_models = ["qwen3.5", "qwen3-vl"]
+        return any(
+            thinking_model in self.model.lower() for thinking_model in thinking_models
+        )
+
     async def _make_request(self, data: dict) -> str:
         https = self.endpoint.get("https")
         ip_address = self.endpoint.get("ip_address")
@@ -1565,7 +1642,8 @@ class Ollama(Provider):
             "images": call.base64_images,
             "stream": False,
             "keep_alive": default_parameters.get("keep_alive"),
-            "think": False,
+            "think": default_parameters.get("think", False)
+            and self._model_supports_thinking(),
             "options": {
                 "num_predict": call.max_tokens,
                 "temperature": default_parameters.get("temperature"),
@@ -1609,6 +1687,8 @@ class Ollama(Provider):
             ],
             "stream": False,
             "keep_alive": default_parameters.get("keep_alive", "5m"),
+            "think": default_parameters.get("think", False)
+            and self._model_supports_thinking(),
             "options": {
                 "num_predict": call.max_tokens,
                 "temperature": default_parameters.get("temperature"),

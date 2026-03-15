@@ -74,6 +74,9 @@ from .const import (
     STRUCTURE,
     TITLE_FIELD,
     DESCRIPTION_FIELD,
+    CONF_THINKING_BUDGET,
+    CONF_THINK,
+    CONF_REASONING_EFFORT,
 )
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -116,6 +119,10 @@ async def async_setup_entry(hass, entry):
         CONF_MEMORY_STRINGS: entry.data.get(CONF_MEMORY_STRINGS),
         CONF_SYSTEM_PROMPT: entry.data.get(CONF_SYSTEM_PROMPT),
         CONF_TITLE_PROMPT: entry.data.get(CONF_TITLE_PROMPT),
+        # Thinking/reasoning parameters
+        CONF_THINKING_BUDGET: entry.data.get(CONF_THINKING_BUDGET),
+        CONF_THINK: entry.data.get(CONF_THINK),
+        CONF_REASONING_EFFORT: entry.data.get(CONF_REASONING_EFFORT),
     }
 
     # Filter out None values

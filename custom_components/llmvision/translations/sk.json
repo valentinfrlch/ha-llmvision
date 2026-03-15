@@ -59,12 +59,14 @@
                         "data": {
                             "default_model": "Predvolený model",
                             "temperature": "Teplota",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "think": "Premýšľajte"
                         },
                         "data_description": {
                             "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
                             "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
-                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup.",
+                            "think": "Povoľte režim myslenia pre modely, ktoré ho podporujú."
                         }
                     },
                     "advanced_section": {
@@ -101,12 +103,14 @@
                         "data": {
                             "default_model": "Predvolený model",
                             "temperature": "Teplota",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Rozumné úsilie"
                         },
                         "data_description": {
                             "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
                             "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
-                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup.",
+                            "reasoning_effort": "Riadi úsilie o uvažovanie pre modely, ktoré ho podporujú."
                         }
                     }
                 }
@@ -161,12 +165,14 @@
                         "data": {
                             "default_model": "Predvolený model",
                             "temperature": "Teplota",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Myslenie na rozpočet"
                         },
                         "data_description": {
                             "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
                             "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
-                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup.",
+                            "thinking_budget": "Ovláda rozpočet na myslenie pre modely, ktoré ho podporujú. Vyššie hodnoty umožňujú komplexnejšie uvažovanie, ale môžu zvýšiť čas odozvy a náklady."
                         }
                     }
                 }
@@ -188,12 +194,14 @@
                         "data": {
                             "default_model": "Predvolený model",
                             "temperature": "Teplota",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Myslenie na rozpočet"
                         },
                         "data_description": {
                             "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
                             "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
-                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup.",
+                            "thinking_budget": "Ovláda rozpočet na myslenie pre modely, ktoré ho podporujú. Vyššie hodnoty umožňujú komplexnejšie uvažovanie, ale môžu zvýšiť čas odozvy a náklady."
                         }
                     }
                 }
@@ -339,12 +347,14 @@
                         "data": {
                             "default_model": "Predvolený model",
                             "temperature": "Teplota",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Rozumné úsilie"
                         },
                         "data_description": {
                             "default_model": "Predvolený model, ktorý sa použije, ak nie je špecifikovaný iný.",
                             "temperature": "Ovláda náhodnosť výstupu. Nižšie hodnoty znamenajú deterministickejší výstup.",
-                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup."
+                            "top_p": "Ovláda rozmanitosť výstupu. Nižšie hodnoty znamenajú zameranejší výstup.",
+                            "reasoning_effort": "Riadi úsilie o uvažovanie pre modely, ktoré ho podporujú."
                         }
                     }
                 }

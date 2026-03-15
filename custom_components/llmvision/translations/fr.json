@@ -59,12 +59,14 @@
                         "data": {
                             "default_model": "Modèle par défaut",
                             "temperature": "Température",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "think": "Pense"
                         },
                         "data_description": {
                             "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
                             "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
-                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée.",
+                            "think": "Activez le mode réflexion pour les modèles qui le prennent en charge."
                         }
                     },
                     "advanced_section": {
@@ -101,12 +103,14 @@
                         "data": {
                             "default_model": "Modèle par défaut",
                             "temperature": "Température",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Effort de raisonnement"
                         },
                         "data_description": {
                             "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
                             "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
-                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée.",
+                            "reasoning_effort": "Contrôle l'effort de raisonnement pour les modèles qui le prennent en charge."
                         }
                     }
                 }
@@ -161,12 +165,14 @@
                         "data": {
                             "default_model": "Modèle par défaut",
                             "temperature": "Température",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Penser le budget"
                         },
                         "data_description": {
                             "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
                             "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
-                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée.",
+                            "thinking_budget": "Contrôle le budget de réflexion pour les modèles qui le prennent en charge. Des valeurs plus élevées permettent un raisonnement plus complexe mais peuvent augmenter le temps de réponse et les coûts."
                         }
                     }
                 }
@@ -188,12 +194,14 @@
                         "data": {
                             "default_model": "Modèle par défaut",
                             "temperature": "Température",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Penser le budget"
                         },
                         "data_description": {
                             "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
                             "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
-                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée.",
+                            "thinking_budget": "Contrôle le budget de réflexion pour les modèles qui le prennent en charge. Des valeurs plus élevées permettent un raisonnement plus complexe mais peuvent augmenter le temps de réponse et les coûts."
                         }
                     }
                 }
@@ -339,12 +347,14 @@
                         "data": {
                             "default_model": "Modèle par défaut",
                             "temperature": "Température",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Effort de raisonnement"
                         },
                         "data_description": {
                             "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié.",
                             "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
-                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée.",
+                            "reasoning_effort": "Contrôle l'effort de raisonnement pour les modèles qui le prennent en charge."
                         }
                     }
                 }

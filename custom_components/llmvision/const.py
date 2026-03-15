@@ -12,6 +12,9 @@ CONF_HTTPS = "https"
 CONF_DEFAULT_MODEL = "default_model"
 CONF_TEMPERATURE = "temperature"
 CONF_TOP_P = "top_p"
+CONF_THINKING_BUDGET = "thinking_budget"
+CONF_THINK = "think"
+CONF_REASONING_EFFORT = "reasoning_effort"
 CONF_CONTEXT_WINDOW = "context_window"  # (ollama: num_ctx)
 CONF_KEEP_ALIVE = "keep_alive"
 CONF_REQUEST_TIMEOUT = "request_timeout"
@@ -114,7 +117,7 @@ DEFAULT_OLLAMA_MODEL = "gemma3:4b"
 DEFAULT_CUSTOM_OPENAI_MODEL = "gpt-4o-mini"
 DEFAULT_AWS_MODEL = "us.amazon.nova-pro-v1:0"
 DEFAULT_OPENWEBUI_MODEL = "gemma3:4b"
-DEFAULT_OPENROUTER_MODEL = "mistralai/mistral-small-3.2-24b-instruct:free"
+DEFAULT_OPENROUTER_MODEL = "google/gemma-3-4b-it:free"
 
 DEFAULT_SUMMARY_PROMPT = "Provide a brief summary for the following titles. Focus on the key actions or changes that occurred over time and avoid unnecessary details or subjective interpretations. The summary should be concise, objective, and relevant to the content of the images. Keep the summary under 50 words and ensure it captures the main events or activities described in the descriptions. Here are the descriptions:\n "
 

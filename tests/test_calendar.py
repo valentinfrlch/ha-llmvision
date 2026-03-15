@@ -92,8 +92,8 @@ class TestCalendar:
         assert attributes["description"] == "Latest description"
         assert attributes["starts"] == latest_event.start
         assert attributes["ends"] == latest_event.end
-        assert attributes["key_frame"] == ["latest_frame.jpg"]
-        assert attributes["camera_name"] == ["Front Door"]
+        assert attributes["key_frame"] == "latest_frame.jpg"
+        assert attributes["camera_name"] == "Front Door"
 
     def test_ensure_datetime_with_datetime(self, calendar_instance):
         """Test _ensure_datetime with datetime input."""
