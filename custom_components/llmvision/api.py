@@ -45,6 +45,9 @@ class TimelineEventsView(HomeAssistantView):
         cameras = request.query.get("cameras", None)
         categories = request.query.get("categories", None)
         days = request.query.get("days", None)
+        hours = request.query.get("hours", None)
+        include_no_activity_raw = request.query.get("include_no_activity", "false")
+        include_no_activity = include_no_activity_raw.lower() in ("1", "true", "yes")
 
         def _parse_list_param(val):
             if val is None:
@@ -63,17 +66,23 @@ class TimelineEventsView(HomeAssistantView):
         start = None
         end = None
 
-        # If days is provided, calculate start and end dates
-        if days is not None:
+        # hours takes precedence over days when both are provided
+        if hours is not None:
             try:
-                days = int(days)
                 end_date = dt_util.now()
-                start_date = end_date - timedelta(days=days)
+                start_date = end_date - timedelta(hours=int(hours))
                 start = start_date.isoformat()
                 end = end_date.isoformat()
             except ValueError:
-                start = None
-                end = None
+                pass
+        elif days is not None:
+            try:
+                end_date = dt_util.now()
+                start_date = end_date - timedelta(days=int(days))
+                start = start_date.isoformat()
+                end = end_date.isoformat()
+            except ValueError:
+                pass
 
         timeline = Timeline(hass, settings_entry)
         events = await timeline.get_events_json(
@@ -82,6 +91,7 @@ class TimelineEventsView(HomeAssistantView):
             categories=categories,
             start=start,
             end=end,
+            include_no_activity=include_no_activity,
         )
         return self.json({"events": json.loads(json_dumps(events))})
 

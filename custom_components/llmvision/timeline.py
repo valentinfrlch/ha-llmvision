@@ -645,11 +645,17 @@ class Timeline:
         return None
 
     async def get_events_json(
-        self, limit=100, cameras=[], categories=[], start=None, end=None
+        self,
+        limit=100,
+        cameras=[],
+        categories=[],
+        start=None,
+        end=None,
+        include_no_activity=False,
     ) -> list[dict]:
         """Returns json event data from the database. Used by the API.
-        Supports filtering by camera, start/end range and sorting by start (newest first).
-        category are ignored for now.
+        Supports filtering by camera, category, time range, and sorting by start (newest first).
+        Set include_no_activity=True to include events whose title is 'no activity observed'.
         """
         await self._purge_expired_events()
         events: list[dict] = []
@@ -694,8 +700,13 @@ class Timeline:
                     if row_end:
                         row_end = self._ensure_datetime(row_end)
 
-                    # Camera filter
-                    if cameras:
+                    # No-activity filter (always applied unless opted in)
+                    if not include_no_activity:
+                        if "no activity" in (row[1] or "").strip().lower():
+                            continue
+
+                    # Camera filter — events with no camera pass through unconditionally
+                    if cameras and (row[7] or "").strip():
                         camera_name = (row[7] or "").lower()
                         if camera_name not in [c.lower() for c in cameras]:
                             continue
@@ -778,9 +789,7 @@ class Timeline:
                 if not label:
                     try:
                         query_text = " ".join(
-                            part
-                            for part in (title or "", description or "")
-                            if part
+                            part for part in (title or "", description or "") if part
                         )
                         (auto_category, auto_label) = await _get_category_and_label(
                             self.hass, self._config_entry, query_text
