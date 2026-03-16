@@ -494,7 +494,10 @@ class Provider(ABC):
         return await self._make_request(data)
 
     async def title_request(self, call: Any) -> str:
-        call.max_tokens = 4096
+        if isinstance(call, dict):
+            call["max_tokens"] = 4096
+        else:
+            call.max_tokens = 4096
         data = self._prepare_text_data(call)
         return await self._make_request(data)
 
@@ -2106,8 +2109,10 @@ class ProviderFactory:
                 model=model,
             )
 
-        if provider_name == "OpenWebUI":
-            endpoint = ENDPOINT_OPENWEBUI.format(
+        if provider_name in ("OpenWebUI", "Open WebUI"):
+            endpoint = config.get(
+                CONF_CUSTOM_OPENAI_ENDPOINT
+            ) or ENDPOINT_OPENWEBUI.format(
                 ip_address=config.get(CONF_IP_ADDRESS),
                 port=config.get(CONF_PORT),
                 protocol="https" if config.get(CONF_HTTPS, False) else "http",
