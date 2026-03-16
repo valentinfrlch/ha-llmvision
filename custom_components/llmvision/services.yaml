@@ -573,7 +573,7 @@ create_event:
         select:
           options:
             - Alarm
-            - Bike
+            - Bicycle
             - Bird
             - Bus
             - Camera
@@ -623,3 +623,92 @@ create_event:
       example: '2022-02-22 13:30:00'
       selector:
         datetime:
+
+get_events:
+  name: Get Events
+  description: Get events from the LLM Vision Timeline
+  fields:
+    start:
+      name: Start Time and Date
+      required: false
+      description: 'Only return events that overlap with this start datetime.'
+      example: '2026-03-16 08:00:00'
+      selector:
+        datetime:
+    end:
+      name: End Time and Date
+      required: false
+      description: 'Only return events that overlap with this end datetime.'
+      example: '2026-03-16 20:00:00'
+      selector:
+        datetime:
+    cameras:
+      name: Cameras
+      required: false
+      description: 'Only return events captured by the selected entities.'
+      example: 'image.front_door_person'
+      selector:
+        entity:
+          domain: ["image", "camera"]
+          multiple: true
+    categories:
+      name: Categories
+      required: false
+      description: 'Comma-separated list of categories to include.'
+      example: 'people,vehicles,animals'
+      selector:
+        select:
+          multiple: True
+          options:
+            - Person
+            - Vehicle
+            - Animal
+            - Package
+            - Entity
+            - Nature
+    labels:
+      name: Labels
+      required: false
+      description: 'Only return events matching one of the selected labels'
+      example: 'person,car,dog'
+      selector:
+        select:
+          multiple: True
+          options:
+            - Alarm
+            - Bicycle
+            - Bird
+            - Bus
+            - Camera
+            - Car
+            - Cat
+            - Dog
+            - Door
+            - Key
+            - Light
+            - Lock
+            - Motorcycle
+            - Package
+            - Person
+            - Plant
+            - Sensor
+            - Tree
+            - Truck
+            - Van
+    limit:
+      name: Limit
+      required: false
+      description: 'Maximum number of events to return.'
+      example: 100
+      default: 100
+      selector:
+        number:
+          min: 1
+    include_no_activity:
+      name: Include No Activity
+      required: false
+      description: 'Include events with "no activity" in the title.'
+      example: true
+      default: true
+      selector:
+        boolean:

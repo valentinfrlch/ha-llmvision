@@ -4,7 +4,8 @@
         "video_analyzer": "mdi:movie-search",
         "stream_analyzer": "mdi:video-wireless",
         "data_analyzer": "mdi:database-search",
-        "remember": "mdi:timeline-text"
+        "create_event": "mdi:timeline-plus-outline",
+        "get_events": "mdi:timeline-text-outline"
     },
     "config": {
         "step": {

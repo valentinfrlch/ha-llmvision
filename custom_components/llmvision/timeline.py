@@ -649,6 +649,7 @@ class Timeline:
         limit=100,
         cameras=[],
         categories=[],
+        labels=[],
         start=None,
         end=None,
         include_no_activity=False,
@@ -657,6 +658,9 @@ class Timeline:
         Supports filtering by camera, category, time range, and sorting by start (newest first).
         Set include_no_activity=True to include events whose title is 'no activity observed'.
         """
+        _LOGGER.debug(
+            f"Fetching events with filters - cameras: {cameras}, categories: {categories}, labels: {labels}, start: {start}, end: {end}, include_no_activity: {include_no_activity}"
+        )
         await self._purge_expired_events()
         events: list[dict] = []
 
@@ -715,6 +719,12 @@ class Timeline:
                     if categories:
                         category_name = (row[5] or "").lower()
                         if category_name not in [c.lower() for c in categories]:
+                            continue
+
+                    # Label filter
+                    if labels:
+                        label_name = (row[8] or "").lower()
+                        if label_name not in [l.lower() for l in labels]:
                             continue
 
                     # Range overlap filter
