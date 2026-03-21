@@ -332,6 +332,22 @@ class Provider(ABC):
         """Return True if provider supports structured output."""
         return False
 
+    @staticmethod
+    def _normalize_keep_alive(value: Any) -> Any:
+        """Normalize keep_alive value for Ollama API.
+
+        Ollama accepts duration strings like '5m' but requires pure numeric
+        values (e.g. -1, 0) to be sent as integers, not strings.
+        The string '-1' causes Go's time.ParseDuration to fail.
+        """
+        if isinstance(value, str):
+            try:
+                numeric = int(value)
+                return numeric
+            except ValueError:
+                pass
+        return value
+
     def _get_default_parameters(self, call: Any) -> dict:
         """Get default parameters from config entry"""
         entry_id = call.provider
@@ -340,7 +356,9 @@ class Provider(ABC):
         default_parameters = {
             "temperature": config.get(CONF_TEMPERATURE, 0.5),
             "top_p": config.get(CONF_TOP_P, 0.9),
-            "keep_alive": config.get(CONF_KEEP_ALIVE, 5),
+            "keep_alive": self._normalize_keep_alive(
+                config.get(CONF_KEEP_ALIVE, 5)
+            ),
             "context_window": config.get(CONF_CONTEXT_WINDOW, 2048),
         }
         return default_parameters
