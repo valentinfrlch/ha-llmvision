@@ -1098,6 +1098,74 @@ def make_coverage_call(**overrides):
     return call_obj
 
 
+def make_openai_chat_completion_response(text="ok"):
+    return {
+        "id": "chatcmpl_test",
+        "object": "chat.completion",
+        "created": 1735689600,
+        "model": "gpt-4o",
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": text},
+                "finish_reason": "stop",
+            }
+        ],
+        "usage": {
+            "prompt_tokens": 10,
+            "completion_tokens": 5,
+            "total_tokens": 15,
+        },
+    }
+
+
+def make_anthropic_text_response(text="ok"):
+    return {
+        "id": "msg_test",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-sonnet-4-6",
+        "content": [{"type": "text", "text": text}],
+        "stop_reason": "end_turn",
+        "usage": {"input_tokens": 12, "output_tokens": 6},
+    }
+
+
+def make_anthropic_tool_use_response(tool_input=None):
+    if tool_input is None:
+        tool_input = {"a": 1}
+    return {
+        "id": "msg_test",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-sonnet-4-6",
+        "content": [
+            {
+                "type": "tool_use",
+                "id": "toolu_test",
+                "name": "return_structured_data",
+                "input": tool_input,
+            }
+        ],
+        "stop_reason": "tool_use",
+        "usage": {"input_tokens": 12, "output_tokens": 6},
+    }
+
+
+def make_google_generate_content_response(text="ok"):
+    return {
+        "candidates": [
+            {
+                "content": {"role": "model", "parts": [{"text": text}]},
+                "finishReason": "STOP",
+                "index": 0,
+            }
+        ],
+        "modelVersion": "gemini-2.5-pro",
+        "responseId": "resp_test",
+    }
+
+
 class DummyProvider:
     def __init__(
         self,
@@ -1127,7 +1195,7 @@ class DummyProvider:
         return self.supports
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_request_call_structured_json_coverage(monkeypatch, coverage_hass):
     req = Request(coverage_hass, "m", 10, 0.2)
     req.base64_images = ["aW1n"]
@@ -1146,7 +1214,7 @@ async def test_request_call_structured_json_coverage(monkeypatch, coverage_hass)
     assert "response_text" not in result
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_request_call_generate_title_and_fallback_coverage(
     monkeypatch, coverage_hass
 ):
@@ -1175,7 +1243,7 @@ async def test_request_call_generate_title_and_fallback_coverage(
     assert result["response_text"] == "ok text"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_provider_post_success_and_errors_coverage(coverage_hass):
     provider = OpenAI(coverage_hass, "k", "gpt-4")
 
@@ -1203,7 +1271,7 @@ async def test_provider_post_success_and_errors_coverage(coverage_hass):
         await provider._post("https://x", {}, {})
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_aws_invoke_bedrock_success_and_error_coverage(coverage_hass):
     provider = AWSBedrock(coverage_hass, "AK", "SK", "us-east-1", "m")
 
@@ -1238,7 +1306,7 @@ async def test_aws_invoke_bedrock_success_and_error_coverage(coverage_hass):
             await provider.invoke_bedrock("m", {"messages": [], "inferenceConfig": {}})
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_provider_coverage_misc_paths(monkeypatch, coverage_hass):
     original_factory_create = ProviderFactory.create
     req = Request(coverage_hass, "m", 10, 0.2)
@@ -1421,7 +1489,7 @@ class MinimalProvider(Provider):
         return None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_provider_vision_title_request_delegate_coverage(coverage_hass):
     provider = MinimalProvider(coverage_hass, "", "m")
     call_obj = make_coverage_call()
@@ -1431,7 +1499,7 @@ async def test_provider_vision_title_request_delegate_coverage(coverage_hass):
     assert provider.supports_structured_output() is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_provider_resolve_error_variants(coverage_hass):
     provider = OpenAI(coverage_hass, "k", "gpt-4")
 
@@ -1453,12 +1521,10 @@ async def test_provider_resolve_error_variants(coverage_hass):
     assert parsed == "boom"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_openai_make_request_and_validate_paths(coverage_hass):
     provider = OpenAI(coverage_hass, "k", "gpt-4")
-    provider._post = AsyncMock(
-        return_value={"choices": [{"message": {"content": "ok"}}]}
-    )
+    provider._post = AsyncMock(return_value=make_openai_chat_completion_response())
     assert await provider._make_request({"x": 1}) == "ok"
 
     provider._post = AsyncMock(return_value={"choices": []})
@@ -1485,7 +1551,7 @@ async def test_openai_make_request_and_validate_paths(coverage_hass):
         await provider_no_key.validate()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_azure_make_request_text_prepare_and_validate_paths(coverage_hass):
     provider = AzureOpenAI(
         coverage_hass,
@@ -1530,18 +1596,14 @@ async def test_azure_make_request_text_prepare_and_validate_paths(coverage_hass)
         await no_key.validate()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_anthropic_make_request_prepare_text_and_validate_paths(coverage_hass):
     provider = Anthropic(coverage_hass, "k", "claude-3")
 
-    provider._post = AsyncMock(
-        return_value={"content": [{"type": "text", "text": "ok"}]}
-    )
+    provider._post = AsyncMock(return_value=make_anthropic_text_response())
     assert await provider._make_request({"x": 1}) == "ok"
 
-    provider._post = AsyncMock(
-        return_value={"content": [{"type": "tool_use", "input": {"a": 1}}]}
-    )
+    provider._post = AsyncMock(return_value=make_anthropic_tool_use_response())
     assert await provider._make_request({"x": 1}) == '{"a": 1}'
 
     provider._post = AsyncMock(return_value={"content": []})
@@ -1560,13 +1622,11 @@ async def test_anthropic_make_request_prepare_text_and_validate_paths(coverage_h
         await no_key.validate()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_google_make_request_prepare_text_and_validate_paths(coverage_hass):
     provider = Google(coverage_hass, "k", "gemini-2.5-pro")
 
-    provider._post = AsyncMock(
-        return_value={"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
-    )
+    provider._post = AsyncMock(return_value=make_google_generate_content_response())
     assert await provider._make_request({"x": 1}) == "ok"
 
     provider._post = AsyncMock(return_value={"candidates": []})
@@ -1590,7 +1650,7 @@ async def test_google_make_request_prepare_text_and_validate_paths(coverage_hass
         await no_key.validate()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_groq_make_request_prepare_text_and_validate_paths(coverage_hass):
     provider = Groq(coverage_hass, "k", "llama-3.2")
 
@@ -1616,7 +1676,7 @@ async def test_groq_make_request_prepare_text_and_validate_paths(coverage_hass):
         await no_key.validate()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_localai_make_request_prepare_text_and_validate_paths(
     coverage_hass, monkeypatch
 ):
@@ -1653,7 +1713,7 @@ async def test_localai_make_request_prepare_text_and_validate_paths(
         await provider.validate()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_ollama_make_request_prepare_text_and_validate_paths(
     coverage_hass, monkeypatch
 ):
@@ -1688,7 +1748,7 @@ async def test_ollama_make_request_prepare_text_and_validate_paths(
         await provider.validate()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_aws_make_request_paths_and_prepare_text_errors(coverage_hass):
     bearer = AWSBedrock(
         coverage_hass,
@@ -1728,7 +1788,7 @@ async def test_aws_make_request_paths_and_prepare_text_errors(coverage_hass):
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_provider_factory_openwebui_alias_and_request_fallback_title_error(
     monkeypatch, coverage_hass
 ):
@@ -1761,6 +1821,530 @@ async def test_provider_factory_openwebui_alias_and_request_fallback_title_error
     )
     assert result["title"] == "Event Detected"
     assert result["response_text"] == "body"
+
+
+def test_request_extra_provider_and_model_branches(mock_hass):
+    mock_hass.data = {DOMAIN: {"uid": {}}}
+    with patch("custom_components.llmvision.providers.async_get_clientsession"):
+        request = Request(mock_hass, "m", 10, 0.1)
+        assert Request.get_provider(mock_hass, "missing") is None
+        assert request.get_default_model("uid") is None
+
+
+@pytest.mark.anyio
+async def test_request_call_error_and_title_fallback_branches(
+    monkeypatch, coverage_hass
+):
+    req = Request(coverage_hass, "m", 10, 0.2)
+    req.base64_images = ["aW1n"]
+    req.filenames = ["f.jpg"]
+
+    # Vision failure without fallback configured hits default error text.
+    coverage_hass.config_entries.async_entries.return_value = [
+        SimpleNamespace(
+            data={"provider": "Settings", "fallback_provider": "no_fallback"}
+        )
+    ]
+    monkeypatch.setattr(
+        ProviderFactory,
+        "create",
+        lambda **kwargs: DummyProvider(fail_vision=True),
+    )
+    result = await req.call(make_coverage_call())
+    assert result["response_text"].startswith("Couldn't generate content")
+
+    # Glimpse parse failure exercises nested exception handling.
+    monkeypatch.setattr(
+        ProviderFactory,
+        "create",
+        lambda **kwargs: DummyProvider(response_text="not-json", supports=False),
+    )
+    result = await req.call(
+        make_coverage_call(
+            model="glimpse-v1",
+            response_format="text",
+            generate_title=False,
+        )
+    )
+    assert result["response_text"] == "not-json"
+
+    # Invalid JSON for title extraction path keeps title unset.
+    result = await req.call(
+        make_coverage_call(response_format="json", title_field="title")
+    )
+    assert "title" not in result
+
+    # Title generation fallback to another provider hits recursive title fallback branch.
+    coverage_hass.config_entries.async_entries.return_value = [
+        SimpleNamespace(
+            data={"provider": "Settings", "fallback_provider": "provider_openai"}
+        )
+    ]
+    providers = [
+        DummyProvider(response_text="body1", fail_title=True, supports=False),
+        DummyProvider(response_text="body2", title_text="Title#2", supports=False),
+    ]
+    monkeypatch.setattr(ProviderFactory, "create", lambda **kwargs: providers.pop(0))
+    result = await req.call(
+        make_coverage_call(
+            provider="provider_groq", generate_title=True, response_format="text"
+        )
+    )
+    assert result["title"] == "Title2"
+    assert result["response_text"] == "body2"
+
+
+def test_heal_json_extra_branches(mock_hass):
+    with patch("custom_components.llmvision.providers.async_get_clientsession"):
+        request = Request(mock_hass, "m", 10, 0.2)
+        # Exercise escaped and inner quote handling branches.
+        healed = request.heal_json('{"x":"a\\\\b and 5"9"}')
+        assert isinstance(healed, str)
+        # Unrecoverable remains unchanged.
+        broken = '{"a": [}'
+        assert request.heal_json(broken) == broken
+
+
+@pytest.mark.anyio
+async def test_provider_base_additional_paths(coverage_hass):
+    provider = MinimalProvider(coverage_hass, "", "m")
+
+    # Execute abstract pass lines directly for full branch coverage accounting.
+    assert Provider._prepare_vision_data(provider, {}) is None
+    assert Provider._prepare_text_data(provider, {}) is None
+    assert await Provider._make_request(provider, {}) is None
+    assert await Provider.validate(provider) is None
+
+    obj_call = make_coverage_call()
+    assert await provider.title_request(obj_call) == "ok"
+    assert obj_call.max_tokens == 4096
+
+    bad_response = Mock()
+    bad_response.text = AsyncMock(side_effect=RuntimeError("boom"))
+    assert await provider._resolve_error(bad_response, "openai") == "Unknown error"
+
+    # Non-JSON string path then dict provider fallback path.
+    txt_response = Mock()
+    txt_response.text = AsyncMock(return_value="not-json")
+    assert await provider._resolve_error(txt_response, "openai") == "Unknown error"
+    assert await provider._resolve_error({"errorMessage": "E"}, "openai") == "E"
+
+
+@pytest.mark.anyio
+async def test_openai_specific_missing_branches(monkeypatch, coverage_hass):
+    provider = OpenAI(coverage_hass, "k", "gpt-5.4")
+    coverage_hass.data[DOMAIN]["provider_openai"]["reasoning_effort"] = "xhigh"
+
+    call_obj = make_coverage_call(
+        response_format="json", structure="{", use_memory=False
+    )
+    payload = provider._prepare_vision_data(call_obj)
+    assert payload["reasoning_effort"] == "xhigh"
+    assert "response_format" not in payload
+
+    text_payload = provider._prepare_text_data(make_coverage_call())
+    assert text_payload["max_completion_tokens"] == 64
+
+    provider.endpoint = "https://openrouter.ai/api/v1/chat/completions"
+    provider._post = AsyncMock(return_value=make_openai_chat_completion_response())
+    with patch("builtins.print"):
+        assert await provider._make_request({"x": 1}) == "ok"
+
+    provider.endpoint = 123
+    with pytest.raises(ServiceValidationError):
+        await provider._make_request({})
+
+
+@pytest.mark.anyio
+async def test_azure_missing_branches(coverage_hass):
+    provider = AzureOpenAI(
+        coverage_hass,
+        "k",
+        "gpt-5",
+        endpoint={
+            "base_url": "https://{base_url}/{deployment}?api-version={api_version}",
+            "endpoint": "ep",
+            "deployment": "dep",
+            "api_version": "2025-01-01",
+        },
+    )
+    p = provider._prepare_vision_data(
+        make_coverage_call(response_format="json", structure="{")
+    )
+    assert p["max_completion_tokens"] == 64
+    assert "response_format" not in p
+
+    p2 = provider._prepare_text_data(
+        make_coverage_call(response_format="json", structure="{")
+    )
+    assert p2["max_completion_tokens"] == 64
+
+    provider._post = AsyncMock(return_value={"choices": [{}]})
+    with pytest.raises(ServiceValidationError):
+        await provider._make_request({})
+    provider._post = AsyncMock(return_value={"choices": [{"message": "bad"}]})
+    with pytest.raises(ServiceValidationError):
+        await provider._make_request({})
+    provider._post = AsyncMock(return_value={"choices": [{"message": {}}]})
+    with pytest.raises(ServiceValidationError):
+        await provider._make_request({})
+
+
+@pytest.mark.anyio
+async def test_anthropic_google_groq_localai_ollama_aws_extra_branches(coverage_hass):
+    # Anthropic vision/image/memory/tool branch.
+    anthropic = Anthropic(coverage_hass, "k", "claude")
+    a_payload = anthropic._prepare_vision_data(
+        make_coverage_call(
+            response_format="json", structure={"type": "object"}, use_memory=True
+        )
+    )
+    assert a_payload["tools"][0]["name"] == "return_structured_data"
+    with pytest.raises(ServiceValidationError):
+        anthropic._prepare_text_data(
+            make_coverage_call(response_format="json", structure="{")
+        )
+
+    google = Google(coverage_hass, "k", "gemini-2.5-pro")
+    coverage_hass.data[DOMAIN]["provider_openai"][CONF_THINKING_BUDGET] = 7
+    g_text = google._prepare_text_data(
+        make_coverage_call(response_format="json", structure={"type": "object"})
+    )
+    assert g_text["generationConfig"]["thinkingConfig"]["thinkingBudget"] == 7
+    assert g_text["generationConfig"]["response_mime_type"] == "application/json"
+    with pytest.raises(ServiceValidationError):
+        google._prepare_vision_data(
+            make_coverage_call(response_format="json", structure="{")
+        )
+
+    groq = Groq(coverage_hass, "k", "llama")
+    with pytest.raises(ServiceValidationError):
+        await groq._make_request({"choices": [{"message": "bad"}]})
+    with pytest.raises(ServiceValidationError):
+        await groq._make_request({"choices": [{"message": {}}]})
+    assert "response_format" not in groq._prepare_vision_data(
+        make_coverage_call(response_format="json", structure="{")
+    )
+    assert "response_format" not in groq._prepare_text_data(
+        make_coverage_call(response_format="json", structure="{")
+    )
+
+    localai = LocalAI(
+        coverage_hass,
+        "",
+        "llava",
+        endpoint={"ip_address": "127.0.0.1", "port": "8080", "https": False},
+    )
+    with pytest.raises(ServiceValidationError):
+        await localai._make_request({"choices": ["bad"]})
+    with pytest.raises(ServiceValidationError):
+        await localai._make_request({"choices": [{"message": "bad"}]})
+    with pytest.raises(ServiceValidationError):
+        await localai._make_request({"choices": [{"message": {}}]})
+    with pytest.raises(ServiceValidationError):
+        localai._prepare_vision_data(
+            make_coverage_call(response_format="json", structure="{")
+        )
+    assert (
+        localai._prepare_text_data(
+            make_coverage_call(response_format="json", structure={"type": "object"})
+        )["response_format"]["json_schema"]["name"]
+        == "response"
+    )
+    bad_local = LocalAI(coverage_hass, "", "m", endpoint={"ip_address": "", "port": ""})
+    with pytest.raises(ServiceValidationError):
+        await bad_local.validate()
+
+    ollama = Ollama(
+        coverage_hass,
+        "",
+        "llava",
+        endpoint={"ip_address": "127.0.0.1", "port": "11434", "https": False},
+    )
+    with pytest.raises(ServiceValidationError):
+        await ollama._make_request("bad")
+    with pytest.raises(ServiceValidationError):
+        ollama._prepare_vision_data(
+            make_coverage_call(response_format="json", structure="{")
+        )
+    assert (
+        ollama._prepare_text_data(
+            make_coverage_call(response_format="json", structure={"type": "object"})
+        )["format"]["type"]
+        == "object"
+    )
+    bad_ollama = Ollama(coverage_hass, "", "m", endpoint={"ip_address": "", "port": ""})
+    with pytest.raises(ServiceValidationError):
+        await bad_ollama.validate()
+
+    aws = AWSBedrock(coverage_hass, "", "", "us-east-1", "m", api_key="k")
+    with pytest.raises(ServiceValidationError):
+        await aws._make_request("bad")
+    with pytest.raises(ServiceValidationError):
+        await aws._make_request({"output": {}})
+    with pytest.raises(ServiceValidationError):
+        await aws._make_request({"output": {"message": "bad"}})
+    with pytest.raises(ServiceValidationError):
+        await aws._make_request({"output": {"message": {"content": ["bad"]}}})
+
+    iam = AWSBedrock(coverage_hass, "AK", "SK", "us-east-1", "m")
+    iam.invoke_bedrock = AsyncMock(return_value="bad")
+    with pytest.raises(ServiceValidationError):
+        await iam._make_request({})
+    iam.invoke_bedrock = AsyncMock(return_value={"message": "bad"})
+    with pytest.raises(ServiceValidationError):
+        await iam._make_request({})
+    iam.invoke_bedrock = AsyncMock(return_value={"message": {"content": ["bad"]}})
+    with pytest.raises(ServiceValidationError):
+        await iam._make_request({})
+
+
+@pytest.mark.anyio
+async def test_aws_invoke_and_text_validate_paths(coverage_hass):
+    provider = AWSBedrock(coverage_hass, "AK", "SK", "us-east-1", "m")
+    client = Mock()
+    client.converse = Mock(
+        return_value={
+            "ResponseMetadata": {"HTTPStatusCode": 200},
+            "metrics": {"latencyMs": 1},
+            "usage": {"inputTokens": 1, "outputTokens": 1, "totalTokens": 2},
+            "output": {"message": {"content": [{"text": "ok"}]}},
+        }
+    )
+    coverage_hass.async_add_executor_job = AsyncMock(
+        side_effect=[client, client.converse()]
+    )
+    out = await provider.invoke_bedrock(
+        "m",
+        {
+            "messages": [],
+            "inferenceConfig": {},
+            "toolConfig": {"t": 1},
+            "system": [{"text": "s"}],
+        },
+    )
+    assert "message" in out
+
+    coverage_hass.async_add_executor_job = AsyncMock(side_effect=RuntimeError("x"))
+    with pytest.raises(ServiceValidationError):
+        await provider.invoke_bedrock("m", {"messages": [], "inferenceConfig": {}})
+
+    assert (
+        provider._prepare_text_data(
+            make_coverage_call(response_format="json", structure={"type": "object"})
+        )["toolConfig"]["tools"][0]["toolSpec"]["name"]
+        == "return_structured_data"
+    )
+    with pytest.raises(ServiceValidationError):
+        provider._prepare_vision_data(
+            make_coverage_call(response_format="json", structure="{")
+        )
+    with pytest.raises(ServiceValidationError):
+        provider._prepare_text_data(
+            make_coverage_call(response_format="json", structure="{")
+        )
+
+    provider.invoke_bedrock = AsyncMock(return_value={"ok": True})
+    await provider.validate()
+
+
+@pytest.mark.anyio
+async def test_all_providers_run_both_vision_and_text_requests(coverage_hass):
+    def mk_call(**kwargs):
+        return make_coverage_call(
+            use_memory=True,
+            response_format="json",
+            structure={"type": "object"},
+            **kwargs,
+        )
+
+    providers = [
+        OpenAI(coverage_hass, "k", "gpt-4o"),
+        AzureOpenAI(
+            coverage_hass,
+            "k",
+            "gpt-4",
+            endpoint={
+                "base_url": "https://{base_url}/{deployment}?api-version={api_version}",
+                "endpoint": "ep",
+                "deployment": "dep",
+                "api_version": "2025-01-01",
+            },
+        ),
+        Anthropic(coverage_hass, "k", "claude"),
+        Google(coverage_hass, "k", "gemini-2.5-pro"),
+        Groq(coverage_hass, "k", "llama"),
+        LocalAI(
+            coverage_hass,
+            "",
+            "llava",
+            endpoint={"ip_address": "127.0.0.1", "port": "8080", "https": False},
+        ),
+        Ollama(
+            coverage_hass,
+            "",
+            "qwen3.5",
+            endpoint={"ip_address": "127.0.0.1", "port": "11434", "https": False},
+        ),
+        AWSBedrock(coverage_hass, "", "", "us-east-1", "m", api_key="token"),
+    ]
+
+    for provider in providers:
+        provider._make_request = AsyncMock(
+            side_effect=lambda data: f"ok-{list(data.keys())[0]}"
+        )
+        assert (await provider.vision_request(mk_call())).startswith("ok-")
+        assert (await provider.title_request(mk_call())).startswith("ok-")
+
+
+def test_provider_factory_openrouter_branch(coverage_hass):
+    cfg = {CONF_API_KEY: "k"}
+    created = ProviderFactory.create(coverage_hass, "OpenRouter", cfg, "m")
+    assert isinstance(created, OpenAI)
+
+
+@pytest.mark.anyio
+async def test_request_glimpse_outer_exception_and_resolve_error_tail(
+    coverage_hass, monkeypatch
+):
+    req = Request(coverage_hass, "m", 10, 0.2)
+    req.base64_images = ["aW1n"]
+    req.filenames = ["f.jpg"]
+    monkeypatch.setattr(
+        ProviderFactory, "create", lambda **kwargs: DummyProvider(response_text="ok")
+    )
+
+    call_obj = make_coverage_call()
+    call_obj.model_is_glimpse = lambda: (_ for _ in ()).throw(RuntimeError("boom"))
+    result = await req.call(call_obj)
+    assert result["response_text"] == "ok"
+
+    # Trigger inner Glimpse parse exception path (json.loads receives non-string).
+    monkeypatch.setattr(
+        ProviderFactory,
+        "create",
+        lambda **kwargs: DummyProvider(response_text={"bad": True}),
+    )
+    parsed_fail_call = make_coverage_call(response_format="text")
+    parsed_fail_call.model_is_glimpse = lambda: True
+    result = await req.call(parsed_fail_call)
+    assert isinstance(result["response_text"], dict)
+
+    provider = MinimalProvider(coverage_hass, "", "m")
+    response = Mock()
+    response.text = AsyncMock(return_value='{"error":"boom"}')
+    assert await provider._resolve_error(response, "openai") == "boom"
+
+    response.text = AsyncMock(return_value="[]")
+    assert await provider._resolve_error(response, "openai") == "Unknown error"
+
+
+@pytest.mark.anyio
+async def test_provider_remaining_error_branches(coverage_hass, monkeypatch):
+    openai = OpenAI(coverage_hass, "k", "gpt-5-mini")
+    payload = openai._prepare_text_data(make_coverage_call())
+    assert "temperature" not in payload
+
+    azure = AzureOpenAI(
+        coverage_hass,
+        "k",
+        "gpt-4",
+        endpoint={
+            "base_url": "https://{base_url}/{deployment}?api-version={api_version}",
+            "endpoint": "ep",
+            "deployment": "dep",
+            "api_version": "2025-01-01",
+        },
+    )
+    azure._post = AsyncMock(return_value={"choices": []})
+    with pytest.raises(ServiceValidationError):
+        await azure._make_request({})
+    azure._post = AsyncMock(return_value={"choices": ["bad"]})
+    with pytest.raises(ServiceValidationError):
+        await azure._make_request({})
+
+    google = Google(coverage_hass, "k", "gemini-pro")
+    google._post = AsyncMock(return_value={"candidates": [{"content": {}}]})
+    with pytest.raises(ServiceValidationError):
+        await google._make_request({})
+
+    groq = Groq(coverage_hass, "k", "llama")
+    groq._post = AsyncMock(return_value={"choices": ["bad"]})
+    with pytest.raises(ServiceValidationError):
+        await groq._make_request({})
+    groq._post = AsyncMock(return_value={"choices": [{"message": "bad"}]})
+    with pytest.raises(ServiceValidationError):
+        await groq._make_request({})
+    groq._post = AsyncMock(return_value={"choices": [{"message": {}}]})
+    with pytest.raises(ServiceValidationError):
+        await groq._make_request({})
+
+    localai = LocalAI(
+        coverage_hass,
+        "",
+        "llava",
+        endpoint={"ip_address": "127.0.0.1", "port": "8080", "https": False},
+    )
+    localai._post = AsyncMock(return_value="bad")
+    with pytest.raises(ServiceValidationError):
+        await localai._make_request({})
+    localai._post = AsyncMock(return_value={"choices": ["bad"]})
+    with pytest.raises(ServiceValidationError):
+        await localai._make_request({})
+    localai._post = AsyncMock(return_value={"choices": [{"message": "bad"}]})
+    with pytest.raises(ServiceValidationError):
+        await localai._make_request({})
+    localai._post = AsyncMock(return_value={"choices": [{"message": {}}]})
+    with pytest.raises(ServiceValidationError):
+        await localai._make_request({})
+
+    ollama = Ollama(
+        coverage_hass,
+        "",
+        "llava",
+        endpoint={"ip_address": "127.0.0.1", "port": "11434", "https": False},
+    )
+    ollama._post = AsyncMock(return_value="bad")
+    with pytest.raises(ServiceValidationError):
+        await ollama._make_request({})
+
+    session = Mock()
+    session.get = AsyncMock(return_value=SimpleNamespace(status=500))
+    monkeypatch.setattr(
+        "custom_components.llmvision.providers.async_get_clientsession",
+        lambda hass: session,
+    )
+    with pytest.raises(ServiceValidationError):
+        await ollama.validate()
+
+    bearer = AWSBedrock(
+        coverage_hass,
+        aws_access_key_id="",
+        aws_secret_access_key="",
+        aws_region_name="us-east-1",
+        model="m",
+        api_key="token",
+    )
+    bearer._post = AsyncMock(return_value="bad")
+    with pytest.raises(ServiceValidationError):
+        await bearer._make_request({})
+    bearer._post = AsyncMock(return_value={"output": "bad"})
+    with pytest.raises(ServiceValidationError):
+        await bearer._make_request({})
+    bearer._post = AsyncMock(return_value={"output": {"message": "bad"}})
+    with pytest.raises(ServiceValidationError):
+        await bearer._make_request({})
+    bearer._post = AsyncMock(return_value={"output": {"message": {"content": ["bad"]}}})
+    with pytest.raises(ServiceValidationError):
+        await bearer._make_request({})
+
+    iam = AWSBedrock(coverage_hass, "AK", "SK", "us-east-1", "m")
+    iam.invoke_bedrock = AsyncMock(return_value={"message": {"content": []}})
+    assert await iam._make_request({}) == ""
+    iam.invoke_bedrock = AsyncMock(
+        return_value={"message": {"content": [{"toolUse": {"input": {"x": 1}}}]}}
+    )
+    assert await iam._make_request({}) == '{"x": 1}'
 
 
 if __name__ == "__main__":
