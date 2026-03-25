@@ -36,7 +36,7 @@
 </p>
 
 ## Features
-- Supports OpenRouter, OpenAI, Anthropic, Google Gemini, AWS Bedrock, Azure, Groq, [Ollama](https://ollama.com/), [Open WebUI](https://github.com/open-webui/open-webui), [LocalAI](https://github.com/mudler/LocalAI) and any provider with OpenAI compatible endpoints.
+- Supports OpenRouter, OpenAI, Anthropic, Google Gemini, AWS Bedrock, Azure, Groq, MiniMax, [Ollama](https://ollama.com/), [Open WebUI](https://github.com/open-webui/open-webui), [LocalAI](https://github.com/mudler/LocalAI) and any provider with OpenAI compatible endpoints.
 - Answers questions and provides descriptions of images, video files, live camera feeds, and Frigate events based on your prompt.
 - Remembers people, pets and objects
 - Keeps a timeline of camera events, so you can display them on your dashboard or ask Assist about them.

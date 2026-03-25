@@ -349,6 +349,36 @@
                     }
                 }
             },
+            "minimax": {
+                "title": "MiniMax Yapılandırması",
+                "description": "Geçerli bir MiniMax API anahtarı girin. [platform.minimaxi.com](https://platform.minimaxi.com/) adresinden edinin.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Bağlantı",
+                        "description": "MiniMax kimlik doğrulama",
+                        "data": {
+                            "api_key": "API anahtarı"
+                        },
+                        "data_description": {
+                            "api_key": "MiniMax API anahtarınız."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Varsayılan model parametrelerini ayarlayın",
+                        "data": {
+                            "default_model": "Varsayılan model",
+                            "temperature": "Sıcaklık",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model. Önerilen: MiniMax-M1",
+                            "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Ayarlar",
                 "description": "LLM Vision entegrasyonunu yapılandırın. Bu giriş, diğer sağlayıcıları kurmadan önce gereklidir. Varsayılan ayarları kullanmak istiyorsanız, sadece 'Gönder' butonuna basın.",

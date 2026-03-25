@@ -349,6 +349,36 @@
                     }
                 }
             },
+            "minimax": {
+                "title": "MiniMax konfigurálása",
+                "description": "Adj meg egy érvényes MiniMax API-kulcsot. Szerezz egyet a [platform.minimaxi.com](https://platform.minimaxi.com/) oldalon.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Kapcsolat",
+                        "description": "MiniMax hitelesítés",
+                        "data": {
+                            "api_key": "API-kulcs"
+                        },
+                        "data_description": {
+                            "api_key": "A MiniMax API-kulcsod."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "A modell alapértelmezéseinek beállítása",
+                        "data": {
+                            "default_model": "Alapértelmezett modell",
+                            "temperature": "Hőmérséklet",
+                            "top_p": "Magmintavétel"
+                        },
+                        "data_description": {
+                            "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva. Ajánlott: MiniMax-M1",
+                            "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Beállítások",
                 "description": "Konfiguráld az LLM Vision integrációt. Ez a bejegyzés kötelező más szolgáltatók beállítása előtt. Ha az alapértelmezett beállításokat szeretnéd használni, kattints a „Mehet” gombra.",

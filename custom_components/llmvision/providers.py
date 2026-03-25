@@ -36,6 +36,7 @@ from .const import (
     ENDPOINT_OPENWEBUI,
     ENDPOINT_GROQ,
     ENDPOINT_OPENROUTER,
+    ENDPOINT_MINIMAX,
     ERROR_NOT_CONFIGURED,
     ERROR_GROQ_MULTIPLE_IMAGES,
     ERROR_NO_IMAGE_INPUT,
@@ -50,6 +51,7 @@ from .const import (
     DEFAULT_AWS_MODEL,
     DEFAULT_OPENWEBUI_MODEL,
     DEFAULT_OPENROUTER_MODEL,
+    DEFAULT_MINIMAX_MODEL,
     CONF_KEEP_ALIVE,
     CONF_CONTEXT_WINDOW,
     CONF_TEMPERATURE,
@@ -126,6 +128,7 @@ class Request:
             "AWS": DEFAULT_AWS_MODEL,  # For backwards compatibility
             "Open WebUI": DEFAULT_OPENWEBUI_MODEL,
             "OpenRouter": DEFAULT_OPENROUTER_MODEL,
+            "MiniMax": DEFAULT_MINIMAX_MODEL,
         }.get(provider_name)
 
     def validate(self, call: Any) -> None | ServiceValidationError:
@@ -1938,6 +1941,14 @@ class ProviderFactory:
                 api_key=cast(str, config.get(CONF_API_KEY) or ""),
                 model=model,
                 endpoint={"base_url": ENDPOINT_OPENROUTER},
+            )
+
+        if provider_name == "MiniMax":
+            return OpenAI(
+                hass,
+                api_key=cast(str, config.get(CONF_API_KEY) or ""),
+                model=model,
+                endpoint={"base_url": ENDPOINT_MINIMAX},
             )
 
         raise ServiceValidationError("invalid_provider")

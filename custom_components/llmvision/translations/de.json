@@ -349,6 +349,36 @@
                     }
                 }
             },
+            "minimax": {
+                "title": "MiniMax konfigurieren",
+                "description": "Gib einen gültigen MiniMax API-Key ein. Erhalte einen auf [platform.minimaxi.com](https://platform.minimaxi.com/).",
+                "sections": {
+                    "connection_section": {
+                        "name": "Verbindung",
+                        "description": "MiniMax Authentifizierung",
+                        "data": {
+                            "api_key": "API-Key"
+                        },
+                        "data_description": {
+                            "api_key": "Dein MiniMax API-Key."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Standardmodell-Parameter festlegen",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist. Empfohlen: MiniMax-M1",
+                            "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Einstellungen",
                 "description": "Konfiguriere die LLM Vision-Integration. Dieser Eintrag ist erforderlich, bevor andere Anbieter eingerichtet werden können. Wenn Sie die Standardeinstellungen verwenden möchten, drücken Sie einfach 'Absenden'.",

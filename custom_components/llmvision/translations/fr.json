@@ -349,6 +349,36 @@
                     }
                 }
             },
+            "minimax": {
+                "title": "Configurer MiniMax",
+                "description": "Fournissez une clé API MiniMax valide. Obtenez-en une sur [platform.minimaxi.com](https://platform.minimaxi.com/).",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexion",
+                        "description": "Authentification MiniMax",
+                        "data": {
+                            "api_key": "Clé API"
+                        },
+                        "data_description": {
+                            "api_key": "Votre clé API MiniMax."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modèle",
+                        "description": "Définir les paramètres par défaut du modèle",
+                        "data": {
+                            "default_model": "Modèle par défaut",
+                            "temperature": "Température",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Le modèle par défaut à utiliser si aucun autre modèle n'est spécifié. Recommandé : MiniMax-M1",
+                            "temperature": "Contrôle l'aléatoire de la sortie. Des valeurs plus basses rendent la sortie plus déterministe.",
+                            "top_p": "Contrôle la diversité de la sortie. Des valeurs plus basses rendent la sortie plus ciblée."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Paramètres",
                 "description": "Configurez l'intégration LLM Vision. Cette entrée est requise avant de configurer d'autres fournisseurs. Si vous souhaitez utiliser les paramètres par défaut, appuyez simplement sur 'Soumettre'.",

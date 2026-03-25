@@ -349,6 +349,36 @@
                     }
                 }
             },
+            "minimax": {
+                "title": "Konfigurace MiniMax",
+                "description": "Zadejte platný API klíč pro MiniMax. Získejte ho na [platform.minimaxi.com](https://platform.minimaxi.com/).",
+                "sections": {
+                    "connection_section": {
+                        "name": "Připojení",
+                        "description": "MiniMax autentifikace",
+                        "data": {
+                            "api_key": "API klíč"
+                        },
+                        "data_description": {
+                            "api_key": "Váš MiniMax API klíč."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavit základní parametry modelu",
+                        "data": {
+                            "default_model": "Předvolený model",
+                            "temperature": "Teplota",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný. Doporučeno: MiniMax-M1",
+                            "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup více deterministický.",
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Nastavení",
                 "description": "Nastavení LLM Vision integrace. Tento vstup je vyžadován předtím než se nastaví další poskytovatel. Pokud si přejete použít předvolené nastavení, stačí stisknout 'Potvrdit'.",

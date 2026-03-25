@@ -349,6 +349,36 @@
                     }
                 }
             },
+            "minimax": {
+                "title": "Konfigurera MiniMax",
+                "description": "Ange en giltig MiniMax API-nyckel. Skaffa en på [platform.minimaxi.com](https://platform.minimaxi.com/).",
+                "sections": {
+                    "connection_section": {
+                        "name": "Anslutning",
+                        "description": "MiniMax-autentisering",
+                        "data": {
+                            "api_key": "API-nyckel"
+                        },
+                        "data_description": {
+                            "api_key": "Din MiniMax API-nyckel."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modell",
+                        "description": "Ställ in standardmodellparametrar",
+                        "data": {
+                            "default_model": "Standardmodell",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen som används om ingen annan anges. Rekommenderad: MiniMax-M1",
+                            "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Inställningar",
                 "description": "Konfigurera LLM Vision-integrationen. Detta måste göras innan du lägger till andra leverantörer. Om du vill använda standardinställningarna, tryck bara på 'Skicka'.",

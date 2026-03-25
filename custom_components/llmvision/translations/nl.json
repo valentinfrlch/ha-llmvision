@@ -349,6 +349,36 @@
           }
         }
       },
+      "minimax": {
+        "title": "MiniMax configureren",
+        "description": "Voer een geldige MiniMax API-sleutel in. Verkrijg er een op [platform.minimaxi.com](https://platform.minimaxi.com/).",
+        "sections": {
+          "connection_section": {
+            "name": "Verbinding",
+            "description": "MiniMax authenticatie",
+            "data": {
+              "api_key": "API-sleutel"
+            },
+            "data_description": {
+              "api_key": "Uw MiniMax API-sleutel."
+            }
+          },
+          "model_section": {
+            "name": "Model",
+            "description": "Stel standaard modelparameters in",
+            "data": {
+              "default_model": "Standaardmodel",
+              "temperature": "Temperatuur",
+              "top_p": "Top P"
+            },
+            "data_description": {
+              "default_model": "Het standaardmodel dat wordt gebruikt wanneer geen ander model is gespecificeerd. Aanbevolen: MiniMax-M1",
+              "temperature": "Regelt de willekeurigheid van de uitvoer. Lagere waarden maken de uitvoer deterministischer.",
+              "top_p": "Regelt de diversiteit van de uitvoer. Lagere waarden maken de uitvoer gerichter."
+            }
+          }
+        }
+      },
       "settings": {
         "title": "Instellingen",
         "description": "Configureer de LLM Vision integratie. Deze invoer is vereist voordat u andere providers instelt. Als u de standaardinstellingen wilt gebruiken, drukt u gewoon op 'Verzenden'.",

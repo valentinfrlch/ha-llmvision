@@ -656,3 +656,313 @@ class TestProviderFactory:
             
             assert provider is not None
             assert provider.model == "llama2"
+
+    def test_create_minimax(self, mock_hass_with_session):
+        """Test ProviderFactory creates MiniMax provider."""
+        from custom_components.llmvision.providers import ProviderFactory
+
+        config = {"api_key": "test_key"}
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            provider = ProviderFactory.create(
+                mock_hass_with_session,
+                "MiniMax",
+                config,
+                "MiniMax-M1"
+            )
+
+            assert provider is not None
+            assert provider.model == "MiniMax-M1"
+            assert isinstance(provider, OpenAI)
+
+    def test_create_minimax_endpoint(self, mock_hass_with_session):
+        """Test ProviderFactory creates MiniMax provider with correct endpoint."""
+        from custom_components.llmvision.providers import ProviderFactory
+        from custom_components.llmvision.const import ENDPOINT_MINIMAX
+
+        config = {"api_key": "test_key"}
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            provider = ProviderFactory.create(
+                mock_hass_with_session,
+                "MiniMax",
+                config,
+                "MiniMax-M1"
+            )
+
+            assert provider.endpoint.get("base_url") == ENDPOINT_MINIMAX
+
+    def test_create_invalid_provider(self, mock_hass_with_session):
+        """Test ProviderFactory raises error for invalid provider."""
+        from custom_components.llmvision.providers import ProviderFactory
+
+        config = {"api_key": "test_key"}
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            with pytest.raises(ServiceValidationError):
+                ProviderFactory.create(
+                    mock_hass_with_session,
+                    "InvalidProvider",
+                    config,
+                    "model"
+                )
+
+
+class TestMiniMax:
+    """Test MiniMax provider (reuses OpenAI class via ProviderFactory)."""
+
+    def test_minimax_is_openai_instance(self, mock_hass_with_session):
+        """Test MiniMax provider is an instance of OpenAI."""
+        from custom_components.llmvision.providers import ProviderFactory
+        from custom_components.llmvision.const import ENDPOINT_MINIMAX
+
+        config = {"api_key": "minimax_test_key"}
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            provider = ProviderFactory.create(
+                mock_hass_with_session,
+                "MiniMax",
+                config,
+                "MiniMax-M1"
+            )
+
+            assert isinstance(provider, OpenAI)
+            assert provider.api_key == "minimax_test_key"
+            assert provider.model == "MiniMax-M1"
+            assert provider.endpoint.get("base_url") == ENDPOINT_MINIMAX
+
+    def test_minimax_supports_structured_output(self, mock_hass_with_session):
+        """Test MiniMax provider supports structured output (inherits from OpenAI)."""
+        from custom_components.llmvision.providers import ProviderFactory
+
+        config = {"api_key": "test_key"}
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            provider = ProviderFactory.create(
+                mock_hass_with_session,
+                "MiniMax",
+                config,
+                "MiniMax-M1"
+            )
+
+            assert provider.supports_structured_output() is True
+
+    def test_minimax_generate_headers(self, mock_hass_with_session):
+        """Test MiniMax provider generates correct headers."""
+        from custom_components.llmvision.providers import ProviderFactory
+
+        config = {"api_key": "minimax_api_key_123"}
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            provider = ProviderFactory.create(
+                mock_hass_with_session,
+                "MiniMax",
+                config,
+                "MiniMax-M1"
+            )
+
+            headers = provider._generate_headers()
+
+            assert headers["Content-type"] == "application/json"
+            assert headers["Authorization"] == "Bearer minimax_api_key_123"
+
+    def test_minimax_prepare_vision_data(self, mock_hass_with_session):
+        """Test MiniMax provider prepares vision data correctly."""
+        from custom_components.llmvision.providers import ProviderFactory
+
+        config = {"api_key": "test_key"}
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            provider = ProviderFactory.create(
+                mock_hass_with_session,
+                "MiniMax",
+                config,
+                "MiniMax-M1"
+            )
+            call = Mock()
+            call.max_tokens = 1000
+            call.base64_images = ["base64_image_data"]
+            call.filenames = ["test.jpg"]
+            call.message = "Describe this image"
+            call.provider = "test_provider"
+            call.response_format = "text"
+            call.use_memory = False
+
+            mock_hass_with_session.data = {
+                DOMAIN: {
+                    "test_provider": {
+                        "provider": "MiniMax",
+                        "temperature": 0.5,
+                        "top_p": 0.9
+                    }
+                }
+            }
+
+            with patch.object(provider, '_get_system_prompt', return_value="System prompt"):
+                result = provider._prepare_vision_data(call)
+
+            assert result["model"] == "MiniMax-M1"
+            assert result["max_completion_tokens"] == 1000
+            assert len(result["messages"]) == 2  # system + user
+            assert result["messages"][0]["role"] == "system"
+            assert result["messages"][1]["role"] == "user"
+
+    def test_minimax_prepare_text_data(self, mock_hass_with_session):
+        """Test MiniMax provider prepares text data correctly."""
+        from custom_components.llmvision.providers import ProviderFactory
+
+        config = {"api_key": "test_key"}
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            provider = ProviderFactory.create(
+                mock_hass_with_session,
+                "MiniMax",
+                config,
+                "MiniMax-M1"
+            )
+            call = Mock()
+            call.max_tokens = 1000
+            call.message = "Generate a title"
+            call.provider = "test_provider"
+
+            mock_hass_with_session.data = {
+                DOMAIN: {
+                    "test_provider": {
+                        "provider": "MiniMax",
+                        "temperature": 0.5,
+                        "top_p": 0.9
+                    }
+                }
+            }
+
+            with patch.object(provider, '_get_title_prompt', return_value="Title prompt"):
+                result = provider._prepare_text_data(call)
+
+            assert result["model"] == "MiniMax-M1"
+            assert result["max_completion_tokens"] == 1000
+            assert len(result["messages"]) == 2
+
+    def test_minimax_default_model(self, mock_hass_with_session):
+        """Test MiniMax default model is correctly mapped."""
+        from custom_components.llmvision.const import DEFAULT_MINIMAX_MODEL
+
+        mock_hass_with_session.data = {
+            DOMAIN: {
+                "minimax_entry": {
+                    "provider": "MiniMax"
+                }
+            }
+        }
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            request = Request(mock_hass_with_session, "test", 1000, 0.5)
+            result = request.get_default_model("minimax_entry")
+            assert result == DEFAULT_MINIMAX_MODEL
+
+    @pytest.mark.asyncio
+    async def test_minimax_make_request(self, mock_hass_with_session):
+        """Test MiniMax provider makes request and parses response."""
+        from custom_components.llmvision.providers import ProviderFactory
+
+        config = {"api_key": "test_key"}
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            provider = ProviderFactory.create(
+                mock_hass_with_session,
+                "MiniMax",
+                config,
+                "MiniMax-M1"
+            )
+
+            mock_response = {
+                "choices": [
+                    {
+                        "message": {
+                            "content": "A person walking a dog in the park."
+                        }
+                    }
+                ]
+            }
+
+            with patch.object(provider, '_post', new_callable=AsyncMock, return_value=mock_response):
+                result = await provider._make_request({"model": "MiniMax-M1", "messages": []})
+
+            assert result == "A person walking a dog in the park."
+
+    @pytest.mark.asyncio
+    async def test_minimax_validate_success(self, mock_hass_with_session):
+        """Test MiniMax provider validation succeeds."""
+        from custom_components.llmvision.providers import ProviderFactory
+
+        config = {"api_key": "valid_key"}
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            provider = ProviderFactory.create(
+                mock_hass_with_session,
+                "MiniMax",
+                config,
+                "MiniMax-M1"
+            )
+
+            mock_response = {"choices": [{"message": {"content": "Hi"}}]}
+
+            with patch.object(provider, '_post', new_callable=AsyncMock, return_value=mock_response):
+                await provider.validate()
+
+    @pytest.mark.asyncio
+    async def test_minimax_validate_empty_key(self, mock_hass_with_session):
+        """Test MiniMax provider validation fails with empty key."""
+        from custom_components.llmvision.providers import ProviderFactory
+
+        config = {"api_key": ""}
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            provider = ProviderFactory.create(
+                mock_hass_with_session,
+                "MiniMax",
+                config,
+                "MiniMax-M1"
+            )
+
+            with pytest.raises(ServiceValidationError):
+                await provider.validate()
+
+    def test_minimax_vision_data_with_structured_output(self, mock_hass_with_session):
+        """Test MiniMax prepares vision data with JSON schema structured output."""
+        from custom_components.llmvision.providers import ProviderFactory
+
+        config = {"api_key": "test_key"}
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            provider = ProviderFactory.create(
+                mock_hass_with_session,
+                "MiniMax",
+                config,
+                "MiniMax-M1"
+            )
+            call = Mock()
+            call.max_tokens = 1000
+            call.base64_images = ["base64_image_data"]
+            call.filenames = ["test.jpg"]
+            call.message = "Extract data"
+            call.provider = "test_provider"
+            call.response_format = "json"
+            call.structure = '{"type": "object", "properties": {"count": {"type": "integer"}}}'
+            call.use_memory = False
+
+            mock_hass_with_session.data = {
+                DOMAIN: {
+                    "test_provider": {
+                        "provider": "MiniMax",
+                        "temperature": 0.5,
+                        "top_p": 0.9
+                    }
+                }
+            }
+
+            with patch.object(provider, '_get_system_prompt', return_value="System prompt"):
+                result = provider._prepare_vision_data(call)
+
+            assert "response_format" in result
+            assert result["response_format"]["type"] == "json_schema"
+            assert result["response_format"]["json_schema"]["strict"] is True

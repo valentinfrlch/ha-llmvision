@@ -349,6 +349,36 @@
                     }
                 }
             },
+            "minimax": {
+                "title": "Configurar MiniMax",
+                "description": "Proporcioneu una clau API vàlida de MiniMax. Obteniu-ne una a [platform.minimaxi.com](https://platform.minimaxi.com/).",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connexió",
+                        "description": "Autenticació de MiniMax",
+                        "data": {
+                            "api_key": "Clau API"
+                        },
+                        "data_description": {
+                            "api_key": "La vostra clau API de MiniMax."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Configureu els paràmetres predeterminats del model",
+                        "data": {
+                            "default_model": "Model predeterminat",
+                            "temperature": "Temperatura",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model. Recomanat: MiniMax-M1",
+                            "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Configuració",
                 "description": "Configureu la integració de LLM Vision. Aquesta entrada és necessària abans de configurar altres proveïdors. Si voleu utilitzar la configuració predeterminada, simplement premeu 'Enviar'.",
