@@ -75,6 +75,7 @@ DESCPRIPTION_FIELD = DESCRIPTION_FIELD  # Deprecated: kept for backward compatib
 INCLUDE_FILENAME = "include_filename"
 EXPOSE_IMAGES = "expose_images"
 GENERATE_TITLE = "generate_title"
+VIDEO_URL = "video_url"
 SENSOR_ENTITY = "sensor_entity"
 
 # Error messages

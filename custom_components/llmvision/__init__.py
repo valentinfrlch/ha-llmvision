@@ -77,6 +77,7 @@ from .const import (
     CONF_THINKING_BUDGET,
     CONF_THINK,
     CONF_REASONING_EFFORT,
+    VIDEO_URL,
 )
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -481,6 +482,7 @@ class ServiceCallData:
         self.structure: dict | None = data_call.data.get(STRUCTURE, None)
         self.title_field: str = data_call.data.get(TITLE_FIELD, "")
         self.description_field: str = data_call.data.get(DESCRIPTION_FIELD, "")
+        self.video_url = data_call.data.get(VIDEO_URL, "")
         self.memory: Memory | None = None
 
         # ------------ Create Event ------------
@@ -602,6 +604,7 @@ async def _create_event(
             key_frame=key_frame,
             camera_name=camera_name,
             label="",
+            video_url=call.get("video_url", ""),
         )
 
 
@@ -902,6 +905,7 @@ def setup(hass, config):
             key_frame=call.image_path,
             camera_name=call.camera_entity,
             label=call.label.lower(),
+            video_url=call.video_url,
         )
 
     async def get_events(data_call) -> dict | None:
