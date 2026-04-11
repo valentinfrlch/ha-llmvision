@@ -14,7 +14,7 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
-DB_VERSION = 4
+DB_VERSION = 5
 
 
 async def _get_category_and_label(
@@ -157,6 +157,7 @@ class Event:
         camera_name: str,
         category: str,
         label: str,
+        video_url: str = "",
     ):
         self.uid = uid
         self.title = title
@@ -167,9 +168,10 @@ class Event:
         self.camera_name = camera_name
         self.category = category
         self.label = label
+        self.video_url = video_url
 
     def __repr__(self):
-        return f"Event(uid={self.uid}, title={self.title}, start={self.start}, end={self.end}, description={self.description}, key_frame={self.key_frame}, camera_name={self.camera_name}, category={self.category}, label={self.label})"
+        return f"Event(uid={self.uid}, title={self.title}, start={self.start}, end={self.end}, description={self.description}, key_frame={self.key_frame}, camera_name={self.camera_name}, category={self.category}, label={self.label}, video_url={self.video_url})"
 
     def __str__(self):
         return self.__repr__()
@@ -236,6 +238,7 @@ class Timeline:
             "camera_name",
             "category",
             "label",
+            "video_url",
         }
         try:
             async with aiosqlite.connect(self._db_path) as db:
@@ -261,7 +264,8 @@ class Timeline:
                         key_frame TEXT,
                         camera_name TEXT,
                         category TEXT,
-                        label TEXT
+                        label TEXT,
+                        video_url TEXT
                     )
                 """
                 )
@@ -483,6 +487,22 @@ class Timeline:
         except aiosqlite.Error as e:
             _LOGGER.error(f"Error migrating events.db to v4.3: {e}")
 
+        # v4.3 -> v4.4: Add video_url column to events.db
+        try:
+            async with aiosqlite.connect(self._db_path) as db:
+                async with db.execute("""PRAGMA table_info(events)""") as cursor:
+                    columns = await cursor.fetchall()
+                    column_names = [column[1] for column in columns]
+                    if "video_url" not in column_names:
+                        _LOGGER.info("Adding video_url column to events.db")
+                        await db.execute(
+                            """ALTER TABLE events ADD COLUMN video_url TEXT"""
+                        )
+                        await db.commit()
+                        _LOGGER.info("Timeline DB migration to v4.4 complete")
+        except aiosqlite.Error as e:
+            _LOGGER.error(f"Error migrating events.db to v4.4: {e}")
+
         # Mark migration complete by setting user_version
         await self._set_db_version(DB_VERSION)
         _LOGGER.info(f"DB migration complete (user_version={DB_VERSION})")
@@ -582,7 +602,7 @@ class Timeline:
                     """
                     SELECT
                         uid, title, start, end, description,
-                        category, key_frame, camera_name, label
+                        category, key_frame, camera_name, label, video_url
                     FROM events
                     """
                 ) as cursor:
@@ -613,6 +633,7 @@ class Timeline:
                             key_frame=row[6],
                             camera_name=row[7],
                             label=row[8],
+                            video_url=row[9] if len(row) > 9 else "",
                         )
                         self.events.append(event)
         except aiosqlite.Error as e:
@@ -638,6 +659,7 @@ class Timeline:
                     "camera_name": event.camera_name,
                     "category": event.category,
                     "label": event.label,
+                    "video_url": event.video_url,
                 }
                 return event_dict
         return None
@@ -673,7 +695,7 @@ class Timeline:
                 """
                 SELECT
                     uid, title, start, end, description,
-                    category, key_frame, camera_name, label
+                    category, key_frame, camera_name, label, video_url
                 FROM events
                 """
             ) as cursor:
@@ -721,6 +743,7 @@ class Timeline:
                             "camera_name": row[7],
                             "category": row[5],
                             "label": row[8],
+                            "video_url": row[9] if len(row) > 9 else "",
                         }
                     )
 
@@ -748,6 +771,7 @@ class Timeline:
         key_frame: str,
         camera_name: str,
         label: str = "",
+        video_url: str = "",
     ) -> None:
         """Adds a new event to calendar"""
         category = ""
@@ -802,6 +826,7 @@ class Timeline:
                     camera_name=camera_name,
                     category=category,
                     label=label,
+                    video_url=video_url,
                 )
                 _LOGGER.info(f"Creating event: {event}")
                 await self._insert_event(event)
@@ -817,8 +842,8 @@ class Timeline:
                 _LOGGER.info(f"Inserting event into database: {event}")
                 await db.execute(
                     """
-                    INSERT INTO events (uid, title, start, end, description, key_frame, camera_name, category, label)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO events (uid, title, start, end, description, key_frame, camera_name, category, label, video_url)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                     (
                         event.uid,
@@ -832,6 +857,7 @@ class Timeline:
                         event.camera_name,
                         event.category,
                         event.label,
+                        event.video_url,
                     ),
                 )
                 await db.commit()
@@ -849,6 +875,7 @@ class Timeline:
         key_frame: str,
         camera_name: str,
         label: str,
+        video_url: str = "",
     ) -> None:
         """Updates an existing event in the calendar."""
         await self.load_events()
@@ -868,7 +895,7 @@ class Timeline:
                 await db.execute(
                     """
                     UPDATE events
-                    SET title = ?, start = ?, end = ?, description = ?, key_frame = ?, camera_name = ?, category = ?, label = ?
+                    SET title = ?, start = ?, end = ?, description = ?, key_frame = ?, camera_name = ?, category = ?, label = ?, video_url = ?
                     WHERE uid = ?
                 """,
                     (
@@ -880,6 +907,7 @@ class Timeline:
                         camera_name,
                         await self._get_category_from_label(label),
                         label,
+                        video_url,
                         uid,
                     ),
                 )

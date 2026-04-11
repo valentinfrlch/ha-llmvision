@@ -134,6 +134,13 @@ image_analyzer:
       default: 'description'
       selector:
         text:
+    video_url:
+      name: Video URL
+      description: 'URL to video playback for this event.'
+      required: false
+      example: 'https://example.com/video.mp4'
+      selector:
+        text:
 
 video_analyzer:
   name: Video Analyzer
@@ -279,6 +286,13 @@ video_analyzer:
       required: false
       example: 'description'
       default: 'description'
+      selector:
+        text:
+    video_url:
+      name: Video URL
+      description: 'URL to video playback for this event.'
+      required: false
+      example: 'https://example.com/video.mp4'
       selector:
         text:
 
@@ -429,6 +443,13 @@ stream_analyzer:
       required: false
       example: 'description'
       default: 'description'
+      selector:
+        text:
+    video_url:
+      name: Video URL
+      description: 'URL to video playback for this event.'
+      required: false
+      example: 'https://example.com/video.mp4'
       selector:
         text:
 
@@ -623,3 +644,10 @@ create_event:
       example: '2022-02-22 13:30:00'
       selector:
         datetime:
+    video_url:
+      name: Video URL
+      description: 'URL to video playback for this event.'
+      required: false
+      example: 'https://example.com/video.mp4'
+      selector:
+        text:
