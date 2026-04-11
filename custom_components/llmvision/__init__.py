@@ -584,6 +584,8 @@ async def _resolve_llm_keyframe(processor, call, response):
         return
     best_idx = _extract_and_strip_best_frame(response, processor.candidate_frames)
     if best_idx is not None:
+        label = processor.candidate_frames[best_idx][0]
+        _LOGGER.info("LLM selected keyframe: %s (index %d)", label, best_idx)
         await processor.expose_keyframe_by_index(best_idx)
     else:
         _LOGGER.warning(
