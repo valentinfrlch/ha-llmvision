@@ -42,16 +42,16 @@ class TestMediaProcessor:
         assert processor.base64_images == []
         assert processor.filenames == []
         assert processor.key_frame == ""
-        assert processor._candidate_frames == []
+        assert processor.candidate_frames == []
 
     @pytest.mark.asyncio
     async def test_encode_image(self, processor):
         """Test _encode_image method."""
         # Create a simple test image
         img = Image.new('RGB', (100, 100), color='red')
-        
+
         result = await processor._encode_image(img)
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
         # Verify it's valid base64
@@ -60,17 +60,17 @@ class TestMediaProcessor:
     def test_convert_to_rgb_rgba(self, processor):
         """Test _convert_to_rgb with RGBA image."""
         img = Image.new('RGBA', (100, 100), color=(255, 0, 0, 128))
-        
+
         result = processor._convert_to_rgb(img)
-        
+
         assert result.mode == 'RGB'
 
     def test_convert_to_rgb_already_rgb(self, processor):
         """Test _convert_to_rgb with RGB image."""
         img = Image.new('RGB', (100, 100), color='red')
-        
+
         result = processor._convert_to_rgb(img)
-        
+
         assert result.mode == 'RGB'
 
     @pytest.mark.asyncio
@@ -78,12 +78,12 @@ class TestMediaProcessor:
         """Test resize_image with PIL Image object."""
         # Create a test image
         img = Image.new('RGB', (200, 100), color='blue')
-        
+
         result = await processor.resize_image(
             target_width=100,
             img=img
         )
-        
+
         assert isinstance(result, str)
         assert len(result) > 0
 
@@ -101,7 +101,7 @@ class TestMediaProcessor:
     @pytest.mark.asyncio
     async def test_expose_keyframe_by_index(self, processor):
         """Test expose_keyframe_by_index calls _expose_image with correct data."""
-        processor._candidate_frames = [
+        processor.candidate_frames = [
             ("camera0-frame-1", "base64data1", "camera0"),
             ("camera0-frame-2", "base64data2", "camera0"),
             ("camera0-frame-3", "base64data3", "camera0"),
@@ -117,8 +117,8 @@ class TestMediaProcessor:
         assert "uid" in call_kwargs[1]
 
     @pytest.mark.asyncio
-    async def test_expose_keyframe_ssim_fallback(self, processor):
-        """Test expose_keyframe_ssim_fallback runs SSIM and exposes winner."""
+    async def test_select_and_expose_keyframe(self, processor):
+        """Test select_and_expose_keyframe runs SSIM and exposes winner."""
         # Create small test images as base64
         img1 = Image.new('RGB', (10, 10), color='red')
         img2 = Image.new('RGB', (10, 10), color='blue')
@@ -129,14 +129,14 @@ class TestMediaProcessor:
             img.save(buf, format="JPEG")
             buffers.append(base64.b64encode(buf.getvalue()).decode("utf-8"))
 
-        processor._candidate_frames = [
+        processor.candidate_frames = [
             ("cam-frame-1", buffers[0], "cam"),
             ("cam-frame-2", buffers[1], "cam"),
             ("cam-frame-3", buffers[2], "cam"),
         ]
         processor._expose_image = AsyncMock()
 
-        await processor.expose_keyframe_ssim_fallback()
+        await processor.select_and_expose_keyframe()
 
         # Should have called _expose_image exactly once
         processor._expose_image.assert_called_once()
@@ -144,11 +144,11 @@ class TestMediaProcessor:
         assert call_kwargs["frame_name"] == "cam"
 
     @pytest.mark.asyncio
-    async def test_expose_keyframe_ssim_fallback_empty_candidates(self, processor):
-        """Test expose_keyframe_ssim_fallback is no-op when candidates empty."""
-        processor._candidate_frames = []
+    async def test_select_and_expose_keyframe_empty_candidates(self, processor):
+        """Test select_and_expose_keyframe is no-op when candidates empty."""
+        processor.candidate_frames = []
         processor._expose_image = AsyncMock()
 
-        await processor.expose_keyframe_ssim_fallback()
+        await processor.select_and_expose_keyframe()
 
         processor._expose_image.assert_not_called()

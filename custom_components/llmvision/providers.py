@@ -169,19 +169,24 @@ class Request:
         call.base64_images = self.base64_images
         call.filenames = self.filenames
 
-        # Inject best_frame instruction when llm_pick_keyframe is enabled
-        if getattr(call, 'llm_pick_keyframe', False) and getattr(call, 'expose_images', False):
+        # Inject best_frame instruction when llm_pick_keyframe is enabled.
+        # Guard against double-injection on fallback retry.
+        if (
+            call.llm_pick_keyframe
+            and call.expose_images
+            and "[BEST_FRAME:" not in call.message
+        ):
             call.message += (
-                "\n\nIMPORTANT: Each image above is labeled with a frame identifier "
-                "(shown before each image). After your analysis, you MUST also specify "
-                "which single frame best represents the event described above. "
-                'Return your choice as a "best_frame" field containing the exact frame label. '
-                "Choose the frame where the subject or activity is most clearly visible "
-                "and identifiable — prefer a frame that shows the key subject (person, "
-                "animal, package, etc.) rather than an empty scene."
+                "\n\nEach image is labeled with a frame identifier. "
+                "After your analysis, choose the single frame that best "
+                "represents the event — prefer a frame where the key subject "
+                "(person, animal, package, vehicle, etc.) is most clearly "
+                "visible, rather than an empty scene. "
+                "Append your choice on its own line in this exact format: "
+                "[BEST_FRAME: <frame label>]"
             )
             # Inject best_frame into JSON schema if structured output is used
-            if getattr(call, 'response_format', 'text') == "json" and getattr(call, 'structure', None):
+            if call.response_format == "json" and call.structure:
                 try:
                     schema = json.loads(call.structure) if isinstance(call.structure, str) else call.structure
                     if "properties" in schema:
@@ -193,7 +198,7 @@ class Request:
                             schema["required"].append("best_frame")
                         call.structure = json.dumps(schema)
                 except (json.JSONDecodeError, TypeError, KeyError):
-                    pass  # Skip schema injection on error, text parsing will handle it
+                    pass
 
         self.validate(call)
 

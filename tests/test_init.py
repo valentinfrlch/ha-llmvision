@@ -2,7 +2,10 @@
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
 from custom_components.llmvision import ServiceCallData
-from custom_components.llmvision.__init__ import _extract_best_frame
+from custom_components.llmvision.__init__ import (
+    _extract_and_strip_best_frame,
+    _match_best_frame,
+)
 from custom_components.llmvision.const import DOMAIN
 import datetime
 
@@ -234,8 +237,44 @@ class TestAsyncUnloadEntry:
         assert result is True
 
 
-class TestExtractBestFrame:
-    """Test _extract_best_frame helper function."""
+class TestMatchBestFrame:
+    """Test _match_best_frame helper function."""
+
+    def _make_candidates(self):
+        return [
+            ("camera0-frame-1", "b64data1", "camera0"),
+            ("camera0-frame-2", "b64data2", "camera0"),
+            ("camera0-frame-3", "b64data3", "camera0"),
+        ]
+
+    def test_exact_match(self):
+        """Test exact label match."""
+        assert _match_best_frame("camera0-frame-2", self._make_candidates()) == 1
+
+    def test_partial_match(self):
+        """Test partial matching when exact match fails."""
+        # "camera0-frame-2" is contained in "camera0-frame-2:"
+        assert _match_best_frame("camera0-frame-2:", self._make_candidates()) == 1
+
+    def test_no_match(self):
+        """Test returns None when label doesn't match any candidate."""
+        assert _match_best_frame("nonexistent-99", self._make_candidates()) is None
+
+    def test_empty_candidates(self):
+        """Test returns None with empty candidates list."""
+        assert _match_best_frame("camera0-frame-1", []) is None
+
+    def test_none_label(self):
+        """Test returns None with None label."""
+        assert _match_best_frame(None, self._make_candidates()) is None
+
+    def test_empty_label(self):
+        """Test returns None with empty string label."""
+        assert _match_best_frame("", self._make_candidates()) is None
+
+
+class TestExtractAndStripBestFrame:
+    """Test _extract_and_strip_best_frame function."""
 
     def _make_candidates(self):
         return [
@@ -245,7 +284,7 @@ class TestExtractBestFrame:
         ]
 
     def test_extract_from_structured_response(self):
-        """Test best_frame extracted from structured_response dict."""
+        """Test best_frame extracted and stripped from structured_response."""
         response = {
             "structured_response": {
                 "description": "A person at the door",
@@ -254,118 +293,77 @@ class TestExtractBestFrame:
         }
         candidates = self._make_candidates()
 
-        result = _extract_best_frame(response, candidates)
+        result = _extract_and_strip_best_frame(response, candidates)
 
         assert result == 1
-        # best_frame should be stripped from structured response
         assert "best_frame" not in response["structured_response"]
         assert response["structured_response"]["description"] == "A person at the door"
 
-    def test_extract_from_text_response(self):
-        """Test best_frame extracted from response_text via regex."""
+    def test_extract_from_bracketed_tag(self):
+        """Test best_frame extracted from [BEST_FRAME: ...] tag in text."""
         response = {
-            "response_text": 'A person was seen. best_frame: "camera0-frame-3"'
+            "response_text": "A person was seen.\n[BEST_FRAME: camera0-frame-3]"
         }
         candidates = self._make_candidates()
 
-        result = _extract_best_frame(response, candidates)
+        result = _extract_and_strip_best_frame(response, candidates)
 
         assert result == 2
-        # best_frame text should be stripped from response_text
-        assert "best_frame" not in response["response_text"]
-        assert "A person was seen" in response["response_text"]
+        assert "BEST_FRAME" not in response["response_text"]
+        assert "A person was seen." in response["response_text"]
 
-    def test_extract_from_text_json_format(self):
-        """Test best_frame extracted from JSON-like text response."""
+    def test_strips_tag_from_text(self):
+        """Test that the tag is removed from response_text."""
         response = {
-            "response_text": '{"description": "test", "best_frame": "camera0-frame-1"}'
+            "response_text": "Delivery at the door. [BEST_FRAME: camera0-frame-1]"
         }
         candidates = self._make_candidates()
 
-        result = _extract_best_frame(response, candidates)
+        _extract_and_strip_best_frame(response, candidates)
 
-        assert result == 0
+        assert response["response_text"] == "Delivery at the door."
 
-    def test_returns_none_on_missing_field(self):
-        """Test returns None when best_frame not in response."""
+    def test_no_tag_leaves_text_unchanged(self):
+        """Test response_text is unchanged when no tag is present."""
         response = {
             "response_text": "A person was detected at the front door."
         }
         candidates = self._make_candidates()
 
-        result = _extract_best_frame(response, candidates)
+        result = _extract_and_strip_best_frame(response, candidates)
 
         assert result is None
-        # response_text should be unchanged when no best_frame present
         assert response["response_text"] == "A person was detected at the front door."
 
     def test_returns_none_on_invalid_label(self):
-        """Test returns None when best_frame doesn't match any candidate."""
+        """Test returns None when label doesn't match any candidate."""
         response = {
-            "structured_response": {
-                "best_frame": "nonexistent-frame-99",
-            }
+            "structured_response": {"best_frame": "nonexistent-frame-99"}
         }
         candidates = self._make_candidates()
 
-        result = _extract_best_frame(response, candidates)
-
-        assert result is None
-
-    def test_partial_match(self):
-        """Test partial matching when exact match fails."""
-        response = {
-            "structured_response": {
-                "best_frame": "camera0-frame-2:",
-            }
-        }
-        candidates = self._make_candidates()
-
-        result = _extract_best_frame(response, candidates)
-
-        # "camera0-frame-2" is contained in "camera0-frame-2:"
-        assert result == 1
-
-    def test_empty_candidates(self):
-        """Test returns None with empty candidates list."""
-        response = {
-            "structured_response": {"best_frame": "camera0-frame-1"}
-        }
-
-        result = _extract_best_frame(response, [])
+        result = _extract_and_strip_best_frame(response, candidates)
 
         assert result is None
 
     def test_empty_response(self):
         """Test returns None with empty response dict."""
-        candidates = self._make_candidates()
-
-        result = _extract_best_frame({}, candidates)
-
+        result = _extract_and_strip_best_frame({}, self._make_candidates())
         assert result is None
 
-    def test_strips_best_frame_from_text_with_unquoted_label(self):
-        """Test stripping best_frame when label is unquoted."""
+    def test_structured_takes_priority_over_text(self):
+        """Test structured_response best_frame is used over text tag."""
         response = {
-            "response_text": "A delivery person dropped off a package. best_frame: camera0-frame-2"
+            "structured_response": {
+                "best_frame": "camera0-frame-1",
+            },
+            "response_text": "text [BEST_FRAME: camera0-frame-3]",
         }
         candidates = self._make_candidates()
 
-        result = _extract_best_frame(response, candidates)
+        result = _extract_and_strip_best_frame(response, candidates)
 
-        assert result == 1
-        assert "best_frame" not in response["response_text"]
-        assert "A delivery person dropped off a package" in response["response_text"]
-
-    def test_strips_best_frame_at_end_of_sentence(self):
-        """Test stripping best_frame that follows a period."""
-        response = {
-            "response_text": 'Someone is at the front door. best_frame: "camera0-frame-1"'
-        }
-        candidates = self._make_candidates()
-
-        result = _extract_best_frame(response, candidates)
-
+        # Structured wins
         assert result == 0
-        assert "best_frame" not in response["response_text"]
-        assert "Someone is at the front door" in response["response_text"]
+        # But text tag should still be stripped
+        assert "BEST_FRAME" not in response["response_text"]

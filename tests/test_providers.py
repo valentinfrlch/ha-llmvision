@@ -677,7 +677,7 @@ class TestLlmPickKeyframeInjection:
 
     @pytest.mark.asyncio
     async def test_prompt_injection_when_enabled(self, mock_hass_with_session):
-        """Test that best_frame instruction is appended to message."""
+        """Test that BEST_FRAME instruction is appended to message."""
         mock_hass_with_session.data = {
             DOMAIN: {
                 "test_provider": {
@@ -707,9 +707,10 @@ class TestLlmPickKeyframeInjection:
             call.generate_title = False
             call.use_memory = False
 
-            # Mock the provider to capture the call
             mock_provider = Mock()
-            mock_provider.vision_request = AsyncMock(return_value="A person at the door. best_frame: camera0-frame-1")
+            mock_provider.vision_request = AsyncMock(
+                return_value="A person at the door.\n[BEST_FRAME: camera0-frame-1]"
+            )
             mock_provider.supports_structured_output = Mock(return_value=False)
 
             with patch(
@@ -718,9 +719,7 @@ class TestLlmPickKeyframeInjection:
             ):
                 result = await request.call(call)
 
-            # Verify the message was modified
-            assert "best_frame" in call.message
-            assert "IMPORTANT" in call.message
+            assert "[BEST_FRAME:" in call.message
 
     @pytest.mark.asyncio
     async def test_no_injection_when_disabled(self, mock_hass_with_session):
@@ -764,7 +763,78 @@ class TestLlmPickKeyframeInjection:
             ):
                 result = await request.call(call)
 
-            assert "best_frame" not in call.message
+            assert "[BEST_FRAME:" not in call.message
+
+    @pytest.mark.asyncio
+    async def test_no_double_injection_on_retry(self, mock_hass_with_session):
+        """Test that prompt is not appended twice on fallback retry."""
+        mock_hass_with_session.data = {
+            DOMAIN: {
+                "test_provider": {
+                    "provider": "OpenAI",
+                    "api_key": "test_key",
+                    "temperature": 0.5,
+                    "top_p": 0.9,
+                },
+                "fallback_provider": {
+                    "provider": "Anthropic",
+                    "api_key": "test_key",
+                    "temperature": 0.5,
+                    "top_p": 0.9,
+                },
+            }
+        }
+
+        settings_entry = Mock()
+        settings_entry.data = {
+            "provider": "Settings",
+            "fallback_provider": "fallback_provider",
+        }
+        mock_hass_with_session.config_entries.async_entries = Mock(
+            return_value=[settings_entry]
+        )
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            request = Request(mock_hass_with_session, "Describe", 1000, 0.5)
+            request.base64_images = ["img1"]
+            request.filenames = ["cam-frame-1"]
+
+            call = Mock()
+            call.provider = "test_provider"
+            call.model = "gpt-4"
+            call.message = "Describe"
+            call.llm_pick_keyframe = True
+            call.expose_images = True
+            call.response_format = "text"
+            call.structure = None
+            call.base64_images = ["img1"]
+            call.filenames = ["cam-frame-1"]
+            call.generate_title = False
+            call.use_memory = False
+
+            # First provider fails, fallback succeeds
+            fail_provider = Mock()
+            fail_provider.vision_request = AsyncMock(side_effect=Exception("fail"))
+
+            ok_provider = Mock()
+            ok_provider.vision_request = AsyncMock(
+                return_value="OK\n[BEST_FRAME: cam-frame-1]"
+            )
+            ok_provider.supports_structured_output = Mock(return_value=False)
+
+            call_count = [0]
+            def create_provider(**kwargs):
+                call_count[0] += 1
+                return fail_provider if call_count[0] == 1 else ok_provider
+
+            with patch(
+                'custom_components.llmvision.providers.ProviderFactory.create',
+                side_effect=create_provider,
+            ):
+                await request.call(call)
+
+            # The tag should appear exactly once
+            assert call.message.count("[BEST_FRAME:") == 1
 
     @pytest.mark.asyncio
     async def test_schema_injection_with_structured_output(self, mock_hass_with_session):

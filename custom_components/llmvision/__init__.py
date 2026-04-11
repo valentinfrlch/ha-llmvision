@@ -524,52 +524,73 @@ class ServiceCallData:
         return self
 
 
-def _extract_best_frame(response, candidate_frames):
-    """Extract best_frame label from LLM response and return matching index.
-
-    Also strips the best_frame artifact from the response so it doesn't
-    appear in the user-visible description.
+def _match_best_frame(label, candidate_frames):
+    """Match a best_frame label against candidate_frames.
 
     Returns the index into candidate_frames, or None if no valid match found.
     """
-    best_frame_label = None
-
-    # Check structured response first
-    structured = response.get("structured_response")
-    if structured and isinstance(structured, dict):
-        best_frame_label = structured.get("best_frame")
-        # Remove best_frame from structured response
-        structured.pop("best_frame", None)
-
-    # Fall back to regex parsing of text response
-    if not best_frame_label:
-        response_text = response.get("response_text", "")
-        if response_text:
-            match = re.search(r'best_frame["\s:]+([^\n"]+)', response_text)
-            if match:
-                best_frame_label = match.group(1).strip().strip('"').strip("'")
-
-    # Strip best_frame text from response_text so it doesn't show in descriptions
-    if "response_text" in response:
-        response["response_text"] = re.sub(
-            r'\s*\.?\s*best_frame["\s:]+[^\n"]+', "",
-            response["response_text"],
-        ).strip()
-
-    if not best_frame_label:
+    if not label or not candidate_frames:
         return None
 
-    # Exact match against candidate labels
-    for idx, (label, _, _) in enumerate(candidate_frames):
-        if label == best_frame_label:
+    # Exact match
+    for idx, (candidate_label, _, _) in enumerate(candidate_frames):
+        if candidate_label == label:
             return idx
 
-    # Try partial match (label contained in response or vice versa)
-    for idx, (label, _, _) in enumerate(candidate_frames):
-        if label in best_frame_label or best_frame_label in label:
+    # Partial match (candidate contained in label or vice versa)
+    for idx, (candidate_label, _, _) in enumerate(candidate_frames):
+        if candidate_label in label or label in candidate_label:
             return idx
 
     return None
+
+
+def _extract_and_strip_best_frame(response, candidate_frames):
+    """Extract best_frame from LLM response, strip it, and return the match index.
+
+    Mutates ``response`` in place: removes ``best_frame`` from
+    ``structured_response`` and strips the ``[BEST_FRAME: …]`` tag from
+    ``response_text`` so it never leaks into user-visible descriptions.
+
+    Returns the index into candidate_frames, or None if no valid match.
+    """
+    best_frame_label = None
+
+    # 1. Structured response (clean dict pop)
+    structured = response.get("structured_response")
+    if structured and isinstance(structured, dict):
+        best_frame_label = structured.pop("best_frame", None)
+
+    # 2. Text response: look for the bracketed tag we asked the LLM to use
+    if not best_frame_label and "response_text" in response:
+        text = response["response_text"]
+        match = re.search(r'\[BEST_FRAME:\s*([^\]]+)\]', text)
+        if match:
+            best_frame_label = match.group(1).strip()
+
+    # Always strip the tag from response_text
+    if "response_text" in response:
+        response["response_text"] = re.sub(
+            r'\s*\[BEST_FRAME:\s*[^\]]+\]', "",
+            response["response_text"],
+        ).strip()
+
+    return _match_best_frame(best_frame_label, candidate_frames)
+
+
+async def _resolve_llm_keyframe(processor, call, response):
+    """After LLM response, extract its keyframe pick or fall back to SSIM."""
+    if not (call.llm_pick_keyframe and call.expose_images and processor.candidate_frames):
+        return
+    best_idx = _extract_and_strip_best_frame(response, processor.candidate_frames)
+    if best_idx is not None:
+        await processor.expose_keyframe_by_index(best_idx)
+    else:
+        _LOGGER.warning(
+            "LLM did not return a valid best_frame, "
+            "falling back to SSIM-based selection"
+        )
+        await processor.select_and_expose_keyframe()
 
 
 async def _create_event(
@@ -724,7 +745,6 @@ def setup(hass, config):
         # Validate configuration, input data and make the call
         response = await request.call(call)
         _LOGGER.info(f"Response: {response}")
-        # Add processor.key_frame to response if it exists
         if processor.key_frame:
             _LOGGER.info(f"Key frame: {processor.key_frame}")
             response["key_frame"] = processor.key_frame
@@ -758,26 +778,17 @@ def setup(hass, config):
             target_width=call.target_width,
             include_filename=call.include_filename,
             expose_images=call.expose_images,
-            llm_pick_keyframe=call.llm_pick_keyframe,
         )
+
+        if call.expose_images and not call.llm_pick_keyframe:
+            await processor.select_and_expose_keyframe()
+
         call.memory = Memory(hass)
         await call.memory._update_memory()
 
         response = await request.call(call)
+        await _resolve_llm_keyframe(processor, call, response)
 
-        # Handle LLM keyframe selection
-        if call.llm_pick_keyframe and call.expose_images and processor._candidate_frames:
-            best_idx = _extract_best_frame(response, processor._candidate_frames)
-            if best_idx is not None:
-                await processor.expose_keyframe_by_index(best_idx)
-            else:
-                _LOGGER.warning(
-                    "LLM did not return a valid best_frame, "
-                    "falling back to SSIM-based selection"
-                )
-                await processor.expose_keyframe_ssim_fallback()
-
-        # Add processor.key_frame to response if it exists
         if processor.key_frame:
             response["key_frame"] = processor.key_frame
 
@@ -812,27 +823,17 @@ def setup(hass, config):
             target_width=call.target_width,
             include_filename=call.include_filename,
             expose_images=call.expose_images,
-            llm_pick_keyframe=call.llm_pick_keyframe,
         )
+
+        if call.expose_images and not call.llm_pick_keyframe:
+            await processor.select_and_expose_keyframe()
 
         call.memory = Memory(hass)
         await call.memory._update_memory()
 
         response = await request.call(call)
+        await _resolve_llm_keyframe(processor, call, response)
 
-        # Handle LLM keyframe selection
-        if call.llm_pick_keyframe and call.expose_images and processor._candidate_frames:
-            best_idx = _extract_best_frame(response, processor._candidate_frames)
-            if best_idx is not None:
-                await processor.expose_keyframe_by_index(best_idx)
-            else:
-                _LOGGER.warning(
-                    "LLM did not return a valid best_frame, "
-                    "falling back to SSIM-based selection"
-                )
-                await processor.expose_keyframe_ssim_fallback()
-
-        # Add processor.key_frame to response if it exists
         if processor.key_frame:
             response["key_frame"] = processor.key_frame
 
@@ -911,7 +912,6 @@ def setup(hass, config):
         await call.memory._update_memory()
 
         response = await request.call(call)
-        # Add processor.key_frame to response if it exists
         if processor.key_frame:
             response["key_frame"] = processor.key_frame
 
