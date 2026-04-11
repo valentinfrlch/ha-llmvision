@@ -487,7 +487,7 @@ class Timeline:
         except aiosqlite.Error as e:
             _LOGGER.error(f"Error migrating events.db to v4.3: {e}")
 
-        # v4.3 -> v4.4: Add video_url column to events.db
+        # v4.3 -> v5: Add video_url column to events.db
         try:
             async with aiosqlite.connect(self._db_path) as db:
                 async with db.execute("""PRAGMA table_info(events)""") as cursor:
@@ -499,9 +499,9 @@ class Timeline:
                             """ALTER TABLE events ADD COLUMN video_url TEXT"""
                         )
                         await db.commit()
-                        _LOGGER.info("Timeline DB migration to v4.4 complete")
+                        _LOGGER.info("Timeline DB migration to v5 complete")
         except aiosqlite.Error as e:
-            _LOGGER.error(f"Error migrating events.db to v4.4: {e}")
+            _LOGGER.error(f"Error migrating events.db to v5: {e}")
 
         # Mark migration complete by setting user_version
         await self._set_db_version(DB_VERSION)
