@@ -527,6 +527,9 @@ class ServiceCallData:
 def _extract_best_frame(response, candidate_frames):
     """Extract best_frame label from LLM response and return matching index.
 
+    Also strips the best_frame artifact from the response so it doesn't
+    appear in the user-visible description.
+
     Returns the index into candidate_frames, or None if no valid match found.
     """
     best_frame_label = None
@@ -535,6 +538,8 @@ def _extract_best_frame(response, candidate_frames):
     structured = response.get("structured_response")
     if structured and isinstance(structured, dict):
         best_frame_label = structured.get("best_frame")
+        # Remove best_frame from structured response
+        structured.pop("best_frame", None)
 
     # Fall back to regex parsing of text response
     if not best_frame_label:
@@ -543,6 +548,13 @@ def _extract_best_frame(response, candidate_frames):
             match = re.search(r'best_frame["\s:]+([^\n"]+)', response_text)
             if match:
                 best_frame_label = match.group(1).strip().strip('"').strip("'")
+
+    # Strip best_frame text from response_text so it doesn't show in descriptions
+    if "response_text" in response:
+        response["response_text"] = re.sub(
+            r'\s*\.?\s*best_frame["\s:]+[^\n"]+', "",
+            response["response_text"],
+        ).strip()
 
     if not best_frame_label:
         return None

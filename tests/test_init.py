@@ -257,6 +257,9 @@ class TestExtractBestFrame:
         result = _extract_best_frame(response, candidates)
 
         assert result == 1
+        # best_frame should be stripped from structured response
+        assert "best_frame" not in response["structured_response"]
+        assert response["structured_response"]["description"] == "A person at the door"
 
     def test_extract_from_text_response(self):
         """Test best_frame extracted from response_text via regex."""
@@ -268,6 +271,9 @@ class TestExtractBestFrame:
         result = _extract_best_frame(response, candidates)
 
         assert result == 2
+        # best_frame text should be stripped from response_text
+        assert "best_frame" not in response["response_text"]
+        assert "A person was seen" in response["response_text"]
 
     def test_extract_from_text_json_format(self):
         """Test best_frame extracted from JSON-like text response."""
@@ -290,6 +296,8 @@ class TestExtractBestFrame:
         result = _extract_best_frame(response, candidates)
 
         assert result is None
+        # response_text should be unchanged when no best_frame present
+        assert response["response_text"] == "A person was detected at the front door."
 
     def test_returns_none_on_invalid_label(self):
         """Test returns None when best_frame doesn't match any candidate."""
@@ -335,3 +343,29 @@ class TestExtractBestFrame:
         result = _extract_best_frame({}, candidates)
 
         assert result is None
+
+    def test_strips_best_frame_from_text_with_unquoted_label(self):
+        """Test stripping best_frame when label is unquoted."""
+        response = {
+            "response_text": "A delivery person dropped off a package. best_frame: camera0-frame-2"
+        }
+        candidates = self._make_candidates()
+
+        result = _extract_best_frame(response, candidates)
+
+        assert result == 1
+        assert "best_frame" not in response["response_text"]
+        assert "A delivery person dropped off a package" in response["response_text"]
+
+    def test_strips_best_frame_at_end_of_sentence(self):
+        """Test stripping best_frame that follows a period."""
+        response = {
+            "response_text": 'Someone is at the front door. best_frame: "camera0-frame-1"'
+        }
+        candidates = self._make_candidates()
+
+        result = _extract_best_frame(response, candidates)
+
+        assert result == 0
+        assert "best_frame" not in response["response_text"]
+        assert "Someone is at the front door" in response["response_text"]
