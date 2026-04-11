@@ -2,6 +2,7 @@
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
 from custom_components.llmvision import ServiceCallData
+from custom_components.llmvision.__init__ import _extract_best_frame
 from custom_components.llmvision.const import DOMAIN
 import datetime
 
@@ -223,11 +224,114 @@ class TestAsyncUnloadEntry:
     async def test_unload_entry_without_calendar(self):
         """Test unloading entry without calendar."""
         from custom_components.llmvision import async_unload_entry
-        
+
         hass = Mock()
         entry = Mock()
         entry.data = {"provider": "OpenAI"}
-        
+
         result = await async_unload_entry(hass, entry)
-        
+
         assert result is True
+
+
+class TestExtractBestFrame:
+    """Test _extract_best_frame helper function."""
+
+    def _make_candidates(self):
+        return [
+            ("camera0-frame-1", "b64data1", "camera0"),
+            ("camera0-frame-2", "b64data2", "camera0"),
+            ("camera0-frame-3", "b64data3", "camera0"),
+        ]
+
+    def test_extract_from_structured_response(self):
+        """Test best_frame extracted from structured_response dict."""
+        response = {
+            "structured_response": {
+                "description": "A person at the door",
+                "best_frame": "camera0-frame-2",
+            }
+        }
+        candidates = self._make_candidates()
+
+        result = _extract_best_frame(response, candidates)
+
+        assert result == 1
+
+    def test_extract_from_text_response(self):
+        """Test best_frame extracted from response_text via regex."""
+        response = {
+            "response_text": 'A person was seen. best_frame: "camera0-frame-3"'
+        }
+        candidates = self._make_candidates()
+
+        result = _extract_best_frame(response, candidates)
+
+        assert result == 2
+
+    def test_extract_from_text_json_format(self):
+        """Test best_frame extracted from JSON-like text response."""
+        response = {
+            "response_text": '{"description": "test", "best_frame": "camera0-frame-1"}'
+        }
+        candidates = self._make_candidates()
+
+        result = _extract_best_frame(response, candidates)
+
+        assert result == 0
+
+    def test_returns_none_on_missing_field(self):
+        """Test returns None when best_frame not in response."""
+        response = {
+            "response_text": "A person was detected at the front door."
+        }
+        candidates = self._make_candidates()
+
+        result = _extract_best_frame(response, candidates)
+
+        assert result is None
+
+    def test_returns_none_on_invalid_label(self):
+        """Test returns None when best_frame doesn't match any candidate."""
+        response = {
+            "structured_response": {
+                "best_frame": "nonexistent-frame-99",
+            }
+        }
+        candidates = self._make_candidates()
+
+        result = _extract_best_frame(response, candidates)
+
+        assert result is None
+
+    def test_partial_match(self):
+        """Test partial matching when exact match fails."""
+        response = {
+            "structured_response": {
+                "best_frame": "camera0-frame-2:",
+            }
+        }
+        candidates = self._make_candidates()
+
+        result = _extract_best_frame(response, candidates)
+
+        # "camera0-frame-2" is contained in "camera0-frame-2:"
+        assert result == 1
+
+    def test_empty_candidates(self):
+        """Test returns None with empty candidates list."""
+        response = {
+            "structured_response": {"best_frame": "camera0-frame-1"}
+        }
+
+        result = _extract_best_frame(response, [])
+
+        assert result is None
+
+    def test_empty_response(self):
+        """Test returns None with empty response dict."""
+        candidates = self._make_candidates()
+
+        result = _extract_best_frame({}, candidates)
+
+        assert result is None

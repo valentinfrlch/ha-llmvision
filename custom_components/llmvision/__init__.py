@@ -54,6 +54,7 @@ from .const import (
     MAX_FRAMES,
     INCLUDE_FILENAME,
     EXPOSE_IMAGES,
+    LLM_PICK_KEYFRAME,
     GENERATE_TITLE,
     SENSOR_ENTITY,
     DATA_EXTRACTION_PROMPT,
@@ -468,6 +469,7 @@ class ServiceCallData:
         self.max_tokens = int(data_call.data.get(MAXTOKENS, 3000))
         self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
+        self.llm_pick_keyframe = data_call.data.get(LLM_PICK_KEYFRAME, False)
         self.generate_title = data_call.data.get(GENERATE_TITLE, False)
         self.sensor_entity = data_call.data.get(SENSOR_ENTITY, "")
         self.response_format = data_call.data.get(RESPONSE_FORMAT, "text")
@@ -520,6 +522,42 @@ class ServiceCallData:
 
     def get_service_call_data(self):
         return self
+
+
+def _extract_best_frame(response, candidate_frames):
+    """Extract best_frame label from LLM response and return matching index.
+
+    Returns the index into candidate_frames, or None if no valid match found.
+    """
+    best_frame_label = None
+
+    # Check structured response first
+    structured = response.get("structured_response")
+    if structured and isinstance(structured, dict):
+        best_frame_label = structured.get("best_frame")
+
+    # Fall back to regex parsing of text response
+    if not best_frame_label:
+        response_text = response.get("response_text", "")
+        if response_text:
+            match = re.search(r'best_frame["\s:]+([^\n"]+)', response_text)
+            if match:
+                best_frame_label = match.group(1).strip().strip('"').strip("'")
+
+    if not best_frame_label:
+        return None
+
+    # Exact match against candidate labels
+    for idx, (label, _, _) in enumerate(candidate_frames):
+        if label == best_frame_label:
+            return idx
+
+    # Try partial match (label contained in response or vice versa)
+    for idx, (label, _, _) in enumerate(candidate_frames):
+        if label in best_frame_label or best_frame_label in label:
+            return idx
+
+    return None
 
 
 async def _create_event(
@@ -708,11 +746,25 @@ def setup(hass, config):
             target_width=call.target_width,
             include_filename=call.include_filename,
             expose_images=call.expose_images,
+            llm_pick_keyframe=call.llm_pick_keyframe,
         )
         call.memory = Memory(hass)
         await call.memory._update_memory()
 
         response = await request.call(call)
+
+        # Handle LLM keyframe selection
+        if call.llm_pick_keyframe and call.expose_images and processor._candidate_frames:
+            best_idx = _extract_best_frame(response, processor._candidate_frames)
+            if best_idx is not None:
+                await processor.expose_keyframe_by_index(best_idx)
+            else:
+                _LOGGER.warning(
+                    "LLM did not return a valid best_frame, "
+                    "falling back to SSIM-based selection"
+                )
+                await processor.expose_keyframe_ssim_fallback()
+
         # Add processor.key_frame to response if it exists
         if processor.key_frame:
             response["key_frame"] = processor.key_frame
@@ -748,12 +800,26 @@ def setup(hass, config):
             target_width=call.target_width,
             include_filename=call.include_filename,
             expose_images=call.expose_images,
+            llm_pick_keyframe=call.llm_pick_keyframe,
         )
 
         call.memory = Memory(hass)
         await call.memory._update_memory()
 
         response = await request.call(call)
+
+        # Handle LLM keyframe selection
+        if call.llm_pick_keyframe and call.expose_images and processor._candidate_frames:
+            best_idx = _extract_best_frame(response, processor._candidate_frames)
+            if best_idx is not None:
+                await processor.expose_keyframe_by_index(best_idx)
+            else:
+                _LOGGER.warning(
+                    "LLM did not return a valid best_frame, "
+                    "falling back to SSIM-based selection"
+                )
+                await processor.expose_keyframe_ssim_fallback()
+
         # Add processor.key_frame to response if it exists
         if processor.key_frame:
             response["key_frame"] = processor.key_frame

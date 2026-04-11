@@ -1,6 +1,6 @@
 """Unit tests for media_handlers.py module."""
 import pytest
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import Mock, patch, AsyncMock, MagicMock, call
 from PIL import Image
 import io
 import base64
@@ -42,6 +42,7 @@ class TestMediaProcessor:
         assert processor.base64_images == []
         assert processor.filenames == []
         assert processor.key_frame == ""
+        assert processor._candidate_frames == []
 
     @pytest.mark.asyncio
     async def test_encode_image(self, processor):
@@ -91,8 +92,63 @@ class TestMediaProcessor:
         # Create two similar images
         img1 = Image.new('L', (100, 100), color=128)
         img2 = Image.new('L', (100, 100), color=130)
-        
+
         score = processor._similarity_score(img1, img2)
-        
+
         assert isinstance(score, float)
         assert 0 <= score <= 1
+
+    @pytest.mark.asyncio
+    async def test_expose_keyframe_by_index(self, processor):
+        """Test expose_keyframe_by_index calls _expose_image with correct data."""
+        processor._candidate_frames = [
+            ("camera0-frame-1", "base64data1", "camera0"),
+            ("camera0-frame-2", "base64data2", "camera0"),
+            ("camera0-frame-3", "base64data3", "camera0"),
+        ]
+        processor._expose_image = AsyncMock()
+
+        await processor.expose_keyframe_by_index(1)
+
+        processor._expose_image.assert_called_once()
+        call_kwargs = processor._expose_image.call_args
+        assert call_kwargs[1]["frame_name"] == "camera0"
+        assert call_kwargs[1]["image_data"] == "base64data2"
+        assert "uid" in call_kwargs[1]
+
+    @pytest.mark.asyncio
+    async def test_expose_keyframe_ssim_fallback(self, processor):
+        """Test expose_keyframe_ssim_fallback runs SSIM and exposes winner."""
+        # Create small test images as base64
+        img1 = Image.new('RGB', (10, 10), color='red')
+        img2 = Image.new('RGB', (10, 10), color='blue')
+        img3 = Image.new('RGB', (10, 10), color='green')
+        buffers = []
+        for img in [img1, img2, img3]:
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG")
+            buffers.append(base64.b64encode(buf.getvalue()).decode("utf-8"))
+
+        processor._candidate_frames = [
+            ("cam-frame-1", buffers[0], "cam"),
+            ("cam-frame-2", buffers[1], "cam"),
+            ("cam-frame-3", buffers[2], "cam"),
+        ]
+        processor._expose_image = AsyncMock()
+
+        await processor.expose_keyframe_ssim_fallback()
+
+        # Should have called _expose_image exactly once
+        processor._expose_image.assert_called_once()
+        call_kwargs = processor._expose_image.call_args[1]
+        assert call_kwargs["frame_name"] == "cam"
+
+    @pytest.mark.asyncio
+    async def test_expose_keyframe_ssim_fallback_empty_candidates(self, processor):
+        """Test expose_keyframe_ssim_fallback is no-op when candidates empty."""
+        processor._candidate_frames = []
+        processor._expose_image = AsyncMock()
+
+        await processor.expose_keyframe_ssim_fallback()
+
+        processor._expose_image.assert_not_called()

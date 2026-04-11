@@ -1,4 +1,5 @@
 """Unit tests for providers.py module."""
+import json
 import pytest
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from homeassistant.exceptions import ServiceValidationError
@@ -637,7 +638,7 @@ class TestProviderFactory:
     def test_create_ollama(self, mock_hass_with_session):
         """Test ProviderFactory creates Ollama provider."""
         from custom_components.llmvision.providers import ProviderFactory
-        
+
         config = {
             "ip_address": "localhost",
             "port": 11434,
@@ -645,7 +646,7 @@ class TestProviderFactory:
             "keep_alive": "5m",
             "context_window": 2048
         }
-        
+
         with patch('custom_components.llmvision.providers.async_get_clientsession'):
             provider = ProviderFactory.create(
                 mock_hass_with_session,
@@ -653,6 +654,173 @@ class TestProviderFactory:
                 config,
                 "llama2"
             )
-            
+
             assert provider is not None
             assert provider.model == "llama2"
+
+
+class TestLlmPickKeyframeInjection:
+    """Test prompt and schema injection for llm_pick_keyframe."""
+
+    @pytest.fixture
+    def mock_hass_with_session(self):
+        """Create a mock Home Assistant instance with session."""
+        hass = Mock()
+        hass.data = {}
+        hass.config_entries = Mock()
+        hass.config_entries.async_entries = Mock(return_value=[])
+        hass.loop = Mock()
+        hass.loop.run_in_executor = AsyncMock()
+        hass.config = Mock()
+        hass.config.path = Mock(return_value="/mock/path")
+        return hass
+
+    @pytest.mark.asyncio
+    async def test_prompt_injection_when_enabled(self, mock_hass_with_session):
+        """Test that best_frame instruction is appended to message."""
+        mock_hass_with_session.data = {
+            DOMAIN: {
+                "test_provider": {
+                    "provider": "OpenAI",
+                    "api_key": "test_key",
+                    "temperature": 0.5,
+                    "top_p": 0.9,
+                }
+            }
+        }
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            request = Request(mock_hass_with_session, "Describe the scene", 1000, 0.5)
+            request.base64_images = ["img1"]
+            request.filenames = ["camera0-frame-1"]
+
+            call = Mock()
+            call.provider = "test_provider"
+            call.model = "gpt-4"
+            call.message = "Describe the scene"
+            call.llm_pick_keyframe = True
+            call.expose_images = True
+            call.response_format = "text"
+            call.structure = None
+            call.base64_images = ["img1"]
+            call.filenames = ["camera0-frame-1"]
+            call.generate_title = False
+            call.use_memory = False
+
+            # Mock the provider to capture the call
+            mock_provider = Mock()
+            mock_provider.vision_request = AsyncMock(return_value="A person at the door. best_frame: camera0-frame-1")
+            mock_provider.supports_structured_output = Mock(return_value=False)
+
+            with patch(
+                'custom_components.llmvision.providers.ProviderFactory.create',
+                return_value=mock_provider
+            ):
+                result = await request.call(call)
+
+            # Verify the message was modified
+            assert "best_frame" in call.message
+            assert "IMPORTANT" in call.message
+
+    @pytest.mark.asyncio
+    async def test_no_injection_when_disabled(self, mock_hass_with_session):
+        """Test that message is NOT modified when llm_pick_keyframe is False."""
+        mock_hass_with_session.data = {
+            DOMAIN: {
+                "test_provider": {
+                    "provider": "OpenAI",
+                    "api_key": "test_key",
+                    "temperature": 0.5,
+                    "top_p": 0.9,
+                }
+            }
+        }
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            request = Request(mock_hass_with_session, "Describe the scene", 1000, 0.5)
+            request.base64_images = ["img1"]
+            request.filenames = ["camera0-frame-1"]
+
+            call = Mock()
+            call.provider = "test_provider"
+            call.model = "gpt-4"
+            call.message = "Describe the scene"
+            call.llm_pick_keyframe = False
+            call.expose_images = True
+            call.response_format = "text"
+            call.structure = None
+            call.base64_images = ["img1"]
+            call.filenames = ["camera0-frame-1"]
+            call.generate_title = False
+            call.use_memory = False
+
+            mock_provider = Mock()
+            mock_provider.vision_request = AsyncMock(return_value="A person at the door.")
+            mock_provider.supports_structured_output = Mock(return_value=False)
+
+            with patch(
+                'custom_components.llmvision.providers.ProviderFactory.create',
+                return_value=mock_provider
+            ):
+                result = await request.call(call)
+
+            assert "best_frame" not in call.message
+
+    @pytest.mark.asyncio
+    async def test_schema_injection_with_structured_output(self, mock_hass_with_session):
+        """Test that best_frame is injected into JSON schema."""
+        mock_hass_with_session.data = {
+            DOMAIN: {
+                "test_provider": {
+                    "provider": "OpenAI",
+                    "api_key": "test_key",
+                    "temperature": 0.5,
+                    "top_p": 0.9,
+                }
+            }
+        }
+
+        original_schema = json.dumps({
+            "type": "object",
+            "properties": {
+                "description": {"type": "string"}
+            },
+            "required": ["description"],
+            "additionalProperties": False,
+        })
+
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            request = Request(mock_hass_with_session, "Describe the scene", 1000, 0.5)
+            request.base64_images = ["img1"]
+            request.filenames = ["camera0-frame-1"]
+
+            call = Mock()
+            call.provider = "test_provider"
+            call.model = "gpt-4"
+            call.message = "Describe the scene"
+            call.llm_pick_keyframe = True
+            call.expose_images = True
+            call.response_format = "json"
+            call.structure = original_schema
+            call.base64_images = ["img1"]
+            call.filenames = ["camera0-frame-1"]
+            call.generate_title = False
+            call.title_field = ""
+            call.use_memory = False
+
+            mock_provider = Mock()
+            mock_provider.vision_request = AsyncMock(
+                return_value='{"description": "test", "best_frame": "camera0-frame-1"}'
+            )
+            mock_provider.supports_structured_output = Mock(return_value=True)
+
+            with patch(
+                'custom_components.llmvision.providers.ProviderFactory.create',
+                return_value=mock_provider
+            ):
+                result = await request.call(call)
+
+            # Verify schema was modified
+            modified_schema = json.loads(call.structure)
+            assert "best_frame" in modified_schema["properties"]
+            assert "best_frame" in modified_schema["required"]
