@@ -246,6 +246,13 @@ video_analyzer:
       default: false
       selector:
         boolean:
+    llm_pick_keyframe:
+      name: LLM Pick Keyframe
+      description: Let the AI model choose which frame best represents the event for the timeline snapshot, instead of using motion-based selection. Requires 'Expose Images' to be enabled.
+      required: false
+      default: false
+      selector:
+        boolean:
     response_format:
       name: Response Format
       description: Format of the response - text for natural language or json for structured data
@@ -393,6 +400,13 @@ stream_analyzer:
       description: Save the key frame. This will save analyzed frames in /media/llmvision/snapshots so they can be used for notifications. The file path will be included in the response.
       required: false
       example: false
+      default: false
+      selector:
+        boolean:
+    llm_pick_keyframe:
+      name: LLM Pick Keyframe
+      description: Let the AI model choose which frame best represents the event for the timeline snapshot, instead of using motion-based selection. Requires 'Expose Images' to be enabled.
+      required: false
       default: false
       selector:
         boolean:

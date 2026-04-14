@@ -169,6 +169,37 @@ class Request:
         call.base64_images = self.base64_images
         call.filenames = self.filenames
 
+        # Inject best_frame instruction when llm_pick_keyframe is enabled.
+        # Guard against double-injection on fallback retry.
+        if (
+            call.llm_pick_keyframe
+            and call.expose_images
+            and "[BEST_FRAME:" not in call.message
+        ):
+            call.message += (
+                "\n\nEach image is labeled with a frame identifier. "
+                "After your analysis, choose the single frame that best "
+                "represents the event — prefer a frame where the key subject "
+                "(person, animal, package, vehicle, etc.) is most clearly "
+                "visible, rather than an empty scene. "
+                "Append your choice on its own line in this exact format: "
+                "[BEST_FRAME: <frame label>]"
+            )
+            # Inject best_frame into JSON schema if structured output is used
+            if call.response_format == "json" and call.structure:
+                try:
+                    schema = json.loads(call.structure) if isinstance(call.structure, str) else call.structure
+                    if "properties" in schema:
+                        schema["properties"]["best_frame"] = {
+                            "type": "string",
+                            "description": "The exact frame label of the frame that best shows the primary subject"
+                        }
+                        if "required" in schema and isinstance(schema["required"], list):
+                            schema["required"].append("best_frame")
+                        call.structure = json.dumps(schema)
+                except (json.JSONDecodeError, TypeError, KeyError):
+                    pass
+
         self.validate(call)
 
         # Get fallback provider from settings
