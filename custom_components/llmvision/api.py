@@ -37,8 +37,8 @@ class TimelineEventsView(HomeAssistantView):
             return self.json_message("Settings config entry not found", status_code=404)
         # Parse request params
         try:
-            # Limit: minimum 1, maximum 100
-            limit = max(1, min(int(request.query.get("limit", 10)), 100))
+            # Limit: minimum 1, maximum 10000
+            limit = max(1, min(int(request.query.get("limit", 10)), 10000))
         except ValueError:
             limit = 10
 
@@ -60,11 +60,13 @@ class TimelineEventsView(HomeAssistantView):
 
         cameras = _parse_list_param(cameras)
         categories = _parse_list_param(categories)
-        start = None
-        end = None
 
-        # If days is provided, calculate start and end dates
-        if days is not None:
+        # Parse start/end params (ISO datetime strings)
+        start = request.query.get("start", None)
+        end = request.query.get("end", None)
+
+        # If days is provided and start/end aren't, calculate from days
+        if days is not None and start is None and end is None:
             try:
                 days = int(days)
                 end_date = dt_util.now()
