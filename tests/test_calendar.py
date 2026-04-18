@@ -25,6 +25,7 @@ class TestCalendar:
         """Create a mock Timeline."""
         timeline = Mock()
         timeline.get_all_events = AsyncMock(return_value=[])
+        timeline.load_events = AsyncMock()
         timeline.delete_event = AsyncMock()
         return timeline
 
@@ -171,10 +172,14 @@ class TestCalendar:
     async def test_async_delete_event(self, calendar_instance, mock_timeline):
         """Test async_delete_event."""
         uid = "test_uid"
-        
+        calendar_instance.async_schedule_update_ha_state = Mock()
+
         await calendar_instance.async_delete_event(uid)
-        
+
         mock_timeline.delete_event.assert_called_once_with(uid)
+        calendar_instance.async_schedule_update_ha_state.assert_called_once_with(
+            force_refresh=True
+        )
 
 
 
@@ -196,6 +201,7 @@ class TestCalendarAdvanced:
             for i in range(5)
         ]
         timeline.get_all_events = AsyncMock(return_value=events)
+        timeline.load_events = AsyncMock()
         timeline.delete_event = AsyncMock()
         return timeline
 

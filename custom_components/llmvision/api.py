@@ -2,11 +2,12 @@ import json
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Optional
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.http import HomeAssistantView
 from homeassistant.helpers.json import json_dumps
 from homeassistant.util import dt as dt_util
 from .calendar import Timeline
-from .const import DOMAIN, CONF_PROVIDER
+from .const import DOMAIN, CONF_PROVIDER, SIGNAL_TIMELINE_UPDATED
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -148,6 +149,7 @@ class TimelineEventCreateView(HomeAssistantView):
             _LOGGER.error(f"Error creating timeline event: {e}")
             return self.json_message("Error creating event", status_code=500)
 
+        async_dispatcher_send(hass, SIGNAL_TIMELINE_UPDATED)
         payload = {"status": "created"}
 
         return self.json(payload)
@@ -189,6 +191,7 @@ class TimelineEventView(HomeAssistantView):
         except Exception as e:
             _LOGGER.error(f"Error deleting event {event_id}: {e}")
             return self.json_message("Error deleting event", status_code=500)
+        async_dispatcher_send(hass, SIGNAL_TIMELINE_UPDATED)
         return self.json({"event_id": event_id, "status": "deleted"})
 
     async def post(self, request, event_id):
@@ -266,6 +269,8 @@ class TimelineEventView(HomeAssistantView):
         except Exception as e:
             _LOGGER.error(f"Error updating event {event_id}: {e}")
             return self.json_message("Error updating event", status_code=500)
+
+        async_dispatcher_send(hass, SIGNAL_TIMELINE_UPDATED)
 
         try:
             updated = await timeline.get_event(event_id)

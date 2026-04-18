@@ -46,6 +46,9 @@ CONF_MEMORY_PATHS = "memory_paths"
 CONF_MEMORY_IMAGES_ENCODED = "memory_images_encoded"
 CONF_MEMORY_STRINGS = "memory_strings"
 
+# Dispatcher signals
+SIGNAL_TIMELINE_UPDATED = f"{DOMAIN}_timeline_updated"
+
 
 # SERVICE CALL CONSTANTS
 MESSAGE = "message"

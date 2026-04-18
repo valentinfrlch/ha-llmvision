@@ -1,12 +1,14 @@
 import datetime
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.components.calendar import (
     CalendarEntity,
     CalendarEvent,
 )
 from homeassistant.components.calendar.const import CalendarEntityFeature
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
+from .const import SIGNAL_TIMELINE_UPDATED
 from .timeline import Timeline
 import logging
 
@@ -44,8 +46,22 @@ class Calendar(CalendarEntity):
             dt = dt.replace(tzinfo=datetime.timezone.utc)
         return dt
 
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to timeline-updated signals so UI state refreshes after writes."""
+
+        @callback
+        def _handle_timeline_updated() -> None:
+            self.async_schedule_update_ha_state(force_refresh=True)
+
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, SIGNAL_TIMELINE_UPDATED, _handle_timeline_updated
+            )
+        )
+
     async def async_update(self) -> None:
         """Loads events from database"""
+        await self.timeline.load_events()
         events = await self.timeline.get_all_events()
         calendar_events: list[CalendarEvent] = []
         for event in events:
@@ -74,6 +90,7 @@ class Calendar(CalendarEntity):
         end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
         """Returns calendar events within a datetime range"""
+        await self.timeline.load_events()
         timeline_events = await self.timeline.get_all_events()
         calendar_events: list[CalendarEvent] = []
 
@@ -108,6 +125,7 @@ class Calendar(CalendarEntity):
         """Deletes an event from the calendar."""
         _LOGGER.info(f"Deleting event with UID: {uid}")
         await self.timeline.delete_event(uid)
+        self.async_schedule_update_ha_state(force_refresh=True)
 
 
 async def async_setup_entry(
