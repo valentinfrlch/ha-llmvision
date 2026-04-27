@@ -1,0 +1,64 @@
+{
+    "categories": {
+        "person": {
+            "labels": {
+                "person": "person",
+                "personer": "person",
+                "individ": "person",
+                "figur": "person",
+                "menneske": "person",
+                "barn": "person",
+                "kvinde": "person",
+                "mand": "person",
+                "cyklist": "person"
+            }
+        },
+        "vehicle": {
+            "labels": {
+                "bud": "truck",
+                "postbud": "truck",
+                "cykel": "bicycle",
+                "motorcykel": "motorcycle",
+                "bus": "bus",
+                "bil": "car",
+                "varevogn": "van",
+                "suv": "car",
+                "køretøj": "car",
+                "lastbil": "truck"
+            }
+        },
+        "animal": {
+            "labels": {
+                "hund": "dog",
+                "kat": "cat",
+                "fugl": "bird"
+            }
+        },
+        "package": {
+            "labels": {
+                "kasse": "package",
+                "pakke": "package",
+                "forsendelse": "package"
+            }
+        },
+        "entity": {
+            "labels": {
+                "kamera": "camera",
+                "sensor": "sensor",
+                "lys": "light",
+                "nøgle": "key",
+                "lås": "lock",
+                "alarm": "alarm"
+            }
+        },
+        "nature": {
+            "labels": {
+                "have": "plant",
+                "plante": "plant",
+                "blomst": "plant",
+                "træ": "tree"
+            }
+        }
+    },
+    "regex": "`\\b${key}s?\\b`, 'i'"
+}

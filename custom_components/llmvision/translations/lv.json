@@ -1,0 +1,434 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "LLM redzes iestatīšana",
+                "description": "Atlasiet pakalpojumu sniedzēju, kuru vēlaties iestatīt."
+            },
+            "localai": {
+                "title": "Izveidojiet savienojumu ar savu LocalAI serveri",
+                "description": "Norādiet sava LocalAI servera IP adresi un portu.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Savienojums",
+                        "description": "Servera savienojums",
+                        "data": {
+                            "ip_address": "IP adrese",
+                            "port": "Osta",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Drošiem savienojumiem izmantojiet HTTPS"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Iestatiet modeļa noklusējuma parametrus",
+                        "data": {
+                            "default_model": "Noklusējuma modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Augšējais P"
+                        },
+                        "data_description": {
+                            "default_model": "Noklusējuma modelis, ko izmantot, ja nav norādīts cits modelis.",
+                            "temperature": "Kontrolē izvades nejaušību. Zemākas vērtības padara izvadi deterministiskāku.",
+                            "top_p": "Kontrolē izvades daudzveidību. Zemākas vērtības padara izvadi koncentrētāku."
+                        }
+                    }
+                }
+            },
+            "ollama": {
+                "title": "Konfigurējiet Ollama",
+                "description": "Norādiet sava Ollama servera IP adresi un portu.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Savienojums",
+                        "description": "Servera savienojums",
+                        "data": {
+                            "ip_address": "IP adrese",
+                            "port": "Osta",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Drošiem savienojumiem izmantojiet HTTPS"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Iestatiet modeļa noklusējuma parametrus",
+                        "data": {
+                            "default_model": "Noklusējuma modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Augšējais P",
+                            "think": "Padomājiet"
+                        },
+                        "data_description": {
+                            "default_model": "Noklusējuma modelis, ko izmantot, ja nav norādīts cits modelis.",
+                            "temperature": "Kontrolē izvades nejaušību. Zemākas vērtības padara izvadi deterministiskāku.",
+                            "top_p": "Kontrolē izvades daudzveidību. Zemākas vērtības padara izvadi koncentrētāku.",
+                            "think": "Iespējot domāšanas režīmu modeļiem, kas to atbalsta."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Papildu",
+                        "description": "Uzlaboti modeļa parametri",
+                        "data": {
+                            "context_window": "Konteksta garums",
+                            "keep_alive": "Paliec dzīvs"
+                        },
+                        "data_description": {
+                            "context_window": "Iestata nākamā marķiera ģenerēšanai izmantotā konteksta loga izmēru.",
+                            "keep_alive": "Kontrolē, cik ilgi modelis tiks ielādēts atmiņā pēc pieprasījuma. Noklusējums: 5 m (5 minūtes), -1: saglabāt atmiņā bezgalīgi, 0: nekavējoties izlādēt"
+                        }
+                    }
+                }
+            },
+            "openai": {
+                "title": "Konfigurējiet OpenAI",
+                "description": "Nodrošiniet aa Waleed openai api atslēgu.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Savienojums",
+                        "description": "OpenAI autentifikācija",
+                        "data": {
+                            "api_key": "API atslēga"
+                        },
+                        "data_description": {
+                            "api_key": "Noteikti pievienojiet kredītu savam OpenAI kontam."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Iestatiet modeļa noklusējuma parametrus",
+                        "data": {
+                            "default_model": "Noklusējuma modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Augšējais P",
+                            "reasoning_effort": "Spriešanas centieni"
+                        },
+                        "data_description": {
+                            "default_model": "Noklusējuma modelis, ko izmantot, ja nav norādīts cits modelis.",
+                            "temperature": "Kontrolē izvades nejaušību. Zemākas vērtības padara izvadi deterministiskāku.",
+                            "top_p": "Kontrolē izvades daudzveidību. Zemākas vērtības padara izvadi koncentrētāku.",
+                            "reasoning_effort": "Kontrolē argumentācijas centienus modeļiem, kas to atbalsta."
+                        }
+                    }
+                }
+            },
+            "azure": {
+                "title": "Konfigurējiet Azure",
+                "description": "Norādiet derīgu Azure API atslēgu, bāzes URL, izvietošanu un API versiju.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Savienojums",
+                        "description": "Azure autentifikācija",
+                        "data": {
+                            "api_key": "API atslēga",
+                            "azure_base_url": "Pamata URL",
+                            "azure_deployment": "Izvietošana",
+                            "azure_version": "API versija"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Iestatiet modeļa noklusējuma parametrus",
+                        "data": {
+                            "default_model": "Noklusējuma modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Augšējais P"
+                        },
+                        "data_description": {
+                            "default_model": "Noklusējuma modelis, ko izmantot, ja nav norādīts cits modelis.",
+                            "temperature": "Kontrolē izvades nejaušību. Zemākas vērtības padara izvadi deterministiskāku.",
+                            "top_p": "Kontrolē izvades daudzveidību. Zemākas vērtības padara izvadi koncentrētāku."
+                        }
+                    }
+                }
+            },
+            "anthropic": {
+                "title": "Konfigurējiet Antropisko Klodu",
+                "description": "Norādiet derīgu Anthropic API atslēgu.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Savienojums",
+                        "description": "Antropiskā autentifikācija",
+                        "data": {
+                            "api_key": "API atslēga"
+                        },
+                        "data_description": {
+                            "api_key": "Noteikti pievienojiet kredītu savam Anthropic kontam."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Iestatiet modeļa noklusējuma parametrus",
+                        "data": {
+                            "default_model": "Noklusējuma modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Augšējais P",
+                            "thinking_budget": "Pārdomāts budžets"
+                        },
+                        "data_description": {
+                            "default_model": "Noklusējuma modelis, ko izmantot, ja nav norādīts cits modelis.",
+                            "temperature": "Kontrolē izvades nejaušību. Zemākas vērtības padara izvadi deterministiskāku.",
+                            "top_p": "Kontrolē izvades daudzveidību. Zemākas vērtības padara izvadi koncentrētāku.",
+                            "thinking_budget": "Kontrolē domāšanas budžetu modeļiem, kas to atbalsta. Augstākas vērtības nodrošina sarežģītāku pamatojumu, taču var palielināt reakcijas laiku un izmaksas."
+                        }
+                    }
+                }
+            },
+            "google": {
+                "title": "Konfigurējiet Google Gemini",
+                "description": "Norādiet derīgu Google Gemini API atslēgu.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Savienojums",
+                        "description": "Google autentifikācija",
+                        "data": {
+                            "api_key": "API atslēga"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Iestatiet modeļa noklusējuma parametrus",
+                        "data": {
+                            "default_model": "Noklusējuma modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Augšējais P",
+                            "thinking_budget": "Pārdomāts budžets"
+                        },
+                        "data_description": {
+                            "default_model": "Noklusējuma modelis, ko izmantot, ja nav norādīts cits modelis.",
+                            "temperature": "Kontrolē izvades nejaušību. Zemākas vērtības padara izvadi deterministiskāku.",
+                            "top_p": "Kontrolē izvades daudzveidību. Zemākas vērtības padara izvadi koncentrētāku.",
+                            "thinking_budget": "Kontrolē domāšanas budžetu modeļiem, kas to atbalsta. Augstākas vērtības nodrošina sarežģītāku pamatojumu, taču var palielināt reakcijas laiku un izmaksas."
+                        }
+                    }
+                }
+            },
+            "groq": {
+                "title": "Konfigurējiet Groq",
+                "description": "Norādiet derīgu Groq API atslēgu.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Savienojums",
+                        "description": "Groq autentifikācija",
+                        "data": {
+                            "api_key": "API atslēga"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Iestatiet modeļa noklusējuma parametrus",
+                        "data": {
+                            "default_model": "Noklusējuma modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Augšējais P"
+                        },
+                        "data_description": {
+                            "default_model": "Noklusējuma modelis, ko izmantot, ja nav norādīts cits modelis.",
+                            "temperature": "Kontrolē izvades nejaušību. Zemākas vērtības padara izvadi deterministiskāku.",
+                            "top_p": "Kontrolē izvades daudzveidību. Zemākas vērtības padara izvadi koncentrētāku."
+                        }
+                    }
+                }
+            },
+            "custom_openai": {
+                "title": "Konfigurējiet pielāgoto OpenAI nodrošinātāju",
+                "description": "**Svarīgi**: darbojas tikai tad, ja API ir saderīga ar OpenAI API. Ja API nav nepieciešama API atslēga, ievadiet fiktīvu vērtību. Galapunktam ir jābūt šādam formātam: \"http(s)://baseURL(:port)/some/endpoint\"",
+                "sections": {
+                    "connection_section": {
+                        "name": "Savienojums",
+                        "description": "Pielāgota OpenAI autentifikācija",
+                        "data": {
+                            "custom_openai_endpoint": "Pielāgots galapunkts",
+                            "api_key": "API atslēga"
+                        },
+                        "data_description": {
+                            "endpoint": "API galapunkts šādā formātā: https)://baseURL(:port)/someone/endpoint",
+                            "api_key": "API atslēga vai 'openai', ja tāda nav nepieciešama."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Iestatiet modeļa noklusējuma parametrus",
+                        "data": {
+                            "default_model": "Noklusējuma modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Augšējais P"
+                        },
+                        "data_description": {
+                            "default_model": "Noklusējuma modelis, ko izmantot, ja nav norādīts cits modelis.",
+                            "temperature": "Kontrolē izvades nejaušību. Zemākas vērtības padara izvadi deterministiskāku.",
+                            "top_p": "Kontrolē izvades daudzveidību. Zemākas vērtības padara izvadi koncentrētāku."
+                        }
+                    }
+                }
+            },
+            "aws_bedrock": {
+                "title": "Konfigurējiet AWS Bedrock nodrošinātāju",
+                "description": "**Svarīgi**: pašlaik tiek atbalstīti tikai šādi modeļi: Nova, Anthropic Claude",
+                "sections": {
+                    "connection_section": {
+                        "name": "Savienojums",
+                        "description": "AWS autentifikācija",
+                        "data": {
+                            "aws_access_key_id": "Piekļuves atslēga",
+                            "aws_secret_access_key": "Slepenā atslēga",
+                            "aws_region_name": "Reģiona virkne"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Iestatiet modeļa noklusējuma parametrus",
+                        "data": {
+                            "default_model": "Noklusējuma modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Augšējais P"
+                        },
+                        "data_description": {
+                            "default_model": "Noklusējuma modelis, ko izmantot, ja nav norādīts cits modelis.",
+                            "temperature": "Kontrolē izvades nejaušību. Zemākas vērtības padara izvadi deterministiskāku.",
+                            "top_p": "Kontrolē izvades daudzveidību. Zemākas vērtības padara izvadi koncentrētāku."
+                        }
+                    }
+                }
+            },
+            "openwebui": {
+                "title": "Konfigurēt Open WebUI",
+                "description": "Norādiet API atslēgu (JWT marķieri), IP adresi, portu, HTTP(S) un noklusējuma modeli.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Savienojums",
+                        "description": "Atveriet WebUI autentifikāciju",
+                        "data": {
+                            "api_key": "API atslēga (JWT marķieris)",
+                            "ip_address": "IP adrese",
+                            "port": "Osta",
+                            "https": "Izmantojiet HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Izmantojiet HTTPS drošiem savienojumiem, ja jūsu serveris to atbalsta."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Iestatiet modeļa noklusējuma parametrus",
+                        "data": {
+                            "default_model": "Noklusējuma modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Augšējais P"
+                        },
+                        "data_description": {
+                            "default_model": "Noklusējuma modelis, ko izmantot, ja nav norādīts cits modelis.",
+                            "temperature": "Kontrolē izvades nejaušību. Zemākas vērtības padara izvadi deterministiskāku.",
+                            "top_p": "Kontrolē izvades daudzveidību. Zemākas vērtības padara izvadi koncentrētāku."
+                        }
+                    }
+                }
+            },
+            "openrouter": {
+                "title": "Konfigurējiet OpenRouter",
+                "description": "OpenRouter ir platforma, kas nodrošina piekļuvi dažādiem AI modeļiem. Varat to izmantot, lai izveidotu savienojumu ar tādiem modeļiem kā OpenAI, Anthropic un citiem.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Savienojums",
+                        "description": "OpenRouter autentifikācija",
+                        "data": {
+                            "api_key": "API atslēga"
+                        },
+                        "data_description": {
+                            "api_key": "Jūsu OpenRouter API atslēga. Vispirms noteikti pievienojiet kredītu savam OpenRouter kontam."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Iestatiet modeļa noklusējuma parametrus",
+                        "data": {
+                            "default_model": "Noklusējuma modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Augšējais P",
+                            "reasoning_effort": "Spriešanas centieni"
+                        },
+                        "data_description": {
+                            "default_model": "Noklusējuma modelis, ko izmantot, ja nav norādīts cits modelis.",
+                            "temperature": "Kontrolē izvades nejaušību. Zemākas vērtības padara izvadi deterministiskāku.",
+                            "top_p": "Kontrolē izvades daudzveidību. Zemākas vērtības padara izvadi koncentrētāku.",
+                            "reasoning_effort": "Kontrolē argumentācijas centienus modeļiem, kas to atbalsta."
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "title": "Iestatījumi",
+                "description": "Konfigurējiet LLM Vision integrāciju. Šis ieraksts ir nepieciešams pirms citu pakalpojumu sniedzēju iestatīšanas. Ja vēlaties izmantot noklusējuma iestatījumus, vienkārši nospiediet \"Iesniegt\".",
+                "sections": {
+                    "general_section": {
+                        "name": "Ģenerālis",
+                        "description": "Iestatiet vēlamo pakalpojumu sniedzēju, ko izmantot, ja atlasītais pakalpojumu sniedzējs nav pieejams.",
+                        "data": {
+                            "fallback_provider": "Atkāpšanās nodrošinātājs",
+                            "request_timeout": "Pieprasīt taimautu (sekundēs)"
+                        },
+                        "data_description": {
+                            "fallback_provider": "Ja pašreizējais pakalpojumu sniedzējs neizdosies, LLM Vision atkārtoti mēģinās izpildīt pieprasījumu ar atlasīto pakalpojumu sniedzēju.",
+                            "request_timeout": "Kopējais laiks, kas jāgaida pakalpojumu sniedzēja atbildei, pirms pieprasījums netiek izpildīts."
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "Sistēmas uzvednes",
+                        "description": "Sistēmas uzvednes tiek izmantotas, lai mainītu modeļa darbību un reakciju.",
+                        "data": {
+                            "system_prompt": "Sistēmas uzvedne",
+                            "title_prompt": "Virsraksta uzvedne"
+                        },
+                        "data_description": {
+                            "system_prompt": "Izmantojiet sistēmas uzvedni, lai mainītu modeļa darbību un reakciju.",
+                            "title_prompt": "Modelim dotais norādījums ģenerēt nosaukumu."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Laika skala",
+                        "description": "Laika skala saglabā šodienas notikumus, lai tie parādītu, izmantojot LLM Vision Card savā informācijas panelī.",
+                        "data": {
+                            "timeline_language": "Laika skalas valoda",
+                            "retention_time": "Uzglabāšanas laiks",
+                            "timeline_today_summary": "Laika skalas kopsavilkums",
+                            "timeline_summary_prompt": "Šodienas kopsavilkuma uzvedne"
+                        },
+                        "data_description": {
+                            "timeline_language": "Atlasiet valodu, kas tiek izmantota notikumu ikonu ģenerēšanai.",
+                            "retention_time": "Automātiski dzēst notikumus pēc (dienas). Iestatiet uz 0, lai atspējotu automātisko dzēšanu.",
+                            "timeline_today_summary": "Iespējojiet laika skalas kopsavilkumu, lai automātiski ģenerētu šodienas notikumu kopsavilkumu.",
+                            "timeline_summary_prompt": "Modelim dotais norādījums izveidot šodienas notikumu kopsavilkumu."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Atmiņa (beta)",
+                        "description": "Saturs atmiņā tiek sinhronizēts starp pakalpojumu sniedzējiem un tiek izmantots, lai modelim nodrošinātu papildu kontekstu.",
+                        "data": {
+                            "memory_paths": "Attēla faila ceļš",
+                            "memory_strings": "Attēla apraksts"
+                        },
+                        "data_description": {
+                            "memory_paths": "Norādiet ceļu uz attēla failu.",
+                            "memory_strings": "Sniedziet attēla aprakstu (piem.: “Šis ir sīkfails, mans suns”). Attēliem un aprakstiem ir jābūt vienā secībā, un aprakstu ir jābūt tik daudz, cik attēlu."
+                        }
+                    }
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "Nevarēja izveidot savienojumu ar serveri. Pārbaudiet API atslēgu vai IP un portu",
+            "empty_api_key": "Nederīga API atslēga",
+            "invalid_provider": "Atlasīts nederīgs pakalpojumu sniedzējs",
+            "memory_not_supported": "Šis pakalpojumu sniedzējs neatbalsta atmiņu",
+            "invalid_image_path": "Viens vai vairāki attēla ceļi nav derīgi",
+            "mismatched_lengths": "Attēlu ceļu un aprakstu skaitam ir jāsakrīt"
+        },
+        "abort": {
+            "unknown_provider": "Nezināms pakalpojumu sniedzējs",
+            "reconfigure_successful": "Iestatījumi ir veiksmīgi saglabāti"
+        }
+    }
+}

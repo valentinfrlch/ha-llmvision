@@ -2,11 +2,12 @@ import json
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Optional
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.http import HomeAssistantView
 from homeassistant.helpers.json import json_dumps
 from homeassistant.util import dt as dt_util
 from .calendar import Timeline
-from .const import DOMAIN, CONF_PROVIDER
+from .const import DOMAIN, CONF_PROVIDER, SIGNAL_TIMELINE_UPDATED
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,6 +46,9 @@ class TimelineEventsView(HomeAssistantView):
         cameras = request.query.get("cameras", None)
         categories = request.query.get("categories", None)
         days = request.query.get("days", None)
+        hours = request.query.get("hours", None)
+        include_no_activity_raw = request.query.get("include_no_activity", "false")
+        include_no_activity = include_no_activity_raw.lower() in ("1", "true", "yes")
 
         def _parse_list_param(val):
             if val is None:
@@ -68,14 +72,20 @@ class TimelineEventsView(HomeAssistantView):
         # If days is provided and start/end aren't, calculate from days
         if days is not None and start is None and end is None:
             try:
-                days = int(days)
                 end_date = dt_util.now()
-                start_date = end_date - timedelta(days=days)
+                start_date = end_date - timedelta(hours=int(hours))
                 start = start_date.isoformat()
                 end = end_date.isoformat()
             except ValueError:
-                start = None
-                end = None
+                pass
+        elif days is not None:
+            try:
+                end_date = dt_util.now()
+                start_date = end_date - timedelta(days=int(days))
+                start = start_date.isoformat()
+                end = end_date.isoformat()
+            except ValueError:
+                pass
 
         timeline = Timeline(hass, settings_entry)
         events = await timeline.get_events_json(
@@ -84,6 +94,7 @@ class TimelineEventsView(HomeAssistantView):
             categories=categories,
             start=start,
             end=end,
+            include_no_activity=include_no_activity,
         )
         return self.json({"events": json.loads(json_dumps(events))})
 
@@ -150,6 +161,7 @@ class TimelineEventCreateView(HomeAssistantView):
             _LOGGER.error(f"Error creating timeline event: {e}")
             return self.json_message("Error creating event", status_code=500)
 
+        async_dispatcher_send(hass, SIGNAL_TIMELINE_UPDATED)
         payload = {"status": "created"}
 
         return self.json(payload)
@@ -191,6 +203,7 @@ class TimelineEventView(HomeAssistantView):
         except Exception as e:
             _LOGGER.error(f"Error deleting event {event_id}: {e}")
             return self.json_message("Error deleting event", status_code=500)
+        async_dispatcher_send(hass, SIGNAL_TIMELINE_UPDATED)
         return self.json({"event_id": event_id, "status": "deleted"})
 
     async def post(self, request, event_id):
@@ -268,6 +281,8 @@ class TimelineEventView(HomeAssistantView):
         except Exception as e:
             _LOGGER.error(f"Error updating event {event_id}: {e}")
             return self.json_message("Error updating event", status_code=500)
+
+        async_dispatcher_send(hass, SIGNAL_TIMELINE_UPDATED)
 
         try:
             updated = await timeline.get_event(event_id)
