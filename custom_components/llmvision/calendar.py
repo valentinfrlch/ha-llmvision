@@ -58,6 +58,34 @@ class Calendar(CalendarEntity):
                 self.hass, SIGNAL_TIMELINE_UPDATED, _handle_timeline_updated
             )
         )
+    @property
+    def extra_state_attributes(self) -> dict:  # type: ignore
+        """Return the state attributes"""
+        sorted_events = sorted(
+            self._events, key=lambda event: event.start, reverse=True
+        )
+        # Only get most recent event
+        event = sorted_events[0] if sorted_events else None
+        _LOGGER.debug(f"Most recent event: {event}")
+
+        return {
+            "title": event.summary if event else None,
+            "description": event.description if event else None,
+            "starts": event.start if event else None,
+            "ends": event.end if event else None,
+            "key_frame": (
+                event.location.split(",")[0] if event and event.location else None
+            ),
+            "camera_name": (
+                (
+                    event.location.split(",")[1]
+                    if len(event.location.split(",")) > 1
+                    else ""
+                )
+                if event and event.location
+                else None
+            ),
+        }
 
     async def async_update(self) -> None:
         """Loads events from database"""
@@ -69,6 +97,8 @@ class Calendar(CalendarEntity):
                 continue
             event_start = self._ensure_datetime(event.start)
             event_end = self._ensure_datetime(event.end)
+            key_frame = getattr(event, "key_frame", "") or ""
+            camera_name = getattr(event, "camera_name", "") or ""
             calendar_events.append(
                 CalendarEvent(
                     uid=event.uid,
@@ -76,6 +106,7 @@ class Calendar(CalendarEntity):
                     start=event_start,
                     end=event_end,
                     description=event.description,
+                    location=f"{key_frame},{camera_name}",
                 )
             )
         calendar_events.sort(

@@ -59,12 +59,14 @@
                         "data": {
                             "default_model": "Varsayılan model",
                             "temperature": "Sıcaklık",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "think": "Düşünmek"
                         },
                         "data_description": {
                             "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
                             "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
-                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar.",
+                            "think": "Destekleyen modeller için düşünme modunu etkinleştirin."
                         }
                     },
                     "advanced_section": {
@@ -101,12 +103,14 @@
                         "data": {
                             "default_model": "Varsayılan model",
                             "temperature": "Sıcaklık",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Muhakeme çabası"
                         },
                         "data_description": {
                             "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
                             "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
-                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar.",
+                            "reasoning_effort": "Onu destekleyen modellerin muhakeme çabasını kontrol eder."
                         }
                     }
                 }
@@ -161,12 +165,14 @@
                         "data": {
                             "default_model": "Varsayılan model",
                             "temperature": "Sıcaklık",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Bütçeyi düşünmek"
                         },
                         "data_description": {
                             "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
                             "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
-                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar.",
+                            "thinking_budget": "Onu destekleyen modeller için düşünme bütçesini kontrol eder. Daha yüksek değerler daha karmaşık akıl yürütmeye olanak tanır ancak yanıt süresini ve maliyetini artırabilir."
                         }
                     }
                 }
@@ -188,12 +194,14 @@
                         "data": {
                             "default_model": "Varsayılan model",
                             "temperature": "Sıcaklık",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Bütçeyi düşünmek"
                         },
                         "data_description": {
                             "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
                             "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
-                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar.",
+                            "thinking_budget": "Onu destekleyen modeller için düşünme bütçesini kontrol eder. Daha yüksek değerler daha karmaşık akıl yürütmeye olanak tanır ancak yanıt süresini ve maliyetini artırabilir."
                         }
                     }
                 }
@@ -339,12 +347,14 @@
                         "data": {
                             "default_model": "Varsayılan model",
                             "temperature": "Sıcaklık",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Muhakeme çabası"
                         },
                         "data_description": {
                             "default_model": "Başka bir model belirtilmediğinde kullanılacak varsayılan model.",
                             "temperature": "Çıktının rastgeleliğini kontrol eder. Düşük değerler çıktıyı daha belirleyici yapar.",
-                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar."
+                            "top_p": "Çıktının çeşitliliğini kontrol eder. Düşük değerler çıktıyı daha odaklı yapar.",
+                            "reasoning_effort": "Onu destekleyen modellerin muhakeme çabasını kontrol eder."
                         }
                     }
                 }

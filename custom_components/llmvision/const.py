@@ -12,6 +12,9 @@ CONF_HTTPS = "https"
 CONF_DEFAULT_MODEL = "default_model"
 CONF_TEMPERATURE = "temperature"
 CONF_TOP_P = "top_p"
+CONF_THINKING_BUDGET = "thinking_budget"
+CONF_THINK = "think"
+CONF_REASONING_EFFORT = "reasoning_effort"
 CONF_CONTEXT_WINDOW = "context_window"  # (ollama: num_ctx)
 CONF_KEEP_ALIVE = "keep_alive"
 CONF_REQUEST_TIMEOUT = "request_timeout"
@@ -91,19 +94,33 @@ VERSION_AZURE = "2025-04-01-preview"  # https://learn.microsoft.com/en-us/azure/
 DEFAULT_SYSTEM_PROMPT = "Analyze the images and give a concise, objective event summary (<255 chars). Focus on people, pets, and moving objects; track changes across images. Exclude static details, avoid speculation, and follow user instructions."
 DEFAULT_TITLE_PROMPT = "Generate a clear event title (<6 words) from the description. Use format: <Object> seen at <location>. Keep it concise, factual, and alert-ready. Include names if given. Avoid extra details or interpretations."
 DATA_EXTRACTION_PROMPT = "Analyze the image(s) and extract only the requested info (e.g., object count, license plate). Output strictly in {data_format}. Double-check accuracy and ensure results reflect the image content. Do not explain or add extra info."
+GLIMPSE_V1_INSTRUCTIONS = """
+Analyze the security camera image and respond with ONLY a valid JSON object. No markdown, no code blocks, no explanation — just the raw JSON.
 
+Output format:
+{"title": "<2–5 word summary>", "description": "<1–2 factual sentences in present tense>"}
+
+Example:
+{"title": "Package delivery", "description": "A person in a FedEx uniform places a package at the front door. A delivery van is parked at the curb."}
+
+Rules:
+- Title: short and glanceable (2–5 words). All detail goes in description.
+- Description: factual, present tense, 1–2 sentences. Do not mention camera angle, lighting, or image quality.
+- If a delivery is occurring (person handling a package, wearing a delivery uniform, or delivery vehicle visible): title must contain the word "delivery". Include carrier name in description if branding is visible (e.g. FedEx, UPS, Amazon).
+- If no people, vehicles, or animals are present: title must be exactly "No activity" and description must state nothing notable is observed.
+"""
 # Models
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 DEFAULT_ANTHROPIC_MODEL = "claude-3-7-sonnet-latest"
 DEFAULT_AZURE_MODEL = "gpt-4o-mini"
-DEFAULT_GOOGLE_MODEL = "gemini-2.0-flash"
+DEFAULT_GOOGLE_MODEL = "gemini-3.1-flash-lite-preview"
 DEFAULT_GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 DEFAULT_LOCALAI_MODEL = "llava"
 DEFAULT_OLLAMA_MODEL = "gemma3:4b"
 DEFAULT_CUSTOM_OPENAI_MODEL = "gpt-4o-mini"
 DEFAULT_AWS_MODEL = "us.amazon.nova-pro-v1:0"
 DEFAULT_OPENWEBUI_MODEL = "gemma3:4b"
-DEFAULT_OPENROUTER_MODEL = "mistralai/mistral-small-3.2-24b-instruct:free"
+DEFAULT_OPENROUTER_MODEL = "google/gemma-3-4b-it:free"
 
 DEFAULT_SUMMARY_PROMPT = "Provide a brief summary for the following titles. Focus on the key actions or changes that occurred over time and avoid unnecessary details or subjective interpretations. The summary should be concise, objective, and relevant to the content of the images. Keep the summary under 50 words and ensure it captures the main events or activities described in the descriptions. Here are the descriptions:\n "
 
