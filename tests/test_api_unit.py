@@ -97,7 +97,7 @@ class TestTimelineEventsView:
         assert response.status == 200
         assert _response_payload(response) == {"events": [{"uid": "event-1"}]}
         timeline.get_events_json.assert_awaited_once_with(
-            limit=100,
+            limit=500,
             cameras=["Front Door", "Backyard"],
             categories=["person", "vehicle"],
             start=(now - timedelta(hours=2)).isoformat(),

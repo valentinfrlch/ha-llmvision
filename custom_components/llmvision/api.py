@@ -80,23 +80,26 @@ class TimelineEventsView(HomeAssistantView):
                 return self.json_message("Invalid 'end' datetime", status_code=400)
             end = parsed_end.isoformat()
 
-        # If days is provided and start/end aren't, calculate from days
+        # If start/end aren't provided, preserve the legacy days/hours behavior.
         if days is not None and start is None and end is None:
-            try:
-                end_date = dt_util.now()
-                start_date = end_date - timedelta(hours=int(hours))
+            end_date = dt_util.now()
+            start_date = None
+
+            if hours is not None:
+                try:
+                    start_date = end_date - timedelta(hours=int(hours))
+                except (TypeError, ValueError):
+                    start_date = None
+
+            if start_date is None:
+                try:
+                    start_date = end_date - timedelta(days=int(days))
+                except (TypeError, ValueError):
+                    start_date = None
+
+            if start_date is not None:
                 start = start_date.isoformat()
                 end = end_date.isoformat()
-            except ValueError:
-                pass
-        elif days is not None:
-            try:
-                end_date = dt_util.now()
-                start_date = end_date - timedelta(days=int(days))
-                start = start_date.isoformat()
-                end = end_date.isoformat()
-            except ValueError:
-                pass
 
         timeline = Timeline(hass, settings_entry)
         events = await timeline.get_events_json(
