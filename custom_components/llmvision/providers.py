@@ -456,7 +456,7 @@ class Provider(ABC):
             "reasoning_effort": config.get(CONF_REASONING_EFFORT, "none"),
         }
         if call.model_is_glimpse():
-            default_parameters["temperature"] = 0.3
+            default_parameters["temperature"] = 0.2
             default_parameters["top_p"] = 0.95
         return default_parameters
 
