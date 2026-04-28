@@ -69,6 +69,17 @@ class TimelineEventsView(HomeAssistantView):
         start = request.query.get("start", None)
         end = request.query.get("end", None)
 
+        if start is not None:
+            parsed_start = dt_util.parse_datetime(start)
+            if parsed_start is None:
+                return self.json_message("Invalid 'start' datetime", status_code=400)
+            start = parsed_start.isoformat()
+        if end is not None:
+            parsed_end = dt_util.parse_datetime(end)
+            if parsed_end is None:
+                return self.json_message("Invalid 'end' datetime", status_code=400)
+            end = parsed_end.isoformat()
+
         # If days is provided and start/end aren't, calculate from days
         if days is not None and start is None and end is None:
             try:
