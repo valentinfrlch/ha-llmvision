@@ -515,7 +515,7 @@ class TestProviderBase:
             provider = OpenAI(mock_hass, "test_key", "gpt-4")
             result = provider._get_default_parameters(mock_call)
 
-            assert result["temperature"] == 0.3
+            assert result["temperature"] == 0.2
             assert result["top_p"] == 0.95
 
 
