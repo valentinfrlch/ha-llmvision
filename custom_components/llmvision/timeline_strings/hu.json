@@ -32,13 +32,25 @@
                 "macska": "cat",
                 "madár": "bird",
                 "háziállat": "dog",
-                "állat": "dog"
+                "állat": "animal",
+                "mókus": "animal",
+                "vadvilág": "animal",
+                "szarvas": "animal",
+                "nyúl": "animal",
+                "róka": "animal",
+                "prérifarkas": "animal",
+                "mosómedve": "animal",
+                "bűzösborz": "animal",
+                "oposszum": "animal",
+                "sündisznó": "animal",
+                "medve": "animal",
+                "jávorszarvas": "animal"
             }
         },
-        "package": {
+        "delivery": {
             "labels": {
-                "doboz": "package",
-                "csomag": "package"
+                "doboz": "delivery",
+                "csomag": "delivery"
             }
         },
         "entity": {

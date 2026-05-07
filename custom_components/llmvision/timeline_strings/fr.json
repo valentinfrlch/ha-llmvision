@@ -27,13 +27,27 @@
             "labels": {
                 "chien": "dog",
                 "chat": "cat",
-                "oiseau": "bird"
+                "oiseau": "bird",
+                "écureuil": "animal",
+                "animal de compagnie": "dog",
+                "animal": "animal",
+                "faune sauvage": "animal",
+                "cerf": "animal",
+                "lapin": "animal",
+                "renard": "animal",
+                "coyote": "animal",
+                "raton laveur": "animal",
+                "mouffette": "animal",
+                "opossum": "animal",
+                "hérisson": "animal",
+                "ours": "animal",
+                "orignal": "animal"
             }
         },
-        "package": {
+        "delivery": {
             "labels": {
-                "boîte": "package",
-                "colis": "package"
+                "boîte": "delivery",
+                "colis": "delivery"
             }
         },
         "entity": {

@@ -32,14 +32,27 @@
                 "cão": "dog",
                 "gato": "cat",
                 "pássaro": "bird",
-                "animal": "dog"
+                "animal": "animal",
+                "esquilo": "animal",
+                "animal de estimação": "dog",
+                "vida selvagem": "animal",
+                "veado": "animal",
+                "coelho": "animal",
+                "raposa": "animal",
+                "coiote": "animal",
+                "guaxinim": "animal",
+                "mofeta": "animal",
+                "gambá": "animal",
+                "ouriço-cacheiro": "animal",
+                "urso": "animal",
+                "alce": "animal"
             }
         },
-        "package": {
+        "delivery": {
             "labels": {
-                "caixa": "package",
-                "pacote": "package",
-                "encomenda": "package"
+                "caixa": "delivery",
+                "pacote": "delivery",
+                "encomenda": "delivery"
             }
         },
         "entity": {

@@ -31,14 +31,28 @@
             "labels": {
                 "hund": "dog",
                 "kat": "cat",
-                "fugl": "bird"
+                "fugl": "bird",
+                "egern": "animal",
+                "kæledyr": "dog",
+                "dyr": "animal",
+                "dyreliv": "animal",
+                "hjort": "animal",
+                "kanin": "animal",
+                "ræv": "animal",
+                "prærieulv": "animal",
+                "vaskebjørn": "animal",
+                "stinkdyr": "animal",
+                "opossum": "animal",
+                "pindsvin": "animal",
+                "bjørn": "animal",
+                "elg": "animal"
             }
         },
-        "package": {
+        "delivery": {
             "labels": {
-                "kasse": "package",
-                "pakke": "package",
-                "forsendelse": "package"
+                "kasse": "delivery",
+                "pakke": "delivery",
+                "forsendelse": "delivery"
             }
         },
         "entity": {

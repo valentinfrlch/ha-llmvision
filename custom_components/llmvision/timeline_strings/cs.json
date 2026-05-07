@@ -34,14 +34,27 @@
                 "kočka": "cat",
                 "pták": "bird",
                 "domácí zvíře": "dog",
-                "zvíře": "dog"
+                "zvíře": "animal",
+                "veverka": "animal",
+                "mazlíček": "dog",
+                "divoká zvěř": "animal",
+                "jelen": "animal",
+                "králík": "animal",
+                "liška": "animal",
+                "kojot": "animal",
+                "mýval": "animal",
+                "skunk": "animal",
+                "vačice": "animal",
+                "ježek": "animal",
+                "medvěd": "animal",
+                "los": "animal"
             }
         },
-        "package": {
+        "delivery": {
             "labels": {
-                "krabice": "package",
-                "balík": "package",
-                "zásilka": "package"
+                "krabice": "delivery",
+                "balík": "delivery",
+                "zásilka": "delivery"
             }
         },
         "entity": {

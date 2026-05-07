@@ -34,14 +34,26 @@
         "γάτα": "cat",
         "πουλί": "bird",
         "κατοικίδιο": "dog",
-        "ζώο": "dog"
+        "ζώο": "animal",
+        "σκίουρος": "animal",
+        "άγρια ζωή": "animal",
+        "ελάφι": "animal",
+        "κουνέλι": "animal",
+        "αλεπού": "animal",
+        "κογιότ": "animal",
+        "ρακούν": "animal",
+        "βρωμούσα": "animal",
+        "οπόσουμ": "animal",
+        "σκαντζόχοιρος": "animal",
+        "αρκούδα": "animal",
+        "άλκη": "animal"
       }
     },
-    "package": {
+    "delivery": {
       "labels": {
-        "κουτί": "package",
-        "πακέτο": "package",
-        "δέμα": "package"
+        "κουτί": "delivery",
+        "πακέτο": "delivery",
+        "δέμα": "delivery"
       }
     },
     "entity": {

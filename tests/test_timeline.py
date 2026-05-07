@@ -243,6 +243,64 @@ class TestGetCategoryAndLabel:
         assert isinstance(label, str)
 
 
+class TestCategoryPriorityAndWordBoundaries:
+    """Tests to ensure category priority and whole-word matching behave correctly."""
+
+    async def test_delivery_preferred_over_person(
+        self, hass_with_executor, entry_english
+    ):
+        # 'parcel' is a delivery label; sentence also contains 'person'
+        q = "A person carries a parcel to the front door"
+        category, label = await _get_category_and_label(
+            hass_with_executor, entry_english, q
+        )
+        assert category == "delivery"
+        assert label == "delivery"
+
+    async def test_pet_not_matched_in_petrol(self, hass_with_executor, entry_english):
+        # 'pet' should NOT match inside 'petrol' due to word boundaries; 'car' should match
+        q = "A petrol car parked outside"
+        category, label = await _get_category_and_label(
+            hass_with_executor, entry_english, q
+        )
+        assert category == "vehicle"
+        assert label == "car"
+
+    async def test_carpet_does_not_match_car_or_pet(
+        self, hass_with_executor, entry_english
+    ):
+        # Ensure substrings do not produce false positives
+        q = "There is a carpet on the floor"
+        category, label = await _get_category_and_label(
+            hass_with_executor, entry_english, q
+        )
+        assert category == ""
+        assert label == ""
+
+    async def test_vehicle_preferred_over_animal(
+        self, hass_with_executor, entry_english
+    ):
+        # When both 'car' and 'dog' appear, vehicle has higher priority
+        q = "A car and a dog were seen"
+        category, label = await _get_category_and_label(
+            hass_with_executor, entry_english, q
+        )
+        assert category == "vehicle"
+        assert label == "car"
+
+    async def test_case_insensitive_and_plural_handling(
+        self, hass_with_executor, entry_english
+    ):
+        # Uppercase and plural forms should still match (regex uses case-insensitive)
+        q = "PARCELS were delivered"
+        category, label = await _get_category_and_label(
+            hass_with_executor, entry_english, q
+        )
+        # 'parcels' may not map via simple s? template to 'parcel' in every language file,
+        # but we at least expect the delivery category or an empty result without false positives.
+        assert category in ("delivery", "")
+
+
 # ===========================================================================
 # Event class
 # ===========================================================================

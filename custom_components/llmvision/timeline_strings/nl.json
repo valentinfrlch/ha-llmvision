@@ -31,14 +31,28 @@
             "labels": {
                 "hond": "dog",
                 "kat": "cat",
-                "vogel": "bird"
+                "vogel": "bird",
+                "eekhoorn": "animal",
+                "huisdier": "dog",
+                "dier": "animal",
+                "wilde dieren": "animal",
+                "hert": "animal",
+                "konijn": "animal",
+                "vos": "animal",
+                "coyote": "animal",
+                "wasbeer": "animal",
+                "stinkdier": "animal",
+                "opossum": "animal",
+                "egel": "animal",
+                "beer": "animal",
+                "eland": "animal"
             }
         },
-        "package": {
+        "delivery": {
             "labels": {
-                "doos": "package",
-                "pakket": "package",
-                "pakje": "package"
+                "doos": "delivery",
+                "pakket": "delivery",
+                "pakje": "delivery"
             }
         },
         "entity": {

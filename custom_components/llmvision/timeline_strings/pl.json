@@ -33,14 +33,28 @@
                 "kot": "cat",
                 "kotek": "cat",
                 "piesek": "dog",
-                "ptak": "bird"
+                "ptak": "bird",
+                "wiewiórka": "animal",
+                "zwierzę domowe": "dog",
+                "zwierzę": "animal",
+                "dzikie zwierzęta": "animal",
+                "jeleń": "animal",
+                "królik": "animal",
+                "lis": "animal",
+                "kojot": "animal",
+                "szop pracz": "animal",
+                "skunks": "animal",
+                "opos": "animal",
+                "jeż": "animal",
+                "niedźwiedź": "animal",
+                "łoś": "animal"
             }
         },
-        "package": {
+        "delivery": {
             "labels": {
-                "pudelko": "package",
-                "paczka": "package",
-                "przesylka": "package"
+                "pudelko": "delivery",
+                "paczka": "delivery",
+                "przesylka": "delivery"
             }
         },
         "entity": {

@@ -81,7 +81,7 @@ async def _get_category_and_label(
           - object like: {"pattern": "\\b${key}s?\\b", "flags": "i"}
         Falls back to: r"\b{key}s?\b" with IGNORECASE.
         """
-        # Defaults
+        # Defaults: ensure whole-word matching (word boundaries)
         pattern = rf"\b{re.escape(key)}s?\b"
         flags = re.IGNORECASE
 
@@ -98,21 +98,25 @@ async def _get_category_and_label(
 
         try:
             if isinstance(regex_template, str):
-                # Expect format: "`\\b${key}s?\\b`, 'i'"
+                # Expect format: "`\\b${key}s?\\b`, 'i'" or similar
                 m = re.search(r"`([^`]*)`(?:\s*,\s*'([a-zA-Z]+)')?", regex_template)
                 if m:
-                    tpl_pat = m.group(1)
-                    tpl_flags = m.group(2) or ""
-                    tpl_pat = tpl_pat.replace("${key}", re.escape(key))
-                    pattern = tpl_pat
-                    flags = flags_from_str(tpl_flags)
+                    tpl = m.group(1)
+                    tpl_f = m.group(2) or ""
+                    # Substitute ${key} placeholder safely (escape key)
+                    pattern = tpl.replace("${key}", re.escape(key))
+                    flags = flags_from_str(tpl_f)
+                    # Ensure whole-word boundaries around the key if not present
+                    if not re.search(r"\\b", pattern):
+                        pattern = rf"\\b{re.escape(key)}s?\\b"
             elif isinstance(regex_template, dict):
                 tpl_pat = regex_template.get("pattern")
                 tpl_flags = regex_template.get("flags", "")
                 if isinstance(tpl_pat, str):
-                    tpl_pat = tpl_pat.replace("${key}", re.escape(key))
-                    pattern = tpl_pat
+                    pattern = tpl_pat.replace("${key}", re.escape(key))
                     flags = flags_from_str(tpl_flags)
+                    if not re.search(r"\\b", pattern):
+                        pattern = rf"\\b{re.escape(key)}s?\\b"
         except Exception as e:
             _LOGGER.debug(f"Failed to apply regex template for key '{key}': {e}")
 
@@ -122,8 +126,20 @@ async def _get_category_and_label(
             _LOGGER.warning(f"Invalid regex for key '{key}': {pattern} ({e})")
             return None
 
-    # Collect all matches so we can pick the best (longest) one
-    matches: list[tuple[int, str, str]] = []  # (key_length, category, label)
+    # Collect all matches so we can pick the best according to category priority
+    # Priority order (lower is higher priority)
+    category_priority = {
+        "delivery": 0,
+        "vehicle": 1,
+        "person": 2,
+        "animal": 3,
+        "entity": 4,
+        "nature": 5,
+    }
+
+    matches: list[tuple[int, int, int, str, str]] = (
+        []
+    )  # (priority, -key_len, order_index, category, label)
     q = query or ""
 
     for cat_name, cat_def in categories_data.items():
@@ -131,18 +147,21 @@ async def _get_category_and_label(
         if not isinstance(objects, dict):
             continue
 
-        for key, canonical in objects.items():
+        for key_index, (key, canonical) in enumerate(objects.items()):
             pat = compile_pattern(str(key))
             if pat and pat.search(q):
                 canonical_label = str(canonical) if canonical else str(key)
-                matches.append((len(str(key)), str(cat_name), canonical_label))
+                prio = category_priority.get(str(cat_name).lower(), 99)
+                matches.append(
+                    (prio, -len(str(key)), key_index, str(cat_name), canonical_label)
+                )
 
     if not matches:
         return ("", "")
 
-    # Prefer the longest key match. If tie, preserve original order
-    matches.sort(key=lambda x: x[0], reverse=True)
-    _, category, label = matches[0]
+    # Sort by category priority (asc), then longest key (desc via negative length), then original order
+    matches.sort(key=lambda x: (x[0], x[1], x[2]))
+    _, _, _, category, label = matches[0]
     return (category, label)
 
 
