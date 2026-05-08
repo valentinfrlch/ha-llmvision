@@ -29,7 +29,7 @@ requests-mock==1.12.1
 aioresponses==0.7.8
 
 # Required for the component itself
-aiohttp==3.13.4
+aiohttp==3.13.2
 aiohttp-asyncmdnsresolver==0.1.1
 aiohttp-cors==0.8.1
 aiohttp-fast-zlib==0.3.0
