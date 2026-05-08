@@ -4,7 +4,7 @@ import datetime
 import os
 import uuid
 from functools import partial
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import aiosqlite
 import pytest
@@ -1162,3 +1162,38 @@ class TestMigration:
         ev = tl.events[0]
         assert ev.label == "car"
         assert ev.category == "vehicle"
+
+    async def test_migrate_triggers_cleanup_when_version_is_current(
+        self, build_timeline
+    ):
+        """Even no-op migrations should run a post-migration cleanup sweep."""
+        tl = build_timeline()
+        await tl._initialize_db()
+        await tl._set_db_version(DB_VERSION)
+
+        cleanup_mock = AsyncMock()
+        tl._cleanup = cleanup_mock
+
+        tl._migrating = True
+        await tl._migrate()
+
+        cleanup_mock.assert_awaited_once()
+        assert not tl._migrating
+
+    async def test_migrate_triggers_cleanup_after_real_migration(self, build_timeline):
+        """A real migration run should always end with cleanup execution."""
+        tl = build_timeline()
+        await tl._initialize_db()
+
+        # Force migration path to execute
+        await tl._set_db_version(0)
+
+        cleanup_mock = AsyncMock()
+        tl._cleanup = cleanup_mock
+
+        tl._migrating = True
+        await tl._migrate()
+
+        cleanup_mock.assert_awaited_once()
+        assert await tl._get_db_version() == DB_VERSION
+        assert not tl._migrating
