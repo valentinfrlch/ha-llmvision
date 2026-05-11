@@ -37,10 +37,12 @@ async def _get_category_and_label(
         "Bulgarian": "bg",
         "Catalan": "ca",
         "Czech": "cs",
+        "Danish": "da",
         "German": "de",
         "English": "en",
         "Spanish": "es",
         "French": "fr",
+        "Greek": "el",
         "Hungarian": "hu",
         "Italian": "it",
         "Dutch": "nl",
@@ -79,7 +81,7 @@ async def _get_category_and_label(
           - object like: {"pattern": "\\b${key}s?\\b", "flags": "i"}
         Falls back to: r"\b{key}s?\b" with IGNORECASE.
         """
-        # Defaults
+        # Defaults: ensure whole-word matching (word boundaries)
         pattern = rf"\b{re.escape(key)}s?\b"
         flags = re.IGNORECASE
 
@@ -96,21 +98,25 @@ async def _get_category_and_label(
 
         try:
             if isinstance(regex_template, str):
-                # Expect format: "`\\b${key}s?\\b`, 'i'"
+                # Expect format: "`\\b${key}s?\\b`, 'i'" or similar
                 m = re.search(r"`([^`]*)`(?:\s*,\s*'([a-zA-Z]+)')?", regex_template)
                 if m:
-                    tpl_pat = m.group(1)
-                    tpl_flags = m.group(2) or ""
-                    tpl_pat = tpl_pat.replace("${key}", re.escape(key))
-                    pattern = tpl_pat
-                    flags = flags_from_str(tpl_flags)
+                    tpl = m.group(1)
+                    tpl_f = m.group(2) or ""
+                    # Substitute ${key} placeholder safely (escape key)
+                    pattern = tpl.replace("${key}", re.escape(key))
+                    flags = flags_from_str(tpl_f)
+                    # Ensure whole-word boundaries around the key if not present
+                    if not re.search(r"\\b", pattern):
+                        pattern = rf"\\b{re.escape(key)}s?\\b"
             elif isinstance(regex_template, dict):
                 tpl_pat = regex_template.get("pattern")
                 tpl_flags = regex_template.get("flags", "")
                 if isinstance(tpl_pat, str):
-                    tpl_pat = tpl_pat.replace("${key}", re.escape(key))
-                    pattern = tpl_pat
+                    pattern = tpl_pat.replace("${key}", re.escape(key))
                     flags = flags_from_str(tpl_flags)
+                    if not re.search(r"\\b", pattern):
+                        pattern = rf"\\b{re.escape(key)}s?\\b"
         except Exception as e:
             _LOGGER.debug(f"Failed to apply regex template for key '{key}': {e}")
 
@@ -120,8 +126,20 @@ async def _get_category_and_label(
             _LOGGER.warning(f"Invalid regex for key '{key}': {pattern} ({e})")
             return None
 
-    # Collect all matches so we can pick the best (longest) one
-    matches: list[tuple[int, str, str]] = []  # (key_length, category, label)
+    # Collect all matches so we can pick the best according to category priority
+    # Priority order (lower is higher priority)
+    category_priority = {
+        "delivery": 0,
+        "vehicle": 1,
+        "person": 2,
+        "animal": 3,
+        "entity": 4,
+        "nature": 5,
+    }
+
+    matches: list[tuple[int, int, int, str, str]] = (
+        []
+    )  # (priority, -key_len, order_index, category, label)
     q = query or ""
 
     for cat_name, cat_def in categories_data.items():
@@ -129,18 +147,21 @@ async def _get_category_and_label(
         if not isinstance(objects, dict):
             continue
 
-        for key, canonical in objects.items():
+        for key_index, (key, canonical) in enumerate(objects.items()):
             pat = compile_pattern(str(key))
             if pat and pat.search(q):
                 canonical_label = str(canonical) if canonical else str(key)
-                matches.append((len(str(key)), str(cat_name), canonical_label))
+                prio = category_priority.get(str(cat_name).lower(), 99)
+                matches.append(
+                    (prio, -len(str(key)), key_index, str(cat_name), canonical_label)
+                )
 
     if not matches:
         return ("", "")
 
-    # Prefer the longest key match. If tie, preserve original order
-    matches.sort(key=lambda x: x[0], reverse=True)
-    _, category, label = matches[0]
+    # Sort by category priority (asc), then longest key (desc via negative length), then original order
+    matches.sort(key=lambda x: (x[0], x[1], x[2]))
+    _, _, _, category, label = matches[0]
     return (category, label)
 
 
@@ -250,8 +271,7 @@ class Timeline:
         """Initialize database"""
         try:
             async with aiosqlite.connect(self._db_path) as db:
-                await db.execute(
-                    """
+                await db.execute("""
                     CREATE TABLE IF NOT EXISTS events (
                         uid TEXT PRIMARY KEY,
                         title TEXT,
@@ -263,18 +283,13 @@ class Timeline:
                         category TEXT,
                         label TEXT
                     )
-                """
-                )
-                await db.execute(
-                    """
+                """)
+                await db.execute("""
                     CREATE INDEX IF NOT EXISTS idx_start ON events (start)
-                """
-                )
-                await db.execute(
-                    """
+                """)
+                await db.execute("""
                     CREATE INDEX IF NOT EXISTS idx_end ON events (end)
-                """
-                )
+                """)
                 await db.commit()
         except aiosqlite.Error as e:
             _LOGGER.error(f"Error initializing database: {e}")
@@ -291,202 +306,207 @@ class Timeline:
 
     async def _migrate(self):
         """Handles migration for events.db (current v4)"""
-        current_version = await self._get_db_version()
-        if current_version >= DB_VERSION:
-            self._migrating = False
-            return
-
-        _LOGGER.info(
-            f"Starting DB migration (user_version={current_version} -> {DB_VERSION})"
-        )
-        # v1 -> v2: Migrate events from events.json to events.db
-        old_db_path = os.path.join(self.hass.config.path("llmvision"), "events.json")
-        if os.path.exists(old_db_path):
-            _LOGGER.info("Migrating events from events.json to events.db")
-            with open(old_db_path, "r") as file:
-                data = json.load(file)
-                event_counter = 0
-                for event in data:
-                    await self.hass.loop.create_task(
-                        self.create_event(
-                            start=datetime.datetime.fromisoformat(event["start"]),
-                            end=datetime.datetime.fromisoformat(event["end"]),
-                            title=event.get("summary", ""),
-                            description=event.get("description", ""),
-                            key_frame=event["location"].split(",")[0],
-                            camera_name=(
-                                event["location"].split(",")[1]
-                                if len(event["location"].split(",")) > 1
-                                else ""
-                            ),
-                            label=event.get("label", ""),
-                        )
-                    )
-                    event_counter += 1
-                _LOGGER.info(f"Migrated {event_counter} events")
-            _LOGGER.info("Migration complete, deleting events.json")
-            os.remove(old_db_path)
-
-        # v3 -> v4: Migrate image paths to /config/media/llmvision/snapshots from /www/llmvision
         try:
-            # Move images to new location
-            # Ensure dir exists
-            await self.hass.loop.run_in_executor(
-                None,
-                partial(
-                    os.makedirs,
-                    self.hass.config.path("media/llmvision/snapshots"),
-                    exist_ok=True,
-                ),
+            current_version = await self._get_db_version()
+            if current_version >= DB_VERSION:
+                return
+
+            _LOGGER.info(
+                f"Starting DB migration (user_version={current_version} -> {DB_VERSION})"
             )
-            src_dir = self.hass.config.path("www/llmvision")
-            dst_dir = self.hass.config.path("media/llmvision/snapshots")
-            if os.path.exists(src_dir):
-                for filename in await self.hass.loop.run_in_executor(
-                    None, partial(os.listdir, src_dir)
-                ):
-                    src_file = os.path.join(src_dir, filename)
-                    dst_file = os.path.join(dst_dir, filename)
-                    if os.path.isfile(src_file):
-                        await self.hass.loop.run_in_executor(
-                            None, shutil.move, src_file, dst_file
-                        )
-
-            async with aiosqlite.connect(self._db_path) as db:
-                await db.execute(
-                    """
-                    UPDATE events SET key_frame = REPLACE(key_frame, '/www/llmvision', '/media/llmvision/snapshots')
-                """
-                )
-                await db.commit()
-        except aiosqlite.Error as e:
-            _LOGGER.error(f"Error migrating events.db to v4: {e}")
-
-        # v4 -> v4.1: Migrate image paths to /media/llmvision/snapshots from /config/media/llmvision/snapshots
-        try:
-            # Move images to new location
-            # Ensure dir exists
-            await self.hass.loop.run_in_executor(
-                None,
-                partial(
-                    os.makedirs,
-                    "/media/llmvision/snapshots",
-                    exist_ok=True,
-                ),
+            # v1 -> v2: Migrate events from events.json to events.db
+            old_db_path = os.path.join(
+                self.hass.config.path("llmvision"), "events.json"
             )
-            src_dir = self.hass.config.path("media/llmvision/snapshots")
-            dst_dir = "/media/llmvision/snapshots"
-            if os.path.exists(src_dir):
-                for filename in await self.hass.loop.run_in_executor(
-                    None, partial(os.listdir, src_dir)
-                ):
-                    src_file = os.path.join(src_dir, filename)
-                    dst_file = os.path.join(dst_dir, filename)
-                    if os.path.isfile(src_file):
-                        await self.hass.loop.run_in_executor(
-                            None, shutil.move, src_file, dst_file
-                        )
-
-            async with aiosqlite.connect(self._db_path) as db:
-                await db.execute(
-                    """
-                    UPDATE events SET key_frame = REPLACE(key_frame, '/config/media/llmvision/snapshots', '/media/local/llmvision/snapshots')
-                """
-                )
-                await db.commit()
-        except aiosqlite.Error as e:
-            _LOGGER.error(f"Error migrating events.db to v4.1: {e}")
-
-        # v4.1 -> v4.2: Add category column to events.db
-        try:
-            async with aiosqlite.connect(self._db_path) as db:
-                async with db.execute("""PRAGMA table_info(events)""") as cursor:
-                    columns = await cursor.fetchall()
-                    column_names = [column[1] for column in columns]
-                    if "category" not in column_names:
-                        _LOGGER.info("Migrating events.db to include category column")
-                        await db.execute(
-                            """ALTER TABLE events ADD COLUMN category TEXT"""
-                        )
-                        await db.commit()
-                        _LOGGER.info("Timeline DB migration to v4.2 complete")
-        except aiosqlite.Error as e:
-            _LOGGER.error(f"Error migrating events.db to v4.2: {e}")
-
-        # v4.2 -> v4.3: Remove today_summary column from events.db, add label column, populate label column, rename summary->title
-        try:
-            async with aiosqlite.connect(self._db_path) as db:
-                async with db.execute("""PRAGMA table_info(events)""") as cursor:
-                    columns = await cursor.fetchall()
-                    column_names = [column[1] for column in columns]
-                    if "today_summary" in column_names:
-                        _LOGGER.info("Removing today_summary column from events.db")
-                        await db.execute(
-                            """ALTER TABLE events DROP COLUMN today_summary"""
-                        )
-                        await db.commit()
-                    if "label" not in column_names:
-                        _LOGGER.info("Adding label column to events.db")
-                        await db.execute("""ALTER TABLE events ADD COLUMN label TEXT""")
-                        await db.commit()
-                    if "summary" in column_names:
-                        _LOGGER.info("Renaming summary column to title")
-                        await db.execute("""ALTER TABLE events RENAME TO events_old""")
-                        await db.execute(
-                            """
-                            CREATE TABLE events (
-                                uid TEXT PRIMARY KEY,
-                                title TEXT,
-                                start TEXT,
-                                end TEXT,
-                                description TEXT,
-                                key_frame TEXT,
-                                camera_name TEXT,
-                                category TEXT,
-                                label TEXT
+            if os.path.exists(old_db_path):
+                _LOGGER.info("Migrating events from events.json to events.db")
+                with open(old_db_path, "r") as file:
+                    data = json.load(file)
+                    event_counter = 0
+                    for event in data:
+                        await self.hass.loop.create_task(
+                            self.create_event(
+                                start=datetime.datetime.fromisoformat(event["start"]),
+                                end=datetime.datetime.fromisoformat(event["end"]),
+                                title=event.get("summary", ""),
+                                description=event.get("description", ""),
+                                key_frame=event["location"].split(",")[0],
+                                camera_name=(
+                                    event["location"].split(",")[1]
+                                    if len(event["location"].split(",")) > 1
+                                    else ""
+                                ),
+                                label=event.get("label", ""),
                             )
-                        """
                         )
-                        await db.execute(
-                            """
-                            INSERT INTO events (uid, title, start, end, description, key_frame, camera_name, category, label)
-                            SELECT uid, summary, start, end, description, key_frame, camera_name, category, label
-                            FROM events_old
-                        """
-                        )
-                        await db.execute("""DROP TABLE events_old""")
-                        await db.commit()
-                        _LOGGER.info("Renamed summary column to title")
-                    if "label" in column_names:
-                        _LOGGER.info(
-                            "Populating label and category columns in events.db"
-                        )
-                        async with db.execute(
-                            """SELECT uid, title FROM events WHERE label IS NULL OR label = '' OR category IS NULL OR category = ''"""
-                        ) as cursor:
-                            rows = await cursor.fetchall()
-                            for row in rows:
-                                uid = row[0]
-                                title = row[1]
-                                (category, label) = await _get_category_and_label(
-                                    self.hass, self._config_entry, title
-                                )
-                                await db.execute(
-                                    """UPDATE events SET label = ? WHERE uid = ?""",
-                                    (label, uid),
-                                )
-                                await db.execute(
-                                    """UPDATE events SET category = ? WHERE uid = ?""",
-                                    (category, uid),
-                                )
-                        await db.commit()
-        except aiosqlite.Error as e:
-            _LOGGER.error(f"Error migrating events.db to v4.3: {e}")
+                        event_counter += 1
+                    _LOGGER.info(f"Migrated {event_counter} events")
+                _LOGGER.info("Migration complete, deleting events.json")
+                os.remove(old_db_path)
 
-        # Mark migration complete by setting user_version
-        await self._set_db_version(DB_VERSION)
-        _LOGGER.info(f"DB migration complete (user_version={DB_VERSION})")
-        self._migrating = False
+            # v3 -> v4: Migrate image paths to /config/media/llmvision/snapshots from /www/llmvision
+            try:
+                # Move images to new location
+                # Ensure dir exists
+                await self.hass.loop.run_in_executor(
+                    None,
+                    partial(
+                        os.makedirs,
+                        self.hass.config.path("media/llmvision/snapshots"),
+                        exist_ok=True,
+                    ),
+                )
+                src_dir = self.hass.config.path("www/llmvision")
+                dst_dir = self.hass.config.path("media/llmvision/snapshots")
+                if os.path.exists(src_dir):
+                    for filename in await self.hass.loop.run_in_executor(
+                        None, partial(os.listdir, src_dir)
+                    ):
+                        src_file = os.path.join(src_dir, filename)
+                        dst_file = os.path.join(dst_dir, filename)
+                        if os.path.isfile(src_file):
+                            await self.hass.loop.run_in_executor(
+                                None, shutil.move, src_file, dst_file
+                            )
+
+                async with aiosqlite.connect(self._db_path) as db:
+                    await db.execute("""
+                        UPDATE events SET key_frame = REPLACE(key_frame, '/www/llmvision', '/media/llmvision/snapshots')
+                    """)
+                    await db.commit()
+            except aiosqlite.Error as e:
+                _LOGGER.error(f"Error migrating events.db to v4: {e}")
+
+            # v4 -> v4.1: Migrate image paths to /media/llmvision/snapshots from /config/media/llmvision/snapshots
+            try:
+                # Move images to new location
+                # Ensure dir exists
+                await self.hass.loop.run_in_executor(
+                    None,
+                    partial(
+                        os.makedirs,
+                        "/media/llmvision/snapshots",
+                        exist_ok=True,
+                    ),
+                )
+                src_dir = self.hass.config.path("media/llmvision/snapshots")
+                dst_dir = "/media/llmvision/snapshots"
+                if os.path.exists(src_dir):
+                    for filename in await self.hass.loop.run_in_executor(
+                        None, partial(os.listdir, src_dir)
+                    ):
+                        src_file = os.path.join(src_dir, filename)
+                        dst_file = os.path.join(dst_dir, filename)
+                        if os.path.isfile(src_file):
+                            await self.hass.loop.run_in_executor(
+                                None, shutil.move, src_file, dst_file
+                            )
+
+                async with aiosqlite.connect(self._db_path) as db:
+                    await db.execute("""
+                        UPDATE events SET key_frame = REPLACE(key_frame, '/config/media/llmvision/snapshots', '/media/local/llmvision/snapshots')
+                    """)
+                    await db.commit()
+            except aiosqlite.Error as e:
+                _LOGGER.error(f"Error migrating events.db to v4.1: {e}")
+
+            # v4.1 -> v4.2: Add category column to events.db
+            try:
+                async with aiosqlite.connect(self._db_path) as db:
+                    async with db.execute("""PRAGMA table_info(events)""") as cursor:
+                        columns = await cursor.fetchall()
+                        column_names = [column[1] for column in columns]
+                        if "category" not in column_names:
+                            _LOGGER.info(
+                                "Migrating events.db to include category column"
+                            )
+                            await db.execute(
+                                """ALTER TABLE events ADD COLUMN category TEXT"""
+                            )
+                            await db.commit()
+                            _LOGGER.info("Timeline DB migration to v4.2 complete")
+            except aiosqlite.Error as e:
+                _LOGGER.error(f"Error migrating events.db to v4.2: {e}")
+
+            # v4.2 -> v4.3: Remove today_summary column from events.db, add label column, populate label column, rename summary->title
+            try:
+                async with aiosqlite.connect(self._db_path) as db:
+                    async with db.execute("""PRAGMA table_info(events)""") as cursor:
+                        columns = await cursor.fetchall()
+                        column_names = [column[1] for column in columns]
+                        if "today_summary" in column_names:
+                            _LOGGER.info("Removing today_summary column from events.db")
+                            await db.execute(
+                                """ALTER TABLE events DROP COLUMN today_summary"""
+                            )
+                            await db.commit()
+                        if "label" not in column_names:
+                            _LOGGER.info("Adding label column to events.db")
+                            await db.execute(
+                                """ALTER TABLE events ADD COLUMN label TEXT"""
+                            )
+                            await db.commit()
+                        if "summary" in column_names:
+                            _LOGGER.info("Renaming summary column to title")
+                            await db.execute(
+                                """ALTER TABLE events RENAME TO events_old"""
+                            )
+                            await db.execute("""
+                                CREATE TABLE events (
+                                    uid TEXT PRIMARY KEY,
+                                    title TEXT,
+                                    start TEXT,
+                                    end TEXT,
+                                    description TEXT,
+                                    key_frame TEXT,
+                                    camera_name TEXT,
+                                    category TEXT,
+                                    label TEXT
+                                )
+                            """)
+                            await db.execute("""
+                                INSERT INTO events (uid, title, start, end, description, key_frame, camera_name, category, label)
+                                SELECT uid, summary, start, end, description, key_frame, camera_name, category, label
+                                FROM events_old
+                            """)
+                            await db.execute("""DROP TABLE events_old""")
+                            await db.commit()
+                            _LOGGER.info("Renamed summary column to title")
+                        if "label" in column_names:
+                            _LOGGER.info(
+                                "Populating label and category columns in events.db"
+                            )
+                            async with db.execute(
+                                """SELECT uid, title FROM events WHERE label IS NULL OR label = '' OR category IS NULL OR category = ''"""
+                            ) as cursor:
+                                rows = await cursor.fetchall()
+                                for row in rows:
+                                    uid = row[0]
+                                    title = row[1]
+                                    category, label = await _get_category_and_label(
+                                        self.hass, self._config_entry, title
+                                    )
+                                    await db.execute(
+                                        """UPDATE events SET label = ? WHERE uid = ?""",
+                                        (label, uid),
+                                    )
+                                    await db.execute(
+                                        """UPDATE events SET category = ? WHERE uid = ?""",
+                                        (category, uid),
+                                    )
+                            await db.commit()
+            except aiosqlite.Error as e:
+                _LOGGER.error(f"Error migrating events.db to v4.3: {e}")
+
+            # Mark migration complete by setting user_version
+            await self._set_db_version(DB_VERSION)
+            _LOGGER.info(f"DB migration complete (user_version={DB_VERSION})")
+        finally:
+            self._migrating = False
+            try:
+                await self._cleanup()
+            except Exception as e:
+                _LOGGER.warning(f"Post-migration cleanup failed: {e}")
 
     def _ensure_datetime(self, dt):
         """Ensures the input is a datetime.datetime object"""
@@ -578,14 +598,12 @@ class Timeline:
         self.events = []
         try:
             async with aiosqlite.connect(self._db_path) as db:
-                async with db.execute(
-                    """
+                async with db.execute("""
                     SELECT
                         uid, title, start, end, description,
                         category, key_frame, camera_name, label
                     FROM events
-                    """
-                ) as cursor:
+                    """) as cursor:
                     rows = await cursor.fetchall()
                     for row in rows:
                         # row: uid, summary, start, end, description, category, key_frame, camera_name, label
@@ -643,12 +661,22 @@ class Timeline:
         return None
 
     async def get_events_json(
-        self, limit=100, cameras=[], categories=[], start=None, end=None
+        self,
+        limit=100,
+        cameras=[],
+        categories=[],
+        labels=[],
+        start=None,
+        end=None,
+        include_no_activity=False,
     ) -> list[dict]:
         """Returns json event data from the database. Used by the API.
-        Supports filtering by camera, start/end range and sorting by start (newest first).
-        category are ignored for now.
+        Supports filtering by camera, category, time range, and sorting by start (newest first).
+        Set include_no_activity=True to include events whose title is 'no activity observed'.
         """
+        _LOGGER.debug(
+            f"Fetching events with filters - cameras: {cameras}, categories: {categories}, labels: {labels}, start: {start}, end: {end}, include_no_activity: {include_no_activity}"
+        )
         await self._purge_expired_events()
         events: list[dict] = []
 
@@ -669,14 +697,12 @@ class Timeline:
         end_dt = normalize_input_dt(end)
 
         async with aiosqlite.connect(self._db_path) as db:
-            async with db.execute(
-                """
+            async with db.execute("""
                 SELECT
                     uid, title, start, end, description,
                     category, key_frame, camera_name, label
                 FROM events
-                """
-            ) as cursor:
+                """) as cursor:
                 rows = await cursor.fetchall()
                 for row in rows:
                     # row: uid, title, start, end, description, key_frame, camera_name, label
@@ -692,8 +718,13 @@ class Timeline:
                     if row_end:
                         row_end = self._ensure_datetime(row_end)
 
-                    # Camera filter
-                    if cameras:
+                    # No-activity filter (always applied unless opted in)
+                    if not include_no_activity:
+                        if "no activity" in (row[1] or "").strip().lower():
+                            continue
+
+                    # Camera filter — events with no camera pass through unconditionally
+                    if cameras and (row[7] or "").strip():
                         camera_name = (row[7] or "").lower()
                         if camera_name not in [c.lower() for c in cameras]:
                             continue
@@ -702,6 +733,12 @@ class Timeline:
                     if categories:
                         category_name = (row[5] or "").lower()
                         if category_name not in [c.lower() for c in categories]:
+                            continue
+
+                    # Label filter
+                    if labels:
+                        label_name = (row[8] or "").lower()
+                        if label_name not in [l.lower() for l in labels]:
                             continue
 
                     # Range overlap filter
@@ -776,11 +813,9 @@ class Timeline:
                 if not label:
                     try:
                         query_text = " ".join(
-                            part
-                            for part in (title or "", description or "")
-                            if part
+                            part for part in (title or "", description or "") if part
                         )
-                        (auto_category, auto_label) = await _get_category_and_label(
+                        auto_category, auto_label = await _get_category_and_label(
                             self.hass, self._config_entry, query_text
                         )
                         if not category:

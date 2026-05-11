@@ -59,12 +59,14 @@
                         "data": {
                             "default_model": "Model predeterminat",
                             "temperature": "Temperatura",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "think": "Pensa"
                         },
                         "data_description": {
                             "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
                             "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
-                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada.",
+                            "think": "Activa el mode de pensament per als models que l'admeten."
                         }
                     },
                     "advanced_section": {
@@ -101,12 +103,14 @@
                         "data": {
                             "default_model": "Model predeterminat",
                             "temperature": "Temperatura",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Esforç de raonament"
                         },
                         "data_description": {
                             "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
                             "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
-                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada.",
+                            "reasoning_effort": "Controla l'esforç de raonament dels models que el donen suport."
                         }
                     }
                 }
@@ -161,12 +165,14 @@
                         "data": {
                             "default_model": "Model predeterminat",
                             "temperature": "Temperatura",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Pensant en pressupost"
                         },
                         "data_description": {
                             "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
                             "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
-                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada.",
+                            "thinking_budget": "Controla el pressupost de pensament dels models que el donen suport. Els valors més alts permeten un raonament més complex, però poden augmentar el temps de resposta i el cost."
                         }
                     }
                 }
@@ -188,12 +194,14 @@
                         "data": {
                             "default_model": "Model predeterminat",
                             "temperature": "Temperatura",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Pensant en pressupost"
                         },
                         "data_description": {
                             "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
                             "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
-                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada.",
+                            "thinking_budget": "Controla el pressupost de pensament dels models que el donen suport. Els valors més alts permeten un raonament més complex, però poden augmentar el temps de resposta i el cost."
                         }
                     }
                 }
@@ -339,12 +347,14 @@
                         "data": {
                             "default_model": "Model predeterminat",
                             "temperature": "Temperatura",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Esforç de raonament"
                         },
                         "data_description": {
                             "default_model": "El model predeterminat que s'utilitzarà quan no s'especifiqui cap altre model.",
                             "temperature": "Controla l'aleatorietat de la sortida. Valors més baixos fan que la sortida sigui més determinista.",
-                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada."
+                            "top_p": "Controla la diversitat de la sortida. Valors més baixos fan que la sortida sigui més enfocada.",
+                            "reasoning_effort": "Controla l'esforç de raonament dels models que el donen suport."
                         }
                     }
                 }

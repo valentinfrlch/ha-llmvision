@@ -372,6 +372,8 @@ class MediaProcessor:
                                 frame_label: {
                                     "frame_data": frame_data,
                                     "ssim_score": score,
+                                    "camera_number": camera_number,
+                                    "frame_index": frame_counter,
                                 }
                             }
                         )
@@ -422,10 +424,10 @@ class MediaProcessor:
 
             camera_frames.update({image_entity: frames})
 
-        _LOGGER.info(
-            f"Recording {', '.join([entity.replace(
-            'camera.', '') for entity in image_entities])} for {duration} seconds"
+        camera_names = ", ".join(
+            entity.replace("camera.", "") for entity in image_entities
         )
+        _LOGGER.info(f"Recording {camera_names} for {duration} seconds")
 
         # start threads for each camera
         await asyncio.gather(
@@ -446,7 +448,13 @@ class MediaProcessor:
         for frame in camera_frames:
             for frame_name, frame_data in camera_frames[frame].items():
                 frames_with_scores.append(
-                    (frame_name, frame_data["frame_data"], frame_data["ssim_score"])
+                    (
+                        frame_name,
+                        frame_data["frame_data"],
+                        frame_data["ssim_score"],
+                        frame_data["camera_number"],
+                        frame_data["frame_index"],
+                    )
                 )
 
         # Sort frames by SSIM score
@@ -465,12 +473,11 @@ class MediaProcessor:
                 selected_frames.append((label, data, None))
                 remaining -= 1
 
-        # Fill remaining slots with best scored frames
-        for name, data, score in frames_with_scores:
-            if remaining <= 0:
-                break
+        # Fill remaining slots with best scored frames, then restore stable capture order
+        best_rest = frames_with_scores[:remaining]
+        best_rest.sort(key=lambda x: (x[4], x[3]))
+        for name, data, score, _, _ in best_rest:
             selected_frames.append((name, data, score))
-            remaining -= 1
 
         # Add selected frames to client
         if selected_frames:

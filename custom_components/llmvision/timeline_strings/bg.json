@@ -31,14 +31,26 @@
                 "котка": "cat",
                 "птица": "bird",
                 "домашен любимец": "dog",
-                "животно": "dog"
+                "животно": "animal",
+                "катерица": "animal",
+                "диви животни": "animal",
+                "елен": "animal",
+                "заек": "animal",
+                "лисица": "animal",
+                "койот": "animal",
+                "миеща мечка": "animal",
+                "скункс": "animal",
+                "опосум": "animal",
+                "таралеж": "animal",
+                "мечка": "animal",
+                "лос": "animal"
             }
         },
-        "package": {
+        "delivery": {
             "labels": {
-                "кутия": "package",
-                "пакет": "package",
-                "парцел": "package"
+                "кутия": "delivery",
+                "пакет": "delivery",
+                "парцел": "delivery"
             }
         },
         "entity": {

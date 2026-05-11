@@ -33,14 +33,28 @@
             "labels": {
                 "dog": "dog",
                 "cat": "cat",
-                "bird": "bird"
+                "bird": "bird",
+                "squirrel": "animal",
+                "pet": "dog",
+                "animal": "animal",
+                "wildlife": "animal",
+                "deer": "animal",
+                "rabbit": "animal",
+                "fox": "animal",
+                "cayote": "animal",
+                "raccoon": "animal",
+                "skunk": "animal",
+                "opossum": "animal",
+                "hedgehog": "animal",
+                "bear": "animal",
+                "moose": "animal"
             }
         },
-        "package": {
+        "delivery": {
             "labels": {
-                "box": "package",
-                "package": "package",
-                "parcel": "package"
+                "box": "delivery",
+                "delivery": "delivery",
+                "parcel": "delivery"
             }
         },
         "entity": {

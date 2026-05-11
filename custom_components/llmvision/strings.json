@@ -59,12 +59,14 @@
                         "data": {
                             "default_model": "Default model",
                             "temperature": "Temperature",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "think": "Think"
                         },
                         "data_description": {
                             "default_model": "The default model to use when no other model is specified.",
                             "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
-                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused.",
+                            "think": "Enable thinking mode for models that support it."
                         }
                     },
                     "advanced_section": {
@@ -101,12 +103,14 @@
                         "data": {
                             "default_model": "Default model",
                             "temperature": "Temperature",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Reasoning effort"
                         },
                         "data_description": {
                             "default_model": "The default model to use when no other model is specified.",
                             "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
-                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused.",
+                            "reasoning_effort": "Controls the reasoning effort for models that support it."
                         }
                     }
                 }
@@ -161,12 +165,14 @@
                         "data": {
                             "default_model": "Default model",
                             "temperature": "Temperature",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Thinking budget"
                         },
                         "data_description": {
                             "default_model": "The default model to use when no other model is specified.",
                             "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
-                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused.",
+                            "thinking_budget": "Controls the thinking budget for models that support it. Higher values allow for more complex reasoning but may increase response time and cost."
                         }
                     }
                 }
@@ -188,12 +194,14 @@
                         "data": {
                             "default_model": "Default model",
                             "temperature": "Temperature",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Thinking budget"
                         },
                         "data_description": {
                             "default_model": "The default model to use when no other model is specified.",
                             "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
-                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused.",
+                            "thinking_budget": "Controls the thinking budget for models that support it. Higher values allow for more complex reasoning but may increase response time and cost."
                         }
                     }
                 }
@@ -339,12 +347,14 @@
                         "data": {
                             "default_model": "Default model",
                             "temperature": "Temperature",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Reasoning effort"
                         },
                         "data_description": {
                             "default_model": "The default model to use when no other model is specified.",
                             "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
-                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused.",
+                            "reasoning_effort": "Controls the reasoning effort for models that support it."
                         }
                     }
                 }

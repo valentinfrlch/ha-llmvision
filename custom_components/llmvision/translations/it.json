@@ -1,0 +1,434 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Configurazione della visione LLM",
+                "description": "Seleziona il provider che desideri configurare."
+            },
+            "localai": {
+                "title": "Connettiti al tuo server LocalAI",
+                "description": "Fornisci l'indirizzo IP e la porta del tuo server LocalAI.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connessione",
+                        "description": "Connessione al server",
+                        "data": {
+                            "ip_address": "Indirizzo IP",
+                            "port": "Porta",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Utilizza HTTPS per connessioni sicure"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modello",
+                        "description": "Imposta i parametri del modello predefinito",
+                        "data": {
+                            "default_model": "Modello predefinito",
+                            "temperature": "Temperatura",
+                            "top_p": "Superiore P"
+                        },
+                        "data_description": {
+                            "default_model": "Il modello predefinito da utilizzare quando non viene specificato nessun altro modello.",
+                            "temperature": "Controlla la casualità dell'output. Valori più bassi rendono l'output più deterministico.",
+                            "top_p": "Controlla la diversità dell'output. Valori più bassi rendono l'output più mirato."
+                        }
+                    }
+                }
+            },
+            "ollama": {
+                "title": "Configura Ollama",
+                "description": "Fornisci l'indirizzo IP e la porta del tuo server Ollama.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connessione",
+                        "description": "Connessione al server",
+                        "data": {
+                            "ip_address": "Indirizzo IP",
+                            "port": "Porta",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Utilizza HTTPS per connessioni sicure"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modello",
+                        "description": "Imposta i parametri del modello predefinito",
+                        "data": {
+                            "default_model": "Modello predefinito",
+                            "temperature": "Temperatura",
+                            "top_p": "Superiore P",
+                            "think": "Pensare"
+                        },
+                        "data_description": {
+                            "default_model": "Il modello predefinito da utilizzare quando non viene specificato nessun altro modello.",
+                            "temperature": "Controlla la casualità dell'output. Valori più bassi rendono l'output più deterministico.",
+                            "top_p": "Controlla la diversità dell'output. Valori più bassi rendono l'output più mirato.",
+                            "think": "Abilita la modalità di pensiero per i modelli che la supportano."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Avanzato",
+                        "description": "Parametri del modello avanzati",
+                        "data": {
+                            "context_window": "Lunghezza del contesto",
+                            "keep_alive": "Mantieniti vivo"
+                        },
+                        "data_description": {
+                            "context_window": "Imposta la dimensione della finestra di contesto utilizzata per generare il token successivo.",
+                            "keep_alive": "Controlla per quanto tempo il modello rimarrà caricato in memoria dopo la richiesta. Impostazione predefinita: 5 minuti (5 minuti), -1: mantieni in memoria a tempo indeterminato, 0: scarica immediatamente"
+                        }
+                    }
+                }
+            },
+            "openai": {
+                "title": "Configura OpenAI",
+                "description": "Fornire una chiave API Waleed Openai.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connessione",
+                        "description": "Autenticazione OpenAI",
+                        "data": {
+                            "api_key": "Chiave API"
+                        },
+                        "data_description": {
+                            "api_key": "Assicurati di aggiungere credito al tuo account OpenAI."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modello",
+                        "description": "Imposta i parametri del modello predefinito",
+                        "data": {
+                            "default_model": "Modello predefinito",
+                            "temperature": "Temperatura",
+                            "top_p": "Superiore P",
+                            "reasoning_effort": "Sforzo di ragionamento"
+                        },
+                        "data_description": {
+                            "default_model": "Il modello predefinito da utilizzare quando non viene specificato nessun altro modello.",
+                            "temperature": "Controlla la casualità dell'output. Valori più bassi rendono l'output più deterministico.",
+                            "top_p": "Controlla la diversità dell'output. Valori più bassi rendono l'output più mirato.",
+                            "reasoning_effort": "Controlla lo sforzo di ragionamento per i modelli che lo supportano."
+                        }
+                    }
+                }
+            },
+            "azure": {
+                "title": "Configura Azure",
+                "description": "Fornire una chiave API di Azure, un URL di base, una distribuzione e una versione API validi.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connessione",
+                        "description": "Autenticazione di Azure",
+                        "data": {
+                            "api_key": "Chiave API",
+                            "azure_base_url": "Base URL",
+                            "azure_deployment": "Distribuzione",
+                            "azure_version": "Versione dell'API"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modello",
+                        "description": "Imposta i parametri del modello predefinito",
+                        "data": {
+                            "default_model": "Modello predefinito",
+                            "temperature": "Temperatura",
+                            "top_p": "Superiore P"
+                        },
+                        "data_description": {
+                            "default_model": "Il modello predefinito da utilizzare quando non viene specificato nessun altro modello.",
+                            "temperature": "Controlla la casualità dell'output. Valori più bassi rendono l'output più deterministico.",
+                            "top_p": "Controlla la diversità dell'output. Valori più bassi rendono l'output più mirato."
+                        }
+                    }
+                }
+            },
+            "anthropic": {
+                "title": "Configura Claude antropico",
+                "description": "Fornire una chiave API antropica valida.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connessione",
+                        "description": "Autenticazione antropica",
+                        "data": {
+                            "api_key": "Chiave API"
+                        },
+                        "data_description": {
+                            "api_key": "Assicurati di aggiungere credito al tuo account Anthropic."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modello",
+                        "description": "Imposta i parametri del modello predefinito",
+                        "data": {
+                            "default_model": "Modello predefinito",
+                            "temperature": "Temperatura",
+                            "top_p": "Superiore P",
+                            "thinking_budget": "Pensare al budget"
+                        },
+                        "data_description": {
+                            "default_model": "Il modello predefinito da utilizzare quando non viene specificato nessun altro modello.",
+                            "temperature": "Controlla la casualità dell'output. Valori più bassi rendono l'output più deterministico.",
+                            "top_p": "Controlla la diversità dell'output. Valori più bassi rendono l'output più mirato.",
+                            "thinking_budget": "Controlla il budget pensante per i modelli che lo supportano. Valori più alti consentono un ragionamento più complesso ma possono aumentare i tempi e i costi di risposta."
+                        }
+                    }
+                }
+            },
+            "google": {
+                "title": "Configura Google Gemini",
+                "description": "Fornisci una chiave API Google Gemini valida.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connessione",
+                        "description": "Autenticazione di Google",
+                        "data": {
+                            "api_key": "Chiave API"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modello",
+                        "description": "Imposta i parametri del modello predefinito",
+                        "data": {
+                            "default_model": "Modello predefinito",
+                            "temperature": "Temperatura",
+                            "top_p": "Superiore P",
+                            "thinking_budget": "Pensare al budget"
+                        },
+                        "data_description": {
+                            "default_model": "Il modello predefinito da utilizzare quando non viene specificato nessun altro modello.",
+                            "temperature": "Controlla la casualità dell'output. Valori più bassi rendono l'output più deterministico.",
+                            "top_p": "Controlla la diversità dell'output. Valori più bassi rendono l'output più mirato.",
+                            "thinking_budget": "Controlla il budget pensante per i modelli che lo supportano. Valori più alti consentono un ragionamento più complesso ma possono aumentare i tempi e i costi di risposta."
+                        }
+                    }
+                }
+            },
+            "groq": {
+                "title": "Configura Groq",
+                "description": "Fornisci una chiave API Groq valida.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connessione",
+                        "description": "Autenticazione Groq",
+                        "data": {
+                            "api_key": "Chiave API"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modello",
+                        "description": "Imposta i parametri del modello predefinito",
+                        "data": {
+                            "default_model": "Modello predefinito",
+                            "temperature": "Temperatura",
+                            "top_p": "Superiore P"
+                        },
+                        "data_description": {
+                            "default_model": "Il modello predefinito da utilizzare quando non viene specificato nessun altro modello.",
+                            "temperature": "Controlla la casualità dell'output. Valori più bassi rendono l'output più deterministico.",
+                            "top_p": "Controlla la diversità dell'output. Valori più bassi rendono l'output più mirato."
+                        }
+                    }
+                }
+            },
+            "custom_openai": {
+                "title": "Configura il provider OpenAI personalizzato",
+                "description": "**Importante**: funziona solo se l'API è compatibile con l'API di OpenAI. Se l'API non richiede una chiave API, inserisci un valore fittizio. L'endpoint deve avere il seguente formato: \"http(s)://baseURL(:port)/some/endpoint\".",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connessione",
+                        "description": "Autenticazione OpenAI personalizzata",
+                        "data": {
+                            "custom_openai_endpoint": "Endpoint personalizzato",
+                            "api_key": "Chiave API"
+                        },
+                        "data_description": {
+                            "endpoint": "L'endpoint API segue questo formato: https)://baseURL(:port)/someone/endpoint",
+                            "api_key": "Chiave API o \"openai\", se non è richiesta."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modello",
+                        "description": "Imposta i parametri del modello predefinito",
+                        "data": {
+                            "default_model": "Modello predefinito",
+                            "temperature": "Temperatura",
+                            "top_p": "Superiore P"
+                        },
+                        "data_description": {
+                            "default_model": "Il modello predefinito da utilizzare quando non viene specificato nessun altro modello.",
+                            "temperature": "Controlla la casualità dell'output. Valori più bassi rendono l'output più deterministico.",
+                            "top_p": "Controlla la diversità dell'output. Valori più bassi rendono l'output più mirato."
+                        }
+                    }
+                }
+            },
+            "aws_bedrock": {
+                "title": "Configura il fornitore AWS Bedrock",
+                "description": "**Importante**: attualmente supporta solo i seguenti modelli: Nova, Anthropic Claude",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connessione",
+                        "description": "Autenticazione AWS",
+                        "data": {
+                            "aws_access_key_id": "Chiave di accesso",
+                            "aws_secret_access_key": "Chiave segreta",
+                            "aws_region_name": "Stringa della regione"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modello",
+                        "description": "Imposta i parametri del modello predefinito",
+                        "data": {
+                            "default_model": "Modello predefinito",
+                            "temperature": "Temperatura",
+                            "top_p": "Superiore P"
+                        },
+                        "data_description": {
+                            "default_model": "Il modello predefinito da utilizzare quando non viene specificato nessun altro modello.",
+                            "temperature": "Controlla la casualità dell'output. Valori più bassi rendono l'output più deterministico.",
+                            "top_p": "Controlla la diversità dell'output. Valori più bassi rendono l'output più mirato."
+                        }
+                    }
+                }
+            },
+            "openwebui": {
+                "title": "Configura Apri WebUI",
+                "description": "Fornire chiave API (token JWT), indirizzo IP, porta, HTTP(S) e modello predefinito.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connessione",
+                        "description": "Apri l'autenticazione WebUI",
+                        "data": {
+                            "api_key": "Chiave API (token JWT)",
+                            "ip_address": "Indirizzo IP",
+                            "port": "Porta",
+                            "https": "Utilizza HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Utilizza HTTPS per connessioni sicure se il tuo server lo supporta."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modello",
+                        "description": "Imposta i parametri del modello predefinito",
+                        "data": {
+                            "default_model": "Modello predefinito",
+                            "temperature": "Temperatura",
+                            "top_p": "Superiore P"
+                        },
+                        "data_description": {
+                            "default_model": "Il modello predefinito da utilizzare quando non viene specificato nessun altro modello.",
+                            "temperature": "Controlla la casualità dell'output. Valori più bassi rendono l'output più deterministico.",
+                            "top_p": "Controlla la diversità dell'output. Valori più bassi rendono l'output più mirato."
+                        }
+                    }
+                }
+            },
+            "openrouter": {
+                "title": "Configura OpenRouter",
+                "description": "OpenRouter è una piattaforma che fornisce l'accesso a vari modelli di intelligenza artificiale. Puoi usarlo per connetterti a modelli come OpenAI, Anthropic e altri.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connessione",
+                        "description": "Autenticazione OpenRouter",
+                        "data": {
+                            "api_key": "Chiave API"
+                        },
+                        "data_description": {
+                            "api_key": "La tua chiave API OpenRouter. Assicurati prima di aggiungere credito al tuo account OpenRouter."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modello",
+                        "description": "Imposta i parametri del modello predefinito",
+                        "data": {
+                            "default_model": "Modello predefinito",
+                            "temperature": "Temperatura",
+                            "top_p": "Superiore P",
+                            "reasoning_effort": "Sforzo di ragionamento"
+                        },
+                        "data_description": {
+                            "default_model": "Il modello predefinito da utilizzare quando non viene specificato nessun altro modello.",
+                            "temperature": "Controlla la casualità dell'output. Valori più bassi rendono l'output più deterministico.",
+                            "top_p": "Controlla la diversità dell'output. Valori più bassi rendono l'output più mirato.",
+                            "reasoning_effort": "Controlla lo sforzo di ragionamento per i modelli che lo supportano."
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "title": "Impostazioni",
+                "description": "Configura l'integrazione di LLM Vision. Questa voce è necessaria prima di configurare altri provider. Se desideri utilizzare le impostazioni predefinite, premi semplicemente \"Invia\".",
+                "sections": {
+                    "general_section": {
+                        "name": "Generale",
+                        "description": "Imposta il provider preferito da utilizzare quando il provider selezionato non è disponibile.",
+                        "data": {
+                            "fallback_provider": "Fornitore di riserva",
+                            "request_timeout": "Richiedi timeout (secondi)"
+                        },
+                        "data_description": {
+                            "fallback_provider": "LLM Vision ritenterà la richiesta con il fornitore selezionato se il fornitore corrente fallisce.",
+                            "request_timeout": "Tempo totale di attesa per la risposta del provider prima di fallire la richiesta."
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "Prompt del sistema",
+                        "description": "I prompt del sistema vengono utilizzati per modificare il modo in cui il modello si comporta e risponde.",
+                        "data": {
+                            "system_prompt": "Richiesta di sistema",
+                            "title_prompt": "Richiesta del titolo"
+                        },
+                        "data_description": {
+                            "system_prompt": "Utilizza il prompt del sistema per modificare il modo in cui il modello si comporta e risponde.",
+                            "title_prompt": "L'istruzione data al modello per generare un titolo."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Cronologia",
+                        "description": "La sequenza temporale memorizza gli eventi di oggi da visualizzare utilizzando LLM Vision Card sulla dashboard.",
+                        "data": {
+                            "timeline_language": "Linguaggio della sequenza temporale",
+                            "retention_time": "Tempo di ritenzione",
+                            "timeline_today_summary": "Riepilogo della cronologia",
+                            "timeline_summary_prompt": "Richiesta di riepilogo di oggi"
+                        },
+                        "data_description": {
+                            "timeline_language": "Seleziona la lingua utilizzata per generare le icone dagli eventi.",
+                            "retention_time": "Elimina automaticamente gli eventi dopo (giorni). Impostare su 0 per disattivare l'eliminazione automatica.",
+                            "timeline_today_summary": "Abilita il riepilogo della sequenza temporale per generare automaticamente un riepilogo degli eventi di oggi.",
+                            "timeline_summary_prompt": "L'istruzione data al modello per generare un riepilogo degli eventi odierni."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Memoria (Beta)",
+                        "description": "Il contenuto in memoria viene sincronizzato tra i provider e viene utilizzato per fornire contesto aggiuntivo al modello.",
+                        "data": {
+                            "memory_paths": "Percorso del file immagine",
+                            "memory_strings": "Descrizione dell'immagine"
+                        },
+                        "data_description": {
+                            "memory_paths": "Fornire il percorso del file immagine.",
+                            "memory_strings": "Fornire una descrizione dell'immagine (ad esempio: \"Questo è Cookie, il mio cane\"). Le immagini e le descrizioni devono essere nello stesso ordine e devono esserci tante descrizioni quante sono le immagini."
+                        }
+                    }
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "Impossibile connettersi al server. Controlla la chiave API o l'IP e la porta",
+            "empty_api_key": "Chiave API non valida",
+            "invalid_provider": "Fornitore non valido selezionato",
+            "memory_not_supported": "Questo provider non supporta la memoria",
+            "invalid_image_path": "Uno o più percorsi di immagine non sono validi",
+            "mismatched_lengths": "Il numero di percorsi di immagine e di descrizioni deve corrispondere"
+        },
+        "abort": {
+            "unknown_provider": "Fornitore sconosciuto",
+            "reconfigure_successful": "Impostazioni salvate con successo"
+        }
+    }
+}
