@@ -21,7 +21,6 @@ from custom_components.llmvision.timeline import (
 )
 from homeassistant.util import dt as dt_util
 
-
 # ---------------------------------------------------------------------------
 # Module-level helpers
 # ---------------------------------------------------------------------------
@@ -241,6 +240,35 @@ class TestGetCategoryAndLabel:
         # Must return strings – no exception
         assert isinstance(category, str)
         assert isinstance(label, str)
+
+    async def test_respects_category_priority(self, hass_with_executor, entry_english):
+        """Priority is:
+        0. delivery
+        1. vehicle
+        2. person
+        3. animal
+        4. entity
+        5. nature
+        """
+        title = "Delivery"
+        description = "A person wearing a green vest stands on the driveway."
+        q = " ".join(part for part in (title or "", description or "") if part)
+
+        category, label = await _get_category_and_label(
+            hass_with_executor, entry_english, q
+        )
+        assert category == "delivery"
+        assert label == "delivery"
+
+        title = "Squirrel Seen at Railing"
+        description = "A squirrel is enjoying it's time on the railing."
+        q = " ".join(part for part in (title or "", description or "") if part)
+
+        category, label = await _get_category_and_label(
+            hass_with_executor, entry_english, q
+        )
+        assert category == "animal"
+        assert label == "animal"
 
 
 class TestCategoryPriorityAndWordBoundaries:
@@ -1107,12 +1135,10 @@ class TestMigration:
         # Simulate a pre-4.2 schema without the category column
         async with aiosqlite.connect(tl._db_path) as db:
             await db.execute("ALTER TABLE events RENAME TO events_old")
-            await db.execute(
-                """CREATE TABLE events (
+            await db.execute("""CREATE TABLE events (
                     uid TEXT PRIMARY KEY, title TEXT, start TEXT, end TEXT,
                     description TEXT, key_frame TEXT, camera_name TEXT, label TEXT
-                )"""
-            )
+                )""")
             await db.execute(
                 "INSERT INTO events SELECT uid, title, start, end, description, "
                 "key_frame, camera_name, label FROM events_old"
