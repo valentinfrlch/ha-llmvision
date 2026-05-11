@@ -204,6 +204,30 @@ class TestOpenAI:
             assert headers["Content-type"] == "application/json"
             assert headers["Authorization"] == "Bearer test_api_key"
 
+    def test_get_request_url_appends_chat_completions_for_base_url(self, mock_hass_with_session):
+        """Test Custom OpenAI base URLs are converted to chat completions endpoints."""
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            openai = OpenAI(
+                mock_hass_with_session,
+                "test_api_key",
+                "gpt-4",
+                endpoint={"base_url": "https://example.test/v1/"},
+            )
+
+            assert openai._get_request_url() == "https://example.test/v1/chat/completions"
+
+    def test_get_request_url_keeps_full_chat_completions_endpoint(self, mock_hass_with_session):
+        """Test full Custom OpenAI endpoint URLs remain unchanged."""
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            openai = OpenAI(
+                mock_hass_with_session,
+                "test_api_key",
+                "gpt-4",
+                endpoint={"base_url": "https://example.test/v1/chat/completions"},
+            )
+
+            assert openai._get_request_url() == "https://example.test/v1/chat/completions"
+
     def test_prepare_vision_data_basic(self, mock_hass_with_session):
         """Test _prepare_vision_data with basic call."""
         with patch('custom_components.llmvision.providers.async_get_clientsession'):

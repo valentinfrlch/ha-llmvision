@@ -470,8 +470,7 @@ class OpenAI(Provider):
             "Authorization": "Bearer " + self.api_key,
         }
 
-    async def _make_request(self, data: dict) -> str:
-        headers = self._generate_headers()
+    def _get_request_url(self) -> str:
         if isinstance(self.endpoint, dict):
             url = self.endpoint.get("base_url")
         else:
@@ -479,6 +478,16 @@ class OpenAI(Provider):
 
         if not isinstance(url, str):
             raise ServiceValidationError("invalid_endpoint")
+
+        normalized_url = url.rstrip("/")
+        if normalized_url.endswith("/v1"):
+            return f"{normalized_url}/chat/completions"
+
+        return url
+
+    async def _make_request(self, data: dict) -> str:
+        headers = self._generate_headers()
+        url = self._get_request_url()
 
         # Debug logging for OpenRouter
         if "openrouter.ai" in url:
@@ -605,7 +614,7 @@ class OpenAI(Provider):
                 ],
             }
             await self._post(
-                url=self.endpoint.get("base_url"), headers=headers, data=data
+                url=self._get_request_url(), headers=headers, data=data
             )
         else:
             raise ServiceValidationError("empty_api_key")
