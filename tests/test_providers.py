@@ -409,6 +409,81 @@ class TestProviderBase:
 
             assert result == DEFAULT_TITLE_PROMPT
 
+    def test_get_request_url_appends_chat_completions_for_base_url(self, mock_hass):
+        """Test Custom OpenAI base URLs are converted to chat completions endpoints."""
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            openai = OpenAI(
+                mock_hass,
+                "test_api_key",
+                "gpt-4",
+                endpoint={"base_url": "https://example.test/v1/"},
+            )
+
+            assert openai._get_request_url() == "https://example.test/v1/chat/completions"
+
+    def test_get_request_url_keeps_full_chat_completions_endpoint(self, mock_hass):
+        """Test full Custom OpenAI endpoint URLs remain unchanged."""
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            openai = OpenAI(
+                mock_hass,
+                "test_api_key",
+                "gpt-4",
+                endpoint={"base_url": "https://example.test/v1/chat/completions"},
+            )
+
+            assert openai._get_request_url() == "https://example.test/v1/chat/completions"
+
+    def test_prepare_vision_data_basic(self, mock_hass):
+        """Test _prepare_vision_data with basic call."""
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            openai = OpenAI(mock_hass, "test_api_key", "gpt-4")
+            call = Mock()
+            call.max_tokens = 1000
+            call.base64_images = ["base64_image"]
+            call.filenames = ["test.jpg"]
+            call.message = "Describe this image"
+            call.provider = "test_provider"
+            call.response_format = "text"
+            call.use_memory = False
+
+            mock_hass.data = {
+                DOMAIN: {
+                    "test_provider": {
+                        "provider": "OpenAI",
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                    }
+                }
+            }
+
+            with patch.object(openai, '_get_system_prompt', return_value="System prompt"):
+                result = openai._prepare_vision_data(call)
+
+            assert result["model"] == "gpt-4"
+            assert result["max_completion_tokens"] == 1000
+            assert len(result["messages"]) == 2  # system + user
+            assert result["messages"][0]["role"] == "system"
+            assert result["messages"][1]["role"] == "user"
+
+    def test_prepare_text_data(self, mock_hass):
+        """Test _prepare_text_data method."""
+        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+            openai = OpenAI(mock_hass, "test_api_key", "gpt-4")
+            call = Mock()
+            call.max_tokens = 1000
+            call.message = "Generate a title"
+            call.provider = "test_provider"
+
+            mock_hass.data = {
+                DOMAIN: {
+                    "test_provider": {
+                        "provider": "OpenAI",
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                    }
+                }
+            }
+
     def test_get_title_prompt_from_settings(self, mock_hass):
         """Test _get_title_prompt from Settings entry."""
         custom_prompt = "Custom title prompt"
