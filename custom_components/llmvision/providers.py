@@ -383,7 +383,26 @@ class Request:
             json.loads(healed)
             return healed
         except json.JSONDecodeError:
-            return text
+            pass
+
+        decoder = json.JSONDecoder()
+        idx = 0
+        while idx < len(healed):
+            while idx < len(healed) and healed[idx].isspace():
+                idx += 1
+            if idx >= len(healed):
+                break
+            if healed[idx] not in "{[":
+                idx += 1
+                continue
+            try:
+                _, end_idx = decoder.raw_decode(healed, idx)
+            except json.JSONDecodeError:
+                idx += 1
+                continue
+            return healed[idx:end_idx]
+
+        return text
 
 
 class Provider(ABC):

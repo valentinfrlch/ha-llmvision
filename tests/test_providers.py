@@ -302,6 +302,25 @@ class TestRequest:
             assert isinstance(parsed["events"], list)
             assert parsed["events"][0]["name"] == "door"
 
+    def test_heal_json_concatenated_json_objects(self, mock_hass):
+        """Test heal_json keeps the first JSON object from a concatenated stream."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            request = Request(mock_hass, "test", 1000, 0.5)
+
+            broken = (
+                '{"title": "Person at front door", "description": "A person stands on the porch."}'
+                '{"title": "No activity", "description": "The scene shows an empty driveway and patio with no notable objects."}'
+                '{"title": "Delivery", "description": "A delivery person is seen standing near the entrance."}'
+                '{"title": "Person in garden", "description": "Two people stand at the front door."}'
+                '{"title": "No activity", "description": "The'
+            )
+
+            healed = request.heal_json(broken)
+            parsed = json.loads(healed)
+
+            assert parsed["title"] == "Person at front door"
+            assert parsed["description"] == "A person stands on the porch."
+
     def test_heal_json_non_string(self, mock_hass):
         """Test heal_json with non-string input."""
         with patch("custom_components.llmvision.providers.async_get_clientsession"):
