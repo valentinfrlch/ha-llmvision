@@ -136,7 +136,7 @@ Do not mention camera angle, lighting quality, or image clarity.
 """
 # Models
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
-DEFAULT_ANTHROPIC_MODEL = "claude-3-7-sonnet-latest"
+DEFAULT_ANTHROPIC_MODEL = "claude-haiku-4-5"
 DEFAULT_AZURE_MODEL = "gpt-4o-mini"
 DEFAULT_GOOGLE_MODEL = "gemini-3.1-flash-lite-preview"
 DEFAULT_GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
