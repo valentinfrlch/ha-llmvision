@@ -481,6 +481,9 @@ class TestProviderBase:
                         "temperature": 0.7,
                         "top_p": 0.9
                     }
+                }
+            }
+
     def test_get_title_prompt_from_settings(self, mock_hass):
         """Test _get_title_prompt from Settings entry."""
         custom_prompt = "Custom title prompt"
