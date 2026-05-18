@@ -138,7 +138,7 @@ Do not mention camera angle, lighting quality, or image clarity.
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 DEFAULT_ANTHROPIC_MODEL = "claude-haiku-4-5"
 DEFAULT_AZURE_MODEL = "gpt-4o-mini"
-DEFAULT_GOOGLE_MODEL = "gemini-3.1-flash-lite-preview"
+DEFAULT_GOOGLE_MODEL = "gemini-3.1-flash-lite"
 DEFAULT_GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 DEFAULT_LOCALAI_MODEL = "llava"
 DEFAULT_OLLAMA_MODEL = "gemma3:4b"
