@@ -17,6 +17,7 @@ from custom_components.llmvision.providers import (
     LocalAI,
     Ollama,
     AWSBedrock,
+    Mistral,
     ProviderFactory,
 )
 from custom_components.llmvision.const import (
@@ -52,6 +53,8 @@ from custom_components.llmvision.const import (
     DEFAULT_OLLAMA_MODEL,
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_TITLE_PROMPT,
+    DEFAULT_MISTRAL_MODEL,
+    ENDPOINT_MISTRAL,
 )
 
 
@@ -661,6 +664,75 @@ class TestOpenAI:
             assert result is False
 
 
+class TestMistral:
+    """Test Mistral provider class."""
+
+    def test_init_uses_mistral_endpoint(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            mistral = Mistral(mock_hass, "test_api_key", "pixtral-12b-2409")
+
+            assert mistral.api_key == "test_api_key"
+            assert mistral.model == "pixtral-12b-2409"
+            assert mistral.endpoint["base_url"] == ENDPOINT_MISTRAL
+
+    def test_prepare_vision_data_uses_max_tokens(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            mistral = Mistral(mock_hass, "test_api_key", "pixtral-12b-2409")
+            call = Mock()
+            call.max_tokens = 1000
+            call.base64_images = ["base64_image"]
+            call.filenames = ["test.jpg"]
+            call.message = "Describe this image"
+            call.provider = "test_provider"
+            call.response_format = "text"
+            call.use_memory = False
+            call.structure = None
+
+            mock_hass.data = {
+                DOMAIN: {
+                    "test_provider": {
+                        "provider": "Mistral",
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                    }
+                }
+            }
+
+            with patch.object(
+                mistral, "_get_system_prompt", return_value="System prompt"
+            ):
+                result = mistral._prepare_vision_data(call)
+
+            assert result["max_tokens"] == 1000
+            assert "max_completion_tokens" not in result
+
+    def test_prepare_text_data_uses_max_tokens(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            mistral = Mistral(mock_hass, "test_api_key", "pixtral-12b-2409")
+            call = Mock()
+            call.max_tokens = 1000
+            call.message = "Generate a title"
+            call.provider = "test_provider"
+
+            mock_hass.data = {
+                DOMAIN: {
+                    "test_provider": {
+                        "provider": "Mistral",
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                    }
+                }
+            }
+
+            with patch.object(
+                mistral, "_get_title_prompt", return_value="Title prompt"
+            ):
+                result = mistral._prepare_text_data(call)
+
+            assert result["max_tokens"] == 1000
+            assert "max_completion_tokens" not in result
+
+
 class TestAzureOpenAI:
     """Test AzureOpenAI provider class."""
 
@@ -1128,6 +1200,18 @@ class TestProviderFactory:
             )
 
             assert isinstance(provider, OpenAI)
+
+    def test_create_mistral(self, mock_hass):
+        config = {CONF_API_KEY: "test_key"}
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = ProviderFactory.create(
+                mock_hass, "Mistral", config, "pixtral-12b-2409"
+            )
+
+            assert isinstance(provider, Mistral)
+            assert isinstance(provider, OpenAI)
+            assert provider.endpoint["base_url"] == ENDPOINT_MISTRAL
 
 
 @pytest.fixture
