@@ -35,14 +35,28 @@
             "labels": {
                 "gos": "dog",
                 "gat": "cat",
-                "ocell": "bird"
+                "ocell": "bird",
+                "esquirol": "animal",
+                "mascota": "dog",
+                "animal": "animal",
+                "fauna salvatge": "animal",
+                "cérvol": "animal",
+                "conill": "animal",
+                "guineu": "animal",
+                "coiot": "animal",
+                "mapatxe": "animal",
+                "mofeta": "animal",
+                "opòssum": "animal",
+                "eriçó": "animal",
+                "ós": "animal",
+                "alce": "animal"
             }
         },
-        "package": {
+        "delivery": {
             "labels": {
-                "caixa": "package",
-                "paquet": "package",
-                "paqueteria": "package"
+                "caixa": "delivery",
+                "paquet": "delivery",
+                "paqueteria": "delivery"
             }
         },
         "entity": {

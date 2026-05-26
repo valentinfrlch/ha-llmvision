@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from .api import TimelineEventView, TimelineEventsView, TimelineEventCreateView
 
 import logging
@@ -74,6 +75,10 @@ from .const import (
     STRUCTURE,
     TITLE_FIELD,
     DESCRIPTION_FIELD,
+    SIGNAL_TIMELINE_UPDATED,
+    CONF_THINKING_BUDGET,
+    CONF_THINK,
+    CONF_REASONING_EFFORT,
 )
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -116,6 +121,10 @@ async def async_setup_entry(hass, entry):
         CONF_MEMORY_STRINGS: entry.data.get(CONF_MEMORY_STRINGS),
         CONF_SYSTEM_PROMPT: entry.data.get(CONF_SYSTEM_PROMPT),
         CONF_TITLE_PROMPT: entry.data.get(CONF_TITLE_PROMPT),
+        # Thinking/reasoning parameters
+        CONF_THINKING_BUDGET: entry.data.get(CONF_THINKING_BUDGET),
+        CONF_THINK: entry.data.get(CONF_THINK),
+        CONF_REASONING_EFFORT: entry.data.get(CONF_REASONING_EFFORT),
     }
 
     # Filter out None values
@@ -460,34 +469,47 @@ class ServiceCallData:
             if data_call.data.get(EVENT_ID)
             else None
         )
-        self.interval = int(data_call.data.get(INTERVAL, 2))
-        self.duration = int(data_call.data.get(DURATION, 10))
-        self.max_frames = int(data_call.data.get(MAX_FRAMES, 3))
-        self.target_width = data_call.data.get(TARGET_WIDTH, 3840)
-        self.temperature = float()
-        self.max_tokens = int(data_call.data.get(MAXTOKENS, 3000))
-        self.include_filename = data_call.data.get(INCLUDE_FILENAME, False)
-        self.expose_images = data_call.data.get(EXPOSE_IMAGES, False)
-        self.generate_title = data_call.data.get(GENERATE_TITLE, False)
-        self.sensor_entity = data_call.data.get(SENSOR_ENTITY, "")
-        self.response_format = data_call.data.get(RESPONSE_FORMAT, "text")
-        self.structure = data_call.data.get(STRUCTURE, None)
-        self.title_field = data_call.data.get(TITLE_FIELD, "")
-        self.description_field = data_call.data.get(DESCRIPTION_FIELD, "")
+        self.interval: int = int(data_call.data.get(INTERVAL, 2))
+        self.duration: int = int(data_call.data.get(DURATION, 10))
+        self.max_frames: int = int(data_call.data.get(MAX_FRAMES, 3))
+        self.target_width: int = data_call.data.get(TARGET_WIDTH, 3840)
+        self.temperature: float = float()
+        self.max_tokens: int = int(data_call.data.get(MAXTOKENS, 3000))
+        self.include_filename: bool = data_call.data.get(INCLUDE_FILENAME, False)
+        self.expose_images: bool = data_call.data.get(EXPOSE_IMAGES, False)
+        self.generate_title: bool = data_call.data.get(GENERATE_TITLE, False)
+        self.sensor_entity: str = data_call.data.get(SENSOR_ENTITY, "")
+        self.response_format: str = data_call.data.get(RESPONSE_FORMAT, "text")
+        self.structure: dict | None = data_call.data.get(STRUCTURE, None)
+        self.title_field: str = data_call.data.get(TITLE_FIELD, "")
+        self.description_field: str = data_call.data.get(DESCRIPTION_FIELD, "")
         self.memory: Memory | None = None
 
         # ------------ Create Event ------------
-        self.title = data_call.data.get("title")
-        self.description = data_call.data.get("description")
-        self.start_time = data_call.data.get("start_time", dt_util.now())
+        self.title: str = data_call.data.get("title")
+        self.description: str = data_call.data.get("description")
+        self.start_time: datetime = data_call.data.get("start_time", dt_util.now())
         self.start_time = self._convert_time_input_to_datetime(self.start_time)
-        self.end_time = data_call.data.get(
+        self.end_time: datetime = data_call.data.get(
             "end_time", self.start_time + timedelta(minutes=1)
         )
         self.end_time = self._convert_time_input_to_datetime(self.end_time)
-        self.image_path = data_call.data.get("image_path", "")
-        self.camera_entity = data_call.data.get("camera_entity", "")
-        self.label = data_call.data.get("label", "")
+        self.image_path: str = data_call.data.get("image_path", "")
+        self.camera_entity: str = data_call.data.get("camera_entity", "")
+        self.label: str = data_call.data.get("label", "")
+
+        # ------------- Get Events --------------
+        self.start: datetime = data_call.data.get(
+            "start", dt_util.now() - timedelta(days=7)
+        )
+        self.start = self._convert_time_input_to_datetime(self.start)
+        self.end: datetime = data_call.data.get("end", dt_util.now())
+        self.end = self._convert_time_input_to_datetime(self.end)
+        self.cameras: list = data_call.data.get("cameras", "")
+        self.categories: list = data_call.data.get("categories", "")
+        self.labels: list = data_call.data.get("labels", "")
+        self.limit: int = int(data_call.data.get("limit", 100))
+        self.include_no_activity: bool = data_call.data.get("include_no_activity", True)
 
         # ------------ Added during call ------------
         # self.base64_images : List[str] = []
@@ -520,6 +542,10 @@ class ServiceCallData:
 
     def get_service_call_data(self):
         return self
+
+    def model_is_glimpse(self) -> bool:
+        """Check if model is Glimpse-v1 like based on model name"""
+        return bool(self.model and "glimpse-v1" in self.model.lower())
 
 
 async def _create_event(
@@ -579,6 +605,7 @@ async def _create_event(
             camera_name=camera_name,
             label="",
         )
+        async_dispatcher_send(hass, SIGNAL_TIMELINE_UPDATED)
 
 
 async def _update_sensor(hass, sensor_entity: str, value: str | int, type: str) -> None:
@@ -850,7 +877,7 @@ def setup(hass, config):
         await _update_sensor(hass, sensor_entity, response["response_text"], type)
         return response
 
-    async def create_event(data_call):
+    async def create_event(data_call) -> None:
         """Handle the service call to create an event"""
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
@@ -868,7 +895,7 @@ def setup(hass, config):
                 f"Config entry not found. Please create the 'Settings' config entry first."
             )
 
-        timeline = Timeline(hass, config_entry)
+        timeline: Timeline = Timeline(hass, config_entry)
 
         await timeline.create_event(
             start=call.start_time,
@@ -879,6 +906,34 @@ def setup(hass, config):
             camera_name=call.camera_entity,
             label=call.label.lower(),
         )
+        async_dispatcher_send(hass, SIGNAL_TIMELINE_UPDATED)
+
+    async def get_events(data_call) -> dict | None:
+        """Handle the service call to get events"""
+        # Find timeline config
+        config_entry = None
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            # Check if the config entry is empty
+            if entry.data[CONF_PROVIDER] == "Settings":
+                config_entry = entry
+                break
+
+        if config_entry is None:
+            raise ServiceValidationError(
+                f"Config entry not found. Please create the 'Settings' config entry first."
+            )
+
+        timeline: Timeline = Timeline(hass, config_entry)
+        events: list[dict] | None = await timeline.get_events_json(
+            start=data_call.data.get("start"),
+            end=data_call.data.get("end"),
+            cameras=[camera.lower() for camera in data_call.data.get("cameras", [])],
+            categories=[category.lower() for category in data_call.data.get("categories", [])],
+            labels=[label.lower() for label in data_call.data.get("labels", [])],
+            limit=data_call.data.get("limit"),
+            include_no_activity=data_call.data.get("include_no_activity", True),
+        )
+        return {"events": events or []}
 
     # Register actions
     hass.services.register(
@@ -906,6 +961,12 @@ def setup(hass, config):
         DOMAIN,
         "create_event",
         create_event,
+    )
+    hass.services.register(
+        DOMAIN,
+        "get_events",
+        get_events,
+        supports_response=SupportsResponse.ONLY,
     )
     hass.http.register_view(TimelineEventsView)
     hass.http.register_view(TimelineEventView)

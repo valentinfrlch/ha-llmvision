@@ -28,13 +28,27 @@
             "labels": {
                 "hund": "dog",
                 "katze": "cat",
-                "vogel": "bird"
+                "vogel": "bird",
+                "eichhörnchen": "animal",
+                "haustier": "dog",
+                "tier": "animal",
+                "wildtiere": "animal",
+                "hirsch": "animal",
+                "kaninchen": "animal",
+                "fuchs": "animal",
+                "kojote": "animal",
+                "waschbär": "animal",
+                "stinktier": "animal",
+                "opossum": "animal",
+                "igel": "animal",
+                "bär": "animal",
+                "elch": "animal"
             }
         },
-        "package": {
+        "delivery": {
             "labels": {
-                "box": "package",
-                "packet": "package"
+                "box": "delivery",
+                "packet": "delivery"
             }
         },
         "entity": {

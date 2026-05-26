@@ -25,6 +25,7 @@ class TestCalendar:
         """Create a mock Timeline."""
         timeline = Mock()
         timeline.get_all_events = AsyncMock(return_value=[])
+        timeline.load_events = AsyncMock()
         timeline.delete_event = AsyncMock()
         return timeline
 
@@ -32,7 +33,7 @@ class TestCalendar:
     def calendar_instance(self, mock_hass, mock_config_entry, mock_timeline):
         """Create a Calendar instance with mocked dependencies."""
         from custom_components.llmvision.calendar import Calendar
-        
+
         with patch('custom_components.llmvision.calendar.Timeline', return_value=mock_timeline):
             with patch('os.makedirs'):
                 with patch('os.path.join', return_value="/mock/path"):
@@ -53,17 +54,53 @@ class TestCalendar:
     def test_event_property(self, calendar_instance):
         """Test event property."""
         assert calendar_instance.event is None
-        
+
         # Set an event
         test_event = Mock()
         calendar_instance._current_event = test_event
         assert calendar_instance.event == test_event
 
+    def test_extra_state_attributes_returns_latest_event_data(self, calendar_instance):
+        """Test extra_state_attributes returns values from the most recent event."""
+        older_event = Mock()
+        older_event.summary = "Older event"
+        older_event.description = "Older description"
+        older_event.start = datetime.datetime(
+            2024, 1, 1, 10, 0, tzinfo=datetime.timezone.utc
+        )
+        older_event.end = datetime.datetime(
+            2024, 1, 1, 11, 0, tzinfo=datetime.timezone.utc
+        )
+        older_event.location = "older_frame.jpg,Older Camera"
+
+        latest_event = Mock()
+        latest_event.summary = "Latest event"
+        latest_event.description = "Latest description"
+        latest_event.start = datetime.datetime(
+            2024, 1, 2, 10, 0, tzinfo=datetime.timezone.utc
+        )
+        latest_event.end = datetime.datetime(
+            2024, 1, 2, 11, 0, tzinfo=datetime.timezone.utc
+        )
+        latest_event.location = "latest_frame.jpg,Front Door"
+
+        # Deliberately unsorted to verify the property sorts by start descending.
+        calendar_instance._events = [older_event, latest_event]
+
+        attributes = calendar_instance.extra_state_attributes
+
+        assert attributes["title"] == "Latest event"
+        assert attributes["description"] == "Latest description"
+        assert attributes["starts"] == latest_event.start
+        assert attributes["ends"] == latest_event.end
+        assert attributes["key_frame"] == "latest_frame.jpg"
+        assert attributes["camera_name"] == "Front Door"
+
     def test_ensure_datetime_with_datetime(self, calendar_instance):
         """Test _ensure_datetime with datetime input."""
         dt = datetime.datetime(2024, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc)
         result = calendar_instance._ensure_datetime(dt)
-        
+
         assert result == dt
         assert result.tzinfo is not None
 
@@ -71,7 +108,7 @@ class TestCalendar:
         """Test _ensure_datetime with date input."""
         dt = datetime.date(2024, 1, 1)
         result = calendar_instance._ensure_datetime(dt)
-        
+
         assert isinstance(result, datetime.datetime)
         assert result.tzinfo is not None
 
@@ -79,7 +116,7 @@ class TestCalendar:
         """Test _ensure_datetime adds timezone if missing."""
         dt = datetime.datetime(2024, 1, 1, 12, 0, 0)
         result = calendar_instance._ensure_datetime(dt)
-        
+
         assert result.tzinfo is not None
         assert result.tzinfo == datetime.timezone.utc
 
@@ -87,9 +124,9 @@ class TestCalendar:
     async def test_async_update_empty(self, calendar_instance, mock_timeline):
         """Test async_update with no events."""
         mock_timeline.get_all_events = AsyncMock(return_value=[])
-        
+
         await calendar_instance.async_update()
-        
+
         assert calendar_instance._events == []
 
     @pytest.mark.asyncio
@@ -112,9 +149,9 @@ class TestCalendar:
             )
         ]
         mock_timeline.get_all_events = AsyncMock(return_value=mock_events)
-        
+
         await calendar_instance.async_update()
-        
+
         assert len(calendar_instance._events) == 2
         assert all(isinstance(e, CalendarEvent) for e in calendar_instance._events)
         # Events should be sorted by start time in reverse
@@ -133,14 +170,14 @@ class TestCalendar:
             )
         ]
         mock_timeline.get_all_events = AsyncMock(return_value=mock_events)
-        
+
         start_date = datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
         end_date = datetime.datetime(2024, 1, 31, tzinfo=datetime.timezone.utc)
-        
+
         result = await calendar_instance.async_get_events(
             calendar_instance.hass, start_date, end_date
         )
-        
+
         assert len(result) == 1
         assert result[0].uid == "1"
 
@@ -157,25 +194,30 @@ class TestCalendar:
             )
         ]
         mock_timeline.get_all_events = AsyncMock(return_value=mock_events)
-        
+
         start_date = datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
         end_date = datetime.datetime(2024, 1, 31, tzinfo=datetime.timezone.utc)
-        
+
         result = await calendar_instance.async_get_events(
             calendar_instance.hass, start_date, end_date
         )
-        
+
         assert len(result) == 0
 
     @pytest.mark.asyncio
     async def test_async_delete_event(self, calendar_instance, mock_timeline):
         """Test async_delete_event."""
         uid = "test_uid"
-        
-        await calendar_instance.async_delete_event(uid)
-        
-        mock_timeline.delete_event.assert_called_once_with(uid)
+        calendar_instance.async_schedule_update_ha_state = Mock()
 
+        await calendar_instance.async_delete_event(uid)
+
+        mock_timeline.delete_event.assert_called_once_with(uid)
+        calendar_instance.async_schedule_update_ha_state.assert_called_once_with(
+            force_refresh=True
+        )
+
+        mock_timeline.delete_event.assert_called_once_with(uid)
 
 
 class TestCalendarAdvanced:
@@ -196,6 +238,7 @@ class TestCalendarAdvanced:
             for i in range(5)
         ]
         timeline.get_all_events = AsyncMock(return_value=events)
+        timeline.load_events = AsyncMock()
         timeline.delete_event = AsyncMock()
         return timeline
 

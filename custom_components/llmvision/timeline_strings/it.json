@@ -29,13 +29,27 @@
                 "cane": "dog",
                 "gatto": "cat",
                 "gatti": "cat",
-                "papero": "bird"
+                "papero": "bird",
+                "scoiattolo": "animal",
+                "animale domestico": "dog",
+                "animale": "animal",
+                "fauna selvatica": "animal",
+                "cervo": "animal",
+                "coniglio": "animal",
+                "volpe": "animal",
+                "coyote": "animal",
+                "procione": "animal",
+                "puzzola": "animal",
+                "opossum": "animal",
+                "riccio": "animal",
+                "orso": "animal",
+                "alce": "animal"
             }
         },
-        "package": {
+        "delivery": {
             "labels": {
-                "cassa": "package",
-                "pacchetto": "package"
+                "cassa": "delivery",
+                "pacchetto": "delivery"
             }
         },
         "entity": {

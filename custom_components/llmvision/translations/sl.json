@@ -1,0 +1,434 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "LLM Vision Setup",
+                "description": "Izberite ponudnika, ki ga želite nastaviti."
+            },
+            "localai": {
+                "title": "Povežite se s svojim strežnikom LocalAI",
+                "description": "Navedite naslov IP in vrata vašega strežnika LocalAI.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Povezava",
+                        "description": "Povezava s strežnikom",
+                        "data": {
+                            "ip_address": "IP naslov",
+                            "port": "Pristanišče",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Uporabite HTTPS za varne povezave"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavite privzete parametre modela",
+                        "data": {
+                            "default_model": "Privzeti model",
+                            "temperature": "Temperatura",
+                            "top_p": "Vrh P"
+                        },
+                        "data_description": {
+                            "default_model": "Privzeti model za uporabo, ko ni določen noben drug model.",
+                            "temperature": "Nadzoruje naključnost izhoda. Nižje vrednosti naredijo izhod bolj determinističen.",
+                            "top_p": "Nadzoruje raznolikost izhoda. Nižje vrednosti naredijo izhod bolj osredotočen."
+                        }
+                    }
+                }
+            },
+            "ollama": {
+                "title": "Konfigurirajte Ollamo",
+                "description": "Navedite naslov IP in vrata vašega strežnika Ollama.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Povezava",
+                        "description": "Povezava s strežnikom",
+                        "data": {
+                            "ip_address": "IP naslov",
+                            "port": "Pristanišče",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Uporabite HTTPS za varne povezave"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavite privzete parametre modela",
+                        "data": {
+                            "default_model": "Privzeti model",
+                            "temperature": "Temperatura",
+                            "top_p": "Vrh P",
+                            "think": "pomisli"
+                        },
+                        "data_description": {
+                            "default_model": "Privzeti model za uporabo, ko ni določen noben drug model.",
+                            "temperature": "Nadzoruje naključnost izhoda. Nižje vrednosti naredijo izhod bolj determinističen.",
+                            "top_p": "Nadzoruje raznolikost izhoda. Nižje vrednosti naredijo izhod bolj osredotočen.",
+                            "think": "Omogoči način razmišljanja za modele, ki ga podpirajo."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Napredno",
+                        "description": "Napredni parametri modela",
+                        "data": {
+                            "context_window": "Dolžina konteksta",
+                            "keep_alive": "Ohraniti pri življenju"
+                        },
+                        "data_description": {
+                            "context_window": "Nastavi velikost kontekstnega okna, uporabljenega za ustvarjanje naslednjega žetona.",
+                            "keep_alive": "Nadzira, kako dolgo bo model ostal naložen v pomnilnik po zahtevi. Privzeto: 5m (5 minut), -1: ohrani v pomnilniku za nedoločen čas, 0: takoj odstrani"
+                        }
+                    }
+                }
+            },
+            "openai": {
+                "title": "Konfigurirajte OpenAI",
+                "description": "Navedite ključ aa waleed openai api.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Povezava",
+                        "description": "Preverjanje pristnosti OpenAI",
+                        "data": {
+                            "api_key": "API ključ"
+                        },
+                        "data_description": {
+                            "api_key": "Ne pozabite dodati dobroimetja v svoj račun OpenAI."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavite privzete parametre modela",
+                        "data": {
+                            "default_model": "Privzeti model",
+                            "temperature": "Temperatura",
+                            "top_p": "Vrh P",
+                            "reasoning_effort": "Prizadevanje za sklepanje"
+                        },
+                        "data_description": {
+                            "default_model": "Privzeti model za uporabo, ko ni določen noben drug model.",
+                            "temperature": "Nadzoruje naključnost izhoda. Nižje vrednosti naredijo izhod bolj determinističen.",
+                            "top_p": "Nadzoruje raznolikost izhoda. Nižje vrednosti naredijo izhod bolj osredotočen.",
+                            "reasoning_effort": "Nadzoruje napor sklepanja za modele, ki ga podpirajo."
+                        }
+                    }
+                }
+            },
+            "azure": {
+                "title": "Konfigurirajte Azure",
+                "description": "Navedite veljaven ključ API-ja Azure, osnovni URL, uvedbo in različico API-ja.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Povezava",
+                        "description": "Preverjanje pristnosti Azure",
+                        "data": {
+                            "api_key": "API ključ",
+                            "azure_base_url": "Osnovni URL",
+                            "azure_deployment": "Razporeditev",
+                            "azure_version": "Različica API-ja"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavite privzete parametre modela",
+                        "data": {
+                            "default_model": "Privzeti model",
+                            "temperature": "Temperatura",
+                            "top_p": "Vrh P"
+                        },
+                        "data_description": {
+                            "default_model": "Privzeti model za uporabo, ko ni določen noben drug model.",
+                            "temperature": "Nadzoruje naključnost izhoda. Nižje vrednosti naredijo izhod bolj determinističen.",
+                            "top_p": "Nadzoruje raznolikost izhoda. Nižje vrednosti naredijo izhod bolj osredotočen."
+                        }
+                    }
+                }
+            },
+            "anthropic": {
+                "title": "Konfigurirajte Anthropic Claude",
+                "description": "Navedite veljaven ključ API-ja Anthropic.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Povezava",
+                        "description": "Antropska avtentikacija",
+                        "data": {
+                            "api_key": "API ključ"
+                        },
+                        "data_description": {
+                            "api_key": "Ne pozabite dodati dobroimetja na svoj račun Anthropic."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavite privzete parametre modela",
+                        "data": {
+                            "default_model": "Privzeti model",
+                            "temperature": "Temperatura",
+                            "top_p": "Vrh P",
+                            "thinking_budget": "Razmišljanje o proračunu"
+                        },
+                        "data_description": {
+                            "default_model": "Privzeti model za uporabo, ko ni določen noben drug model.",
+                            "temperature": "Nadzoruje naključnost izhoda. Nižje vrednosti naredijo izhod bolj determinističen.",
+                            "top_p": "Nadzoruje raznolikost izhoda. Nižje vrednosti naredijo izhod bolj osredotočen.",
+                            "thinking_budget": "Nadzoruje proračun razmišljanja za modele, ki ga podpirajo. Višje vrednosti omogočajo bolj zapleteno sklepanje, vendar lahko podaljšajo odzivni čas in stroške."
+                        }
+                    }
+                }
+            },
+            "google": {
+                "title": "Konfigurirajte Google Gemini",
+                "description": "Navedite veljaven ključ API-ja Google Gemini.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Povezava",
+                        "description": "Googlova avtentikacija",
+                        "data": {
+                            "api_key": "API ključ"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavite privzete parametre modela",
+                        "data": {
+                            "default_model": "Privzeti model",
+                            "temperature": "Temperatura",
+                            "top_p": "Vrh P",
+                            "thinking_budget": "Razmišljanje o proračunu"
+                        },
+                        "data_description": {
+                            "default_model": "Privzeti model za uporabo, ko ni določen noben drug model.",
+                            "temperature": "Nadzoruje naključnost izhoda. Nižje vrednosti naredijo izhod bolj determinističen.",
+                            "top_p": "Nadzoruje raznolikost izhoda. Nižje vrednosti naredijo izhod bolj osredotočen.",
+                            "thinking_budget": "Nadzoruje proračun razmišljanja za modele, ki ga podpirajo. Višje vrednosti omogočajo bolj zapleteno sklepanje, vendar lahko podaljšajo odzivni čas in stroške."
+                        }
+                    }
+                }
+            },
+            "groq": {
+                "title": "Konfigurirajte Groq",
+                "description": "Navedite veljaven ključ Groq API.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Povezava",
+                        "description": "Preverjanje pristnosti Groq",
+                        "data": {
+                            "api_key": "API ključ"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavite privzete parametre modela",
+                        "data": {
+                            "default_model": "Privzeti model",
+                            "temperature": "Temperatura",
+                            "top_p": "Vrh P"
+                        },
+                        "data_description": {
+                            "default_model": "Privzeti model za uporabo, ko ni določen noben drug model.",
+                            "temperature": "Nadzoruje naključnost izhoda. Nižje vrednosti naredijo izhod bolj determinističen.",
+                            "top_p": "Nadzoruje raznolikost izhoda. Nižje vrednosti naredijo izhod bolj osredotočen."
+                        }
+                    }
+                }
+            },
+            "custom_openai": {
+                "title": "Konfigurirajte ponudnika OpenAI po meri",
+                "description": "**Pomembno**: deluje le, če je API združljiv z API-jem OpenAI. Če API ne zahteva ključa API, vnesite navidezno vrednost. Končna točka mora imeti naslednjo obliko: `http(s)://baseURL(:port)/some/endpoint`",
+                "sections": {
+                    "connection_section": {
+                        "name": "Povezava",
+                        "description": "Preverjanje pristnosti OpenAI po meri",
+                        "data": {
+                            "custom_openai_endpoint": "Končna točka po meri",
+                            "api_key": "API ključ"
+                        },
+                        "data_description": {
+                            "endpoint": "Končna točka API-ja v tej obliki: https)://baseURL(:port)/someone/endpoint",
+                            "api_key": "Ključ API ali 'openai', če ni potreben."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavite privzete parametre modela",
+                        "data": {
+                            "default_model": "Privzeti model",
+                            "temperature": "Temperatura",
+                            "top_p": "Vrh P"
+                        },
+                        "data_description": {
+                            "default_model": "Privzeti model za uporabo, ko ni določen noben drug model.",
+                            "temperature": "Nadzoruje naključnost izhoda. Nižje vrednosti naredijo izhod bolj determinističen.",
+                            "top_p": "Nadzoruje raznolikost izhoda. Nižje vrednosti naredijo izhod bolj osredotočen."
+                        }
+                    }
+                }
+            },
+            "aws_bedrock": {
+                "title": "Konfigurirajte ponudnika AWS Bedrock",
+                "description": "**Pomembno**: To trenutno podpira le naslednje modele: Nova, Anthropic Claude",
+                "sections": {
+                    "connection_section": {
+                        "name": "Povezava",
+                        "description": "AWS avtentikacija",
+                        "data": {
+                            "aws_access_key_id": "Ključ za dostop",
+                            "aws_secret_access_key": "Skrivni ključ",
+                            "aws_region_name": "Regijski niz"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavite privzete parametre modela",
+                        "data": {
+                            "default_model": "Privzeti model",
+                            "temperature": "Temperatura",
+                            "top_p": "Vrh P"
+                        },
+                        "data_description": {
+                            "default_model": "Privzeti model za uporabo, ko ni določen noben drug model.",
+                            "temperature": "Nadzoruje naključnost izhoda. Nižje vrednosti naredijo izhod bolj determinističen.",
+                            "top_p": "Nadzoruje raznolikost izhoda. Nižje vrednosti naredijo izhod bolj osredotočen."
+                        }
+                    }
+                }
+            },
+            "openwebui": {
+                "title": "Konfigurirajte Open WebUI",
+                "description": "Navedite ključ API (žeton JWT), naslov IP, vrata, HTTP(S) in privzeti model.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Povezava",
+                        "description": "Odpri preverjanje pristnosti WebUI",
+                        "data": {
+                            "api_key": "Ključ API (žeton JWT)",
+                            "ip_address": "IP naslov",
+                            "port": "Pristanišče",
+                            "https": "Uporabite HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Uporabite HTTPS za varne povezave, če vaš strežnik to podpira."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavite privzete parametre modela",
+                        "data": {
+                            "default_model": "Privzeti model",
+                            "temperature": "Temperatura",
+                            "top_p": "Vrh P"
+                        },
+                        "data_description": {
+                            "default_model": "Privzeti model za uporabo, ko ni določen noben drug model.",
+                            "temperature": "Nadzoruje naključnost izhoda. Nižje vrednosti naredijo izhod bolj determinističen.",
+                            "top_p": "Nadzoruje raznolikost izhoda. Nižje vrednosti naredijo izhod bolj osredotočen."
+                        }
+                    }
+                }
+            },
+            "openrouter": {
+                "title": "Konfigurirajte OpenRouter",
+                "description": "OpenRouter je platforma, ki omogoča dostop do različnih modelov AI. Uporabite ga lahko za povezavo z modeli, kot so OpenAI, Anthropic in drugi.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Povezava",
+                        "description": "Preverjanje pristnosti OpenRouter",
+                        "data": {
+                            "api_key": "API ključ"
+                        },
+                        "data_description": {
+                            "api_key": "Vaš ključ API OpenRouter. Najprej dodajte dobroimetje v svoj račun OpenRouter."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Nastavite privzete parametre modela",
+                        "data": {
+                            "default_model": "Privzeti model",
+                            "temperature": "Temperatura",
+                            "top_p": "Vrh P",
+                            "reasoning_effort": "Prizadevanje za sklepanje"
+                        },
+                        "data_description": {
+                            "default_model": "Privzeti model za uporabo, ko ni določen noben drug model.",
+                            "temperature": "Nadzoruje naključnost izhoda. Nižje vrednosti naredijo izhod bolj determinističen.",
+                            "top_p": "Nadzoruje raznolikost izhoda. Nižje vrednosti naredijo izhod bolj osredotočen.",
+                            "reasoning_effort": "Nadzoruje napor sklepanja za modele, ki ga podpirajo."
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "title": "nastavitve",
+                "description": "Konfigurirajte integracijo LLM Vision. Ta vnos je potreben pred nastavitvijo drugih ponudnikov. Če želite uporabiti privzete nastavitve, samo pritisnite 'Pošlji'.",
+                "sections": {
+                    "general_section": {
+                        "name": "Splošno",
+                        "description": "Nastavite želenega ponudnika za uporabo, ko izbrani ponudnik ni na voljo.",
+                        "data": {
+                            "fallback_provider": "Nadomestni ponudnik",
+                            "request_timeout": "Časovna omejitev zahteve (sekunde)"
+                        },
+                        "data_description": {
+                            "fallback_provider": "LLM Vision bo znova poskusil zahtevo pri izbranem ponudniku, če trenutni ponudnik ne uspe.",
+                            "request_timeout": "Skupni čas čakanja na odgovor ponudnika, preden zahteva ne uspe."
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "Sistemski pozivi",
+                        "description": "Sistemski pozivi se uporabljajo za spreminjanje obnašanja in odzivanja modela.",
+                        "data": {
+                            "system_prompt": "Sistemski poziv",
+                            "title_prompt": "Poziv za naslov"
+                        },
+                        "data_description": {
+                            "system_prompt": "Uporabite sistemski poziv, da spremenite, kako se model obnaša in odziva.",
+                            "title_prompt": "Navodilo, dano modelu za ustvarjanje naslova."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Časovnica",
+                        "description": "Časovnica shranjuje današnje dogodke za prikaz s kartico LLM Vision Card na nadzorni plošči.",
+                        "data": {
+                            "timeline_language": "Jezik časovnice",
+                            "retention_time": "Čas zadrževanja",
+                            "timeline_today_summary": "Povzetek časovnice",
+                            "timeline_summary_prompt": "Poziv za današnji povzetek"
+                        },
+                        "data_description": {
+                            "timeline_language": "Izberite jezik za ustvarjanje ikon iz dogodkov.",
+                            "retention_time": "Samodejno izbriši dogodke po (dni). Nastavite na 0, da onemogočite samodejno brisanje.",
+                            "timeline_today_summary": "Omogočite povzetek časovnice, da samodejno ustvarite povzetek današnjih dogodkov.",
+                            "timeline_summary_prompt": "Navodilo, dano modelu za ustvarjanje povzetka današnjih dogodkov."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Pomnilnik (Beta)",
+                        "description": "Vsebina v pomnilniku se sinhronizira med ponudniki in se uporablja za zagotavljanje dodatnega konteksta za model.",
+                        "data": {
+                            "memory_paths": "Pot slikovne datoteke",
+                            "memory_strings": "Opis slike"
+                        },
+                        "data_description": {
+                            "memory_paths": "Podajte pot do slikovne datoteke.",
+                            "memory_strings": "Navedite opis slike (npr.: 'To je Cookie, moj pes'). Slike in opisi morajo biti v istem vrstnem redu, opisov pa mora biti toliko, kot je slik."
+                        }
+                    }
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "Ni bilo mogoče vzpostaviti povezave s strežnikom. Preverite ključ API ali IP in vrata",
+            "empty_api_key": "Neveljaven ključ API-ja",
+            "invalid_provider": "Izbran je neveljaven ponudnik",
+            "memory_not_supported": "Ta ponudnik ne podpira pomnilnika",
+            "invalid_image_path": "Ena ali več poti slike je neveljavnih",
+            "mismatched_lengths": "Število poti do slik in opisov se mora ujemati"
+        },
+        "abort": {
+            "unknown_provider": "Neznan ponudnik",
+            "reconfigure_successful": "Nastavitve uspešno shranjene"
+        }
+    }
+}
