@@ -302,8 +302,27 @@ class Request:
         return result
 
     def add_frame(self, base64_image, filename):
+        """Add a frame (base64 encoded image) to the request.
+
+        Args:
+            base64_image: Base64 encoded image string
+            filename: Original filename of the image
+
+        Raises:
+            ServiceValidationError: If base64_image is None or empty
+        """
+
+        if not base64_image or not isinstance(base64_image, str):
+            _LOGGER.error(
+                f"Invalid base64_image provided: type={type(base64_image)}, empty={not base64_image}"
+            )
+            raise ServiceValidationError("Base64 image data is invalid or empty")
+
         self.base64_images.append(base64_image)
         self.filenames.append(filename)
+        _LOGGER.debug(
+            f"Added frame: {filename or 'unnamed'} ({len(base64_image)} chars)"
+        )
 
     def heal_json(self, text):
         """Attempt to heal malformed JSON for common LLM output issues."""
@@ -461,12 +480,7 @@ class Provider(ABC):
 
     @staticmethod
     def _normalize_keep_alive(value: Any) -> Any:
-        """Normalize keep_alive value for Ollama API.
-
-        Ollama accepts duration strings like '5m' but requires pure numeric
-        values (e.g. -1, 0) to be sent as integers, not strings.
-        The string '-1' causes Go's time.ParseDuration to fail.
-        """
+        """Normalize keep_alive value for Ollama API."""
         if isinstance(value, str):
             try:
                 numeric = int(value)
@@ -484,9 +498,7 @@ class Provider(ABC):
         default_parameters = {
             "temperature": config.get(CONF_TEMPERATURE, 0.5),
             "top_p": config.get(CONF_TOP_P, 0.95),
-            "keep_alive": self._normalize_keep_alive(
-                config.get(CONF_KEEP_ALIVE, 5)
-            ),
+            "keep_alive": self._normalize_keep_alive(config.get(CONF_KEEP_ALIVE, 5)),
             "context_window": config.get(CONF_CONTEXT_WINDOW, 4096),
             "thinking_budget": config.get(CONF_THINKING_BUDGET, 0),
             "think": config.get(CONF_THINK, False),
@@ -1702,6 +1714,11 @@ class Ollama(Provider):
 
     def _prepare_vision_data(self, call: Any) -> dict:
         default_parameters = self._get_default_parameters(call)
+
+        # Log image count for debugging
+        image_count = len(call.base64_images) if hasattr(call, "base64_images") else 0
+        _LOGGER.debug(f"Preparing vision request with {image_count} images")
+
         payload = {
             "model": self.model,
             "system": self._get_system_prompt() if not call.model_is_glimpse() else "",
@@ -1717,7 +1734,6 @@ class Ollama(Provider):
                 },
             ],
             "prompt": (),
-            "images": call.base64_images,
             "stream": False,
             "keep_alive": default_parameters.get("keep_alive"),
             "think": default_parameters.get("think", False)
@@ -1751,6 +1767,19 @@ class Ollama(Provider):
             memory_content = call.memory._get_memory_images(memory_type="Ollama")
             if memory_content:
                 payload["messages"].extend(memory_content)
+
+        # Validate images are in payload before sending
+        images_in_payload = payload.get("images", [])
+        images_in_messages = payload.get("messages", [{}])[0].get("images", [])
+        _LOGGER.debug(
+            f"Vision payload prepared: images={len(images_in_payload)} (top-level), "
+            f"images_in_message={len(images_in_messages)} (message-level)"
+        )
+
+        if not images_in_payload and not images_in_messages:
+            _LOGGER.warning(
+                "Vision request has no images - this may cause provider errors"
+            )
 
         return payload
 

@@ -39,10 +39,24 @@ class MediaProcessor:
 
     async def _encode_image(self, img):
         """Encode image as base64"""
-        img_byte_arr = io.BytesIO()
-        img.save(img_byte_arr, format="JPEG")
-        base64_image = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
-        return base64_image
+        try:
+            img_byte_arr = io.BytesIO()
+            img.save(img_byte_arr, format="JPEG")
+            img_bytes = img_byte_arr.getvalue()
+
+            if not img_bytes:
+                raise ServiceValidationError("Image encoding produced empty data")
+
+            base64_image = base64.b64encode(img_bytes).decode("utf-8")
+
+            if not base64_image:
+                raise ServiceValidationError("Base64 encoding failed - empty result")
+
+            _LOGGER.debug(f"Image encoded successfully: {len(base64_image)} characters")
+            return base64_image
+        except Exception as e:
+            _LOGGER.error(f"Failed to encode image: {e}")
+            raise ServiceValidationError(f"Image encoding failed: {str(e)}")
 
     async def _save_clip(
         self, clip_data=None, clip_path=None, image_data=None, image_path=None
@@ -168,53 +182,88 @@ class MediaProcessor:
         base64_image = None
 
         if image_path:
-            # Open the image file
-            img = await self.hass.loop.run_in_executor(None, Image.open, image_path)
-            with img:
-                await self.hass.loop.run_in_executor(None, img.load)
-                # Check if the image is a GIF and convert if necessary
-                img = self._convert_to_rgb(img)
-                # calculate new height based on aspect ratio
-                width, height = img.size
-                aspect_ratio = width / height
-                target_height = int(target_width / aspect_ratio)
+            # Validate file exists before attempting to open
+            if not os.path.exists(image_path):
+                _LOGGER.error(f"Image file does not exist: {image_path}")
+                raise ServiceValidationError(f"Image file not found: {image_path}")
 
-                # Resize the image only if it's larger than the target size
-                if width > target_width or height > target_height:
-                    img = img.resize((target_width, target_height))
+            try:
+                # Open the image file
+                img = await self.hass.loop.run_in_executor(None, Image.open, image_path)
+                with img:
+                    await self.hass.loop.run_in_executor(None, img.load)
+                    # Check if the image is a GIF and convert if necessary
+                    img = self._convert_to_rgb(img)
+                    # calculate new height based on aspect ratio
+                    width, height = img.size
+                    aspect_ratio = width / height
+                    target_height = int(target_width / aspect_ratio)
 
-                # Encode the image to base64
-                base64_image = await self._encode_image(img)
+                    # Resize the image only if it's larger than the target size
+                    if width > target_width or height > target_height:
+                        img = img.resize((target_width, target_height))
+
+                    # Encode the image to base64
+                    base64_image = await self._encode_image(img)
+            except UnidentifiedImageError:
+                _LOGGER.error(
+                    f"Cannot identify image file: {image_path} - file may be corrupted"
+                )
+                raise ServiceValidationError(
+                    f"Invalid or corrupted image file: {image_path}"
+                )
+            except Exception as e:
+                _LOGGER.error(f"Failed to process image {image_path}: {e}")
+                raise ServiceValidationError(
+                    f"Failed to process image {image_path}: {str(e)}"
+                )
 
         elif image_data:
             # Convert the image to base64
-            img_byte_arr = io.BytesIO()
-            img_byte_arr.write(image_data)
-            img = await self.hass.loop.run_in_executor(None, Image.open, img_byte_arr)
-            with img:
-                await self.hass.loop.run_in_executor(None, img.load)
-                img = self._convert_to_rgb(img)
-                # calculate new height based on aspect ratio
-                width, height = img.size
-                aspect_ratio = width / height
-                target_height = int(target_width / aspect_ratio)
+            try:
+                if not image_data or len(image_data) == 0:
+                    _LOGGER.error("No image data provided")
+                    raise ServiceValidationError("Image data is empty")
 
-                if width > target_width or height > target_height:
-                    img = img.resize((target_width, target_height))
+                img_byte_arr = io.BytesIO()
+                img_byte_arr.write(image_data)
+                img = await self.hass.loop.run_in_executor(
+                    None, Image.open, img_byte_arr
+                )
+                with img:
+                    await self.hass.loop.run_in_executor(None, img.load)
+                    img = self._convert_to_rgb(img)
+                    # calculate new height based on aspect ratio
+                    width, height = img.size
+                    aspect_ratio = width / height
+                    target_height = int(target_width / aspect_ratio)
 
-                base64_image = await self._encode_image(img)
+                    if width > target_width or height > target_height:
+                        img = img.resize((target_width, target_height))
+
+                    base64_image = await self._encode_image(img)
+            except UnidentifiedImageError:
+                _LOGGER.error("Cannot identify image data - data may be corrupted")
+                raise ServiceValidationError("Invalid or corrupted image data")
+            except Exception as e:
+                _LOGGER.error(f"Failed to process image data: {e}")
+                raise ServiceValidationError(f"Failed to process image data: {str(e)}")
         elif img:
-            with img:
-                img = self._convert_to_rgb(img)
-                # calculate new height based on aspect ratio
-                width, height = img.size
-                aspect_ratio = width / height
-                target_height = int(target_width / aspect_ratio)
+            try:
+                with img:
+                    img = self._convert_to_rgb(img)
+                    # calculate new height based on aspect ratio
+                    width, height = img.size
+                    aspect_ratio = width / height
+                    target_height = int(target_width / aspect_ratio)
 
-                if width > target_width or height > target_height:
-                    img = img.resize((target_width, target_height))
+                    if width > target_width or height > target_height:
+                        img = img.resize((target_width, target_height))
 
-                base64_image = await self._encode_image(img)
+                    base64_image = await self._encode_image(img)
+            except Exception as e:
+                _LOGGER.error(f"Failed to process image object: {e}")
+                raise ServiceValidationError(f"Failed to process image: {str(e)}")
 
         if base64_image is None:
             raise ServiceValidationError("No image data provided for resize_image")
