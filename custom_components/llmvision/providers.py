@@ -36,6 +36,7 @@ from .const import (
     ENDPOINT_OPENWEBUI,
     ENDPOINT_GROQ,
     ENDPOINT_OPENROUTER,
+    ENDPOINT_MISTRAL,
     ERROR_NOT_CONFIGURED,
     ERROR_GROQ_MULTIPLE_IMAGES,
     ERROR_NO_IMAGE_INPUT,
@@ -50,6 +51,7 @@ from .const import (
     DEFAULT_AWS_MODEL,
     DEFAULT_OPENWEBUI_MODEL,
     DEFAULT_OPENROUTER_MODEL,
+    DEFAULT_MISTRAL_MODEL,
     CONF_KEEP_ALIVE,
     CONF_CONTEXT_WINDOW,
     CONF_TEMPERATURE,
@@ -130,6 +132,7 @@ class Request:
             "AWS": DEFAULT_AWS_MODEL,  # For backwards compatibility
             "Open WebUI": DEFAULT_OPENWEBUI_MODEL,
             "OpenRouter": DEFAULT_OPENROUTER_MODEL,
+            "Mistral": DEFAULT_MISTRAL_MODEL,
         }.get(provider_name)
 
     def validate(self, call: Any) -> None | ServiceValidationError:
@@ -789,6 +792,28 @@ class OpenAI(Provider):
             )
         else:
             raise ServiceValidationError("empty_api_key")
+
+
+class Mistral(OpenAI):
+    """Mistral (https://docs.mistral.ai/api/). OpenAI-compatible but rejects
+    unknown fields, so rename max_completion_tokens to max_tokens."""
+
+    def __init__(self, hass: HomeAssistant, api_key: str, model: str):
+        super().__init__(
+            hass, api_key, model, endpoint={"base_url": ENDPOINT_MISTRAL}
+        )
+
+    @staticmethod
+    def _rename_token_field(payload: dict) -> dict:
+        if "max_completion_tokens" in payload:
+            payload["max_tokens"] = payload.pop("max_completion_tokens")
+        return payload
+
+    def _prepare_vision_data(self, call: Any) -> dict:
+        return self._rename_token_field(super()._prepare_vision_data(call))
+
+    def _prepare_text_data(self, call: Any) -> dict:
+        return self._rename_token_field(super()._prepare_text_data(call))
 
 
 class AzureOpenAI(Provider):
@@ -2158,6 +2183,13 @@ class ProviderFactory:
                 api_key=cast(str, config.get(CONF_API_KEY) or ""),
                 model=model,
                 endpoint={"base_url": ENDPOINT_OPENROUTER},
+            )
+
+        if provider_name == "Mistral":
+            return Mistral(
+                hass,
+                api_key=cast(str, config.get(CONF_API_KEY) or ""),
+                model=model,
             )
 
         raise ServiceValidationError("invalid_provider")

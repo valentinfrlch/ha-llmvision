@@ -359,6 +359,36 @@
                     }
                 }
             },
+            "mistral": {
+                "title": "Configure Mistral",
+                "description": "Vision-capable models (Pixtral) hosted by Mistral AI in the EU.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "Mistral authentication",
+                        "data": {
+                            "api_key": "API key"
+                        },
+                        "data_description": {
+                            "api_key": "Your Mistral API key from https://console.mistral.ai/."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Default Mistral model (e.g. pixtral-12b-2409, pixtral-large-latest).",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Settings",
                 "description": "Configure the LLM Vision integration. This entry is required before setting up other providers. If you wish to use the default settings, just press 'Submit'.",
