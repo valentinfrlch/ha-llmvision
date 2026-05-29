@@ -251,6 +251,25 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(step_id="localai", data_schema=data_schema)
 
+    def _validate_keep_alive(self, value):
+        """Validate Ollama keep_alive value."""
+        if value is None or (isinstance(value, (int, float))):
+            return value
+
+        val = str(value).strip()
+
+        # Numeric (integer or fractional), including negative
+        if re.fullmatch(r"[+-]?\d+(?:\.\d+)?", val):
+            # Return int when no fractional part
+            return int(val) if re.fullmatch(r"[+-]?\d+", val) else float(val)
+
+        # Go duration parts
+        dur_unit = r"(?:ns|us|µs|ms|s|m|h)"
+        if re.fullmatch(rf"[+-]?(?:\d+(?:\.\d+)?{dur_unit})+", val):
+            return val
+
+        raise ValueError("invalid keep_alive")
+
     async def async_step_ollama(self, user_input=None):
         data_schema = vol.Schema(
             {
@@ -340,6 +359,19 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
             # flatten dict to remove nested keys
             user_input = flatten_dict(user_input)
+            # Validate keep_alive early so we can show a useful form error
+            try:
+                if CONF_KEEP_ALIVE in user_input:
+                    user_input[CONF_KEEP_ALIVE] = self._validate_keep_alive(
+                        user_input.get(CONF_KEEP_ALIVE)
+                    )
+            except ValueError:
+                return self.async_show_form(
+                    step_id="ollama",
+                    data_schema=data_schema,
+                    errors={CONF_KEEP_ALIVE: "invalid_keep_alive"},
+                )
+
             try:
                 ollama = Ollama(
                     self.hass,
@@ -351,7 +383,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         ),
                         "port": user_input[CONF_PORT],
                         "https": user_input[CONF_HTTPS],
-                        "keep_alive": user_input[CONF_KEEP_ALIVE],
+                        "keep_alive": user_input.get(CONF_KEEP_ALIVE),
                         "context_window": user_input[CONF_CONTEXT_WINDOW],
                     },
                 )
