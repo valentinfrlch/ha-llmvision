@@ -319,7 +319,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional("advanced_section"): section(
                     vol.Schema(
                         {
-                            vol.Required(CONF_CONTEXT_WINDOW, default=2048): int,
+                            vol.Required(CONF_CONTEXT_WINDOW, default=4096): int,
                             vol.Optional(CONF_KEEP_ALIVE, default="5m"): str,
                         }
                     ),
@@ -348,7 +348,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_THINK: self.init_info.get(CONF_THINK, False),
                 },
                 "advanced_section": {
-                    CONF_CONTEXT_WINDOW: self.init_info.get(CONF_CONTEXT_WINDOW, 2048),
+                    CONF_CONTEXT_WINDOW: self.init_info.get(CONF_CONTEXT_WINDOW, 4096),
                     CONF_KEEP_ALIVE: self.init_info.get(CONF_KEEP_ALIVE, "5m"),
                 },
             }
