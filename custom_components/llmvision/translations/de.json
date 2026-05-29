@@ -59,12 +59,14 @@
                         "data": {
                             "default_model": "Standardmodell",
                             "temperature": "Temperature",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "think": "Denken"
                         },
                         "data_description": {
                             "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
                             "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
-                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter.",
+                            "think": "Aktivieren Sie den Denkmodus für Modelle, die ihn unterstützen."
                         }
                     },
                     "advanced_section": {
@@ -101,12 +103,14 @@
                         "data": {
                             "default_model": "Standardmodell",
                             "temperature": "Temperatur",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Argumentationsaufwand"
                         },
                         "data_description": {
                             "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
                             "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
-                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter.",
+                            "reasoning_effort": "Steuert den Argumentationsaufwand für Modelle, die ihn unterstützen."
                         }
                     }
                 }
@@ -120,9 +124,9 @@
                         "description": "Azure OpenAI Authentifizierung",
                         "data": {
                             "api_key": "API-Key",
-                            "base_url": "Base URL",
-                            "deployment": "Deployment",
-                            "version": "API-Version"
+                            "azure_base_url": "Base URL",
+                            "azure_deployment": "Deployment",
+                            "azure_version": "API-Version"
                         }
                     },
                     "model_section": {
@@ -161,12 +165,14 @@
                         "data": {
                             "default_model": "Standardmodell",
                             "temperature": "Temperatur",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Budget denken"
                         },
                         "data_description": {
                             "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
                             "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
-                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter.",
+                            "thinking_budget": "Steuert das Denkbudget für Modelle, die es unterstützen. Höhere Werte ermöglichen komplexere Überlegungen, können jedoch die Reaktionszeit und die Kosten erhöhen."
                         }
                     }
                 }
@@ -188,12 +194,14 @@
                         "data": {
                             "default_model": "Standardmodell",
                             "temperature": "Temperatur",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Budget denken"
                         },
                         "data_description": {
                             "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
                             "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
-                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter.",
+                            "thinking_budget": "Steuert das Denkbudget für Modelle, die es unterstützen. Höhere Werte ermöglichen komplexere Überlegungen, können jedoch die Reaktionszeit und die Kosten erhöhen."
                         }
                     }
                 }
@@ -233,7 +241,7 @@
                         "name": "Verbindung",
                         "description": "Custom OpenAI Authentifizierung",
                         "data": {
-                            "endpoint": "Endpoint",
+                            "custom_openai_endpoint": "Endpoint",
                             "api_key": "API-Key"
                         },
                         "data_description": {
@@ -265,9 +273,9 @@
                         "name": "Verbindung",
                         "description": "AWS Authentifizierung",
                         "data": {
-                            "access_key_id": "API-Key",
-                            "secret_access_key": "Secret",
-                            "region_name": "Region"
+                            "aws_access_key_id": "API-Key",
+                            "aws_secret_access_key": "Secret",
+                            "aws_region_name": "Region"
                         }
                     },
                     "model_section": {
@@ -295,7 +303,7 @@
                         "description": "OpenWebUI Authentifizierung",
                         "data": {
                             "api_key": "API-Key (JWT Token)",
-                            "ip": "IP-Adresse",
+                            "ip_address": "IP-Adresse",
                             "port": "Port",
                             "https": "HTTPS verwenden"
                         },
@@ -339,12 +347,14 @@
                         "data": {
                             "default_model": "Standardmodell",
                             "temperature": "Temperatur",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Denkaufwand"
                         },
                         "data_description": {
                             "default_model": "Das Standardmodell, das verwendet wird, wenn kein anderes Modell angegeben ist.",
                             "temperature": "Bestimmt die Zufälligkeit der Ausgabe. Niedrigere Werte machen die Ausgabe deterministischer.",
-                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter."
+                            "top_p": "Bestimmt die Vielfalt der Ausgabe. Niedrigere Werte machen die Ausgabe fokussierter.",
+                            "reasoning_effort": "Steuert den Denkaufwand für Modelle, die ihn unterstützen."
                         }
                     }
                 }
@@ -359,10 +369,10 @@
                         "data": {
                             "fallback_provider": "Fallback-Anbieter",
                             "request_timeout": "Anfrage-Timeout (Sekunden)"
-
                         },
                         "data_description": {
-                            "fallback_provider": "LLM Vision wird die Anfrage mit dem ausgewählten Anbieter erneut versuchen, wenn der aktuelle Anbieter fehlschlägt."
+                            "fallback_provider": "LLM Vision wird die Anfrage mit dem ausgewählten Anbieter erneut versuchen, wenn der aktuelle Anbieter fehlschlägt.",
+                            "request_timeout": "Gesamtzeit, die auf eine Antwort des Anbieters gewartet wird, bevor die Anfrage fehlschlägt."
                         }
                     },
                     "prompt_section": {

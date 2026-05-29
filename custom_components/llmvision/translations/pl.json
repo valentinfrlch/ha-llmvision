@@ -59,12 +59,14 @@
                         "data": {
                             "default_model": "Domyślny model",
                             "temperature": "Temperatura",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "think": "Myśleć"
                         },
                         "data_description": {
                             "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
                             "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
-                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane.",
+                            "think": "Włącz tryb myślenia dla modeli, które go obsługują."
                         }
                     },
                     "advanced_section": {
@@ -101,12 +103,14 @@
                         "data": {
                             "default_model": "Domyślny model",
                             "temperature": "Temperatura",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Rozumny wysiłek"
                         },
                         "data_description": {
                             "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
                             "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
-                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane.",
+                            "reasoning_effort": "Kontroluje wysiłek rozumowania w przypadku modeli, które go obsługują."
                         }
                     }
                 }
@@ -161,12 +165,14 @@
                         "data": {
                             "default_model": "Domyślny model",
                             "temperature": "Temperatura",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Myślący budżet"
                         },
                         "data_description": {
                             "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
                             "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
-                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane.",
+                            "thinking_budget": "Kontroluje budżet myślenia dla modeli, które go obsługują. Wyższe wartości pozwalają na bardziej złożone rozumowanie, ale mogą wydłużyć czas reakcji i koszt."
                         }
                     }
                 }
@@ -188,12 +194,14 @@
                         "data": {
                             "default_model": "Domyślny model",
                             "temperature": "Temperatura",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Myślący budżet"
                         },
                         "data_description": {
                             "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
                             "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
-                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane.",
+                            "thinking_budget": "Kontroluje budżet myślenia dla modeli, które go obsługują. Wyższe wartości pozwalają na bardziej złożone rozumowanie, ale mogą wydłużyć czas reakcji i koszt."
                         }
                     }
                 }
@@ -339,12 +347,14 @@
                         "data": {
                             "default_model": "Domyślny model",
                             "temperature": "Temperatura",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Rozumny wysiłek"
                         },
                         "data_description": {
                             "default_model": "Domyślny model do użycia, gdy nie określono innego modelu.",
                             "temperature": "Kontroluje losowość wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej deterministyczne.",
-                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane."
+                            "top_p": "Kontroluje różnorodność wyjścia. Niższe wartości sprawiają, że wyjście jest bardziej skoncentrowane.",
+                            "reasoning_effort": "Kontroluje wysiłek rozumowania w przypadku modeli, które go obsługują."
                         }
                     }
                 }

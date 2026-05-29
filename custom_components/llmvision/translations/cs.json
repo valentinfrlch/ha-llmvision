@@ -59,12 +59,14 @@
                         "data": {
                             "default_model": "Předvolený model",
                             "temperature": "Teplota",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "think": "Přemýšlejte"
                         },
                         "data_description": {
                             "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
                             "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup výce deterministický.",
-                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný.",
+                            "think": "Povolte režim myšlení pro modely, které jej podporují."
                         }
                     },
                     "advanced_section": {
@@ -101,12 +103,14 @@
                         "data": {
                             "default_model": "Předvolený model",
                             "temperature": "Teplota",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Rozumné úsilí"
                         },
                         "data_description": {
                             "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
                             "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup výce deterministický.",
-                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný.",
+                            "reasoning_effort": "Řídí úsilí o uvažování u modelů, které je podporují."
                         }
                     }
                 }
@@ -161,12 +165,14 @@
                         "data": {
                             "default_model": "Předvolený model",
                             "temperature": "Teplota",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Myšlení rozpočtu"
                         },
                         "data_description": {
                             "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
                             "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup výce deterministický.",
-                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný.",
+                            "thinking_budget": "Řídí rozpočet na myšlení pro modely, které jej podporují. Vyšší hodnoty umožňují složitější uvažování, ale mohou prodloužit dobu odezvy a náklady."
                         }
                     }
                 }
@@ -188,12 +194,14 @@
                         "data": {
                             "default_model": "Předvolený model",
                             "temperature": "Teplota",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Myšlení rozpočtu"
                         },
                         "data_description": {
                             "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
                             "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup výce deterministický.",
-                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný.",
+                            "thinking_budget": "Řídí rozpočet na myšlení pro modely, které jej podporují. Vyšší hodnoty umožňují složitější uvažování, ale mohou prodloužit dobu odezvy a náklady."
                         }
                     }
                 }
@@ -339,12 +347,14 @@
                         "data": {
                             "default_model": "Předvolený model",
                             "temperature": "Teplota",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Rozumné úsilí"
                         },
                         "data_description": {
                             "default_model": "Využití předvoleného modelu, pokud není specifikovaný jiný.",
                             "temperature": "Nastavení náhodnosti výstupu. Menší hodnoty vytvoří výstup více deterministický.",
-                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný."
+                            "top_p": "Kontroluje diverzitu výstupu. Nižší hodnoty vytvoří výstup více soustředěný.",
+                            "reasoning_effort": "Řídí úsilí o uvažování u modelů, které je podporují."
                         }
                     }
                 }

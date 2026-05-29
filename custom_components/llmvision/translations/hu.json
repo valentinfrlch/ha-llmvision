@@ -59,12 +59,14 @@
                         "data": {
                             "default_model": "Alapértelmezett modell",
                             "temperature": "Hőmérséklet",
-                            "top_p": "Magmintavétel"
+                            "top_p": "Magmintavétel",
+                            "think": "Gondol"
                         },
                         "data_description": {
                             "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
                             "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
-                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet.",
+                            "think": "Engedélyezze a gondolkodási módot az ezt támogató modelleknél."
                         }
                     },
                     "advanced_section": {
@@ -101,12 +103,14 @@
                         "data": {
                             "default_model": "Alapértelmezett modell",
                             "temperature": "Hőmérséklet",
-                            "top_p": "Magmintavétel"
+                            "top_p": "Magmintavétel",
+                            "reasoning_effort": "Okoskodási erőfeszítés"
                         },
                         "data_description": {
                             "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
                             "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
-                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet.",
+                            "reasoning_effort": "Szabályozza az azt támogató modellek érvelési erőfeszítéseit."
                         }
                     }
                 }
@@ -161,12 +165,14 @@
                         "data": {
                             "default_model": "Alapértelmezett modell",
                             "temperature": "Hőmérséklet",
-                            "top_p": "Magmintavétel"
+                            "top_p": "Magmintavétel",
+                            "thinking_budget": "Gondolkodó költségvetés"
                         },
                         "data_description": {
                             "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
                             "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
-                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet.",
+                            "thinking_budget": "Szabályozza az azt támogató modellek gondolkodási költségvetését. A magasabb értékek bonyolultabb érvelést tesznek lehetővé, de növelhetik a válaszidőt és a költségeket."
                         }
                     }
                 }
@@ -188,12 +194,14 @@
                         "data": {
                             "default_model": "Alapértelmezett modell",
                             "temperature": "Hőmérséklet",
-                            "top_p": "Magmintavétel"
+                            "top_p": "Magmintavétel",
+                            "thinking_budget": "Gondolkodó költségvetés"
                         },
                         "data_description": {
                             "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
                             "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
-                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet.",
+                            "thinking_budget": "Szabályozza az azt támogató modellek gondolkodási költségvetését. A magasabb értékek bonyolultabb érvelést tesznek lehetővé, de növelhetik a válaszidőt és a költségeket."
                         }
                     }
                 }
@@ -339,12 +347,14 @@
                         "data": {
                             "default_model": "Alapértelmezett modell",
                             "temperature": "Hőmérséklet",
-                            "top_p": "Magmintavétel"
+                            "top_p": "Magmintavétel",
+                            "reasoning_effort": "Okoskodási erőfeszítés"
                         },
                         "data_description": {
                             "default_model": "Az alapértelmezettként használt modell, ha nincs másik megadva.",
                             "temperature": "A kimenet véletlenszerűségét szabályozza. Az alacsonyabb értékek determinisztikusabb kimenetet eredményeznek.",
-                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet."
+                            "top_p": "A kimenet sokféleségét szabályozza. Az alacsonyabb értékek fókuszáltabbá teszik a kimenetet.",
+                            "reasoning_effort": "Szabályozza az azt támogató modellek érvelési erőfeszítéseit."
                         }
                     }
                 }

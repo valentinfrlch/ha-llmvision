@@ -59,12 +59,14 @@
                         "data": {
                             "default_model": "Standardmodell",
                             "temperature": "Temperatur",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "think": "Tänka"
                         },
                         "data_description": {
                             "default_model": "Standardmodellen som används om ingen annan anges.",
                             "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
-                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar.",
+                            "think": "Aktivera tankeläge för modeller som stöder det."
                         }
                     },
                     "advanced_section": {
@@ -101,12 +103,14 @@
                         "data": {
                             "default_model": "Standardmodell",
                             "temperature": "Temperatur",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Resonerande ansträngning"
                         },
                         "data_description": {
                             "default_model": "Standardmodellen som används om ingen annan anges.",
                             "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
-                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar.",
+                            "reasoning_effort": "Styr resonemanget för modeller som stödjer det."
                         }
                     }
                 }
@@ -161,12 +165,14 @@
                         "data": {
                             "default_model": "Standardmodell",
                             "temperature": "Temperatur",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Tänkande budget"
                         },
                         "data_description": {
                             "default_model": "Standardmodellen som används om ingen annan anges.",
                             "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
-                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar.",
+                            "thinking_budget": "Styr tankebudgeten för modeller som stöder den. Högre värden möjliggör mer komplexa resonemang men kan öka svarstiden och kostnaden."
                         }
                     }
                 }
@@ -188,12 +194,14 @@
                         "data": {
                             "default_model": "Standardmodell",
                             "temperature": "Temperatur",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "thinking_budget": "Tänkande budget"
                         },
                         "data_description": {
                             "default_model": "Standardmodellen som används om ingen annan anges.",
                             "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
-                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar.",
+                            "thinking_budget": "Styr tankebudgeten för modeller som stöder den. Högre värden möjliggör mer komplexa resonemang men kan öka svarstiden och kostnaden."
                         }
                     }
                 }
@@ -339,12 +347,14 @@
                         "data": {
                             "default_model": "Standardmodell",
                             "temperature": "Temperatur",
-                            "top_p": "Top P"
+                            "top_p": "Top P",
+                            "reasoning_effort": "Resonerande ansträngning"
                         },
                         "data_description": {
                             "default_model": "Standardmodellen som används om ingen annan anges.",
                             "temperature": "Styr slumpmässigheten i svaret. Lägre värden ger mer deterministiska svar.",
-                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar."
+                            "top_p": "Styr mångfalden i svaret. Lägre värden ger mer fokuserade svar.",
+                            "reasoning_effort": "Styr resonemanget för modeller som stödjer det."
                         }
                     }
                 }

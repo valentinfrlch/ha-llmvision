@@ -30,13 +30,25 @@
                 "gato": "cat",
                 "pájaro": "bird",
                 "mascota": "dog",
-                "animal": "dog"
+                "animal": "animal",
+                "ardilla": "animal",
+                "vida silvestre": "animal",
+                "ciervo": "animal",
+                "conejo": "animal",
+                "zorro": "animal",
+                "coyote": "animal",
+                "mapache": "animal",
+                "mofeta": "animal",
+                "zarigüeya": "animal",
+                "erizo": "animal",
+                "oso": "animal",
+                "alce": "animal"
             }
         },
-        "package": {
+        "delivery": {
             "labels": {
-                "caja": "package",
-                "paquete": "package"
+                "caja": "delivery",
+                "paquete": "delivery"
             }
         },
         "entity": {

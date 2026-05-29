@@ -1,0 +1,434 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "LLM Vision opsætning",
+                "description": "Vælg den udbyder, du vil konfigurere."
+            },
+            "localai": {
+                "title": "Forbind til din LocalAI server",
+                "description": "Angiv IP-adresse og port på din LocalAI server.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "Serverforbindelse",
+                        "data": {
+                            "ip_address": "IP-adresse",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Brug HTTPS for sikre forbindelser"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standard modelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen der bruges, når ingen anden model er valgt.",
+                            "temperature": "Styrer tilfældigheden i output. Lavere værdier giver mere forudsigelige svar.",
+                            "top_p": "Styrer variationen i output. Lavere værdier giver mere fokuserede svar."
+                        }
+                    }
+                }
+            },
+            "ollama": {
+                "title": "Konfigurer Ollama",
+                "description": "Angiv IP-adresse og port på din Ollama server.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "Serverforbindelse",
+                        "data": {
+                            "ip_address": "IP-adresse",
+                            "port": "Port",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Brug HTTPS for sikre forbindelser"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standard modelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P",
+                            "think": "Tænke"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen der bruges, når ingen anden model er valgt.",
+                            "temperature": "Styrer tilfældigheden i output. Lavere værdier giver mere forudsigelige svar.",
+                            "top_p": "Styrer variationen i output. Lavere værdier giver mere fokuserede svar.",
+                            "think": "Aktiver tænketilstand for modeller, der understøtter det."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Avanceret",
+                        "description": "Avancerede modelparametre",
+                        "data": {
+                            "context_window": "Kontekstlængde",
+                            "keep_alive": "Hold aktiv"
+                        },
+                        "data_description": {
+                            "context_window": "Angiver størrelsen på kontekstvinduet til generering af næste token.",
+                            "keep_alive": "Bestemmer hvor længe modellen forbliver indlæst i hukommelsen. Standard: 5m, -1: behold i hukommelsen, 0: aflæs straks"
+                        }
+                    }
+                }
+            },
+            "openai": {
+                "title": "Konfigurer OpenAI",
+                "description": "Indtast en gyldig OpenAI API-nøgle.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "OpenAI godkendelse",
+                        "data": {
+                            "api_key": "API-nøgle"
+                        },
+                        "data_description": {
+                            "api_key": "Sørg for at have saldo på din OpenAI konto."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standard modelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P",
+                            "reasoning_effort": "Ræsonnement indsats"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen der bruges, når ingen anden model er valgt.",
+                            "temperature": "Styrer tilfældigheden i output. Lavere værdier giver mere forudsigelige svar.",
+                            "top_p": "Styrer variationen i output. Lavere værdier giver mere fokuserede svar.",
+                            "reasoning_effort": "Styrer ræsonnementindsatsen for modeller, der understøtter det."
+                        }
+                    }
+                }
+            },
+            "azure": {
+                "title": "Konfigurer Azure",
+                "description": "Indtast en gyldig Azure API-nøgle, base URL, deployment og API-version.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "Azure godkendelse",
+                        "data": {
+                            "api_key": "API-nøgle",
+                            "azure_base_url": "Base URL",
+                            "azure_deployment": "Deployment",
+                            "azure_version": "API-version"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standard modelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen der bruges, når ingen anden model er valgt.",
+                            "temperature": "Styrer tilfældigheden i output.",
+                            "top_p": "Styrer variationen i output."
+                        }
+                    }
+                }
+            },
+            "anthropic": {
+                "title": "Konfigurer Anthropic Claude",
+                "description": "Indtast en gyldig Anthropic API-nøgle.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "Anthropic godkendelse",
+                        "data": {
+                            "api_key": "API-nøgle"
+                        },
+                        "data_description": {
+                            "api_key": "Sørg for at have saldo på din Anthropic konto."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standard modelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P",
+                            "thinking_budget": "Tænke budget"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen, der skal bruges, når ingen anden model er angivet.",
+                            "temperature": "Styrer tilfældigheden af ​​output. Lavere værdier gør output mere deterministisk.",
+                            "top_p": "Styrer mangfoldigheden af ​​output. Lavere værdier gør output mere fokuseret.",
+                            "thinking_budget": "Styrer tænkebudgettet for modeller, der understøtter det. Højere værdier giver mulighed for mere kompleks ræsonnement, men kan øge responstiden og omkostningerne."
+                        }
+                    }
+                }
+            },
+            "google": {
+                "title": "Konfigurer Google Gemini",
+                "description": "Indtast en gyldig Google Gemini API-nøgle.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "Google godkendelse",
+                        "data": {
+                            "api_key": "API-nøgle"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standard modelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P",
+                            "thinking_budget": "Tænke budget"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen, der skal bruges, når ingen anden model er angivet.",
+                            "temperature": "Styrer tilfældigheden af ​​output. Lavere værdier gør output mere deterministisk.",
+                            "top_p": "Styrer mangfoldigheden af ​​output. Lavere værdier gør output mere fokuseret.",
+                            "thinking_budget": "Styrer tænkebudgettet for modeller, der understøtter det. Højere værdier giver mulighed for mere kompleks ræsonnement, men kan øge responstiden og omkostningerne."
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "title": "Indstillinger",
+                "description": "Konfigurer LLM Vision integrationen.",
+                "sections": {
+                    "general_section": {
+                        "name": "Generelt",
+                        "description": "Vælg fallback-udbyder hvis den valgte ikke er tilgængelig.",
+                        "data": {
+                            "fallback_provider": "Fallback udbyder",
+                            "request_timeout": "Timeout (sekunder)"
+                        },
+                        "data_description": {
+                            "fallback_provider": "LLM Vision vil prøve anmodningen igen med den valgte udbyder, hvis den nuværende udbyder fejler.",
+                            "request_timeout": "Samlet tid til at vente på et udbydersvar, før anmodningen mislykkes."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Tidslinje",
+                        "description": "Tidslinjen gemmer dagens hændelser.",
+                        "data": {
+                            "timeline_language": "Sprog",
+                            "retention_time": "Opbevaringstid",
+                            "timeline_today_summary": "Aktivér dagsopsummering",
+                            "timeline_summary_prompt": "Prompt til opsummering"
+                        },
+                        "data_description": {
+                            "timeline_language": "Vælg det sprog, der bruges til at generere ikoner fra begivenheder.",
+                            "retention_time": "Slet automatisk hændelser efter (dage). Indstil til 0 for at deaktivere automatisk sletning.",
+                            "timeline_today_summary": "Aktiver tidslinjeoversigt for automatisk at generere en oversigt over dagens begivenheder.",
+                            "timeline_summary_prompt": "Instruktionen givet til modellen for at generere et resumé af dagens begivenheder."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Hukommelse (Beta)",
+                        "description": "Bruges til ekstra kontekst.",
+                        "data": {
+                            "memory_paths": "Billedsti",
+                            "memory_strings": "Beskrivelse"
+                        },
+                        "data_description": {
+                            "memory_paths": "Angiv stien til billedfilen.",
+                            "memory_strings": "Angiv en beskrivelse af billedet (f.eks.: 'Dette er Cookie, min hund'). Billeder og beskrivelser skal være i samme rækkefølge, og der skal være lige så mange beskrivelser som billeder."
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "Systemprompter",
+                        "description": "Systemprompter bruges til at ændre, hvordan modellen opfører sig og reagerer.",
+                        "data": {
+                            "system_prompt": "Systemprompt",
+                            "title_prompt": "Titelprompt"
+                        },
+                        "data_description": {
+                            "system_prompt": "Brug systemprompten til at ændre, hvordan modellen opfører sig og reagerer.",
+                            "title_prompt": "Instruktionen givet til modellen for at generere en titel."
+                        }
+                    }
+                }
+            },
+            "groq": {
+                "title": "Konfigurer Groq",
+                "description": "Angiv en gyldig Groq API-nøgle.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "Groq-godkendelse",
+                        "data": {
+                            "api_key": "API nøgle"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standardmodelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen, der skal bruges, når ingen anden model er angivet.",
+                            "temperature": "Styrer tilfældigheden af ​​output. Lavere værdier gør output mere deterministisk.",
+                            "top_p": "Styrer mangfoldigheden af ​​output. Lavere værdier gør output mere fokuseret."
+                        }
+                    }
+                }
+            },
+            "custom_openai": {
+                "title": "Konfigurer Custom OpenAI-udbyder",
+                "description": "**Vigtigt**: Virker kun, hvis API'en er kompatibel med OpenAI's API. Hvis API'en ikke kræver en API-nøgle, skal du indtaste en dummy-værdi. Slutpunktet skal have følgende format: `http(s)://baseURL(:port)/some/endpoint`",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "Brugerdefineret OpenAI-godkendelse",
+                        "data": {
+                            "custom_openai_endpoint": "Brugerdefineret slutpunkt",
+                            "api_key": "API nøgle"
+                        },
+                        "data_description": {
+                            "endpoint": "API-endepunktet efter dette format: https)://baseURL(:port)/someone/endpoint",
+                            "api_key": "API-nøgle eller 'openai', hvis ingen er påkrævet."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standardmodelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen, der skal bruges, når ingen anden model er angivet.",
+                            "temperature": "Styrer tilfældigheden af ​​output. Lavere værdier gør output mere deterministisk.",
+                            "top_p": "Styrer mangfoldigheden af ​​output. Lavere værdier gør output mere fokuseret."
+                        }
+                    }
+                }
+            },
+            "aws_bedrock": {
+                "title": "Konfigurer AWS Bedrock-udbyder",
+                "description": "**Vigtigt**: Dette understøtter i øjeblikket kun følgende modeller: Nova, Antropisk Claude",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "AWS-godkendelse",
+                        "data": {
+                            "aws_access_key_id": "Adgangsnøgle",
+                            "aws_secret_access_key": "Hemmelig nøgle",
+                            "aws_region_name": "Regionsstreng"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standardmodelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen, der skal bruges, når ingen anden model er angivet.",
+                            "temperature": "Styrer tilfældigheden af ​​output. Lavere værdier gør output mere deterministisk.",
+                            "top_p": "Styrer mangfoldigheden af ​​output. Lavere værdier gør output mere fokuseret."
+                        }
+                    }
+                }
+            },
+            "openwebui": {
+                "title": "Konfigurer Open WebUI",
+                "description": "Angiv API-nøgle (JWT-token), IP-adresse, port, HTTP(S) og standardmodel.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "Åbn WebUI-godkendelse",
+                        "data": {
+                            "api_key": "API-nøgle (JWT-token)",
+                            "ip_address": "IP-adresse",
+                            "port": "Havn",
+                            "https": "Brug HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Brug HTTPS til sikre forbindelser, hvis din server understøtter det."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standardmodelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen, der skal bruges, når ingen anden model er angivet.",
+                            "temperature": "Styrer tilfældigheden af ​​output. Lavere værdier gør output mere deterministisk.",
+                            "top_p": "Styrer mangfoldigheden af ​​output. Lavere værdier gør output mere fokuseret."
+                        }
+                    }
+                }
+            },
+            "openrouter": {
+                "title": "Konfigurer OpenRouter",
+                "description": "OpenRouter er en platform, der giver adgang til forskellige AI-modeller. Du kan bruge den til at oprette forbindelse til modeller som OpenAI, Anthropic og mere.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Forbindelse",
+                        "description": "OpenRouter-godkendelse",
+                        "data": {
+                            "api_key": "API nøgle"
+                        },
+                        "data_description": {
+                            "api_key": "Din OpenRouter API-nøgle. Sørg for at tilføje kredit til din OpenRouter-konto først."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Indstil standardmodelparametre",
+                        "data": {
+                            "default_model": "Standardmodel",
+                            "temperature": "Temperatur",
+                            "top_p": "Top P",
+                            "reasoning_effort": "Ræsonnement indsats"
+                        },
+                        "data_description": {
+                            "default_model": "Standardmodellen, der skal bruges, når ingen anden model er angivet.",
+                            "temperature": "Styrer tilfældigheden af ​​output. Lavere værdier gør output mere deterministisk.",
+                            "top_p": "Styrer mangfoldigheden af ​​output. Lavere værdier gør output mere fokuseret.",
+                            "reasoning_effort": "Styrer ræsonnementindsatsen for modeller, der understøtter det."
+                        }
+                    }
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "Kunne ikke forbinde til serveren. Tjek API-nøgle, IP og port",
+            "empty_api_key": "Ugyldig API-nøgle",
+            "invalid_provider": "Ugyldig udbyder valgt",
+            "memory_not_supported": "Denne udbyder understøtter ikke hukommelse",
+            "invalid_image_path": "En eller flere billedstier er ugyldige",
+            "mismatched_lengths": "Antallet af billeder og beskrivelser skal være ens"
+        },
+        "abort": {
+            "unknown_provider": "Ukendt udbyder",
+            "reconfigure_successful": "Indstillinger gemt"
+        }
+    }
+}

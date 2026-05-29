@@ -1,0 +1,434 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "LLM vizijos sąranka",
+                "description": "Pasirinkite teikėją, kurį norite nustatyti."
+            },
+            "localai": {
+                "title": "Prisijunkite prie savo LocalAI serverio",
+                "description": "Pateikite savo LocalAI serverio IP adresą ir prievadą.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Ryšys",
+                        "description": "Serverio ryšys",
+                        "data": {
+                            "ip_address": "IP adresas",
+                            "port": "Uostas",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Saugiems ryšiams naudokite HTTPS"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Nustatykite numatytuosius modelio parametrus",
+                        "data": {
+                            "default_model": "Numatytasis modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Viršutinė P"
+                        },
+                        "data_description": {
+                            "default_model": "Numatytasis modelis, naudojamas, kai nenurodytas joks kitas modelis.",
+                            "temperature": "Valdo išvesties atsitiktinumą. Mažesnės reikšmės daro išvestį labiau deterministinę.",
+                            "top_p": "Valdo išvesties įvairovę. Mažesnės vertės daro išvestį labiau sufokusuotą."
+                        }
+                    }
+                }
+            },
+            "ollama": {
+                "title": "Konfigūruokite „Ollama“.",
+                "description": "Pateikite savo Ollama serverio IP adresą ir prievadą.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Ryšys",
+                        "description": "Serverio ryšys",
+                        "data": {
+                            "ip_address": "IP adresas",
+                            "port": "Uostas",
+                            "https": "HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Saugiems ryšiams naudokite HTTPS"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Nustatykite numatytuosius modelio parametrus",
+                        "data": {
+                            "default_model": "Numatytasis modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Viršutinė P",
+                            "think": "Pagalvok"
+                        },
+                        "data_description": {
+                            "default_model": "Numatytasis modelis, naudojamas, kai nenurodytas joks kitas modelis.",
+                            "temperature": "Valdo išvesties atsitiktinumą. Mažesnės reikšmės daro išvestį labiau deterministinę.",
+                            "top_p": "Valdo išvesties įvairovę. Mažesnės vertės daro išvestį labiau sufokusuotą.",
+                            "think": "Įgalinkite mąstymo režimą modeliuose, kurie jį palaiko."
+                        }
+                    },
+                    "advanced_section": {
+                        "name": "Išplėstinė",
+                        "description": "Išplėstiniai modelio parametrai",
+                        "data": {
+                            "context_window": "Konteksto ilgis",
+                            "keep_alive": "Išlik gyvas"
+                        },
+                        "data_description": {
+                            "context_window": "Nustato kontekstinio lango, naudojamo kitam prieigos raktui generuoti, dydį.",
+                            "keep_alive": "Valdo, kiek laiko modelis bus įkeltas į atmintį po užklausos. Numatytasis: 5 m (5 minutės), -1: saugoti atmintyje neribotą laiką, 0: iš karto iškrauti"
+                        }
+                    }
+                }
+            },
+            "openai": {
+                "title": "Konfigūruoti OpenAI",
+                "description": "Pateikite aa waleed openai api raktą.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Ryšys",
+                        "description": "OpenAI autentifikavimas",
+                        "data": {
+                            "api_key": "API raktas"
+                        },
+                        "data_description": {
+                            "api_key": "Būtinai pridėkite kreditą į savo OpenAI paskyrą."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Nustatykite numatytuosius modelio parametrus",
+                        "data": {
+                            "default_model": "Numatytasis modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Viršutinė P",
+                            "reasoning_effort": "Samprotavimo pastangos"
+                        },
+                        "data_description": {
+                            "default_model": "Numatytasis modelis, naudojamas, kai nenurodytas joks kitas modelis.",
+                            "temperature": "Valdo išvesties atsitiktinumą. Mažesnės reikšmės daro išvestį labiau deterministinę.",
+                            "top_p": "Valdo išvesties įvairovę. Mažesnės vertės daro išvestį labiau sufokusuotą.",
+                            "reasoning_effort": "Valdo tai palaikančių modelių samprotavimo pastangas."
+                        }
+                    }
+                }
+            },
+            "azure": {
+                "title": "Konfigūruokite Azure",
+                "description": "Pateikite galiojantį Azure API raktą, bazinį URL, diegimą ir API versiją.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Ryšys",
+                        "description": "Azure autentifikavimas",
+                        "data": {
+                            "api_key": "API raktas",
+                            "azure_base_url": "Bazinis URL",
+                            "azure_deployment": "Diegimas",
+                            "azure_version": "API versija"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Nustatykite numatytuosius modelio parametrus",
+                        "data": {
+                            "default_model": "Numatytasis modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Viršutinė P"
+                        },
+                        "data_description": {
+                            "default_model": "Numatytasis modelis, naudojamas, kai nenurodytas joks kitas modelis.",
+                            "temperature": "Valdo išvesties atsitiktinumą. Mažesnės reikšmės daro išvestį labiau deterministinę.",
+                            "top_p": "Valdo išvesties įvairovę. Mažesnės vertės daro išvestį labiau sufokusuotą."
+                        }
+                    }
+                }
+            },
+            "anthropic": {
+                "title": "Konfigūruokite Antropinį Claude'ą",
+                "description": "Pateikite galiojantį antropinio API raktą.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Ryšys",
+                        "description": "Antropinis autentifikavimas",
+                        "data": {
+                            "api_key": "API raktas"
+                        },
+                        "data_description": {
+                            "api_key": "Būtinai pridėkite kreditą į savo Antropinę paskyrą."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Nustatykite numatytuosius modelio parametrus",
+                        "data": {
+                            "default_model": "Numatytasis modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Viršutinė P",
+                            "thinking_budget": "Mąstantis biudžetas"
+                        },
+                        "data_description": {
+                            "default_model": "Numatytasis modelis, naudojamas, kai nenurodytas joks kitas modelis.",
+                            "temperature": "Valdo išvesties atsitiktinumą. Mažesnės reikšmės daro išvestį labiau deterministinę.",
+                            "top_p": "Valdo išvesties įvairovę. Mažesnės vertės daro išvestį labiau sufokusuotą.",
+                            "thinking_budget": "Valdo mąstymo biudžetą modeliams, kurie jį palaiko. Didesnės vertės leidžia mąstyti sudėtingiau, tačiau gali padidinti atsako laiką ir išlaidas."
+                        }
+                    }
+                }
+            },
+            "google": {
+                "title": "Konfigūruokite Google Gemini",
+                "description": "Pateikite galiojantį „Google Gemini“ API raktą.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Ryšys",
+                        "description": "Google autentifikavimas",
+                        "data": {
+                            "api_key": "API raktas"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Nustatykite numatytuosius modelio parametrus",
+                        "data": {
+                            "default_model": "Numatytasis modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Viršutinė P",
+                            "thinking_budget": "Mąstantis biudžetas"
+                        },
+                        "data_description": {
+                            "default_model": "Numatytasis modelis, naudojamas, kai nenurodytas joks kitas modelis.",
+                            "temperature": "Valdo išvesties atsitiktinumą. Mažesnės reikšmės daro išvestį labiau deterministinę.",
+                            "top_p": "Valdo išvesties įvairovę. Mažesnės vertės daro išvestį labiau sufokusuotą.",
+                            "thinking_budget": "Valdo mąstymo biudžetą modeliams, kurie jį palaiko. Didesnės vertės leidžia mąstyti sudėtingiau, tačiau gali padidinti atsako laiką ir išlaidas."
+                        }
+                    }
+                }
+            },
+            "groq": {
+                "title": "Konfigūruoti Groq",
+                "description": "Pateikite galiojantį Groq API raktą.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Ryšys",
+                        "description": "Groq autentifikavimas",
+                        "data": {
+                            "api_key": "API raktas"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Nustatykite numatytuosius modelio parametrus",
+                        "data": {
+                            "default_model": "Numatytasis modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Viršutinė P"
+                        },
+                        "data_description": {
+                            "default_model": "Numatytasis modelis, naudojamas, kai nenurodytas joks kitas modelis.",
+                            "temperature": "Valdo išvesties atsitiktinumą. Mažesnės reikšmės daro išvestį labiau deterministinę.",
+                            "top_p": "Valdo išvesties įvairovę. Mažesnės vertės daro išvestį labiau sufokusuotą."
+                        }
+                    }
+                }
+            },
+            "custom_openai": {
+                "title": "Konfigūruokite tinkintą OpenAI teikėją",
+                "description": "**Svarbu**: veikia tik tuo atveju, jei API suderinama su OpenAI API. Jei API nereikia API rakto, įveskite fiktyvią reikšmę. Galutinis taškas turi būti tokio formato: „http(s)://baseURL(:port)/some/endpoint“",
+                "sections": {
+                    "connection_section": {
+                        "name": "Ryšys",
+                        "description": "Pasirinktinis OpenAI autentifikavimas",
+                        "data": {
+                            "custom_openai_endpoint": "Pasirinktinis galutinis taškas",
+                            "api_key": "API raktas"
+                        },
+                        "data_description": {
+                            "endpoint": "API galutinis taškas pagal šį formatą: https)://baseURL(:port)/someone/endpoint",
+                            "api_key": "API raktas arba „openai“, jei jo nereikia."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Nustatykite numatytuosius modelio parametrus",
+                        "data": {
+                            "default_model": "Numatytasis modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Viršutinė P"
+                        },
+                        "data_description": {
+                            "default_model": "Numatytasis modelis, naudojamas, kai nenurodytas joks kitas modelis.",
+                            "temperature": "Valdo išvesties atsitiktinumą. Mažesnės reikšmės daro išvestį labiau deterministinę.",
+                            "top_p": "Valdo išvesties įvairovę. Mažesnės vertės daro išvestį labiau sufokusuotą."
+                        }
+                    }
+                }
+            },
+            "aws_bedrock": {
+                "title": "Konfigūruoti AWS Bedrock teikėją",
+                "description": "**Svarbu**: šiuo metu tai palaiko tik šiuos modelius: Nova, Anthropic Claude",
+                "sections": {
+                    "connection_section": {
+                        "name": "Ryšys",
+                        "description": "AWS autentifikavimas",
+                        "data": {
+                            "aws_access_key_id": "Prieigos raktas",
+                            "aws_secret_access_key": "Slaptas raktas",
+                            "aws_region_name": "Regiono eilutė"
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Nustatykite numatytuosius modelio parametrus",
+                        "data": {
+                            "default_model": "Numatytasis modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Viršutinė P"
+                        },
+                        "data_description": {
+                            "default_model": "Numatytasis modelis, naudojamas, kai nenurodytas joks kitas modelis.",
+                            "temperature": "Valdo išvesties atsitiktinumą. Mažesnės reikšmės daro išvestį labiau deterministinę.",
+                            "top_p": "Valdo išvesties įvairovę. Mažesnės vertės daro išvestį labiau sufokusuotą."
+                        }
+                    }
+                }
+            },
+            "openwebui": {
+                "title": "Konfigūruoti Open WebUI",
+                "description": "Pateikite API raktą (JWT prieigos raktą), IP adresą, prievadą, HTTP(S) ir numatytąjį modelį.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Ryšys",
+                        "description": "Atidarykite WebUI autentifikavimą",
+                        "data": {
+                            "api_key": "API raktas (JWT prieigos raktas)",
+                            "ip_address": "IP adresas",
+                            "port": "Uostas",
+                            "https": "Naudokite HTTPS"
+                        },
+                        "data_description": {
+                            "https": "Naudokite HTTPS saugiam ryšiui, jei jūsų serveris jį palaiko."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Nustatykite numatytuosius modelio parametrus",
+                        "data": {
+                            "default_model": "Numatytasis modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Viršutinė P"
+                        },
+                        "data_description": {
+                            "default_model": "Numatytasis modelis, naudojamas, kai nenurodytas joks kitas modelis.",
+                            "temperature": "Valdo išvesties atsitiktinumą. Mažesnės reikšmės daro išvestį labiau deterministinę.",
+                            "top_p": "Valdo išvesties įvairovę. Mažesnės vertės daro išvestį labiau sufokusuotą."
+                        }
+                    }
+                }
+            },
+            "openrouter": {
+                "title": "Konfigūruokite OpenRouter",
+                "description": "OpenRouter yra platforma, suteikianti prieigą prie įvairių AI modelių. Jį galite naudoti norėdami prisijungti prie tokių modelių kaip „OpenAI“, „Anthropic“ ir kt.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Ryšys",
+                        "description": "OpenRouter autentifikavimas",
+                        "data": {
+                            "api_key": "API raktas"
+                        },
+                        "data_description": {
+                            "api_key": "Jūsų OpenRouter API raktas. Pirmiausia būtinai pridėkite kreditą į savo OpenRouter paskyrą."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Modelis",
+                        "description": "Nustatykite numatytuosius modelio parametrus",
+                        "data": {
+                            "default_model": "Numatytasis modelis",
+                            "temperature": "Temperatūra",
+                            "top_p": "Viršutinė P",
+                            "reasoning_effort": "Samprotavimo pastangos"
+                        },
+                        "data_description": {
+                            "default_model": "Numatytasis modelis, naudojamas, kai nenurodytas joks kitas modelis.",
+                            "temperature": "Valdo išvesties atsitiktinumą. Mažesnės reikšmės daro išvestį labiau deterministinę.",
+                            "top_p": "Valdo išvesties įvairovę. Mažesnės vertės daro išvestį labiau sufokusuotą.",
+                            "reasoning_effort": "Valdo tai palaikančių modelių samprotavimo pastangas."
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "title": "Nustatymai",
+                "description": "Konfigūruokite LLM Vision integraciją. Šis įrašas būtinas prieš nustatant kitus teikėjus. Jei norite naudoti numatytuosius nustatymus, tiesiog paspauskite „Pateikti“.",
+                "sections": {
+                    "general_section": {
+                        "name": "Generolas",
+                        "description": "Nustatykite pageidaujamą teikėją, kuris bus naudojamas, kai pasirinktas teikėjas nepasiekiamas.",
+                        "data": {
+                            "fallback_provider": "Atsarginis teikėjas",
+                            "request_timeout": "Užklausos skirtasis laikas (sekundėmis)"
+                        },
+                        "data_description": {
+                            "fallback_provider": "Jei dabartinis teikėjas nepavyks, „LLM Vision“ dar kartą bandys pateikti užklausą pasirinktu teikėju.",
+                            "request_timeout": "Bendras laikas, per kurį reikia laukti teikėjo atsakymo, kol nepavyksta įvykdyti užklausos."
+                        }
+                    },
+                    "prompt_section": {
+                        "name": "Sistemos raginimai",
+                        "description": "Sistemos raginimai naudojami modelio elgsenai ir atsakymui pakeisti.",
+                        "data": {
+                            "system_prompt": "Sistemos raginimas",
+                            "title_prompt": "Pavadinimo raginimas"
+                        },
+                        "data_description": {
+                            "system_prompt": "Naudokite sistemos raginimą, kad pakeistumėte modelio elgesį ir atsaką.",
+                            "title_prompt": "Nurodymas modeliui sugeneruoti pavadinimą."
+                        }
+                    },
+                    "timeline_section": {
+                        "name": "Laiko juosta",
+                        "description": "Laiko juosta išsaugo šiandienos įvykius, kad būtų rodoma naudojant LLM vizijos kortelę jūsų prietaisų skydelyje.",
+                        "data": {
+                            "timeline_language": "Laiko juostos kalba",
+                            "retention_time": "Laikymo laikas",
+                            "timeline_today_summary": "Laiko juostos santrauka",
+                            "timeline_summary_prompt": "Šiandienos santraukos raginimas"
+                        },
+                        "data_description": {
+                            "timeline_language": "Pasirinkite kalbą, naudojamą įvykių piktogramoms generuoti.",
+                            "retention_time": "Automatiškai ištrinti įvykius po (dienų). Nustatykite 0, kad išjungtumėte automatinį ištrynimą.",
+                            "timeline_today_summary": "Įgalinkite laiko juostos suvestinę, kad automatiškai sugeneruotumėte šiandienos įvykių suvestinę.",
+                            "timeline_summary_prompt": "Modeliui duotas nurodymas sugeneruoti šiandienos įvykių santrauką."
+                        }
+                    },
+                    "memory_section": {
+                        "name": "Atmintis (beta)",
+                        "description": "Atmintyje esantis turinys sinchronizuojamas tarp tiekėjų ir naudojamas papildomam modelio kontekstui suteikti.",
+                        "data": {
+                            "memory_paths": "Vaizdo failo kelias",
+                            "memory_strings": "Vaizdo aprašymas"
+                        },
+                        "data_description": {
+                            "memory_paths": "Nurodykite kelią į vaizdo failą.",
+                            "memory_strings": "Pateikite vaizdo aprašymą (pvz., „Tai sausainis, mano šuo“). Vaizdai ir aprašymai turi būti ta pačia tvarka, o aprašymų turi būti tiek, kiek vaizdų."
+                        }
+                    }
+                }
+            }
+        },
+        "error": {
+            "handshake_failed": "Nepavyko prisijungti prie serverio. Patikrinkite API raktą arba IP ir prievadą",
+            "empty_api_key": "Neteisingas API raktas",
+            "invalid_provider": "Pasirinktas netinkamas teikėjas",
+            "memory_not_supported": "Šis teikėjas nepalaiko atminties",
+            "invalid_image_path": "Vienas ar daugiau vaizdo kelių yra neteisingi",
+            "mismatched_lengths": "Vaizdo kelių ir aprašymų skaičius turi sutapti"
+        },
+        "abort": {
+            "unknown_provider": "Nežinomas teikėjas",
+            "reconfigure_successful": "Nustatymai sėkmingai išsaugoti"
+        }
+    }
+}

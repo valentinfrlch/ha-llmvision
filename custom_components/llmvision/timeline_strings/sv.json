@@ -38,15 +38,27 @@
                 "katt": "cat",
                 "fågel": "bird",
                 "husdjur": "dog",
-                "djur": "dog"
+                "djur": "animal",
+                "ekorre": "animal",
+                "viltlevande djur": "animal",
+                "hjort": "animal",
+                "kanin": "animal",
+                "räv": "animal",
+                "prärievarg": "animal",
+                "tvättbjörn": "animal",
+                "skunk": "animal",
+                "opossum": "animal",
+                "igelkott": "animal",
+                "björn": "animal",
+                "älg": "animal"
             }
         },
-        "package": {
+        "delivery": {
             "name": "Paket",
             "labels": {
-                "låda": "package",
-                "paket": "package",
-                "försändelse": "package"
+                "låda": "delivery",
+                "paket": "delivery",
+                "försändelse": "delivery"
             }
         },
         "entity": {
