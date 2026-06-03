@@ -712,11 +712,6 @@ action:
                         name: !input notification_sound
                         volume: !input notification_volume
                         critical: '{{ notification_critical }}'
-                    actions:
-                    - action: URI
-                      title: See Snapshot
-                      uri: '{{response.key_frame.replace(''/media'',''/media/local'')
-                        }}'
         - conditions:
           - condition: template
             value_template: '{{ analysis_mode==''Live Preview'' }}'
@@ -744,11 +739,6 @@ action:
                         critical: '{{ notification_critical }}'
                     ttl: 0
                     priority: high
-                    actions:
-                    - action: URI
-                      title: See Snapshot
-                      uri: '{{response.key_frame.replace(''/media'',''/media/local'')
-                        }}'
     - if:
       - condition: template
         value_template: '{{ tts_notification }}'
