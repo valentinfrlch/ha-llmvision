@@ -1,6 +1,7 @@
 """Comprehensive unit tests for providers.py module."""
 
 import json
+import os
 import pytest
 import base64
 from types import SimpleNamespace
@@ -18,6 +19,7 @@ from custom_components.llmvision.providers import (
     Ollama,
     AWSBedrock,
     Mistral,
+    TwelveLabs,
     ProviderFactory,
 )
 from custom_components.llmvision.const import (
@@ -2523,6 +2525,186 @@ async def test_provider_remaining_error_branches(coverage_hass, monkeypatch):
         return_value={"message": {"content": [{"toolUse": {"input": {"x": 1}}}]}}
     )
     assert await iam._make_request({}) == '{"x": 1}'
+
+
+class TestTwelveLabs:
+    """Test the TwelveLabs Pegasus video-understanding provider."""
+
+    def _make_provider(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            return TwelveLabs(mock_hass, "test_api_key", "pegasus1.5")
+
+    def test_factory_creates_twelvelabs(self, mock_hass):
+        """ProviderFactory creates a TwelveLabs provider."""
+        config = {CONF_API_KEY: "test_key"}
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = ProviderFactory.create(
+                mock_hass, "TwelveLabs", config, "pegasus1.5"
+            )
+        assert isinstance(provider, TwelveLabs)
+        assert provider.model == "pegasus1.5"
+
+    def test_generate_headers(self, mock_hass):
+        """Headers use the x-api-key scheme expected by the TwelveLabs API."""
+        provider = self._make_provider(mock_hass)
+        headers = provider._generate_headers()
+        assert headers["x-api-key"] == "test_api_key"
+        assert headers["content-type"] == "application/json"
+
+    async def test_frames_to_mp4_base64_empty(self, mock_hass):
+        """Encoding with no frames raises a validation error (no network/ffmpeg)."""
+        provider = self._make_provider(mock_hass)
+        with pytest.raises(ServiceValidationError):
+            await provider._frames_to_mp4_base64([])
+
+    async def test_prepare_vision_data_wiring(self, mock_hass):
+        """The analyze payload is shaped correctly without touching ffmpeg/network."""
+        provider = self._make_provider(mock_hass)
+        call = Mock()
+        call.provider = "tl_entry"
+        call.base64_images = ["frame1", "frame2"]
+        call.message = "What happened?"
+        call.max_tokens = 100  # below the model minimum -> must be clamped to 512
+        mock_hass.data = {
+            DOMAIN: {"tl_entry": {"provider": "TwelveLabs", "temperature": 0.2}}
+        }
+
+        with patch.object(
+            provider, "_frames_to_mp4_base64", AsyncMock(return_value="ZmFrZQ==")
+        ), patch.object(provider, "_get_system_prompt", return_value="System prompt"):
+            payload = await provider._prepare_vision_data(call)
+
+        assert payload["model_name"] == "pegasus1.5"
+        assert payload["video"] == {
+            "type": "base64_string",
+            "base64_string": "ZmFrZQ==",
+        }
+        assert payload["max_tokens"] == 512  # clamped up to the Pegasus minimum
+        assert payload["stream"] is False
+        assert "System prompt" in payload["prompt"]
+        assert "What happened?" in payload["prompt"]
+
+    async def test_make_request_extracts_data(self, mock_hass):
+        """_make_request returns the `data` field from the analyze response."""
+        provider = self._make_provider(mock_hass)
+        provider._post = AsyncMock(
+            return_value={
+                "id": "x",
+                "data": "A person walks by.",
+                "finish_reason": "stop",
+            }
+        )
+        assert await provider._make_request({}) == "A person walks by."
+
+    async def test_make_request_invalid_response(self, mock_hass):
+        """A response without `data` raises a validation error."""
+        provider = self._make_provider(mock_hass)
+        provider._post = AsyncMock(return_value={"id": "x", "data": None})
+        with pytest.raises(ServiceValidationError):
+            await provider._make_request({})
+
+    async def test_vision_request_end_to_end_mocked(self, mock_hass):
+        """vision_request encodes frames and posts, fully mocked (no network)."""
+        provider = self._make_provider(mock_hass)
+        call = Mock()
+        call.provider = "tl_entry"
+        call.base64_images = ["frame1"]
+        call.message = "Describe"
+        call.max_tokens = 512
+        mock_hass.data = {
+            DOMAIN: {"tl_entry": {"provider": "TwelveLabs", "temperature": 0.2}}
+        }
+
+        with patch.object(
+            provider, "_frames_to_mp4_base64", AsyncMock(return_value="ZmFrZQ==")
+        ), patch.object(
+            provider, "_get_system_prompt", return_value="sys"
+        ), patch.object(
+            provider, "_post", AsyncMock(return_value={"data": "Result."})
+        ):
+            assert await provider.vision_request(call) == "Result."
+
+    async def test_title_request_static(self, mock_hass):
+        """Pegasus is text-out only; title_request returns a static fallback."""
+        provider = self._make_provider(mock_hass)
+        assert await provider.title_request(Mock()) == "Event Detected"
+
+    async def test_validate_empty_api_key(self, mock_hass):
+        """Validation fails fast with no API key."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = TwelveLabs(mock_hass, "", "pegasus1.5")
+        with pytest.raises(ServiceValidationError):
+            await provider.validate()
+
+    async def test_validate_parameter_error_is_accepted(self, mock_hass):
+        """A non-auth (parameter) error during validation means the key is valid."""
+        provider = self._make_provider(mock_hass)
+        provider._post = AsyncMock(
+            side_effect=ServiceValidationError(
+                "max_tokens must be between 512 and 98304"
+            )
+        )
+        # Should not raise: parameter errors confirm the key authenticated.
+        assert await provider.validate() is None
+
+
+@pytest.mark.integration
+@pytest.mark.slow
+@pytest.mark.skipif(
+    not os.environ.get("TWELVELABS_API_KEY"),
+    reason="TWELVELABS_API_KEY not set; skipping live TwelveLabs Pegasus call",
+)
+async def test_twelvelabs_live_analyze(socket_enabled):
+    """Live smoke test against the real Pegasus /analyze endpoint.
+
+    Encodes two synthetic frames into an MP4 and asks Pegasus to describe it.
+    Requires ffmpeg on PATH and a valid TWELVELABS_API_KEY. The ``socket_enabled``
+    fixture lifts the Home Assistant test harness's default network block so this
+    opt-in test can reach the API when a key is provided.
+    """
+    import io
+    import aiohttp
+    from PIL import Image
+    from homeassistant.exceptions import ServiceValidationError as _SVE
+
+    # Build two simple JPEG frames in-memory.
+    def _jpeg(color):
+        buf = io.BytesIO()
+        Image.new("RGB", (320, 240), color).save(buf, format="JPEG")
+        return base64.b64encode(buf.getvalue()).decode()
+
+    frames = [_jpeg((20, 120, 200)), _jpeg((200, 120, 20))]
+
+    hass = Mock()
+    hass.data = {}
+    with patch(
+        "custom_components.llmvision.providers.async_get_clientsession",
+        return_value=aiohttp.ClientSession(),
+    ):
+        provider = TwelveLabs(hass, os.environ["TWELVELABS_API_KEY"], "pegasus1.5")
+    call = SimpleNamespace(
+        provider="tl",
+        base64_images=frames,
+        filenames=["a.jpg", "b.jpg"],
+        message="Describe the colors shown in this clip.",
+        max_tokens=512,
+        model_is_glimpse=lambda: False,
+    )
+    hass.data = {DOMAIN: {"tl": {"provider": "TwelveLabs", "temperature": 0.2}}}
+    with patch.object(provider, "_get_system_prompt", return_value="Be concise."):
+        try:
+            result = await provider.vision_request(call)
+        except _SVE as e:
+            # The Home Assistant test harness blocks outbound sockets by default;
+            # when running under it the call cannot reach the API. Skip rather
+            # than fail so this remains a genuine, opt-in live smoke test that
+            # passes when executed with network access (e.g. directly).
+            if "socket" in str(e).lower():
+                pytest.skip(f"network blocked by test harness: {e}")
+            raise
+        finally:
+            await provider.session.close()
+    assert isinstance(result, str) and len(result) > 0
 
 
 if __name__ == "__main__":

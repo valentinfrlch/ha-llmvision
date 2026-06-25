@@ -85,6 +85,9 @@ ERROR_NOT_CONFIGURED = "{provider} is not configured"
 ERROR_GROQ_MULTIPLE_IMAGES = "Groq does not support videos or streams"
 ERROR_NO_IMAGE_INPUT = "No image input provided"
 ERROR_HANDSHAKE_FAILED = "Connection could not be established"
+ERROR_TWELVELABS_ENCODE_FAILED = (
+    "Could not encode frames into a video clip for TwelveLabs Pegasus"
+)
 
 # Versions
 VERSION_ANTHROPIC = "2023-06-01"  # https://docs.anthropic.com/en/api/versioning
@@ -147,6 +150,7 @@ DEFAULT_AWS_MODEL = "us.amazon.nova-pro-v1:0"
 DEFAULT_OPENWEBUI_MODEL = "gemma3:4b"
 DEFAULT_OPENROUTER_MODEL = "google/gemma-3-4b-it:free"
 DEFAULT_MISTRAL_MODEL = "pixtral-12b-2409"
+DEFAULT_TWELVELABS_MODEL = "pegasus1.5"
 
 DEFAULT_SUMMARY_PROMPT = "Provide a brief summary for the following titles. Focus on the key actions or changes that occurred over time and avoid unnecessary details or subjective interpretations. The summary should be concise, objective, and relevant to the content of the images. Keep the summary under 50 words and ensure it captures the main events or activities described in the descriptions. Here are the descriptions:\n "
 
@@ -161,3 +165,4 @@ ENDPOINT_OPENWEBUI = "{protocol}://{ip_address}:{port}/api/chat/completions"
 ENDPOINT_AZURE = "{base_url}openai/deployments/{deployment}/chat/completions?api-version={api_version}"
 ENDPOINT_OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
 ENDPOINT_MISTRAL = "https://api.mistral.ai/v1/chat/completions"
+ENDPOINT_TWELVELABS = "https://api.twelvelabs.io/v1.3/analyze"

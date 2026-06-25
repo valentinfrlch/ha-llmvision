@@ -16,6 +16,7 @@ from .providers import (
     Ollama,
     AWSBedrock,
     Mistral,
+    TwelveLabs,
 )
 from .const import (
     DOMAIN,
@@ -56,6 +57,7 @@ from .const import (
     DEFAULT_OPENWEBUI_MODEL,
     DEFAULT_OPENROUTER_MODEL,
     DEFAULT_MISTRAL_MODEL,
+    DEFAULT_TWELVELABS_MODEL,
     ENDPOINT_OPENWEBUI,
     ENDPOINT_AZURE,
     ENDPOINT_OPENROUTER,
@@ -90,6 +92,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "OpenWebUI": self.async_step_openwebui,
             "OpenRouter": self.async_step_openrouter,
             "Mistral": self.async_step_mistral,
+            "TwelveLabs": self.async_step_twelvelabs,
         }
 
         step_method = provider_steps.get(provider)
@@ -129,6 +132,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 "OpenWebUI",
                                 "OpenRouter",
                                 "Mistral",
+                                "TwelveLabs",
                                 "Custom OpenAI",
                             ],
                             "mode": "dropdown",
@@ -1726,6 +1730,88 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="mistral",
+            data_schema=data_schema,
+        )
+
+    async def async_step_twelvelabs(self, user_input=None):
+        data_schema = vol.Schema(
+            {
+                vol.Optional("connection_section"): section(
+                    vol.Schema(
+                        {
+                            vol.Required(CONF_API_KEY): selector(
+                                {"text": {"type": "password"}}
+                            )
+                        }
+                    ),
+                    {"collapsed": False},
+                ),
+                vol.Optional("model_section"): section(
+                    vol.Schema(
+                        {
+                            vol.Required(
+                                CONF_DEFAULT_MODEL, default=DEFAULT_TWELVELABS_MODEL
+                            ): str,
+                            vol.Optional(CONF_TEMPERATURE, default=0.2): selector(
+                                {
+                                    "number": {
+                                        "min": 0,
+                                        "max": 1,
+                                        "step": 0.1,
+                                        "mode": "slider",
+                                    }
+                                }
+                            ),
+                        }
+                    ),
+                    {"collapsed": False},
+                ),
+            }
+        )
+
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            self.init_info = self._get_reconfigure_entry().data
+            suggested = {
+                "connection_section": {CONF_API_KEY: self.init_info.get(CONF_API_KEY)},
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(
+                        CONF_DEFAULT_MODEL, DEFAULT_TWELVELABS_MODEL
+                    ),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.2),
+                },
+            }
+            data_schema = self.add_suggested_values_to_schema(data_schema, suggested)
+
+        if user_input is not None:
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            user_input = flatten_dict(user_input)
+            try:
+                twelvelabs = TwelveLabs(
+                    self.hass,
+                    api_key=user_input[CONF_API_KEY],
+                    model=user_input[CONF_DEFAULT_MODEL],
+                )
+                await twelvelabs.validate()
+                user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    return self.async_create_entry(
+                        title="TwelveLabs Pegasus", data=user_input
+                    )
+            except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
+                return self.async_show_form(
+                    step_id="twelvelabs",
+                    data_schema=data_schema,
+                    errors={"base": "empty_api_key"},
+                )
+
+        return self.async_show_form(
+            step_id="twelvelabs",
             data_schema=data_schema,
         )
 
