@@ -389,6 +389,34 @@
                     }
                 }
             },
+            "twelvelabs": {
+                "title": "Configure TwelveLabs Pegasus",
+                "description": "Provide a valid TwelveLabs API key from the TwelveLabs dashboard.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "TwelveLabs authentication",
+                        "data": {
+                            "api_key": "API key"
+                        },
+                        "data_description": {
+                            "api_key": "Your TwelveLabs API key from the TwelveLabs dashboard."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature"
+                        },
+                        "data_description": {
+                            "default_model": "The Pegasus model to use (for example pegasus1.5). Pegasus analyzes the captured frames as a short video clip.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Settings",
                 "description": "Configure the LLM Vision integration. This entry is required before setting up other providers. If you wish to use the default settings, just press 'Submit'.",

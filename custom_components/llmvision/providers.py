@@ -11,6 +11,9 @@ import inspect
 import re
 import json
 import base64
+import asyncio
+import os
+import tempfile
 from .const import (
     DOMAIN,
     CONF_API_KEY,
@@ -37,9 +40,11 @@ from .const import (
     ENDPOINT_GROQ,
     ENDPOINT_OPENROUTER,
     ENDPOINT_MISTRAL,
+    ENDPOINT_TWELVELABS,
     ERROR_NOT_CONFIGURED,
     ERROR_GROQ_MULTIPLE_IMAGES,
     ERROR_NO_IMAGE_INPUT,
+    ERROR_TWELVELABS_ENCODE_FAILED,
     DEFAULT_OPENAI_MODEL,
     DEFAULT_ANTHROPIC_MODEL,
     DEFAULT_AZURE_MODEL,
@@ -52,6 +57,7 @@ from .const import (
     DEFAULT_OPENWEBUI_MODEL,
     DEFAULT_OPENROUTER_MODEL,
     DEFAULT_MISTRAL_MODEL,
+    DEFAULT_TWELVELABS_MODEL,
     CONF_KEEP_ALIVE,
     CONF_CONTEXT_WINDOW,
     CONF_TEMPERATURE,
@@ -133,6 +139,7 @@ class Request:
             "Open WebUI": DEFAULT_OPENWEBUI_MODEL,
             "OpenRouter": DEFAULT_OPENROUTER_MODEL,
             "Mistral": DEFAULT_MISTRAL_MODEL,
+            "TwelveLabs": DEFAULT_TWELVELABS_MODEL,
         }.get(provider_name)
 
     def validate(self, call: Any) -> None | ServiceValidationError:
@@ -2070,6 +2077,155 @@ class AWSBedrock(Provider):
         return True
 
 
+class TwelveLabs(Provider):
+    """TwelveLabs Pegasus video-understanding provider.
+
+    Unlike the other providers, Pegasus is a video model: it reasons over a
+    short clip rather than independent stills. LLM Vision always decomposes its
+    inputs (videos, camera snapshots, Frigate events) into base64 JPEG frames
+    before a provider is called, so this provider re-encodes those frames back
+    into a tiny in-memory MP4 (using the ffmpeg binary the integration already
+    requires) and sends it to the Pegasus `/analyze` endpoint. This lets
+    Pegasus pick up on motion across the keyframes instead of treating them as
+    unrelated images.
+    """
+
+    def __init__(self, hass: HomeAssistant, api_key: str, model: str):
+        super().__init__(hass, api_key, model)
+
+    def _generate_headers(self) -> dict:
+        return {"x-api-key": self.api_key, "content-type": "application/json"}
+
+    async def _frames_to_mp4_base64(self, base64_images: list, fps: int = 1) -> str:
+        """Encode an ordered list of base64 JPEG frames into a base64 MP4 clip.
+
+        Pegasus needs a real (seekable) MP4 container, so we mux through a
+        temporary file rather than a pipe. ffmpeg is already a runtime
+        requirement of this integration (see media_handlers).
+        """
+        if not base64_images:
+            raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
+
+        try:
+            jpeg_bytes = b"".join(base64.b64decode(img) for img in base64_images)
+        except Exception as e:
+            _LOGGER.error(f"Failed to decode frames for TwelveLabs: {e}")
+            raise ServiceValidationError(ERROR_TWELVELABS_ENCODE_FAILED)
+
+        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+            output_path = tmp.name
+
+        try:
+            ffmpeg_cmd = [
+                "ffmpeg",
+                "-y",
+                "-loglevel",
+                "error",
+                "-f",
+                "image2pipe",
+                "-vcodec",
+                "mjpeg",
+                "-framerate",
+                str(fps),
+                "-i",
+                "-",
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p",
+                "-movflags",
+                "+faststart",
+                output_path,
+            ]
+            process = await asyncio.create_subprocess_exec(
+                *ffmpeg_cmd,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            _, stderr = await process.communicate(input=jpeg_bytes)
+            if process.returncode != 0:
+                _LOGGER.error(
+                    f"ffmpeg failed to build clip for TwelveLabs: "
+                    f"{(stderr or b'').decode(errors='ignore')[:300]}"
+                )
+                raise ServiceValidationError(ERROR_TWELVELABS_ENCODE_FAILED)
+
+            with open(output_path, "rb") as f:
+                mp4_bytes = f.read()
+        finally:
+            try:
+                os.unlink(output_path)
+            except OSError:
+                pass
+
+        if not mp4_bytes:
+            raise ServiceValidationError(ERROR_TWELVELABS_ENCODE_FAILED)
+
+        return base64.b64encode(mp4_bytes).decode("utf-8")
+
+    async def _make_request(self, data: dict) -> str:
+        headers = self._generate_headers()
+        response = await self._post(url=ENDPOINT_TWELVELABS, headers=headers, data=data)
+        if not isinstance(response, dict):
+            raise ServiceValidationError("invalid_response")
+        # Pegasus may return None on an error finish_reason; surface what we can.
+        response_text = response.get("data")
+        if response_text is None:
+            raise ServiceValidationError("invalid_response")
+        return response_text.strip()
+
+    async def _prepare_vision_data(self, call: Any) -> dict:
+        # Pegasus's max_tokens has a model minimum (512); clamp to stay valid.
+        max_tokens = max(int(getattr(call, "max_tokens", 512) or 512), 512)
+        clip_base64 = await self._frames_to_mp4_base64(call.base64_images)
+        prompt = f"{self._get_system_prompt()}\n\n{call.message}"
+        return {
+            "model_name": self.model,
+            "video": {"type": "base64_string", "base64_string": clip_base64},
+            "prompt": prompt,
+            "max_tokens": max_tokens,
+            "temperature": self._get_default_parameters(call).get("temperature"),
+            "stream": False,
+        }
+
+    async def _prepare_text_data(self, call: Any) -> dict:
+        # Title generation operates on text only; Pegasus requires a video, so
+        # this path is not used (see vision_request / title_request overrides).
+        raise ServiceValidationError("invalid_provider")
+
+    async def vision_request(self, call: Any) -> str:
+        data = await self._prepare_vision_data(call)
+        return await self._make_request(data)
+
+    async def title_request(self, call: Any) -> str:
+        # Pegasus is multimodal-in/text-out only; it cannot summarise raw text.
+        # Titles are derived from the description by the orchestrator instead.
+        return "Event Detected"
+
+    async def validate(self) -> None | ServiceValidationError:
+        if not self.api_key:
+            raise ServiceValidationError("empty_api_key")
+        # Validate the key with a cheap, well-formed request. A missing video
+        # yields a 400 with a parameter error (key accepted); an invalid key
+        # yields 401. Either non-auth response confirms the key is usable.
+        headers = self._generate_headers()
+        data = {"model_name": self.model, "prompt": "Hi", "max_tokens": 512}
+        try:
+            await self._post(url=ENDPOINT_TWELVELABS, headers=headers, data=data)
+        except ServiceValidationError as e:
+            message = str(e).lower()
+            if (
+                "api" in message
+                and "key" in message
+                or "auth" in message
+                or "401" in message
+            ):
+                raise ServiceValidationError("empty_api_key")
+            # A parameter/validation error means the key authenticated fine.
+            return None
+
+
 class ProviderFactory:
     """
     Factory to create provider instances from a provider name and config
@@ -2190,6 +2346,11 @@ class ProviderFactory:
                 hass,
                 api_key=cast(str, config.get(CONF_API_KEY) or ""),
                 model=model,
+            )
+
+        if provider_name == "TwelveLabs":
+            return TwelveLabs(
+                hass, api_key=cast(str, config.get(CONF_API_KEY) or ""), model=model
             )
 
         raise ServiceValidationError("invalid_provider")
