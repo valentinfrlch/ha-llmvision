@@ -391,7 +391,7 @@
             },
             "twelvelabs": {
                 "title": "Configure TwelveLabs Pegasus",
-                "description": "Provide a valid TwelveLabs API key. Grab a free key at https://twelvelabs.io.",
+                "description": "Provide a valid TwelveLabs API key from the TwelveLabs dashboard.",
                 "sections": {
                     "connection_section": {
                         "name": "Connection",
@@ -400,7 +400,7 @@
                             "api_key": "API key"
                         },
                         "data_description": {
-                            "api_key": "Your TwelveLabs API key. A generous free tier is available at https://twelvelabs.io."
+                            "api_key": "Your TwelveLabs API key from the TwelveLabs dashboard."
                         }
                     },
                     "model_section": {
