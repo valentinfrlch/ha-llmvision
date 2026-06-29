@@ -29,6 +29,7 @@ from .const import (
     CONF_AZURE_VERSION,
     CONF_AZURE_BASE_URL,
     CONF_AZURE_DEPLOYMENT,
+    CONF_ANTHROPIC_BASE_URL,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_RETENTION_TIME,
     CONF_MEMORY_PATHS,
@@ -108,6 +109,8 @@ async def async_setup_entry(hass, entry):
         CONF_AZURE_BASE_URL: entry.data.get(CONF_AZURE_BASE_URL),
         CONF_AZURE_DEPLOYMENT: entry.data.get(CONF_AZURE_DEPLOYMENT),
         CONF_AZURE_VERSION: entry.data.get(CONF_AZURE_VERSION),
+        # Anthropic specific
+        CONF_ANTHROPIC_BASE_URL: entry.data.get(CONF_ANTHROPIC_BASE_URL),
         # Custom OpenAI specific
         CONF_CUSTOM_OPENAI_ENDPOINT: entry.data.get(CONF_CUSTOM_OPENAI_ENDPOINT),
         # AWS specific

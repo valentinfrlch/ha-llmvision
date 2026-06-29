@@ -37,12 +37,14 @@ from custom_components.llmvision.const import (
     CONF_AZURE_DEPLOYMENT,
     CONF_AZURE_VERSION,
     CONF_CUSTOM_OPENAI_ENDPOINT,
+    CONF_ANTHROPIC_BASE_URL,
     CONF_IP_ADDRESS,
     CONF_HTTPS,
     CONF_PORT,
     CONF_THINK,
     CONF_THINKING_BUDGET,
     ENDPOINT_GROQ,
+    ENDPOINT_ANTHROPIC,
     DEFAULT_OPENAI_MODEL,
     DEFAULT_ANTHROPIC_MODEL,
     DEFAULT_AZURE_MODEL,
@@ -780,6 +782,67 @@ class TestAnthropic:
             assert headers["content-type"] == "application/json"
             assert "anthropic-version" in headers
 
+    def test_default_endpoint(self, mock_hass):
+        """Test Anthropic defaults to the official endpoint."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            anthropic = Anthropic(mock_hass, "test_api_key", "claude-3")
+
+            assert anthropic._get_request_url() == ENDPOINT_ANTHROPIC
+
+    @pytest.mark.parametrize(
+        ("base_url", "expected"),
+        [
+            # Full messages endpoint is used as-is
+            (
+                "https://proxy.example.com/v1/messages",
+                "https://proxy.example.com/v1/messages",
+            ),
+            # Trailing slash is normalized away
+            (
+                "https://proxy.example.com/v1/messages/",
+                "https://proxy.example.com/v1/messages",
+            ),
+            # Versioned base gets /messages appended
+            (
+                "https://proxy.example.com/v1",
+                "https://proxy.example.com/v1/messages",
+            ),
+            # Bare host gets the full /v1/messages path appended
+            (
+                "https://proxy.example.com",
+                "https://proxy.example.com/v1/messages",
+            ),
+            (
+                "https://proxy.example.com/anthropic",
+                "https://proxy.example.com/anthropic/v1/messages",
+            ),
+        ],
+    )
+    def test_get_request_url_custom_base(self, mock_hass, base_url, expected):
+        """Custom API bases are normalized to a messages endpoint."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            anthropic = Anthropic(
+                mock_hass,
+                "test_api_key",
+                "claude-3",
+                endpoint={"base_url": base_url},
+            )
+
+            assert anthropic._get_request_url() == expected
+
+    @pytest.mark.parametrize("base_url", ["", "   ", None])
+    def test_get_request_url_falls_back_to_default(self, mock_hass, base_url):
+        """Empty/blank custom bases fall back to the official endpoint."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            anthropic = Anthropic(
+                mock_hass,
+                "test_api_key",
+                "claude-3",
+                endpoint={"base_url": base_url},
+            )
+
+            assert anthropic._get_request_url() == ENDPOINT_ANTHROPIC
+
 
 class TestGoogle:
     """Test Google provider class."""
@@ -1040,7 +1103,7 @@ class TestProviderFactory:
             assert isinstance(provider, AzureOpenAI)
 
     def test_create_anthropic(self, mock_hass):
-        """Test ProviderFactory creates Anthropic provider."""
+        """Test ProviderFactory creates Anthropic provider with default endpoint."""
         config = {CONF_API_KEY: "test_key"}
 
         with patch("custom_components.llmvision.providers.async_get_clientsession"):
@@ -1049,6 +1112,25 @@ class TestProviderFactory:
             )
 
             assert isinstance(provider, Anthropic)
+            assert provider._get_request_url() == ENDPOINT_ANTHROPIC
+
+    def test_create_anthropic_custom_base_url(self, mock_hass):
+        """Test ProviderFactory passes a custom Anthropic base URL."""
+        config = {
+            CONF_API_KEY: "test_key",
+            CONF_ANTHROPIC_BASE_URL: "https://proxy.example.com",
+        }
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = ProviderFactory.create(
+                mock_hass, "Anthropic", config, "claude-3"
+            )
+
+            assert isinstance(provider, Anthropic)
+            assert (
+                provider._get_request_url()
+                == "https://proxy.example.com/v1/messages"
+            )
 
     def test_create_google(self, mock_hass):
         """Test ProviderFactory creates Google provider."""

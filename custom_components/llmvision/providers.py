@@ -22,6 +22,7 @@ from .const import (
     CONF_AZURE_BASE_URL,
     CONF_AZURE_DEPLOYMENT,
     CONF_AZURE_VERSION,
+    CONF_ANTHROPIC_BASE_URL,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_AWS_ACCESS_KEY_ID,
     CONF_AWS_SECRET_ACCESS_KEY,
@@ -980,8 +981,14 @@ class AzureOpenAI(Provider):
 
 class Anthropic(Provider):
 
-    def __init__(self, hass: HomeAssistant, api_key: str, model: str):
-        super().__init__(hass, api_key, model)
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        api_key: str,
+        model: str,
+        endpoint={"base_url": ENDPOINT_ANTHROPIC},
+    ):
+        super().__init__(hass, api_key, model, endpoint=endpoint)
 
     def supports_structured_output(self) -> bool:
         """Return True if provider supports structured output."""
@@ -994,9 +1001,33 @@ class Anthropic(Provider):
             "anthropic-version": VERSION_ANTHROPIC,
         }
 
+    def _get_request_url(self) -> str:
+        """Resolve the messages endpoint, honoring a custom API base if configured.
+
+        Accepts a bare host (``https://proxy.example.com``), a versioned base
+        (``.../v1``) or a full messages endpoint (``.../v1/messages``) and
+        normalizes it to the Anthropic ``/v1/messages`` path.
+        """
+        if isinstance(self.endpoint, dict):
+            url = self.endpoint.get("base_url") or ENDPOINT_ANTHROPIC
+        else:
+            url = self.endpoint or ENDPOINT_ANTHROPIC
+
+        if not isinstance(url, str) or not url.strip():
+            return ENDPOINT_ANTHROPIC
+
+        normalized_url = url.strip().rstrip("/")
+        if normalized_url.endswith("/messages"):
+            return normalized_url
+        if normalized_url.endswith("/v1"):
+            return f"{normalized_url}/messages"
+        return f"{normalized_url}/v1/messages"
+
     async def _make_request(self, data: dict) -> str:
         headers = self._generate_headers()
-        response = await self._post(url=ENDPOINT_ANTHROPIC, headers=headers, data=data)
+        response = await self._post(
+            url=self._get_request_url(), headers=headers, data=data
+        )
 
         # Handle tool use response for structured output
         if "content" in response and len(response["content"]) > 0:
@@ -1141,7 +1172,7 @@ class Anthropic(Provider):
             "temperature": 0.5,
         }
         await self._post(
-            url=f"https://api.anthropic.com/v1/messages", headers=header, data=payload
+            url=self._get_request_url(), headers=header, data=payload
         )
 
 
@@ -2076,7 +2107,13 @@ class ProviderFactory:
 
         if provider_name == "Anthropic":
             return Anthropic(
-                hass, api_key=cast(str, config.get(CONF_API_KEY) or ""), model=model
+                hass,
+                api_key=cast(str, config.get(CONF_API_KEY) or ""),
+                model=model,
+                endpoint={
+                    "base_url": config.get(CONF_ANTHROPIC_BASE_URL)
+                    or ENDPOINT_ANTHROPIC
+                },
             )
 
         if provider_name == "Google":
