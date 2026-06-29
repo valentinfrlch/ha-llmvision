@@ -34,6 +34,10 @@ CONF_CUSTOM_OPENAI_ENDPOINT = "custom_openai_endpoint"
 
 # Timeline
 CONF_RETENTION_TIME = "retention_time"
+# Seconds a freshly-written key-frame snapshot is protected from the timeline
+# cleanup before it is considered an orphan. Must exceed the analysis duration,
+# otherwise the key frame is swept before its event row is inserted.
+CONF_CLEANUP_GRACE = "cleanup_grace"
 
 # Settings
 CONF_TIMELINE_LANGUAGE = "timeline_language"
@@ -79,6 +83,9 @@ INCLUDE_FILENAME = "include_filename"
 EXPOSE_IMAGES = "expose_images"
 GENERATE_TITLE = "generate_title"
 SENSOR_ENTITY = "sensor_entity"
+# Per-call override for the key-frame cleanup grace (seconds). Falls back to the
+# global CONF_CLEANUP_GRACE setting when 0/unset.
+KEYFRAME_GRACE = "keyframe_grace"
 
 # Error messages
 ERROR_NOT_CONFIGURED = "{provider} is not configured"
@@ -91,6 +98,10 @@ VERSION_ANTHROPIC = "2023-06-01"  # https://docs.anthropic.com/en/api/versioning
 VERSION_AZURE = "2025-04-01-preview"  # https://learn.microsoft.com/en-us/azure/ai-foundry/openai/api-version-lifecycle?tabs=key
 
 # Defaults
+# Default key-frame cleanup grace, in seconds. 300s comfortably covers slow
+# multi-frame analyses (e.g. stream_analyzer with high max_frames on a local
+# model) while still pruning genuinely orphaned snapshots from failed runs.
+DEFAULT_CLEANUP_GRACE = 300
 DEFAULT_SYSTEM_PROMPT = "Analyze the images and give a concise, objective event summary (<255 chars). Focus on people, pets, and moving objects; track changes across images. Exclude static details, avoid speculation, and follow user instructions."
 DEFAULT_TITLE_PROMPT = "Generate a clear event title (<6 words) from the description. Use format: <Object> seen at <location>. Keep it concise, factual, and alert-ready. Include names if given. Avoid extra details or interpretations."
 DATA_EXTRACTION_PROMPT = "Analyze the image(s) and extract only the requested info (e.g., object count, license plate). Output strictly in {data_format}. Double-check accuracy and ensure results reflect the image content. Do not explain or add extra info."

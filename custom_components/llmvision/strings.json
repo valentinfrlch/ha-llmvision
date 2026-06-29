@@ -393,12 +393,14 @@
                         "data": {
                             "timeline_language": "Timeline language",
                             "retention_time": "Retention time",
+                            "cleanup_grace": "Snapshot cleanup grace (seconds)",
                             "timeline_today_summary": "Timeline Summary",
                             "timeline_summary_prompt": "Today Summary Prompt"
                         },
                         "data_description": {
                             "timeline_language": "Select the language used to generate icons from events.",
                             "retention_time": "Auto delete events after (days). Set to 0 to disable auto deletion.",
+                            "cleanup_grace": "How long a freshly-saved key-frame snapshot is protected from cleanup while analysis runs. Must exceed your analysis time: increase it if you use a high frame count or long duration, otherwise key-frame images can be deleted before their event is saved (missing card/notification images).",
                             "timeline_today_summary": "Enable timeline summary to automatically generate a summary of today's events.",
                             "timeline_summary_prompt": "The instruction given to the model to generate a summary of today's events."
                         }

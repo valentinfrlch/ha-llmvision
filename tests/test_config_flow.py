@@ -6,7 +6,11 @@ import pytest
 from homeassistant import config_entries
 from homeassistant.exceptions import ServiceValidationError
 
-from custom_components.llmvision.config_flow import flatten_dict, llmvisionConfigFlow
+from custom_components.llmvision.config_flow import (
+    flatten_dict,
+    llmvisionConfigFlow,
+    _fallback_provider_options,
+)
 from custom_components.llmvision.const import (
     CONF_API_KEY,
     CONF_AWS_ACCESS_KEY_ID,
@@ -953,3 +957,49 @@ class TestFlattenDict:
         result = flatten_dict(flat)
 
         assert result == flat
+
+
+class TestFallbackProviderOptions:
+    """The fallback-provider dropdown must label options with the entry title so
+    multiple providers of the same type (e.g. two Ollama servers) are
+    distinguishable, not collapsed to the bare provider type."""
+
+    def test_labels_use_entry_title_for_same_type_providers(self, mock_hass):
+        mock_hass.data = {
+            "llmvision": {
+                "ollama-1": {CONF_PROVIDER: "Ollama"},
+                "ollama-2": {CONF_PROVIDER: "Ollama"},
+                "settings": {CONF_PROVIDER: "Settings"},
+            }
+        }
+        entries = {
+            "ollama-1": Mock(title="Ollama (Datawatch:100.64.0.20)"),
+            "ollama-2": Mock(title="Ollama (JohnnyJohnny:100.64.0.4)"),
+        }
+        mock_hass.config_entries.async_get_entry = Mock(
+            side_effect=lambda eid: entries.get(eid)
+        )
+
+        opts = _fallback_provider_options(mock_hass)
+        labels = [o["label"] for o in opts]
+        values = [o["value"] for o in opts]
+
+        assert "No Fallback" in labels
+        assert "Ollama (Datawatch:100.64.0.20)" in labels
+        assert "Ollama (JohnnyJohnny:100.64.0.4)" in labels
+        # The two same-type providers are NOT collapsed to one "Ollama" label.
+        assert labels.count("Ollama") == 0
+        assert "ollama-1" in values and "ollama-2" in values
+        assert "settings" not in values  # Settings pseudo-entry excluded
+
+    def test_falls_back_to_type_when_entry_unresolved(self, mock_hass):
+        mock_hass.data = {"llmvision": {"ollama-x": {CONF_PROVIDER: "Ollama"}}}
+        mock_hass.config_entries.async_get_entry = Mock(return_value=None)
+        opts = _fallback_provider_options(mock_hass)
+        assert {"label": "Ollama", "value": "ollama-x"} in opts
+
+    def test_only_no_fallback_when_no_providers(self, mock_hass):
+        mock_hass.data = {"llmvision": {"settings": {CONF_PROVIDER: "Settings"}}}
+        mock_hass.config_entries.async_get_entry = Mock(return_value=None)
+        opts = _fallback_provider_options(mock_hass)
+        assert opts == [{"label": "No Fallback", "value": "no_fallback"}]
