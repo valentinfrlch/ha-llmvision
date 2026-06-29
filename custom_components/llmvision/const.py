@@ -24,6 +24,9 @@ CONF_AZURE_BASE_URL = "azure_base_url"
 CONF_AZURE_DEPLOYMENT = "azure_deployment"
 CONF_AZURE_VERSION = "azure_version"
 
+# Anthropic specific
+CONF_ANTHROPIC_BASE_URL = "anthropic_base_url"
+
 # AWS specific
 CONF_AWS_ACCESS_KEY_ID = "aws_access_key_id"
 CONF_AWS_SECRET_ACCESS_KEY = "aws_secret_access_key"

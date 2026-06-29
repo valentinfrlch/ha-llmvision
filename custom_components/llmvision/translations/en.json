@@ -153,10 +153,12 @@
                         "name": "Connection",
                         "description": "Anthropic authentication",
                         "data": {
-                            "api_key": "API key"
+                            "api_key": "API key",
+                            "anthropic_base_url": "API base URL"
                         },
                         "data_description": {
-                            "api_key": "Make sure to add credit to your Anthropic account."
+                            "api_key": "Make sure to add credit to your Anthropic account.",
+                            "anthropic_base_url": "Base URL of the Anthropic-compatible API. Leave as the default to use Anthropic directly, or point it at a proxy/gateway (e.g. https://your-proxy.example.com)."
                         }
                     },
                     "model_section": {

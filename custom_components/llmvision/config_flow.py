@@ -29,6 +29,7 @@ from .const import (
     CONF_AZURE_VERSION,
     CONF_AZURE_BASE_URL,
     CONF_AZURE_DEPLOYMENT,
+    CONF_ANTHROPIC_BASE_URL,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_RETENTION_TIME,
     CONF_TIMELINE_LANGUAGE,
@@ -56,6 +57,7 @@ from .const import (
     DEFAULT_OPENROUTER_MODEL,
     ENDPOINT_OPENWEBUI,
     ENDPOINT_AZURE,
+    ENDPOINT_ANTHROPIC,
     ENDPOINT_OPENROUTER,
     CONF_CONTEXT_WINDOW,
     CONF_THINKING_BUDGET,
@@ -745,7 +747,11 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         {
                             vol.Required(CONF_API_KEY): selector(
                                 {"text": {"type": "password"}}
-                            )
+                            ),
+                            vol.Optional(
+                                CONF_ANTHROPIC_BASE_URL,
+                                default=ENDPOINT_ANTHROPIC,
+                            ): str,
                         }
                     ),
                     {"collapsed": False},
@@ -798,7 +804,12 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.init_info = self._get_reconfigure_entry().data
             # Re-nest the flat config entry data into sections
             suggested = {
-                "connection_section": {CONF_API_KEY: self.init_info.get(CONF_API_KEY)},
+                "connection_section": {
+                    CONF_API_KEY: self.init_info.get(CONF_API_KEY),
+                    CONF_ANTHROPIC_BASE_URL: self.init_info.get(
+                        CONF_ANTHROPIC_BASE_URL, ENDPOINT_ANTHROPIC
+                    ),
+                },
                 "model_section": {
                     CONF_DEFAULT_MODEL: self.init_info.get(
                         CONF_DEFAULT_MODEL, DEFAULT_ANTHROPIC_MODEL
@@ -820,6 +831,10 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     self.hass,
                     api_key=user_input[CONF_API_KEY],
                     model=user_input[CONF_DEFAULT_MODEL],
+                    endpoint={
+                        "base_url": user_input.get(CONF_ANTHROPIC_BASE_URL)
+                        or ENDPOINT_ANTHROPIC
+                    },
                 )
                 await anthropic.validate()
                 # add the mode to user_input

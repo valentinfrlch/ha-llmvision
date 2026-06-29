@@ -36,7 +36,9 @@ from custom_components.llmvision.const import (
     CONF_TIMELINE_LANGUAGE,
     CONF_TITLE_PROMPT,
     CONF_TOP_P,
+    CONF_ANTHROPIC_BASE_URL,
     DEFAULT_OPENAI_MODEL,
+    ENDPOINT_ANTHROPIC,
     ENDPOINT_AZURE,
     ENDPOINT_OPENROUTER,
     ENDPOINT_OPENWEBUI,
@@ -391,6 +393,40 @@ class TestProviderSteps:
         provider_instance.validate.assert_awaited_once_with()
 
     @pytest.mark.asyncio
+    async def test_anthropic_passes_custom_base_url(self, build_flow):
+        """A custom Anthropic API base should be forwarded to the provider."""
+        flow = build_flow(init_info={CONF_PROVIDER: "Anthropic"})
+        user_input = {
+            "connection_section": {
+                CONF_API_KEY: "secret",
+                CONF_ANTHROPIC_BASE_URL: "https://proxy.example.com",
+            },
+            "model_section": {
+                CONF_DEFAULT_MODEL: "claude-3-7-sonnet-latest",
+                CONF_TEMPERATURE: 0.5,
+                CONF_TOP_P: 0.9,
+                CONF_THINKING_BUDGET: 0,
+            },
+        }
+        provider_instance = Mock(validate=AsyncMock())
+
+        with patch(
+            "custom_components.llmvision.config_flow.Anthropic",
+            return_value=provider_instance,
+        ) as anthropic_cls:
+            result = await flow.async_step_anthropic(user_input)
+
+        assert result["type"] == "create_entry"
+        assert result["data"][CONF_ANTHROPIC_BASE_URL] == "https://proxy.example.com"
+        anthropic_cls.assert_called_once_with(
+            flow.hass,
+            api_key="secret",
+            model="claude-3-7-sonnet-latest",
+            endpoint={"base_url": "https://proxy.example.com"},
+        )
+        provider_instance.validate.assert_awaited_once_with()
+
+    @pytest.mark.asyncio
     async def test_openai_shows_error_when_validation_fails(self, build_flow):
         """Validation failures should return the handshake form error."""
         flow = build_flow(init_info={CONF_PROVIDER: "OpenAI"})
@@ -590,7 +626,11 @@ class TestProviderSteps:
                 "Anthropic Claude",
                 lambda flow: (
                     (flow.hass,),
-                    {"api_key": "secret", "model": "claude-3-7-sonnet-latest"},
+                    {
+                        "api_key": "secret",
+                        "model": "claude-3-7-sonnet-latest",
+                        "endpoint": {"base_url": ENDPOINT_ANTHROPIC},
+                    },
                 ),
                 "empty_api_key",
             ),
