@@ -99,6 +99,24 @@ image_analyzer:
       default: false
       selector:
         boolean:
+    keyframe_grace:
+      name: Key Frame Retention Grace
+      description: >-
+        Seconds to protect the saved key frame from cleanup while the analysis
+        runs. Leave at 0 to use the global "Snapshot cleanup grace" setting.
+        Increase for slow analyses (high max_frames / long duration): if this is
+        shorter than the analysis takes, the key frame can be deleted before its
+        timeline event is saved, leaving notifications/cards without an image.
+      required: false
+      example: 300
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 3600
+          step: 10
+          unit_of_measurement: seconds
+          mode: box
     response_format:
       name: Response Format
       description: Format of the response - text for natural language or json for structured data
@@ -246,6 +264,24 @@ video_analyzer:
       default: false
       selector:
         boolean:
+    keyframe_grace:
+      name: Key Frame Retention Grace
+      description: >-
+        Seconds to protect the saved key frame from cleanup while the analysis
+        runs. Leave at 0 to use the global "Snapshot cleanup grace" setting.
+        Increase for slow analyses (high max_frames / long duration): if this is
+        shorter than the analysis takes, the key frame can be deleted before its
+        timeline event is saved, leaving notifications/cards without an image.
+      required: false
+      example: 300
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 3600
+          step: 10
+          unit_of_measurement: seconds
+          mode: box
     response_format:
       name: Response Format
       description: Format of the response - text for natural language or json for structured data
@@ -396,6 +432,24 @@ stream_analyzer:
       default: false
       selector:
         boolean:
+    keyframe_grace:
+      name: Key Frame Retention Grace
+      description: >-
+        Seconds to protect the saved key frame from cleanup while the analysis
+        runs. Leave at 0 to use the global "Snapshot cleanup grace" setting.
+        Increase for slow analyses (high max_frames / long duration): if this is
+        shorter than the analysis takes, the key frame can be deleted before its
+        timeline event is saved, leaving notifications/cards without an image.
+      required: false
+      example: 300
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 3600
+          step: 10
+          unit_of_measurement: seconds
+          mode: box
     response_format:
       name: Response Format
       description: Format of the response - text for natural language or json for structured data
@@ -543,6 +597,24 @@ data_analyzer:
       default: false
       selector:
         boolean:
+    keyframe_grace:
+      name: Key Frame Retention Grace
+      description: >-
+        Seconds to protect the saved key frame from cleanup while the analysis
+        runs. Leave at 0 to use the global "Snapshot cleanup grace" setting.
+        Increase for slow analyses (high max_frames / long duration): if this is
+        shorter than the analysis takes, the key frame can be deleted before its
+        timeline event is saved, leaving notifications/cards without an image.
+      required: false
+      example: 300
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 3600
+          step: 10
+          unit_of_measurement: seconds
+          mode: box
 
 create_event:
   name: Create Event

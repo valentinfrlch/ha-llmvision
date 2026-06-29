@@ -23,6 +23,7 @@ from homeassistant.helpers.network import get_url
 from homeassistant.exceptions import ServiceValidationError
 
 from .const import DOMAIN
+from . import keyframe_registry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,6 +37,9 @@ class MediaProcessor:
         self.filenames = []
         self.snapshots_path = f"/media/{DOMAIN}/snapshots/"
         self.key_frame = ""
+        # Per-call override for the key-frame cleanup grace (seconds). None ->
+        # use the configured global grace. Set by the service handlers.
+        self.keyframe_grace = None
 
     async def _encode_image(self, img):
         """Encode image as base64"""
@@ -83,6 +87,12 @@ class MediaProcessor:
         if self.key_frame == "":
             filename = f"/media/{DOMAIN}/snapshots/{uid}-{frame_name}.jpg"
             self.key_frame = filename
+            # Protect the key frame from the timeline cleanup for the whole
+            # analysis window. Without this the file is written here but only
+            # "linked" to an event much later (after the LLM call), so a cleanup
+            # firing in between would delete it as an orphan. Protection is
+            # released when the event is inserted (see timeline.add_event).
+            keyframe_registry.protect(self.hass, filename, self.keyframe_grace)
             if image_data is None and frame_path is not None:
                 # open image in hass.loop
                 with await self.hass.loop.run_in_executor(

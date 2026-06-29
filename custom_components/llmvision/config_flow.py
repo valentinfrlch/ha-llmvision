@@ -31,6 +31,8 @@ from .const import (
     CONF_AZURE_DEPLOYMENT,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_RETENTION_TIME,
+    CONF_CLEANUP_GRACE,
+    DEFAULT_CLEANUP_GRACE,
     CONF_TIMELINE_LANGUAGE,
     CONF_FALLBACK_PROVIDER,
     CONF_MEMORY_PATHS,
@@ -1288,17 +1290,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         _LOGGER.debug("Settings step")
         domain_data = self.hass.data.get(DOMAIN) or {}
         _LOGGER.debug(f"Domain data: {domain_data}")
-        fallback_options = [{"label": "No Fallback", "value": "no_fallback"}]
-        for entry_id, entry_data in domain_data.items():
-            provider_label = entry_data.get(CONF_PROVIDER, entry_id)
-            if provider_label in ("Settings", "Timeline"):
-                continue
-            fallback_options.append(
-                {
-                    "label": provider_label,
-                    "value": entry_id,
-                }
-            )
+        fallback_options = _fallback_provider_options(self.hass)
         _LOGGER.debug(f"Fallback options: {fallback_options}")
         data_schema = vol.Schema(
             {
@@ -1309,33 +1301,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             vol.Optional(
                                 CONF_FALLBACK_PROVIDER, default="no_fallback"
                             ): selector(
-                                {
-                                    "select": {
-                                        "options": (
-                                            [
-                                                {
-                                                    "label": "No Fallback",
-                                                    "value": "no_fallback",
-                                                }
-                                            ]
-                                            + [
-                                                {
-                                                    "label": self.hass.data[DOMAIN]
-                                                    .get(provider, {})
-                                                    .get(CONF_PROVIDER, provider),
-                                                    "value": provider,
-                                                }
-                                                for provider in (
-                                                    self.hass.data.get(DOMAIN) or {}
-                                                ).keys()
-                                                if self.hass.data[DOMAIN]
-                                                .get(provider, {})
-                                                .get(CONF_PROVIDER, provider)
-                                                not in ("Settings", "Timeline")
-                                            ]
-                                        )
-                                    }
-                                }
+                                {"select": {"options": fallback_options}}
                             ),
                             vol.Optional(CONF_REQUEST_TIMEOUT, default=60): selector(
                                 {
@@ -1408,6 +1374,19 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                     }
                                 }
                             ),
+                            vol.Optional(
+                                CONF_CLEANUP_GRACE, default=DEFAULT_CLEANUP_GRACE
+                            ): selector(
+                                {
+                                    "number": {
+                                        "min": 10,
+                                        "max": 3600,
+                                        "step": 10,
+                                        "unit_of_measurement": "seconds",
+                                        "mode": "box",
+                                    }
+                                }
+                            ),
                         }
                     ),
                     {"collapsed": True},
@@ -1457,6 +1436,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_TIMELINE_LANGUAGE, "English"
                 ),
                 CONF_RETENTION_TIME: self.init_info.get(CONF_RETENTION_TIME, 7),
+                CONF_CLEANUP_GRACE: self.init_info.get(
+                    CONF_CLEANUP_GRACE, DEFAULT_CLEANUP_GRACE
+                ),
                 # CONF_TIMELINE_TODAY_SUMMARY: self.init_info.get(CONF_TIMELINE_TODAY_SUMMARY, False),
                 # CONF_TIMELINE_SUMMARY_PROMPT: self.init_info.get(
                 #     CONF_TIMELINE_SUMMARY_PROMPT, DEFAULT_SUMMARY_PROMPT),
@@ -1640,6 +1622,26 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 # Helper functions
+def _fallback_provider_options(hass) -> list[dict]:
+    """Build the fallback-provider dropdown options.
+
+    Each option is labelled with the provider config entry's *title*
+    (e.g. "Ollama (host:port)") so multiple providers of the same type are
+    distinguishable, falling back to the provider type when the entry cannot be
+    resolved. The Settings/Timeline pseudo-entries are excluded.
+    """
+    options = [{"label": "No Fallback", "value": "no_fallback"}]
+    for entry_id, entry_data in (hass.data.get(DOMAIN) or {}).items():
+        provider_type = entry_data.get(CONF_PROVIDER, entry_id)
+        if provider_type in ("Settings", "Timeline"):
+            continue
+        entry = hass.config_entries.async_get_entry(entry_id)
+        title = getattr(entry, "title", None)
+        label = title if isinstance(title, str) and title else provider_type
+        options.append({"label": label, "value": entry_id})
+    return options
+
+
 def flatten_dict(data: dict) -> dict:
     """Flatten one level of nested dicts (from section fields) into the top-level dict."""
     flat = {}

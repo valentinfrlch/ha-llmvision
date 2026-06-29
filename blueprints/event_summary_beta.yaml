@@ -62,7 +62,9 @@ blueprint:
               reorder: false
         duration:
           name: Duration
-          description: Duration to record for analysis (in seconds).
+          description: 'Duration to record for analysis (in seconds). Longer
+            recordings take longer to analyze; if you raise this substantially,
+            also raise "Key Frame Retention Grace" below.'
           default: 5
           selector:
             number:
@@ -72,7 +74,9 @@ blueprint:
               mode: slider
         max_frames:
           name: Max Frames
-          description: How many frames to analyze. Picks frames with the most movement.
+          description: 'How many frames to analyze. Picks frames with the most
+            movement. More frames = longer analysis time; if you raise this,
+            also raise "Key Frame Retention Grace" below.'
           default: 3
           selector:
             number:
@@ -80,6 +84,25 @@ blueprint:
               max: 60.0
               step: 1.0
               mode: slider
+        keyframe_grace:
+          name: Key Frame Retention Grace
+          description: >-
+            Seconds to protect the saved key-frame snapshot from cleanup while
+            the analysis runs. Leave at 0 to use the integration global "Snapshot
+            cleanup grace" setting (LLM Vision Settings > Timeline), which
+            defaults to 300 seconds (5 minutes). Raise it whenever you increase
+            Duration or Max Frames: a longer / higher-frame-count analysis takes
+            longer, and if this grace is shorter than the analysis takes, the key
+            frame is deleted before its timeline event is saved, so the dashboard
+            card and the notification end up with no image.
+          default: 0
+          selector:
+            number:
+              min: 0.0
+              max: 3600.0
+              step: 10.0
+              unit_of_measurement: seconds
+              mode: box
     ai_section:
       name: AI Settings
       description: AI settings for the analysis.
@@ -660,6 +683,7 @@ action:
     generate_title: !input store_in_timeline
     include_filename: false
     max_frames: !input max_frames
+    keyframe_grace: !input keyframe_grace
     target_width: !input target_width
     max_tokens: !input max_tokens
   response_variable: response

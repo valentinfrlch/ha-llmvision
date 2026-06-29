@@ -3,6 +3,7 @@ from .timeline import Timeline
 from .providers import Request
 from .memory import Memory
 from .media_handlers import MediaProcessor
+from . import keyframe_registry
 import os, re
 from datetime import timedelta
 from homeassistant.util import dt as dt_util
@@ -31,6 +32,8 @@ from .const import (
     CONF_AZURE_DEPLOYMENT,
     CONF_CUSTOM_OPENAI_ENDPOINT,
     CONF_RETENTION_TIME,
+    CONF_CLEANUP_GRACE,
+    DEFAULT_CLEANUP_GRACE,
     CONF_MEMORY_PATHS,
     CONF_MEMORY_IMAGES_ENCODED,
     CONF_MEMORY_STRINGS,
@@ -57,6 +60,7 @@ from .const import (
     EXPOSE_IMAGES,
     GENERATE_TITLE,
     SENSOR_ENTITY,
+    KEYFRAME_GRACE,
     DATA_EXTRACTION_PROMPT,
     DEFAULT_OPENAI_MODEL,
     DEFAULT_ANTHROPIC_MODEL,
@@ -141,6 +145,11 @@ async def async_setup_entry(hass, entry):
 
     # If this is the Settings entry, set up the calendar and run cleanup
     if filtered_provider_config.get(CONF_PROVIDER) == "Settings":
+        # Cache the configured key-frame cleanup grace for fast lookup from the
+        # (per-call) Timeline/MediaProcessor instances.
+        keyframe_registry.set_cleanup_grace(
+            hass, entry.data.get(CONF_CLEANUP_GRACE, DEFAULT_CLEANUP_GRACE)
+        )
         await hass.config_entries.async_forward_entry_setups(entry, ["calendar"])
         timeline = Timeline(hass, entry)
         await timeline._cleanup()
@@ -477,6 +486,12 @@ class ServiceCallData:
         self.max_tokens: int = int(data_call.data.get(MAXTOKENS, 3000))
         self.include_filename: bool = data_call.data.get(INCLUDE_FILENAME, False)
         self.expose_images: bool = data_call.data.get(EXPOSE_IMAGES, False)
+        # Per-call key-frame cleanup grace override (seconds). 0/unset -> use
+        # the global CONF_CLEANUP_GRACE setting.
+        _kf_grace = data_call.data.get(KEYFRAME_GRACE)
+        self.keyframe_grace = (
+            float(_kf_grace) if _kf_grace not in (None, 0, "0", "") else None
+        )
         self.generate_title: bool = data_call.data.get(GENERATE_TITLE, False)
         self.sensor_entity: str = data_call.data.get(SENSOR_ENTITY, "")
         self.response_format: str = data_call.data.get(RESPONSE_FORMAT, "text")
@@ -686,6 +701,7 @@ def setup(hass, config):
         )
         # Fetch and preprocess images
         processor = MediaProcessor(hass, request)
+        processor.keyframe_grace = call.keyframe_grace
         # Send images to RequestHandler client
         request = await processor.add_images(
             image_entities=call.image_entities,
@@ -728,6 +744,7 @@ def setup(hass, config):
             temperature=call.temperature,
         )
         processor = MediaProcessor(hass, request)
+        processor.keyframe_grace = call.keyframe_grace
         request = await processor.add_videos(
             video_paths=call.video_paths,
             event_ids=call.event_id,
@@ -767,6 +784,7 @@ def setup(hass, config):
             temperature=call.temperature,
         )
         processor = MediaProcessor(hass, request)
+        processor.keyframe_grace = call.keyframe_grace
 
         request = await processor.add_streams(
             image_entities=call.image_entities,
@@ -848,6 +866,7 @@ def setup(hass, config):
             temperature=call.temperature,
         )
         processor = MediaProcessor(hass, request)
+        processor.keyframe_grace = call.keyframe_grace
         request = await processor.add_visual_data(
             image_entities=call.image_entities,
             image_paths=call.image_paths,

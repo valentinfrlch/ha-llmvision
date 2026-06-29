@@ -19,6 +19,7 @@ from custom_components.llmvision.timeline import (
     Timeline,
     _get_category_and_label,
 )
+from custom_components.llmvision import keyframe_registry
 from homeassistant.util import dt as dt_util
 
 # ---------------------------------------------------------------------------
@@ -1017,6 +1018,10 @@ class TestCleanup:
         media_path.mkdir()
         tl._media_path = str(media_path)
 
+        # Pin the (now configurable) grace so the orphan age is unambiguously
+        # outside the protection window regardless of the default.
+        keyframe_registry.set_cleanup_grace(tl.hass, 10)
+
         orphan = media_path / "orphan.jpg"
         orphan.write_bytes(b"fake")
         old_ts = datetime.datetime.now().timestamp() - 100
@@ -1109,6 +1114,89 @@ class TestCleanup:
         tl._migrating = False
         await tl._cleanup()
         assert subdir.exists()
+
+    async def test_cleanup_protects_registry_protected_frame(
+        self, build_timeline, tmp_path
+    ):
+        """Regression: a key frame written but not yet linked (analysis still
+        running) is protected via the shared registry even though it is old and
+        unlinked, then deleted once released. This is the bug that left cards
+        and notifications without images."""
+        tl = build_timeline()
+        await tl._initialize_db()
+        media_path = tmp_path / "snapshots"
+        media_path.mkdir()
+        tl._media_path = str(media_path)
+        keyframe_registry.set_cleanup_grace(tl.hass, 10)
+
+        frame = media_path / "inflight.jpg"
+        frame.write_bytes(b"fake")
+        old_ts = datetime.datetime.now().timestamp() - 100  # well past the grace
+        os.utime(str(frame), (old_ts, old_ts))
+
+        # _expose_image registers protection at write time.
+        keyframe_registry.protect(tl.hass, str(frame), ttl=100)
+
+        tl._migrating = False
+        await tl._cleanup()
+        assert frame.exists()  # survived despite being old and unlinked
+
+        # Once released (event inserted), it becomes a true orphan.
+        keyframe_registry.release(tl.hass, str(frame))
+        await tl._cleanup()
+        assert not frame.exists()
+
+    async def test_cleanup_protection_is_shared_across_instances(
+        self, build_timeline, tmp_path
+    ):
+        """Protection lives in hass.data, so a frame protected by the writer
+        survives cleanup run by a *different* Timeline instance sharing the same
+        hass (the real case: per-call / per-card-poll Timeline objects)."""
+        writer = build_timeline()
+        await writer._initialize_db()
+        media_path = tmp_path / "snapshots"
+        media_path.mkdir()
+        writer._media_path = str(media_path)
+        keyframe_registry.set_cleanup_grace(writer.hass, 10)
+
+        frame = media_path / "shared.jpg"
+        frame.write_bytes(b"fake")
+        old_ts = datetime.datetime.now().timestamp() - 100
+        os.utime(str(frame), (old_ts, old_ts))
+        keyframe_registry.protect(writer.hass, str(frame), ttl=100)
+
+        cleaner = build_timeline()
+        cleaner.hass = writer.hass  # share hass.data (and thus the registry)
+        cleaner._media_path = str(media_path)
+        cleaner._migrating = False
+        await cleaner._cleanup()
+        assert frame.exists()
+
+    async def test_cleanup_honors_configured_grace(self, build_timeline, tmp_path):
+        """The grace window is read from configuration, not hard-coded to 10s."""
+        tl = build_timeline()
+        await tl._initialize_db()
+        media_path = tmp_path / "snapshots"
+        media_path.mkdir()
+        tl._media_path = str(media_path)
+        tl._migrating = False
+
+        def _make(name):
+            p = media_path / name
+            p.write_bytes(b"fake")
+            ts = datetime.datetime.now().timestamp() - 60  # 60s old, unlinked
+            os.utime(str(p), (ts, ts))
+            return p
+
+        short = _make("short_grace.jpg")
+        keyframe_registry.set_cleanup_grace(tl.hass, 30)
+        await tl._cleanup()
+        assert not short.exists()  # 60s > 30s grace -> removed
+
+        long = _make("long_grace.jpg")
+        keyframe_registry.set_cleanup_grace(tl.hass, 600)
+        await tl._cleanup()
+        assert long.exists()  # 60s < 600s grace -> kept
 
 
 # ===========================================================================

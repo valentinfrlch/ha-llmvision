@@ -6,6 +6,7 @@ import os, re
 import json
 import asyncio
 from .const import DOMAIN, CONF_RETENTION_TIME, CONF_TIMELINE_LANGUAGE
+from . import keyframe_registry
 from homeassistant.util import dt as dt_util
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
@@ -840,6 +841,9 @@ class Timeline:
                 )
                 _LOGGER.info(f"Creating event: {event}")
                 await self._insert_event(event)
+                # Event row now exists, so the file is "linked" and protected
+                # by that. Release the registry hold taken at write time.
+                keyframe_registry.release(self.hass, key_frame)
             finally:
                 # Remove from pending once DB insert is done
                 if pending_name:
@@ -974,13 +978,21 @@ class Timeline:
             # Skip cleanup during migration
             return
 
-        GRACE_SECONDS = 10
+        # Grace window (seconds) a freshly-written snapshot is protected before
+        # it is treated as an orphan. Configurable via the LLM Vision Settings
+        # ("Snapshot cleanup grace") and per-call via the analyzer services.
+        # It MUST exceed the analysis duration, otherwise a key frame can be
+        # swept after it is written but before its event row is inserted.
+        grace_seconds = keyframe_registry.get_cleanup_grace(self.hass)
 
         async with self._cleanup_lock:
             linked_frames = {
                 (os.path.basename(n) or "").lower()
                 for n in await self.get_linked_images()
             }
+            # Basenames of key frames written but not yet linked to an event
+            # (analysis in flight), shared across all Timeline instances.
+            protected_frames = keyframe_registry.protected_basenames(self.hass)
 
             # List files in snapshots dir (in executor, non-blocking)
             try:
@@ -1003,8 +1015,13 @@ class Timeline:
 
                 base = (file or "").lower()
 
-                # Protect if linked to an event or pending
-                if base in linked_frames or base in self._pending_key_frames:
+                # Protect if linked to an event, pending in this instance, or
+                # protected in the shared in-flight registry.
+                if (
+                    base in linked_frames
+                    or base in self._pending_key_frames
+                    or base in protected_frames
+                ):
                     continue
 
                 # Protect new files (grace window)
@@ -1012,7 +1029,7 @@ class Timeline:
                     mtime = await self.hass.async_add_executor_job(
                         os.path.getmtime, file_path
                     )
-                    if (now_ts - mtime) < GRACE_SECONDS:
+                    if (now_ts - mtime) < grace_seconds:
                         continue
                 except OSError:
                     continue
