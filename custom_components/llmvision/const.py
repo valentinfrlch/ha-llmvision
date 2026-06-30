@@ -32,9 +32,6 @@ CONF_AWS_REGION_NAME = "aws_region_name"
 # Custom OpenAI specific
 CONF_CUSTOM_OPENAI_ENDPOINT = "custom_openai_endpoint"
 
-# LiteLLM specific
-CONF_LITELLM_BASE_URL = "litellm_base_url"
-
 # Timeline
 CONF_RETENTION_TIME = "retention_time"
 

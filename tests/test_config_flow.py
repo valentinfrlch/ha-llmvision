@@ -38,7 +38,6 @@ from custom_components.llmvision.const import (
     CONF_TOP_P,
     DEFAULT_OPENAI_MODEL,
     DEFAULT_LITELLM_MODEL,
-    CONF_LITELLM_BASE_URL,
     ENDPOINT_AZURE,
     ENDPOINT_OPENROUTER,
     ENDPOINT_OPENWEBUI,
@@ -755,11 +754,10 @@ class TestProviderSteps:
             (
                 "litellm",
                 "LiteLLM",
-                "custom_components.llmvision.config_flow.OpenAI",
+                "custom_components.llmvision.config_flow.LiteLLM",
                 {
                     "connection_section": {
                         CONF_API_KEY: "secret",
-                        CONF_LITELLM_BASE_URL: "http://localhost:4000/v1/chat/completions",
                     },
                     "model_section": {
                         CONF_DEFAULT_MODEL: "openai/gpt-4o-mini",
@@ -773,9 +771,6 @@ class TestProviderSteps:
                     {
                         "api_key": "secret",
                         "model": "openai/gpt-4o-mini",
-                        "endpoint": {
-                            "base_url": "http://localhost:4000/v1/chat/completions"
-                        },
                     },
                 ),
                 "handshake_failed",
@@ -927,11 +922,10 @@ class TestProviderSteps:
             (
                 "litellm",
                 "LiteLLM",
-                "custom_components.llmvision.config_flow.OpenAI",
+                "custom_components.llmvision.config_flow.LiteLLM",
                 {
                     "connection_section": {
                         CONF_API_KEY: "secret",
-                        CONF_LITELLM_BASE_URL: "http://localhost:4000/v1/chat/completions",
                     },
                     "model_section": {
                         CONF_DEFAULT_MODEL: "openai/gpt-4o-mini",

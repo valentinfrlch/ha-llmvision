@@ -15,6 +15,7 @@ from .providers import (
     LocalAI,
     Ollama,
     AWSBedrock,
+    LiteLLM,
 )
 from .const import (
     DOMAIN,
@@ -55,7 +56,6 @@ from .const import (
     DEFAULT_OPENWEBUI_MODEL,
     DEFAULT_OPENROUTER_MODEL,
     DEFAULT_LITELLM_MODEL,
-    CONF_LITELLM_BASE_URL,
     ENDPOINT_OPENWEBUI,
     ENDPOINT_AZURE,
     ENDPOINT_OPENROUTER,
@@ -1645,10 +1645,6 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             vol.Required(CONF_API_KEY): selector(
                                 {"text": {"type": "password"}}
                             ),
-                            vol.Required(
-                                CONF_LITELLM_BASE_URL,
-                                default="http://localhost:4000/v1/chat/completions",
-                            ): str,
                         }
                     ),
                     {"collapsed": False},
@@ -1691,10 +1687,6 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             suggested = {
                 "connection_section": {
                     CONF_API_KEY: self.init_info.get(CONF_API_KEY),
-                    CONF_LITELLM_BASE_URL: self.init_info.get(
-                        CONF_LITELLM_BASE_URL,
-                        "http://localhost:4000/v1/chat/completions",
-                    ),
                 },
                 "model_section": {
                     CONF_DEFAULT_MODEL: self.init_info.get(
@@ -1710,13 +1702,12 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
             user_input = flatten_dict(user_input)
             try:
-                litellm = OpenAI(
+                provider = LiteLLM(
                     self.hass,
                     api_key=user_input[CONF_API_KEY],
                     model=user_input[CONF_DEFAULT_MODEL],
-                    endpoint={"base_url": user_input[CONF_LITELLM_BASE_URL]},
                 )
-                await litellm.validate()
+                await provider.validate()
                 user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
                 if self.source == config_entries.SOURCE_RECONFIGURE:
                     return self.async_update_reload_and_abort(

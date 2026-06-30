@@ -17,6 +17,7 @@ from custom_components.llmvision.providers import (
     LocalAI,
     Ollama,
     AWSBedrock,
+    LiteLLM,
     ProviderFactory,
 )
 from custom_components.llmvision.const import (
@@ -53,7 +54,6 @@ from custom_components.llmvision.const import (
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_TITLE_PROMPT,
     DEFAULT_LITELLM_MODEL,
-    CONF_LITELLM_BASE_URL,
 )
 
 
@@ -1145,7 +1145,6 @@ class TestProviderFactory:
         """Test ProviderFactory creates LiteLLM provider."""
         config = {
             CONF_API_KEY: "test_key",
-            CONF_LITELLM_BASE_URL: "http://localhost:4000/v1/chat/completions",
         }
 
         with patch("custom_components.llmvision.providers.async_get_clientsession"):
@@ -1153,7 +1152,7 @@ class TestProviderFactory:
                 mock_hass, "LiteLLM", config, "openai/gpt-4o-mini"
             )
 
-            assert isinstance(provider, OpenAI)
+            assert isinstance(provider, LiteLLM)
 
 
 @pytest.fixture
@@ -1589,9 +1588,8 @@ async def test_provider_coverage_misc_paths(monkeypatch, coverage_hass):
     assert isinstance(
         ProviderFactory.create(coverage_hass, "OpenWebUI", config, "m"), OpenAI
     )
-    config[CONF_LITELLM_BASE_URL] = "http://localhost:4000/v1/chat/completions"
     assert isinstance(
-        ProviderFactory.create(coverage_hass, "LiteLLM", config, "m"), OpenAI
+        ProviderFactory.create(coverage_hass, "LiteLLM", config, "m"), LiteLLM
     )
     with pytest.raises(ServiceValidationError):
         ProviderFactory.create(coverage_hass, "Nope", config, "m")

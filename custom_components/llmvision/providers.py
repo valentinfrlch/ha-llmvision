@@ -51,7 +51,6 @@ from .const import (
     DEFAULT_OPENWEBUI_MODEL,
     DEFAULT_OPENROUTER_MODEL,
     DEFAULT_LITELLM_MODEL,
-    CONF_LITELLM_BASE_URL,
     CONF_KEEP_ALIVE,
     CONF_CONTEXT_WINDOW,
     CONF_TEMPERATURE,
@@ -2048,6 +2047,105 @@ class AWSBedrock(Provider):
         return True
 
 
+class LiteLLM(Provider):
+
+    def __init__(self, hass: HomeAssistant, api_key: str, model: str):
+        super().__init__(hass, api_key, model)
+
+    async def _make_request(self, data: dict) -> str:
+        import litellm
+
+        kwargs = {
+            "model": data.pop("model"),
+            "messages": data.pop("messages"),
+            "drop_params": True,
+        }
+        kwargs.update(data)
+        if self.api_key:
+            kwargs["api_key"] = self.api_key
+
+        try:
+            response = await litellm.acompletion(**kwargs)
+        except Exception as e:
+            raise ServiceValidationError(f"LiteLLM error: {e}")
+
+        choices = getattr(response, "choices", None)
+        if not choices:
+            raise ServiceValidationError("empty_response")
+        message = choices[0].message
+        if message.content is None:
+            raise ServiceValidationError("invalid_response")
+        return message.content
+
+    def _prepare_vision_data(self, call: Any) -> dict:
+        default_parameters = self._get_default_parameters(call)
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": []}],
+            "max_tokens": call.max_tokens,
+            "temperature": default_parameters.get("temperature"),
+            "top_p": default_parameters.get("top_p"),
+        }
+
+        for image, filename in zip(call.base64_images, call.filenames):
+            tag = (
+                ("Image " + str(call.base64_images.index(image) + 1))
+                if filename == ""
+                else filename
+            )
+            payload["messages"][0]["content"].append(
+                {"type": "text", "text": tag + ":"}
+            )
+            payload["messages"][0]["content"].append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image}"},
+                }
+            )
+
+        payload["messages"][0]["content"].append({"type": "text", "text": call.message})
+        system_prompt = self._get_system_prompt()
+        payload["messages"].insert(0, {"role": "system", "content": system_prompt})
+
+        if getattr(call, "use_memory", False):
+            memory_content = call.memory._get_memory_images(memory_type="OpenAI")
+            if memory_content:
+                payload["messages"].insert(
+                    1, {"role": "user", "content": memory_content}
+                )
+
+        return payload
+
+    def _prepare_text_data(self, call: Any) -> dict:
+        default_parameters = self._get_default_parameters(call)
+        title_prompt = self._get_title_prompt()
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "user", "content": [{"type": "text", "text": title_prompt}]},
+                {"role": "user", "content": [{"type": "text", "text": call.message}]},
+            ],
+            "max_tokens": call.max_tokens,
+            "temperature": default_parameters.get("temperature"),
+            "top_p": default_parameters.get("top_p"),
+        }
+        return payload
+
+    async def validate(self) -> None | ServiceValidationError:
+        import litellm
+
+        try:
+            await litellm.acompletion(
+                model=self.model,
+                messages=[{"role": "user", "content": "Hi"}],
+                max_tokens=1,
+                drop_params=True,
+                api_key=self.api_key if self.api_key else None,
+            )
+        except Exception as e:
+            raise ServiceValidationError(f"handshake_failed: {e}")
+
+
 class ProviderFactory:
     """
     Factory to create provider instances from a provider name and config
@@ -2164,11 +2262,10 @@ class ProviderFactory:
             )
 
         if provider_name == "LiteLLM":
-            return OpenAI(
+            return LiteLLM(
                 hass,
                 api_key=cast(str, config.get(CONF_API_KEY) or ""),
                 model=model,
-                endpoint={"base_url": config.get(CONF_LITELLM_BASE_URL)},
             )
 
         raise ServiceValidationError("invalid_provider")

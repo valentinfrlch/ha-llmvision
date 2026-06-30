@@ -361,18 +361,16 @@
             },
             "litellm": {
                 "title": "Configure LiteLLM",
-                "description": "LiteLLM is an AI gateway that provides access to 100+ LLM providers through a unified OpenAI-compatible API. Provide the base URL and API key of your LiteLLM proxy.",
+                "description": "LiteLLM provides access to 100+ LLM providers (OpenAI, Anthropic, Google, AWS Bedrock, Ollama, etc.) through a unified SDK. Use the provider-prefixed model format.",
                 "sections": {
                     "connection_section": {
                         "name": "Connection",
-                        "description": "LiteLLM proxy authentication",
+                        "description": "API key for your LLM provider",
                         "data": {
-                            "litellm_base_url": "Base URL",
                             "api_key": "API key"
                         },
                         "data_description": {
-                            "litellm_base_url": "The base URL of your LiteLLM proxy, e.g. http://localhost:4000/v1/chat/completions",
-                            "api_key": "Your LiteLLM proxy master key or virtual key."
+                            "api_key": "Your LLM provider API key (e.g. OpenAI, Anthropic, Google). LiteLLM routes to the correct provider based on the model name."
                         }
                     },
                     "model_section": {
@@ -384,7 +382,7 @@
                             "top_p": "Top P"
                         },
                         "data_description": {
-                            "default_model": "The default model to use when no other model is specified. Use the LiteLLM model name format (e.g. openai/gpt-4o-mini, anthropic/claude-sonnet-4-6).",
+                            "default_model": "Use the LiteLLM model format: openai/gpt-4o-mini, anthropic/claude-sonnet-4-6, gemini/gemini-2.0-flash, etc.",
                             "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
                             "top_p": "Controls the diversity of the output. Lower values make the output more focused."
                         }
