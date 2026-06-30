@@ -52,6 +52,8 @@ from custom_components.llmvision.const import (
     DEFAULT_OLLAMA_MODEL,
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_TITLE_PROMPT,
+    DEFAULT_LITELLM_MODEL,
+    CONF_LITELLM_BASE_URL,
 )
 
 
@@ -209,6 +211,16 @@ class TestRequest:
             result = request.get_default_model("test_provider")
 
             assert result == DEFAULT_ANTHROPIC_MODEL
+
+    def test_get_default_model_fallback_litellm(self, mock_hass):
+        """Test get_default_model fallback to LiteLLM default."""
+        mock_hass.data = {DOMAIN: {"test_provider": {CONF_PROVIDER: "LiteLLM"}}}
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            request = Request(mock_hass, "test", 1000, 0.5)
+
+            result = request.get_default_model("test_provider")
+
+            assert result == DEFAULT_LITELLM_MODEL
 
     def test_get_default_model_invalid_provider(self, mock_hass):
         """Test get_default_model with invalid provider."""
@@ -1129,6 +1141,20 @@ class TestProviderFactory:
 
             assert isinstance(provider, OpenAI)
 
+    def test_create_litellm(self, mock_hass):
+        """Test ProviderFactory creates LiteLLM provider."""
+        config = {
+            CONF_API_KEY: "test_key",
+            CONF_LITELLM_BASE_URL: "http://localhost:4000/v1/chat/completions",
+        }
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = ProviderFactory.create(
+                mock_hass, "LiteLLM", config, "openai/gpt-4o-mini"
+            )
+
+            assert isinstance(provider, OpenAI)
+
 
 @pytest.fixture
 def coverage_hass(monkeypatch):
@@ -1562,6 +1588,10 @@ async def test_provider_coverage_misc_paths(monkeypatch, coverage_hass):
     )
     assert isinstance(
         ProviderFactory.create(coverage_hass, "OpenWebUI", config, "m"), OpenAI
+    )
+    config[CONF_LITELLM_BASE_URL] = "http://localhost:4000/v1/chat/completions"
+    assert isinstance(
+        ProviderFactory.create(coverage_hass, "LiteLLM", config, "m"), OpenAI
     )
     with pytest.raises(ServiceValidationError):
         ProviderFactory.create(coverage_hass, "Nope", config, "m")

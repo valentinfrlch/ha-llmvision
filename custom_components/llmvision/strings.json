@@ -359,6 +359,38 @@
                     }
                 }
             },
+            "litellm": {
+                "title": "Configure LiteLLM",
+                "description": "LiteLLM is an AI gateway that provides access to 100+ LLM providers through a unified OpenAI-compatible API. Provide the base URL and API key of your LiteLLM proxy.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "LiteLLM proxy authentication",
+                        "data": {
+                            "litellm_base_url": "Base URL",
+                            "api_key": "API key"
+                        },
+                        "data_description": {
+                            "litellm_base_url": "The base URL of your LiteLLM proxy, e.g. http://localhost:4000/v1/chat/completions",
+                            "api_key": "Your LiteLLM proxy master key or virtual key."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified. Use the LiteLLM model name format (e.g. openai/gpt-4o-mini, anthropic/claude-sonnet-4-6).",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Settings",
                 "description": "Configure the LLM Vision integration. This entry is required before setting up other providers. If you wish to use the default settings, just press 'Submit'.",

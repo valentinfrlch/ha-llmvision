@@ -37,6 +37,8 @@ from custom_components.llmvision.const import (
     CONF_TITLE_PROMPT,
     CONF_TOP_P,
     DEFAULT_OPENAI_MODEL,
+    DEFAULT_LITELLM_MODEL,
+    CONF_LITELLM_BASE_URL,
     ENDPOINT_AZURE,
     ENDPOINT_OPENROUTER,
     ENDPOINT_OPENWEBUI,
@@ -346,6 +348,7 @@ class TestProviderSteps:
             ("ollama", "Ollama"),
             ("openwebui", "OpenWebUI"),
             ("openrouter", "OpenRouter"),
+            ("litellm", "LiteLLM"),
         ],
     )
     async def test_provider_steps_show_form_without_input(
@@ -749,6 +752,34 @@ class TestProviderSteps:
                 ),
                 "handshake_failed",
             ),
+            (
+                "litellm",
+                "LiteLLM",
+                "custom_components.llmvision.config_flow.OpenAI",
+                {
+                    "connection_section": {
+                        CONF_API_KEY: "secret",
+                        CONF_LITELLM_BASE_URL: "http://localhost:4000/v1/chat/completions",
+                    },
+                    "model_section": {
+                        CONF_DEFAULT_MODEL: "openai/gpt-4o-mini",
+                        CONF_TEMPERATURE: 0.5,
+                        CONF_TOP_P: 0.9,
+                    },
+                },
+                "LiteLLM",
+                lambda flow: (
+                    (flow.hass,),
+                    {
+                        "api_key": "secret",
+                        "model": "openai/gpt-4o-mini",
+                        "endpoint": {
+                            "base_url": "http://localhost:4000/v1/chat/completions"
+                        },
+                    },
+                ),
+                "handshake_failed",
+            ),
         ],
     )
     async def test_provider_steps_create_entries_after_successful_validation(
@@ -889,6 +920,23 @@ class TestProviderSteps:
                         CONF_TEMPERATURE: 0.5,
                         CONF_TOP_P: 0.9,
                         CONF_REASONING_EFFORT: "none",
+                    },
+                },
+                "handshake_failed",
+            ),
+            (
+                "litellm",
+                "LiteLLM",
+                "custom_components.llmvision.config_flow.OpenAI",
+                {
+                    "connection_section": {
+                        CONF_API_KEY: "secret",
+                        CONF_LITELLM_BASE_URL: "http://localhost:4000/v1/chat/completions",
+                    },
+                    "model_section": {
+                        CONF_DEFAULT_MODEL: "openai/gpt-4o-mini",
+                        CONF_TEMPERATURE: 0.5,
+                        CONF_TOP_P: 0.9,
                     },
                 },
                 "handshake_failed",

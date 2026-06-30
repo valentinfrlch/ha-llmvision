@@ -50,6 +50,8 @@ from .const import (
     DEFAULT_AWS_MODEL,
     DEFAULT_OPENWEBUI_MODEL,
     DEFAULT_OPENROUTER_MODEL,
+    DEFAULT_LITELLM_MODEL,
+    CONF_LITELLM_BASE_URL,
     CONF_KEEP_ALIVE,
     CONF_CONTEXT_WINDOW,
     CONF_TEMPERATURE,
@@ -130,6 +132,7 @@ class Request:
             "AWS": DEFAULT_AWS_MODEL,  # For backwards compatibility
             "Open WebUI": DEFAULT_OPENWEBUI_MODEL,
             "OpenRouter": DEFAULT_OPENROUTER_MODEL,
+            "LiteLLM": DEFAULT_LITELLM_MODEL,
         }.get(provider_name)
 
     def validate(self, call: Any) -> None | ServiceValidationError:
@@ -2158,6 +2161,14 @@ class ProviderFactory:
                 api_key=cast(str, config.get(CONF_API_KEY) or ""),
                 model=model,
                 endpoint={"base_url": ENDPOINT_OPENROUTER},
+            )
+
+        if provider_name == "LiteLLM":
+            return OpenAI(
+                hass,
+                api_key=cast(str, config.get(CONF_API_KEY) or ""),
+                model=model,
+                endpoint={"base_url": config.get(CONF_LITELLM_BASE_URL)},
             )
 
         raise ServiceValidationError("invalid_provider")
