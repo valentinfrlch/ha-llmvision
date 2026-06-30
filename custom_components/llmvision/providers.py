@@ -2052,20 +2052,51 @@ class LiteLLM(Provider):
     def __init__(self, hass: HomeAssistant, api_key: str, model: str):
         super().__init__(hass, api_key, model)
 
-    async def _make_request(self, data: dict) -> str:
-        import litellm
-
+    def _build_litellm_kwargs(self, data: dict) -> dict:
         kwargs = {
-            "model": data.pop("model"),
-            "messages": data.pop("messages"),
+            "model": data.get("model"),
+            "messages": data.get("messages"),
             "drop_params": True,
+            "timeout": self.request_timeout,
         }
-        kwargs.update(data)
+        for k in ("max_tokens", "temperature", "top_p"):
+            if k in data:
+                kwargs[k] = data[k]
         if self.api_key:
             kwargs["api_key"] = self.api_key
+        return kwargs
+
+    async def _make_request(self, data: dict) -> str:
+        import litellm
+        from litellm.exceptions import (
+            AuthenticationError,
+            BadRequestError,
+            ContextWindowExceededError,
+            NotFoundError,
+            RateLimitError,
+            Timeout,
+        )
+
+        kwargs = self._build_litellm_kwargs(data)
 
         try:
             response = await litellm.acompletion(**kwargs)
+        except AuthenticationError:
+            raise ServiceValidationError("invalid_api_key")
+        except NotFoundError:
+            raise ServiceValidationError(
+                f"Model '{self.model}' not found. Use LiteLLM format: openai/gpt-4o-mini, anthropic/claude-sonnet-4-6"
+            )
+        except ContextWindowExceededError:
+            raise ServiceValidationError("context_window_exceeded")
+        except RateLimitError:
+            raise ServiceValidationError("rate_limit")
+        except Timeout:
+            raise ServiceValidationError(
+                f"Request timed out after {self.request_timeout}s"
+            )
+        except BadRequestError as e:
+            raise ServiceValidationError(f"LiteLLM bad request: {e}")
         except Exception as e:
             raise ServiceValidationError(f"LiteLLM error: {e}")
 
@@ -2133,6 +2164,7 @@ class LiteLLM(Provider):
 
     async def validate(self) -> None | ServiceValidationError:
         import litellm
+        from litellm.exceptions import AuthenticationError, NotFoundError
 
         try:
             await litellm.acompletion(
@@ -2140,7 +2172,14 @@ class LiteLLM(Provider):
                 messages=[{"role": "user", "content": "Hi"}],
                 max_tokens=1,
                 drop_params=True,
+                timeout=self.request_timeout,
                 api_key=self.api_key if self.api_key else None,
+            )
+        except AuthenticationError:
+            raise ServiceValidationError("invalid_api_key")
+        except NotFoundError:
+            raise ServiceValidationError(
+                f"Model '{self.model}' not found. Use LiteLLM format: openai/gpt-4o-mini, anthropic/claude-sonnet-4-6"
             )
         except Exception as e:
             raise ServiceValidationError(f"handshake_failed: {e}")
