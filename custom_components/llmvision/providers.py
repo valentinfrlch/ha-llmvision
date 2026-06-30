@@ -50,6 +50,7 @@ from .const import (
     DEFAULT_AWS_MODEL,
     DEFAULT_OPENWEBUI_MODEL,
     DEFAULT_OPENROUTER_MODEL,
+    DEFAULT_LITELLM_MODEL,
     CONF_KEEP_ALIVE,
     CONF_CONTEXT_WINDOW,
     CONF_TEMPERATURE,
@@ -130,6 +131,7 @@ class Request:
             "AWS": DEFAULT_AWS_MODEL,  # For backwards compatibility
             "Open WebUI": DEFAULT_OPENWEBUI_MODEL,
             "OpenRouter": DEFAULT_OPENROUTER_MODEL,
+            "LiteLLM": DEFAULT_LITELLM_MODEL,
         }.get(provider_name)
 
     def validate(self, call: Any) -> None | ServiceValidationError:
@@ -2045,6 +2047,144 @@ class AWSBedrock(Provider):
         return True
 
 
+class LiteLLM(Provider):
+
+    def __init__(self, hass: HomeAssistant, api_key: str, model: str):
+        super().__init__(hass, api_key, model)
+
+    def _build_litellm_kwargs(self, data: dict) -> dict:
+        kwargs = {
+            "model": data.get("model"),
+            "messages": data.get("messages"),
+            "drop_params": True,
+            "timeout": self.request_timeout,
+        }
+        for k in ("max_tokens", "temperature", "top_p"):
+            if k in data:
+                kwargs[k] = data[k]
+        if self.api_key:
+            kwargs["api_key"] = self.api_key
+        return kwargs
+
+    async def _make_request(self, data: dict) -> str:
+        import litellm
+        from litellm.exceptions import (
+            AuthenticationError,
+            BadRequestError,
+            ContextWindowExceededError,
+            NotFoundError,
+            RateLimitError,
+            Timeout,
+        )
+
+        kwargs = self._build_litellm_kwargs(data)
+
+        try:
+            response = await litellm.acompletion(**kwargs)
+        except AuthenticationError:
+            raise ServiceValidationError("invalid_api_key")
+        except NotFoundError:
+            raise ServiceValidationError(
+                f"Model '{self.model}' not found. Use LiteLLM format: openai/gpt-4o-mini, anthropic/claude-sonnet-4-6"
+            )
+        except ContextWindowExceededError:
+            raise ServiceValidationError("context_window_exceeded")
+        except RateLimitError:
+            raise ServiceValidationError("rate_limit")
+        except Timeout:
+            raise ServiceValidationError(
+                f"Request timed out after {self.request_timeout}s"
+            )
+        except BadRequestError as e:
+            raise ServiceValidationError(f"LiteLLM bad request: {e}")
+        except Exception as e:
+            raise ServiceValidationError(f"LiteLLM error: {e}")
+
+        choices = getattr(response, "choices", None)
+        if not choices:
+            raise ServiceValidationError("empty_response")
+        message = choices[0].message
+        if message.content is None:
+            raise ServiceValidationError("invalid_response")
+        return message.content
+
+    def _prepare_vision_data(self, call: Any) -> dict:
+        default_parameters = self._get_default_parameters(call)
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": []}],
+            "max_tokens": call.max_tokens,
+            "temperature": default_parameters.get("temperature"),
+            "top_p": default_parameters.get("top_p"),
+        }
+
+        for image, filename in zip(call.base64_images, call.filenames):
+            tag = (
+                ("Image " + str(call.base64_images.index(image) + 1))
+                if filename == ""
+                else filename
+            )
+            payload["messages"][0]["content"].append(
+                {"type": "text", "text": tag + ":"}
+            )
+            payload["messages"][0]["content"].append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image}"},
+                }
+            )
+
+        payload["messages"][0]["content"].append({"type": "text", "text": call.message})
+        system_prompt = self._get_system_prompt()
+        payload["messages"].insert(0, {"role": "system", "content": system_prompt})
+
+        if getattr(call, "use_memory", False):
+            memory_content = call.memory._get_memory_images(memory_type="OpenAI")
+            if memory_content:
+                payload["messages"].insert(
+                    1, {"role": "user", "content": memory_content}
+                )
+
+        return payload
+
+    def _prepare_text_data(self, call: Any) -> dict:
+        default_parameters = self._get_default_parameters(call)
+        title_prompt = self._get_title_prompt()
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "user", "content": [{"type": "text", "text": title_prompt}]},
+                {"role": "user", "content": [{"type": "text", "text": call.message}]},
+            ],
+            "max_tokens": call.max_tokens,
+            "temperature": default_parameters.get("temperature"),
+            "top_p": default_parameters.get("top_p"),
+        }
+        return payload
+
+    async def validate(self) -> None | ServiceValidationError:
+        import litellm
+        from litellm.exceptions import AuthenticationError, NotFoundError
+
+        try:
+            await litellm.acompletion(
+                model=self.model,
+                messages=[{"role": "user", "content": "Hi"}],
+                max_tokens=1,
+                drop_params=True,
+                timeout=self.request_timeout,
+                api_key=self.api_key if self.api_key else None,
+            )
+        except AuthenticationError:
+            raise ServiceValidationError("invalid_api_key")
+        except NotFoundError:
+            raise ServiceValidationError(
+                f"Model '{self.model}' not found. Use LiteLLM format: openai/gpt-4o-mini, anthropic/claude-sonnet-4-6"
+            )
+        except Exception as e:
+            raise ServiceValidationError(f"handshake_failed: {e}")
+
+
 class ProviderFactory:
     """
     Factory to create provider instances from a provider name and config
@@ -2158,6 +2298,13 @@ class ProviderFactory:
                 api_key=cast(str, config.get(CONF_API_KEY) or ""),
                 model=model,
                 endpoint={"base_url": ENDPOINT_OPENROUTER},
+            )
+
+        if provider_name == "LiteLLM":
+            return LiteLLM(
+                hass,
+                api_key=cast(str, config.get(CONF_API_KEY) or ""),
+                model=model,
             )
 
         raise ServiceValidationError("invalid_provider")

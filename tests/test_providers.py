@@ -17,6 +17,7 @@ from custom_components.llmvision.providers import (
     LocalAI,
     Ollama,
     AWSBedrock,
+    LiteLLM,
     ProviderFactory,
 )
 from custom_components.llmvision.const import (
@@ -52,6 +53,7 @@ from custom_components.llmvision.const import (
     DEFAULT_OLLAMA_MODEL,
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_TITLE_PROMPT,
+    DEFAULT_LITELLM_MODEL,
 )
 
 
@@ -209,6 +211,16 @@ class TestRequest:
             result = request.get_default_model("test_provider")
 
             assert result == DEFAULT_ANTHROPIC_MODEL
+
+    def test_get_default_model_fallback_litellm(self, mock_hass):
+        """Test get_default_model fallback to LiteLLM default."""
+        mock_hass.data = {DOMAIN: {"test_provider": {CONF_PROVIDER: "LiteLLM"}}}
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            request = Request(mock_hass, "test", 1000, 0.5)
+
+            result = request.get_default_model("test_provider")
+
+            assert result == DEFAULT_LITELLM_MODEL
 
     def test_get_default_model_invalid_provider(self, mock_hass):
         """Test get_default_model with invalid provider."""
@@ -1012,6 +1024,423 @@ class TestAWSBedrock:
             assert headers["Content-type"] == "application/json"
 
 
+class TestLiteLLM:
+    """Test LiteLLM provider class."""
+
+    def test_init(self, mock_hass):
+        """Test LiteLLM initialization."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "anthropic/claude-sonnet-4-6")
+
+            assert provider.api_key == "sk-test"
+            assert provider.model == "anthropic/claude-sonnet-4-6"
+
+    def test_init_empty_api_key(self, mock_hass):
+        """Test LiteLLM with empty API key (env var fallback)."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "", "openai/gpt-4o-mini")
+
+            assert provider.api_key == ""
+
+    def test_build_litellm_kwargs_includes_drop_params(self, mock_hass):
+        """Test that drop_params=True is always set."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "openai/gpt-4o-mini")
+            data = {
+                "model": "openai/gpt-4o-mini",
+                "messages": [{"role": "user", "content": "hi"}],
+                "max_tokens": 100,
+                "temperature": 0.5,
+                "top_p": 0.9,
+            }
+            kwargs = provider._build_litellm_kwargs(data)
+
+            assert kwargs["drop_params"] is True
+            assert kwargs["api_key"] == "sk-test"
+            assert kwargs["model"] == "openai/gpt-4o-mini"
+            assert kwargs["timeout"] == provider.request_timeout
+
+    def test_build_litellm_kwargs_no_api_key_when_empty(self, mock_hass):
+        """Test that empty api_key is not passed to litellm."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "", "openai/gpt-4o-mini")
+            data = {
+                "model": "openai/gpt-4o-mini",
+                "messages": [{"role": "user", "content": "hi"}],
+            }
+            kwargs = provider._build_litellm_kwargs(data)
+
+            assert "api_key" not in kwargs
+
+    def test_build_litellm_kwargs_does_not_mutate_input(self, mock_hass):
+        """Test that _build_litellm_kwargs does not modify the input dict."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "openai/gpt-4o-mini")
+            data = {
+                "model": "openai/gpt-4o-mini",
+                "messages": [{"role": "user", "content": "hi"}],
+                "max_tokens": 100,
+            }
+            original_data = data.copy()
+            provider._build_litellm_kwargs(data)
+
+            assert data == original_data
+
+    @pytest.mark.asyncio
+    async def test_make_request_success(self, mock_hass):
+        """Test successful completion call."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "openai/gpt-4o-mini")
+
+        mock_response = Mock()
+        mock_response.choices = [Mock(message=Mock(content="Hello world"))]
+
+        with patch("litellm.acompletion", new_callable=AsyncMock, return_value=mock_response):
+            result = await provider._make_request({
+                "model": "openai/gpt-4o-mini",
+                "messages": [{"role": "user", "content": "hi"}],
+                "max_tokens": 100,
+            })
+            assert result == "Hello world"
+
+    @pytest.mark.asyncio
+    async def test_make_request_auth_error(self, mock_hass):
+        """Test invalid/expired API key raises specific error."""
+        from litellm.exceptions import AuthenticationError
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-invalid", "openai/gpt-4o-mini")
+
+        with patch(
+            "litellm.acompletion",
+            new_callable=AsyncMock,
+            side_effect=AuthenticationError(
+                message="Invalid API key",
+                model="openai/gpt-4o-mini",
+                llm_provider="openai",
+            ),
+        ):
+            with pytest.raises(ServiceValidationError, match="invalid_api_key"):
+                await provider._make_request({
+                    "model": "openai/gpt-4o-mini",
+                    "messages": [{"role": "user", "content": "hi"}],
+                })
+
+    @pytest.mark.asyncio
+    async def test_make_request_model_not_found(self, mock_hass):
+        """Test unsupported model raises specific error."""
+        from litellm.exceptions import NotFoundError
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "fake/nonexistent-model")
+
+        with patch(
+            "litellm.acompletion",
+            new_callable=AsyncMock,
+            side_effect=NotFoundError(
+                message="Model not found",
+                model="fake/nonexistent-model",
+                llm_provider="fake",
+            ),
+        ):
+            with pytest.raises(ServiceValidationError, match="not found"):
+                await provider._make_request({
+                    "model": "fake/nonexistent-model",
+                    "messages": [{"role": "user", "content": "hi"}],
+                })
+
+    @pytest.mark.asyncio
+    async def test_make_request_rate_limit(self, mock_hass):
+        """Test 429 rate limit raises specific error."""
+        from litellm.exceptions import RateLimitError
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "openai/gpt-4o-mini")
+
+        with patch(
+            "litellm.acompletion",
+            new_callable=AsyncMock,
+            side_effect=RateLimitError(
+                message="Rate limit exceeded",
+                model="openai/gpt-4o-mini",
+                llm_provider="openai",
+            ),
+        ):
+            with pytest.raises(ServiceValidationError, match="rate_limit"):
+                await provider._make_request({
+                    "model": "openai/gpt-4o-mini",
+                    "messages": [{"role": "user", "content": "hi"}],
+                })
+
+    @pytest.mark.asyncio
+    async def test_make_request_context_window_exceeded(self, mock_hass):
+        """Test token limit exceeded raises specific error."""
+        from litellm.exceptions import ContextWindowExceededError
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "openai/gpt-4o-mini")
+
+        with patch(
+            "litellm.acompletion",
+            new_callable=AsyncMock,
+            side_effect=ContextWindowExceededError(
+                message="Context window exceeded",
+                model="openai/gpt-4o-mini",
+                llm_provider="openai",
+            ),
+        ):
+            with pytest.raises(ServiceValidationError, match="context_window"):
+                await provider._make_request({
+                    "model": "openai/gpt-4o-mini",
+                    "messages": [{"role": "user", "content": "x" * 100000}],
+                })
+
+    @pytest.mark.asyncio
+    async def test_make_request_timeout(self, mock_hass):
+        """Test timeout raises specific error."""
+        from litellm.exceptions import Timeout
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "openai/gpt-4o-mini")
+
+        with patch(
+            "litellm.acompletion",
+            new_callable=AsyncMock,
+            side_effect=Timeout(
+                message="Request timed out",
+                model="openai/gpt-4o-mini",
+                llm_provider="openai",
+            ),
+        ):
+            with pytest.raises(ServiceValidationError, match="timed out"):
+                await provider._make_request({
+                    "model": "openai/gpt-4o-mini",
+                    "messages": [{"role": "user", "content": "hi"}],
+                })
+
+    @pytest.mark.asyncio
+    async def test_make_request_bad_request(self, mock_hass):
+        """Test 400 bad request raises specific error."""
+        from litellm.exceptions import BadRequestError
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "openai/gpt-4o-mini")
+
+        with patch(
+            "litellm.acompletion",
+            new_callable=AsyncMock,
+            side_effect=BadRequestError(
+                message="Invalid request",
+                model="openai/gpt-4o-mini",
+                llm_provider="openai",
+            ),
+        ):
+            with pytest.raises(ServiceValidationError, match="bad request"):
+                await provider._make_request({
+                    "model": "openai/gpt-4o-mini",
+                    "messages": [{"role": "user", "content": "hi"}],
+                })
+
+    @pytest.mark.asyncio
+    async def test_make_request_empty_choices(self, mock_hass):
+        """Test empty choices in response raises error."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "openai/gpt-4o-mini")
+
+        mock_response = Mock()
+        mock_response.choices = []
+
+        with patch("litellm.acompletion", new_callable=AsyncMock, return_value=mock_response):
+            with pytest.raises(ServiceValidationError, match="empty_response"):
+                await provider._make_request({
+                    "model": "openai/gpt-4o-mini",
+                    "messages": [{"role": "user", "content": "hi"}],
+                })
+
+    @pytest.mark.asyncio
+    async def test_make_request_null_content(self, mock_hass):
+        """Test null content in response raises error."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "openai/gpt-4o-mini")
+
+        mock_response = Mock()
+        mock_response.choices = [Mock(message=Mock(content=None))]
+
+        with patch("litellm.acompletion", new_callable=AsyncMock, return_value=mock_response):
+            with pytest.raises(ServiceValidationError, match="invalid_response"):
+                await provider._make_request({
+                    "model": "openai/gpt-4o-mini",
+                    "messages": [{"role": "user", "content": "hi"}],
+                })
+
+    @pytest.mark.asyncio
+    async def test_make_request_no_choices_attr(self, mock_hass):
+        """Test malformed response object with no choices attribute."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "openai/gpt-4o-mini")
+
+        mock_response = object()
+
+        with patch("litellm.acompletion", new_callable=AsyncMock, return_value=mock_response):
+            with pytest.raises(ServiceValidationError, match="empty_response"):
+                await provider._make_request({
+                    "model": "openai/gpt-4o-mini",
+                    "messages": [{"role": "user", "content": "hi"}],
+                })
+
+    def test_prepare_vision_data(self, mock_hass, mock_call):
+        """Test vision data preparation builds correct OpenAI-format payload."""
+        mock_hass.data = {
+            DOMAIN: {
+                "test_provider": {
+                    CONF_PROVIDER: "Settings",
+                    "system_prompt": "You are helpful.",
+                    "title_prompt": "Title this.",
+                },
+            }
+        }
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "anthropic/claude-sonnet-4-6")
+
+        data = provider._prepare_vision_data(mock_call)
+
+        assert data["model"] == "anthropic/claude-sonnet-4-6"
+        assert data["max_tokens"] == 1000
+        assert data["messages"][0]["role"] == "system"
+        user_content = data["messages"][1]["content"]
+        assert any(item.get("type") == "image_url" for item in user_content)
+        assert any(item.get("type") == "text" and "Test message" in item["text"] for item in user_content)
+
+    def test_prepare_text_data(self, mock_hass, mock_call):
+        """Test text data preparation builds correct payload."""
+        mock_hass.data = {
+            DOMAIN: {
+                "test_provider": {
+                    CONF_PROVIDER: "Settings",
+                    "system_prompt": "You are helpful.",
+                    "title_prompt": "Summarize this.",
+                },
+            }
+        }
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "openai/gpt-4o-mini")
+
+        data = provider._prepare_text_data(mock_call)
+
+        assert data["model"] == "openai/gpt-4o-mini"
+        assert len(data["messages"]) == 2
+        assert data["messages"][0]["role"] == "user"
+        assert data["messages"][1]["role"] == "user"
+
+    @pytest.mark.asyncio
+    async def test_validate_success(self, mock_hass):
+        """Test successful validation."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "openai/gpt-4o-mini")
+
+        mock_response = Mock()
+        mock_response.choices = [Mock(message=Mock(content="Hi"))]
+
+        with patch("litellm.acompletion", new_callable=AsyncMock, return_value=mock_response):
+            await provider.validate()
+
+    @pytest.mark.asyncio
+    async def test_validate_auth_error(self, mock_hass):
+        """Test validation with invalid API key."""
+        from litellm.exceptions import AuthenticationError
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-invalid", "openai/gpt-4o-mini")
+
+        with patch(
+            "litellm.acompletion",
+            new_callable=AsyncMock,
+            side_effect=AuthenticationError(
+                message="Invalid key",
+                model="openai/gpt-4o-mini",
+                llm_provider="openai",
+            ),
+        ):
+            with pytest.raises(ServiceValidationError, match="invalid_api_key"):
+                await provider.validate()
+
+    @pytest.mark.asyncio
+    async def test_validate_model_not_found(self, mock_hass):
+        """Test validation with bad model name."""
+        from litellm.exceptions import NotFoundError
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "bad/model")
+
+        with patch(
+            "litellm.acompletion",
+            new_callable=AsyncMock,
+            side_effect=NotFoundError(
+                message="Not found",
+                model="bad/model",
+                llm_provider="bad",
+            ),
+        ):
+            with pytest.raises(ServiceValidationError, match="not found"):
+                await provider.validate()
+
+    @pytest.mark.asyncio
+    async def test_validate_generic_error_falls_through(self, mock_hass):
+        """Test validation with unexpected error."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "openai/gpt-4o-mini")
+
+        with patch(
+            "litellm.acompletion",
+            new_callable=AsyncMock,
+            side_effect=ConnectionError("network down"),
+        ):
+            with pytest.raises(ServiceValidationError, match="handshake_failed"):
+                await provider.validate()
+
+    @pytest.mark.asyncio
+    async def test_make_request_passes_timeout(self, mock_hass):
+        """Test that timeout from settings is passed to litellm."""
+        mock_hass.data = {
+            DOMAIN: {
+                "settings_entry": {
+                    CONF_PROVIDER: "Settings",
+                    "request_timeout": 120,
+                },
+            }
+        }
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "openai/gpt-4o-mini")
+
+        mock_response = Mock()
+        mock_response.choices = [Mock(message=Mock(content="ok"))]
+
+        with patch("litellm.acompletion", new_callable=AsyncMock, return_value=mock_response) as mock_call:
+            await provider._make_request({
+                "model": "openai/gpt-4o-mini",
+                "messages": [{"role": "user", "content": "hi"}],
+            })
+            call_kwargs = mock_call.call_args[1]
+            assert "timeout" in call_kwargs
+
+    @pytest.mark.asyncio
+    async def test_make_request_provider_prefixed_model(self, mock_hass):
+        """Test that provider-prefixed model strings pass through correctly."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = LiteLLM(mock_hass, "sk-test", "anthropic/claude-sonnet-4-6")
+
+        mock_response = Mock()
+        mock_response.choices = [Mock(message=Mock(content="ok"))]
+
+        with patch("litellm.acompletion", new_callable=AsyncMock, return_value=mock_response) as mock_call:
+            await provider._make_request({
+                "model": "anthropic/claude-sonnet-4-6",
+                "messages": [{"role": "user", "content": "hi"}],
+            })
+            call_kwargs = mock_call.call_args[1]
+            assert call_kwargs["model"] == "anthropic/claude-sonnet-4-6"
+
+
 class TestProviderFactory:
     """Test ProviderFactory class."""
 
@@ -1128,6 +1557,19 @@ class TestProviderFactory:
             )
 
             assert isinstance(provider, OpenAI)
+
+    def test_create_litellm(self, mock_hass):
+        """Test ProviderFactory creates LiteLLM provider."""
+        config = {
+            CONF_API_KEY: "test_key",
+        }
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = ProviderFactory.create(
+                mock_hass, "LiteLLM", config, "openai/gpt-4o-mini"
+            )
+
+            assert isinstance(provider, LiteLLM)
 
 
 @pytest.fixture
@@ -1562,6 +2004,9 @@ async def test_provider_coverage_misc_paths(monkeypatch, coverage_hass):
     )
     assert isinstance(
         ProviderFactory.create(coverage_hass, "OpenWebUI", config, "m"), OpenAI
+    )
+    assert isinstance(
+        ProviderFactory.create(coverage_hass, "LiteLLM", config, "m"), LiteLLM
     )
     with pytest.raises(ServiceValidationError):
         ProviderFactory.create(coverage_hass, "Nope", config, "m")

@@ -146,6 +146,7 @@ DEFAULT_CUSTOM_OPENAI_MODEL = "gpt-4o-mini"
 DEFAULT_AWS_MODEL = "us.amazon.nova-pro-v1:0"
 DEFAULT_OPENWEBUI_MODEL = "gemma3:4b"
 DEFAULT_OPENROUTER_MODEL = "google/gemma-3-4b-it:free"
+DEFAULT_LITELLM_MODEL = "gpt-4o-mini"
 
 DEFAULT_SUMMARY_PROMPT = "Provide a brief summary for the following titles. Focus on the key actions or changes that occurred over time and avoid unnecessary details or subjective interpretations. The summary should be concise, objective, and relevant to the content of the images. Keep the summary under 50 words and ensure it captures the main events or activities described in the descriptions. Here are the descriptions:\n "
 

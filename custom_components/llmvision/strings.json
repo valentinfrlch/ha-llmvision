@@ -359,6 +359,36 @@
                     }
                 }
             },
+            "litellm": {
+                "title": "Configure LiteLLM",
+                "description": "LiteLLM provides access to 100+ LLM providers (OpenAI, Anthropic, Google, AWS Bedrock, Ollama, etc.) through a unified SDK. Use the provider-prefixed model format.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "API key for your LLM provider",
+                        "data": {
+                            "api_key": "API key"
+                        },
+                        "data_description": {
+                            "api_key": "Your LLM provider API key (e.g. OpenAI, Anthropic, Google). LiteLLM routes to the correct provider based on the model name."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "Use the LiteLLM model format: openai/gpt-4o-mini, anthropic/claude-sonnet-4-6, gemini/gemini-2.0-flash, etc.",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
+                }
+            },
             "settings": {
                 "title": "Settings",
                 "description": "Configure the LLM Vision integration. This entry is required before setting up other providers. If you wish to use the default settings, just press 'Submit'.",
