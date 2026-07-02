@@ -37,6 +37,7 @@ from .const import (
     ENDPOINT_GROQ,
     ENDPOINT_OPENROUTER,
     ENDPOINT_MISTRAL,
+    ENDPOINT_REQUESTY,
     ERROR_NOT_CONFIGURED,
     ERROR_GROQ_MULTIPLE_IMAGES,
     ERROR_NO_IMAGE_INPUT,
@@ -52,6 +53,7 @@ from .const import (
     DEFAULT_OPENWEBUI_MODEL,
     DEFAULT_OPENROUTER_MODEL,
     DEFAULT_MISTRAL_MODEL,
+    DEFAULT_REQUESTY_MODEL,
     CONF_KEEP_ALIVE,
     CONF_CONTEXT_WINDOW,
     CONF_TEMPERATURE,
@@ -133,6 +135,7 @@ class Request:
             "Open WebUI": DEFAULT_OPENWEBUI_MODEL,
             "OpenRouter": DEFAULT_OPENROUTER_MODEL,
             "Mistral": DEFAULT_MISTRAL_MODEL,
+            "Requesty": DEFAULT_REQUESTY_MODEL,
         }.get(provider_name)
 
     def validate(self, call: Any) -> None | ServiceValidationError:
@@ -2293,6 +2296,14 @@ class ProviderFactory:
                 hass,
                 api_key=cast(str, config.get(CONF_API_KEY) or ""),
                 model=model,
+            )
+
+        if provider_name == "Requesty":
+            return OpenAI(
+                hass,
+                api_key=cast(str, config.get(CONF_API_KEY) or ""),
+                model=model,
+                endpoint={"base_url": ENDPOINT_REQUESTY},
             )
 
         raise ServiceValidationError("invalid_provider")
