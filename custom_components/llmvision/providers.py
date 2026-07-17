@@ -1052,15 +1052,41 @@ class Anthropic(Provider):
             return 0
         return max(0, budget)
 
+    # Newer Claude models reject `temperature`/`top_p` and the fixed
+    # `thinking.budget_tokens`; they require adaptive thinking instead.
+    _NEW_GEN_MARKERS = (
+        "claude-opus-4-6",
+        "claude-opus-4-7",
+        "claude-opus-4-8",
+        "claude-sonnet-5",
+        "claude-sonnet-4-6",
+        "claude-fable-5",
+        "claude-mythos-5",
+    )
+
+    def _is_new_gen(self) -> bool:
+        """True for models that reject temperature and fixed thinking budgets."""
+        model = (self.model or "").lower()
+        return any(marker in model for marker in self._NEW_GEN_MARKERS)
+
     def _build_thinking_config(
         self, default_parameters: dict[str, Any], forces_tool_use: bool = False
-    ) -> dict[str, Any]:
-        """Build Anthropic thinking config and enforce API minimum when enabled."""
-        if forces_tool_use:
-            return {"type": "disabled"}
+    ) -> dict[str, Any] | None:
+        """Build Anthropic thinking config.
+
+        New-gen models use adaptive thinking (no budget_tokens) and cannot
+        combine thinking with forced tool use -> return None (omit the key).
+        Legacy models keep the fixed-budget behaviour.
+        """
         budget_tokens = self._normalize_thinking_budget(
             default_parameters.get("thinking_budget", 0)
         )
+        if self._is_new_gen():
+            if forces_tool_use or budget_tokens <= 0:
+                return None
+            return {"type": "adaptive"}
+        if forces_tool_use:
+            return {"type": "disabled"}
         if budget_tokens >= 1024:
             return {"type": "enabled", "budget_tokens": budget_tokens}
         return {"type": "disabled"}
@@ -1075,10 +1101,12 @@ class Anthropic(Provider):
             "model": self.model,
             "messages": [{"role": "user", "content": []}],
             "max_tokens": call.max_tokens,
-            "thinking": thinking_config,
         }
-        # Omit temperature if thinking is enabled
-        if thinking_config.get("type") != "enabled":
+        if thinking_config is not None:
+            payload["thinking"] = thinking_config
+        # New-gen Claude models reject temperature; legacy models omit it only
+        # while fixed-budget thinking is enabled.
+        if not self._is_new_gen() and (thinking_config or {}).get("type") != "enabled":
             payload["temperature"] = default_parameters.get("temperature")
 
         # Add structured output support using tools
@@ -1153,10 +1181,12 @@ class Anthropic(Provider):
                 {"role": "user", "content": [{"type": "text", "text": call.message}]},
             ],
             "max_tokens": call.max_tokens,
-            "thinking": thinking_config,
         }
-        # Omit temperature if thinking is enabled
-        if thinking_config.get("type") != "enabled":
+        if thinking_config is not None:
+            payload["thinking"] = thinking_config
+        # New-gen Claude models reject temperature; legacy models omit it only
+        # while fixed-budget thinking is enabled.
+        if not self._is_new_gen() and (thinking_config or {}).get("type") != "enabled":
             payload["temperature"] = default_parameters.get("temperature")
 
         # Add structured output support using tools
@@ -1196,8 +1226,9 @@ class Anthropic(Provider):
             "model": self.model,
             "messages": [{"role": "user", "content": "Hi"}],
             "max_tokens": 1,
-            "temperature": 0.5,
         }
+        if not self._is_new_gen():
+            payload["temperature"] = 0.5
         await self._post(
             url=f"https://api.anthropic.com/v1/messages", headers=header, data=payload
         )
