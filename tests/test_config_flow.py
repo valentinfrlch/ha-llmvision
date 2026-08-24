@@ -22,6 +22,8 @@ from custom_components.llmvision.const import (
     CONF_HTTPS,
     CONF_IP_ADDRESS,
     CONF_KEEP_ALIVE,
+    CONF_STREAM_BUFFER_CAMERAS,
+    CONF_STREAM_BUFFER_SECONDS,
     CONF_MEMORY_PATHS,
     CONF_MEMORY_STRINGS,
     CONF_PORT,
@@ -301,6 +303,10 @@ class TestSettingsStep:
                 CONF_MEMORY_PATHS: [],
                 CONF_MEMORY_STRINGS: [],
             },
+            "stream_buffer_section": {
+                CONF_STREAM_BUFFER_CAMERAS: ["camera.front_door"],
+                CONF_STREAM_BUFFER_SECONDS: 20,
+            },
         }
 
         result = await flow.async_step_settings(user_input)
@@ -310,6 +316,8 @@ class TestSettingsStep:
         assert result["data_updates"][CONF_PROVIDER] == "Settings"
         assert result["data_updates"][CONF_FALLBACK_PROVIDER] == "provider-entry-id"
         assert result["data_updates"][CONF_REQUEST_TIMEOUT] == 120
+        assert result["data_updates"][CONF_STREAM_BUFFER_CAMERAS] == ["camera.front_door"]
+        assert result["data_updates"][CONF_STREAM_BUFFER_SECONDS] == 20
 
     @pytest.mark.asyncio
     async def test_settings_shows_form_without_input(self, build_flow, mock_hass):

@@ -64,6 +64,11 @@ from .const import (
     CONF_THINK,
     CONF_REASONING_EFFORT,
     CONF_KEEP_ALIVE,
+    CONF_STREAM_BUFFER_CAMERAS,
+    CONF_STREAM_BUFFER_SECONDS,
+    DEFAULT_STREAM_BUFFER_SECONDS,
+    MIN_STREAM_BUFFER_SECONDS,
+    MAX_STREAM_BUFFER_SECONDS,
     VERSION_AZURE,
 )
 
@@ -1463,6 +1468,35 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ),
                     {"collapsed": True},
                 ),
+                vol.Optional("stream_buffer_section"): section(
+                    vol.Schema(
+                        {
+                            vol.Optional(CONF_STREAM_BUFFER_CAMERAS): selector(
+                                {
+                                    "entity": {
+                                        "domain": "camera",
+                                        "multiple": True,
+                                    }
+                                }
+                            ),
+                            vol.Optional(
+                                CONF_STREAM_BUFFER_SECONDS,
+                                default=DEFAULT_STREAM_BUFFER_SECONDS,
+                            ): selector(
+                                {
+                                    "number": {
+                                        "min": MIN_STREAM_BUFFER_SECONDS,
+                                        "max": MAX_STREAM_BUFFER_SECONDS,
+                                        "step": 1,
+                                        "unit_of_measurement": "s",
+                                        "mode": "slider",
+                                    }
+                                }
+                            ),
+                        }
+                    ),
+                    {"collapsed": False},
+                ),
             }
         )
 
@@ -1503,6 +1537,14 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_MEMORY_PATHS: self.init_info.get(CONF_MEMORY_PATHS),
                 CONF_MEMORY_STRINGS: self.init_info.get(CONF_MEMORY_STRINGS),
             },
+            "stream_buffer_section": {
+                CONF_STREAM_BUFFER_CAMERAS: self.init_info.get(
+                    CONF_STREAM_BUFFER_CAMERAS, []
+                ),
+                CONF_STREAM_BUFFER_SECONDS: self.init_info.get(
+                    CONF_STREAM_BUFFER_SECONDS, DEFAULT_STREAM_BUFFER_SECONDS
+                ),
+            },
         }
         _LOGGER.debug(f"Suggested values: {suggested}, adding to schema...")
         data_schema = self.add_suggested_values_to_schema(data_schema, suggested)
@@ -1517,6 +1559,12 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             for _key in (CONF_MEMORY_PATHS, CONF_MEMORY_STRINGS):
                 if _key not in user_input:
                     user_input[_key] = []
+
+            # Ensure stream buffer fields have defaults
+            if CONF_STREAM_BUFFER_CAMERAS not in user_input:
+                user_input[CONF_STREAM_BUFFER_CAMERAS] = []
+            if CONF_STREAM_BUFFER_SECONDS not in user_input:
+                user_input[CONF_STREAM_BUFFER_SECONDS] = DEFAULT_STREAM_BUFFER_SECONDS
 
             errors = {}
             if len(user_input.get(CONF_MEMORY_PATHS, [])) != len(

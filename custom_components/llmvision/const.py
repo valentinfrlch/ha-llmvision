@@ -45,9 +45,11 @@ CONF_MEMORY_IMAGES_ENCODED = "memory_images_encoded"
 CONF_MEMORY_STRINGS = "memory_strings"
 CONF_SYSTEM_PROMPT = "system_prompt"
 CONF_TITLE_PROMPT = "title_prompt"
-CONF_MEMORY_PATHS = "memory_paths"
-CONF_MEMORY_IMAGES_ENCODED = "memory_images_encoded"
-CONF_MEMORY_STRINGS = "memory_strings"
+CONF_STREAM_BUFFER_CAMERAS = "stream_buffer_cameras"
+CONF_STREAM_BUFFER_SECONDS = "stream_buffer_seconds"
+DEFAULT_STREAM_BUFFER_SECONDS = 15
+MIN_STREAM_BUFFER_SECONDS = 5
+MAX_STREAM_BUFFER_SECONDS = 60
 
 # Dispatcher signals
 SIGNAL_TIMELINE_UPDATED = f"{DOMAIN}_timeline_updated"
@@ -67,6 +69,7 @@ VIDEO_FILE = "video_file"
 EVENT_ID = "event_id"
 INTERVAL = "interval"
 DURATION = "duration"
+LOOKBACK = "lookback"
 FRIGATE_RETRY_ATTEMPTS = "frigate_retry_attempts"
 FRIGATE_RETRY_SECONDS = "frigate_retry_seconds"
 MAX_FRAMES = "max_frames"
