@@ -22,7 +22,7 @@ import numpy as np
 from homeassistant.helpers.network import get_url
 from homeassistant.exceptions import ServiceValidationError
 
-from .const import DOMAIN
+from .const import DOMAIN, MAX_KEYFRAME_CANDIDATES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -275,6 +275,7 @@ class MediaProcessor:
         target_width,
         include_filename,
         expose_images,
+        lookback=0,
     ):
         """Wrapper for client.add_frame with integrated recorder
 
@@ -282,10 +283,27 @@ class MediaProcessor:
             image_entities (list[string]): List of camera entities to record
             duration (float): Duration in seconds to record
             target_width (int): Target width for the images in pixels
+            lookback (int): Pre-event lookback duration in seconds
         """
 
         if isinstance(image_entities, str):
             image_entities = [image_entities]
+
+        if lookback and lookback > 0:
+            try:
+                return await self._record_with_lookback(
+                    image_entities=image_entities,
+                    duration=duration,
+                    lookback=lookback,
+                    max_frames=max_frames,
+                    target_width=target_width,
+                    include_filename=include_filename,
+                    expose_images=expose_images,
+                )
+            except Exception as e:
+                _LOGGER.warning(
+                    f"Lookback recording failed for {image_entities} ({e}). Falling back to live snapshot polling."
+                )
 
         if duration is None or duration < 3:
             interval = 1
@@ -824,7 +842,12 @@ class MediaProcessor:
                                 f"Cannot identify image from ffmpeg pipe at frame {frame_counter}"
                             )
                             continue
-                        if frame_counter >= 50:
+                        max_candidates = (
+                            max_frames * 10
+                            if max_frames
+                            else MAX_KEYFRAME_CANDIDATES
+                        )
+                        if frame_counter >= max_candidates:
                             break
                 await ffmpeg_process.wait()
 
@@ -975,7 +998,7 @@ class MediaProcessor:
 
         return self.client
 
-    async def record_with_lookback(
+    async def _record_with_lookback(
         self,
         image_entities,
         duration,
@@ -1110,40 +1133,15 @@ class MediaProcessor:
         lookback=0,
     ):
         if image_entities:
-            if isinstance(image_entities, str):
-                image_entities = [image_entities]
-            if lookback and lookback > 0:
-                try:
-                    await self.record_with_lookback(
-                        image_entities=image_entities,
-                        duration=duration,
-                        lookback=lookback,
-                        max_frames=max_frames,
-                        target_width=target_width,
-                        include_filename=include_filename,
-                        expose_images=expose_images,
-                    )
-                except Exception as e:
-                    _LOGGER.warning(
-                        f"Lookback recording failed for {image_entities} ({e}). Falling back to live snapshot polling."
-                    )
-                    await self.record(
-                        image_entities=image_entities,
-                        duration=duration,
-                        max_frames=max_frames,
-                        target_width=target_width,
-                        include_filename=include_filename,
-                        expose_images=expose_images,
-                    )
-            else:
-                await self.record(
-                    image_entities=image_entities,
-                    duration=duration,
-                    max_frames=max_frames,
-                    target_width=target_width,
-                    include_filename=include_filename,
-                    expose_images=expose_images,
-                )
+            await self.record(
+                image_entities=image_entities,
+                duration=duration,
+                max_frames=max_frames,
+                target_width=target_width,
+                include_filename=include_filename,
+                expose_images=expose_images,
+                lookback=lookback,
+            )
         return self.client
 
     async def add_visual_data(

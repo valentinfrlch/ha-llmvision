@@ -748,11 +748,11 @@ class TestMediaProcessor:
         processor.record.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_add_streams_with_lookback_delegates_to_record_with_lookback(
+    async def test_add_streams_with_lookback_delegates_to_record(
         self, processor
     ):
-        """add_streams should call record_with_lookback when lookback > 0."""
-        processor.record_with_lookback = AsyncMock()
+        """add_streams should call record passing lookback parameter."""
+        processor.record = AsyncMock()
 
         result = await processor.add_streams(
             image_entities=["camera.front"],
@@ -765,7 +765,33 @@ class TestMediaProcessor:
         )
 
         assert result is processor.client
-        processor.record_with_lookback.assert_awaited_once_with(
+        processor.record.assert_awaited_once_with(
+            image_entities=["camera.front"],
+            duration=5,
+            max_frames=2,
+            target_width=128,
+            include_filename=False,
+            expose_images=False,
+            lookback=5,
+        )
+
+    @pytest.mark.asyncio
+    async def test_record_with_lookback_delegates_to_helper(self, processor):
+        """record should delegate to _record_with_lookback when lookback > 0."""
+        processor._record_with_lookback = AsyncMock(return_value=processor.client)
+
+        result = await processor.record(
+            image_entities=["camera.front"],
+            duration=5,
+            max_frames=2,
+            target_width=128,
+            include_filename=False,
+            expose_images=False,
+            lookback=5,
+        )
+
+        assert result is processor.client
+        processor._record_with_lookback.assert_awaited_once_with(
             image_entities=["camera.front"],
             duration=5,
             lookback=5,
@@ -777,7 +803,7 @@ class TestMediaProcessor:
 
     @pytest.mark.asyncio
     async def test_record_with_lookback_success(self, processor, tmp_path):
-        """record_with_lookback should call camera.record service and add_video."""
+        """_record_with_lookback should call camera.record service and add_video."""
         processor.hass.states.get.return_value = SimpleNamespace(
             attributes={"friendly_name": "Front Porch"}
         )
@@ -799,7 +825,7 @@ class TestMediaProcessor:
             "custom_components.llmvision.media_handlers.get_url",
             return_value="http://ha.local",
         ):
-            result = await processor.record_with_lookback(
+            result = await processor._record_with_lookback(
                 image_entities=["camera.front_porch"],
                 duration=5,
                 lookback=5,
@@ -818,6 +844,33 @@ class TestMediaProcessor:
         assert call_data["duration"] == 5
         assert call_data["lookback"] == 5
         processor.add_video.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_record_with_lookback_failure_falls_back_to_polling(self, processor):
+        """record should catch exception from _record_with_lookback and fall back to snapshot loop."""
+        processor._record_with_lookback = AsyncMock(
+            side_effect=Exception("Stream unreachable")
+        )
+        processor.hass.states.get.return_value = None  # to exit snapshot loop cleanly
+
+        with (
+            patch(
+                "custom_components.llmvision.media_handlers.get_url",
+                return_value="http://ha.local",
+            ),
+            pytest.raises(ServiceValidationError, match="No cameras available"),
+        ):
+            await processor.record(
+                image_entities=["camera.front_porch"],
+                duration=1,
+                max_frames=2,
+                target_width=128,
+                include_filename=False,
+                expose_images=False,
+                lookback=5,
+            )
+
+        processor._record_with_lookback.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_add_visual_data_delegates_to_add_images(self, processor):
