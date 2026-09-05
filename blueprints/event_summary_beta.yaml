@@ -1,6 +1,6 @@
 # Snooze blueprint or notifications
 blueprint:
-  name: AI Event Summary (v1.6.0)
+  name: AI Event Summary (v1.8.0-beta)
   author: valentinfrlch
   homeassistant:
     min_version: 2024.10.0
@@ -160,6 +160,12 @@ blueprint:
           default: true
           selector:
             boolean: {}
+        notification_actions:
+          name: Notification Actions
+          description: Optional buttons to display on the notification. Each item must contain an action identifier and a title.
+          default: []
+          selector:
+            object: {}
         condition_notify:
           name: Condition to Notify
           description: Condition to notify the device.
@@ -608,6 +614,7 @@ action:
                         color: !input notification_color
                         notification_icon: !input notification_icon
                         sticky: !input notification_sticky
+                        actions: !input notification_actions
                         image: '{{ snapshot_access_file_path }}'
                         attachment:
                           url: '{{ snapshot_access_file_path }}'
@@ -637,6 +644,7 @@ action:
                         tag: '{{tag}}'
                         group: !input notification_channel
                         alert_once: true
+                        actions: !input notification_actions
                         push:
                           interruption-level: '{{importance.response_text|lower if
                             importance is defined else ''active''}}'
@@ -712,11 +720,7 @@ action:
                         name: !input notification_sound
                         volume: !input notification_volume
                         critical: '{{ notification_critical }}'
-                    actions:
-                    - action: URI
-                      title: See Snapshot
-                      uri: '{{response.key_frame.replace(''/media'',''/media/local'')
-                        }}'
+                    actions: !input notification_actions
         - conditions:
           - condition: template
             value_template: '{{ analysis_mode==''Live Preview'' }}'
@@ -744,11 +748,7 @@ action:
                         critical: '{{ notification_critical }}'
                     ttl: 0
                     priority: high
-                    actions:
-                    - action: URI
-                      title: See Snapshot
-                      uri: '{{response.key_frame.replace(''/media'',''/media/local'')
-                        }}'
+                    actions: !input notification_actions
     - if:
       - condition: template
         value_template: '{{ tts_notification }}'
