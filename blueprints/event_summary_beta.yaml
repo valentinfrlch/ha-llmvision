@@ -162,7 +162,7 @@ blueprint:
             boolean: {}
         notification_actions:
           name: Notification Actions
-          description: Optional buttons to display on the notification. Each item must contain an action identifier and a title.
+          description: "Optional buttons to display on the notification. Each item must contain an action identifier and a title. See the documentation to learn more: <https://llmvision.gitbook.io/getting-started/setup/blueprint/notification-actions/>"
           default: []
           selector:
             object: {}
