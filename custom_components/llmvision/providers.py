@@ -220,7 +220,8 @@ class Request:
                 call.model = None
                 return await self.call(call, _is_fallback_retry=True)
             else:
-                response_text = "Couldn't generate content. Check logs for details."
+                error_message = str(e).strip() or e.__class__.__name__
+                raise ServiceValidationError(error_message) from e
         # Handle Glimpse-v1 responses
         try:
             _LOGGER.debug(
@@ -604,21 +605,37 @@ class OpenAI(Provider):
         """OpenAI supports structured output via JSON Schema."""
         return True
 
+    def _normalize_reasoning_effort(self, value: Any) -> str:
+        """Normalize reasoning effort to a known value."""
+        effort = str(value).strip().lower() if value is not None else "none"
+        allowed = {"none", "minimal", "low", "medium", "high", "xhigh"}
+        return effort if effort in allowed else "none"
+
     def _model_supports_thinking(self, max_effort: str) -> str | bool:
         """Returns the highest supported reasoning effort for the model that is <= the reasoning effort from config"""
         models = {
+            "gpt-5.5": ["none", "low", "medium", "high", "xhigh"],
+            "gpt-5.4-pro": ["medium", "high", "xhigh"],
+            "gpt-5.4-mini": ["none", "low", "medium", "high", "xhigh"],
+            "gpt-5.4-nano": ["none", "low", "medium", "high", "xhigh"],
             "gpt-5.4": ["none", "low", "medium", "high", "xhigh"],
+            "gpt-5.2": ["none", "low", "medium", "high", "xhigh"],
             "gpt-5.1": ["none", "low", "medium", "high"],
             "gpt-5-pro": ["high"],
             "gpt-5-mini": ["medium"],
             "gpt-5-nano": ["medium"],
         }
-        effort_order = ["none", "low", "medium", "high", "xhigh"]
-        for model_prefix, efforts in models.items():
+        effort_order = ["none", "minimal", "low", "medium", "high", "xhigh"]
+        normalized_effort = self._normalize_reasoning_effort(max_effort)
+        # Match the most specific model prefix first to avoid broad prefix collisions
+        for model_prefix in sorted(models, key=len, reverse=True):
+            efforts = models[model_prefix]
             if self.model.startswith(model_prefix):
                 # return the highest reasoning effort supported by the model that is less than or equal to the requested max_effort
                 for effort in reversed(effort_order):
-                    if effort in efforts and effort_order.index(effort) <= effort_order.index(max_effort):
+                    if effort in efforts and effort_order.index(
+                        effort
+                    ) <= effort_order.index(normalized_effort):
                         return effort
         return False
 
@@ -679,12 +696,12 @@ class OpenAI(Provider):
         }
 
         # Add reasoning effort if enabled and supported by model
-        max_effort = default_parameters.get("reasoning_effort", "none")
-        if (
-            max_effort not in ["none", None]
-            and self._model_supports_thinking(max_effort) != False
-        ):
-            payload["reasoning_effort"] = self._model_supports_thinking(max_effort)
+        max_effort = self._normalize_reasoning_effort(
+            default_parameters.get("reasoning_effort", "none")
+        )
+        supported_effort = self._model_supports_thinking(max_effort)
+        if max_effort != "none" and supported_effort != False:
+            payload["reasoning_effort"] = supported_effort
 
         # Remove temperature and top_p if model is gpt-5
         if self.model in ["gpt-5", "gpt-5-mini", "gpt-5-nano"]:
@@ -764,12 +781,12 @@ class OpenAI(Provider):
         }
 
         # Add reasoning effort if enabled and supported by model
-        max_effort = default_parameters.get("reasoning_effort", "none")
-        if (
-            max_effort not in ["none", None]
-            and self._model_supports_thinking(max_effort) != False
-        ):
-            payload["reasoning_effort"] = self._model_supports_thinking(max_effort)
+        max_effort = self._normalize_reasoning_effort(
+            default_parameters.get("reasoning_effort", "none")
+        )
+        supported_effort = self._model_supports_thinking(max_effort)
+        if max_effort != "none" and supported_effort != False:
+            payload["reasoning_effort"] = supported_effort
 
         # Remove temperature and top_p if model is gpt-5
         if self.model in ["gpt-5", "gpt-5-mini", "gpt-5-nano"]:
@@ -787,9 +804,7 @@ class OpenAI(Provider):
                     {"role": "user", "content": [{"type": "text", "text": "Hi"}]}
                 ],
             }
-            await self._post(
-                url=self._get_request_url(), headers=headers, data=data
-            )
+            await self._post(url=self._get_request_url(), headers=headers, data=data)
         else:
             raise ServiceValidationError("empty_api_key")
 
@@ -799,9 +814,7 @@ class Mistral(OpenAI):
     unknown fields, so rename max_completion_tokens to max_tokens."""
 
     def __init__(self, hass: HomeAssistant, api_key: str, model: str):
-        super().__init__(
-            hass, api_key, model, endpoint={"base_url": ENDPOINT_MISTRAL}
-        )
+        super().__init__(hass, api_key, model, endpoint={"base_url": ENDPOINT_MISTRAL})
 
     @staticmethod
     def _rename_token_field(payload: dict) -> dict:
@@ -1021,18 +1034,116 @@ class Anthropic(Provider):
 
     async def _make_request(self, data: dict) -> str:
         headers = self._generate_headers()
-        response = await self._post(url=ENDPOINT_ANTHROPIC, headers=headers, data=data)
+        response = await self._post(
+            url=ENDPOINT_ANTHROPIC,
+            headers=headers,
+            data=data,
+        )
 
-        # Handle tool use response for structured output
-        if "content" in response and len(response["content"]) > 0:
-            content = response["content"][0]
-            if content.get("type") == "tool_use":
-                # Extract the structured data from tool use
-                return json.dumps(content.get("input", {}))
+        content = response.get("content")
+        if not isinstance(content, list):
+            raise ServiceValidationError("invalid_response")
+
+        # Anthropic returns two blocks if thinking is enabled, so loop over all of them
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "tool_use":
+                return json.dumps(block.get("input", {}))
+
+        text = "".join(
+            block.get("text", "")
+            for block in content
+            if isinstance(block, dict) and block.get("type") == "text"
+        )
+        if not text:
+            raise ServiceValidationError("empty_response")
+
+        return text
+
+    def _apply_parameters(self, payload: dict, call: Any) -> dict:
+        parameters = self._get_default_parameters(call)
+        raw_budget = parameters.get("thinking_budget", 0)
+
+        try:
+            numeric_budget = float(raw_budget)
+        except (TypeError, ValueError):
+            raise ServiceValidationError("Anthropic thinking budget must be an integer")
+
+        if not numeric_budget.is_integer() or numeric_budget < 0:
+            raise ServiceValidationError(
+                "Anthropic thinking budget must be a non-negative integer"
+            )
+
+        budget = int(numeric_budget)
+        model = self.model.lower()
+        version_match = re.search(
+            r"claude-(?:opus|sonnet|haiku)-(\d+)(?:-(\d+))?",
+            model,
+        )
+        major = int(version_match.group(1)) if version_match else 0
+        minor = int(version_match.group(2) or 0) if version_match else 0
+        manual_thinking = (
+            "claude-3-7-sonnet" in model
+            or (major == 4 and minor <= 6)
+            or "mythos-preview" in model
+        )
+        adaptive_thinking = (
+            "fable" in model
+            or ("mythos" in model and "mythos-preview" not in model)
+            or major >= 5
+            or (major == 4 and minor >= 7)
+        )
+        tool_choice = payload.get("tool_choice") or {}
+        forced_tool = tool_choice.get("type") in {"any", "tool"}
+
+        if budget == 0:
+            if adaptive_thinking:
+                payload["thinking"] = {"type": "disabled"}
+                for parameter in ("temperature", "top_p", "top_k"):
+                    payload.pop(parameter, None)
+            elif manual_thinking:
+                payload["thinking"] = {"type": "disabled"}
             else:
-                # Regular text response
-                return content.get("text", "")
-        return ""
+                payload.pop("thinking", None)
+            return payload
+
+        if adaptive_thinking:
+            payload["thinking"] = {"type": "adaptive"}
+            for parameter in ("temperature", "top_p", "top_k"):
+                payload.pop(parameter, None)
+            return payload
+
+        if not manual_thinking:
+            raise ServiceValidationError(
+                f"Extended thinking is not supported by {self.model}"
+            )
+
+        if forced_tool:
+            payload["thinking"] = {"type": "disabled"}
+            return payload
+
+        if budget < 1024:
+            raise ServiceValidationError(
+                "Anthropic thinking budget must be 0 or at least 1024"
+            )
+
+        try:
+            max_tokens = int(payload["max_tokens"])
+        except (KeyError, TypeError, ValueError):
+            raise ServiceValidationError("Anthropic max_tokens must be an integer")
+
+        if budget >= max_tokens:
+            raise ServiceValidationError(
+                "Anthropic thinking budget must be less than max_tokens"
+            )
+
+        payload["thinking"] = {
+            "type": "enabled",
+            "budget_tokens": budget,
+        }
+        for parameter in ("temperature", "top_p", "top_k"):
+            payload.pop(parameter, None)
+
+        return payload
 
     def _prepare_vision_data(self, call: Any) -> dict:
         default_parameters = self._get_default_parameters(call)
@@ -1041,10 +1152,6 @@ class Anthropic(Provider):
             "messages": [{"role": "user", "content": []}],
             "max_tokens": call.max_tokens,
             "temperature": default_parameters.get("temperature"),
-            "thinking": {
-                "type": "enabled",
-                "budget_tokens": default_parameters.get("thinking_budget", 0),
-            },
         }
 
         # Add structured output support using tools
@@ -1105,7 +1212,7 @@ class Anthropic(Provider):
                 payload["messages"].insert(
                     0, {"role": "user", "content": memory_content}
                 )
-        return payload
+        return self._apply_parameters(payload, call)
 
     def _prepare_text_data(self, call: Any) -> dict:
         default_parameters = self._get_default_parameters(call)
@@ -1118,10 +1225,6 @@ class Anthropic(Provider):
             ],
             "max_tokens": call.max_tokens,
             "temperature": default_parameters.get("temperature"),
-            "thinking": {
-                "type": "enabled",
-                "budget_tokens": default_parameters.get("thinking_budget", 0),
-            },
         }
 
         # Add structured output support using tools
@@ -1152,7 +1255,7 @@ class Anthropic(Provider):
                     f"Invalid JSON in structure parameter: {str(e)}"
                 )
 
-        return payload
+        return self._apply_parameters(payload, call)
 
     async def validate(self) -> None | ServiceValidationError:
         if not self.api_key:

@@ -953,3 +953,44 @@ class TestFlattenDict:
         result = flatten_dict(flat)
 
         assert result == flat
+
+
+class TestKeepAliveValidation:
+    """Tests for keep_alive validation helper in the config flow."""
+
+    def test_validate_keep_alive_numbers_and_strings(self, build_flow):
+        flow = build_flow()
+
+        # Integer input
+        assert flow._validate_keep_alive(3600) == 3600
+        assert flow._validate_keep_alive("3600") == 3600
+
+        # Fractional seconds
+        assert flow._validate_keep_alive("42.5") == 42.5
+
+        # Zero
+        assert flow._validate_keep_alive("0") == 0
+
+        # Negative integer
+        assert flow._validate_keep_alive("-1") == -1
+
+    def test_validate_keep_alive_go_duration_strings(self, build_flow):
+        flow = build_flow()
+
+        # Simple duration
+        assert flow._validate_keep_alive("5m") == "5m"
+
+        # Composite duration
+        assert flow._validate_keep_alive("1h2m3s") == "1h2m3s"
+
+        # Negative duration (meaning keep loaded indefinitely per Ollama semantics)
+        assert flow._validate_keep_alive("-1m") == "-1m"
+
+    def test_validate_keep_alive_invalid_raises(self, build_flow):
+        flow = build_flow()
+
+        with pytest.raises(ValueError):
+            flow._validate_keep_alive("not-a-duration")
+
+        with pytest.raises(ValueError):
+            flow._validate_keep_alive("")

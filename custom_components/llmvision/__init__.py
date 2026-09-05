@@ -450,7 +450,7 @@ class ServiceCallData:
         self.provider = str(data_call.data.get(PROVIDER))
         # If not set, the conf_default_model will be set in providers.py
         self.model = data_call.data.get(MODEL)
-        self.message = str(data_call.data.get(MESSAGE, "")[0:2000])
+        self.message = str(data_call.data.get(MESSAGE, ""))
         self.store_in_timeline = data_call.data.get(STORE_IN_TIMELINE, False)
         self.use_memory = data_call.data.get(USE_MEMORY, False)
         self.image_paths = (

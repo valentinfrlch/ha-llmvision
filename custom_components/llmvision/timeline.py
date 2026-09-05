@@ -807,7 +807,9 @@ class Timeline:
             if pending_name:
                 self._pending_key_frames.add(pending_name)
             try:
-                await self.load_events()
+                # No pre-load needed: the in-memory list is not read before the
+                # insert below, and _insert_event() reloads it afterwards. Skipping
+                # this redundant full-DB reload keeps event creation off the hot path.
 
                 # Resolve category and label if not provided
                 if not label:
@@ -974,7 +976,7 @@ class Timeline:
             # Skip cleanup during migration
             return
 
-        GRACE_SECONDS = 10
+        GRACE_SECONDS = 30
 
         async with self._cleanup_lock:
             linked_frames = {
