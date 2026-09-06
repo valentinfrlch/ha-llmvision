@@ -231,6 +231,17 @@ video_analyzer:
       default: 3000
       selector:
         number:
+    lookback:
+      name: Lookback
+      required: false
+      description: 'Number of seconds to look back prior to the service call. Requires camera to be configured in LLM Vision Settings -> Stream Buffer Cameras up to the configured buffer limit.'
+      example: 5
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 60
+          unit_of_measurement: "seconds"
     generate_title:
       name: Generate Title
       required: false
@@ -240,7 +251,7 @@ video_analyzer:
         boolean:
     expose_images:
       name: Expose Images
-      description: Save the key frame. This will save analyzed frames in /media/llmvision/snapshots so they can be used for notifications. The file path will be included in the response.
+      description: Save analyzed frames to /media/llmvision/snapshots so they can be viewed or used for notifications. File paths are included in the response.
       required: false
       example: false
       default: false
@@ -381,6 +392,17 @@ stream_analyzer:
       default: 3000
       selector:
         number:
+    lookback:
+      name: Lookback
+      required: false
+      description: 'Number of seconds to look back prior to the service call. Requires camera to be configured in LLM Vision Settings -> Stream Buffer Cameras up to the configured buffer limit.'
+      example: 5
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 60
+          unit_of_measurement: "seconds"
     generate_title:
       name: Generate Title
       required: false
@@ -390,7 +412,7 @@ stream_analyzer:
         boolean:
     expose_images:
       name: Expose Images
-      description: Save the key frame. This will save analyzed frames in /media/llmvision/snapshots so they can be used for notifications. The file path will be included in the response.
+      description: Save analyzed frames to /media/llmvision/snapshots so they can be viewed or used for notifications. File paths are included in the response.
       required: false
       example: false
       default: false

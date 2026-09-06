@@ -7,6 +7,7 @@ import os, re
 from datetime import timedelta
 from homeassistant.util import dt as dt_util
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
 import homeassistant.helpers.config_validation as cv
@@ -52,6 +53,7 @@ from .const import (
     EVENT_ID,
     INTERVAL,
     DURATION,
+    LOOKBACK,
     MAX_FRAMES,
     INCLUDE_FILENAME,
     EXPOSE_IMAGES,
@@ -71,6 +73,9 @@ from .const import (
     CONF_CONTEXT_WINDOW,
     CONF_KEEP_ALIVE,
     CONF_REQUEST_TIMEOUT,
+    CONF_STREAM_BUFFER_CAMERAS,
+    CONF_STREAM_BUFFER_SECONDS,
+    DEFAULT_STREAM_BUFFER_SECONDS,
     RESPONSE_FORMAT,
     STRUCTURE,
     TITLE_FIELD,
@@ -84,6 +89,40 @@ from .const import (
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 _LOGGER = logging.getLogger(__name__)
+
+
+async def _async_start_stream_keepers(hass, entry):
+    """Start or ensure stream keepers are running for configured cameras."""
+    buffered_cameras = entry.data.get(CONF_STREAM_BUFFER_CAMERAS) or []
+    if DOMAIN not in hass.data:
+        hass.data[DOMAIN] = {}
+    if "active_streams" not in hass.data[DOMAIN]:
+        hass.data[DOMAIN]["active_streams"] = {}
+
+    for camera_entity in buffered_cameras:
+        if camera_entity not in hass.data[DOMAIN]["active_streams"]:
+            try:
+                camera = None
+                try:
+                    from homeassistant.components.camera import get_camera_from_entity_id
+                    camera = get_camera_from_entity_id(hass, camera_entity)
+                except Exception:
+                    pass
+                if camera:
+                    stream = await camera.async_create_stream()
+                    if stream:
+                        if hasattr(stream, "dynamic_stream_settings"):
+                            stream.dynamic_stream_settings.preload_stream = True
+                        stream.add_provider("hls")
+                        await stream.start()
+                        hass.data[DOMAIN]["active_streams"][camera_entity] = stream
+                        _LOGGER.info(
+                            f"LLM Vision: Started stream buffer keeper for {camera_entity}"
+                        )
+            except Exception as e:
+                _LOGGER.warning(
+                    f"LLM Vision: Could not start stream buffer keeper for {camera_entity}: {e}"
+                )
 
 
 async def async_setup_entry(hass, entry):
@@ -121,6 +160,8 @@ async def async_setup_entry(hass, entry):
         CONF_MEMORY_STRINGS: entry.data.get(CONF_MEMORY_STRINGS),
         CONF_SYSTEM_PROMPT: entry.data.get(CONF_SYSTEM_PROMPT),
         CONF_TITLE_PROMPT: entry.data.get(CONF_TITLE_PROMPT),
+        CONF_STREAM_BUFFER_CAMERAS: entry.data.get(CONF_STREAM_BUFFER_CAMERAS),
+        CONF_STREAM_BUFFER_SECONDS: entry.data.get(CONF_STREAM_BUFFER_SECONDS),
         # Thinking/reasoning parameters
         CONF_THINKING_BUDGET: entry.data.get(CONF_THINKING_BUDGET),
         CONF_THINK: entry.data.get(CONF_THINK),
@@ -139,11 +180,21 @@ async def async_setup_entry(hass, entry):
     # Store the filtered config under the entry_uid (subdict per entry)
     hass.data[DOMAIN][entry_uid] = filtered_provider_config
 
-    # If this is the Settings entry, set up the calendar and run cleanup
+    # If this is the Settings entry, set up the calendar, run cleanup, and start stream keepers
     if filtered_provider_config.get(CONF_PROVIDER) == "Settings":
         await hass.config_entries.async_forward_entry_setups(entry, ["calendar"])
         timeline = Timeline(hass, entry)
         await timeline._cleanup()
+
+        # Start stream keepers for configured buffered cameras
+        await _async_start_stream_keepers(hass, entry)
+
+        async def _on_ha_started(event):
+            await _async_start_stream_keepers(hass, entry)
+
+        entry.async_on_unload(
+            hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _on_ha_started)
+        )
 
     # Sanitize provider config (remove api_key and value)
     sanitized_provider_config = {
@@ -177,6 +228,20 @@ async def async_remove_entry(hass, entry):
 
 async def async_unload_entry(hass, entry) -> bool:
     _LOGGER.debug(f"Unloading {entry.title} from hass.data")
+    if entry.data.get(CONF_PROVIDER) == "Settings" and "active_streams" in hass.data.get(
+        DOMAIN, {}
+    ):
+        for camera_entity, stream in list(hass.data[DOMAIN]["active_streams"].items()):
+            try:
+                _LOGGER.debug(f"LLM Vision: Stopping stream keeper for {camera_entity}")
+                if hasattr(stream, "dynamic_stream_settings"):
+                    stream.dynamic_stream_settings.preload_stream = False
+                if hasattr(stream, "remove_provider"):
+                    stream.remove_provider("hls")
+            except Exception as e:
+                _LOGGER.debug(f"Error stopping stream keeper for {camera_entity}: {e}")
+        hass.data[DOMAIN]["active_streams"].clear()
+
     # check if the entry is the calendar entry (has entry rentention_time)
     if entry.data.get(CONF_RETENTION_TIME) is not None:
         # unload the calendar
@@ -471,6 +536,7 @@ class ServiceCallData:
         )
         self.interval: int = int(data_call.data.get(INTERVAL, 2))
         self.duration: int = int(data_call.data.get(DURATION, 10))
+        self.lookback: int = int(data_call.data.get(LOOKBACK, 0))
         self.max_frames: int = int(data_call.data.get(MAX_FRAMES, 3))
         self.target_width: int = data_call.data.get(TARGET_WIDTH, 3840)
         self.temperature: float = float()
@@ -705,6 +771,8 @@ def setup(hass, config):
         if processor.key_frame:
             _LOGGER.info(f"Key frame: {processor.key_frame}")
             response["key_frame"] = processor.key_frame
+        if processor.saved_frames:
+            response["saved_frames"] = processor.saved_frames
 
         await _create_event(
             hass=hass,
@@ -715,10 +783,43 @@ def setup(hass, config):
         )
         return response
 
+    def _validate_lookback(call):
+        """Validate that requested lookback is supported by configured stream buffer settings."""
+        if not call.lookback or call.lookback <= 0:
+            return
+
+        # Find Settings entry data
+        settings_data = {}
+        for entry_id, entry_cfg in hass.data.get(DOMAIN, {}).items():
+            if isinstance(entry_cfg, dict) and entry_cfg.get(CONF_PROVIDER) == "Settings":
+                settings_data = entry_cfg
+                break
+
+        buffered_cameras = settings_data.get(CONF_STREAM_BUFFER_CAMERAS) or []
+        max_buffer_seconds = settings_data.get(
+            CONF_STREAM_BUFFER_SECONDS, DEFAULT_STREAM_BUFFER_SECONDS
+        )
+
+        image_entities = call.image_entities or []
+        if isinstance(image_entities, str):
+            image_entities = [image_entities]
+
+        for camera in image_entities:
+            if camera not in buffered_cameras:
+                raise ServiceValidationError(
+                    f"Lookback ({call.lookback}s) was requested for '{camera}', but this camera is not configured for stream buffering in LLM Vision Settings. Please add it under LLM Vision Settings -> Stream Buffer Cameras."
+                )
+
+        if call.lookback > max_buffer_seconds:
+            raise ServiceValidationError(
+                f"Requested lookback ({call.lookback}s) exceeds the configured stream buffer limit ({max_buffer_seconds}s) in LLM Vision Settings. Please increase the buffer limit in Settings or reduce lookback."
+            )
+
     async def video_analyzer(data_call):
         """Handle the service call to analyze a video (future implementation)"""
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
+        _validate_lookback(call)
         call.message = "The attached images are frames from a video. " + call.message
 
         request = Request(
@@ -735,14 +836,17 @@ def setup(hass, config):
             target_width=call.target_width,
             include_filename=call.include_filename,
             expose_images=call.expose_images,
+            lookback=call.lookback,
         )
         call.memory = Memory(hass)
         await call.memory._update_memory()
 
         response = await request.call(call)
-        # Add processor.key_frame to response if it exists
+        # Add processor.key_frame and processor.saved_frames to response if they exist
         if processor.key_frame:
             response["key_frame"] = processor.key_frame
+        if processor.saved_frames:
+            response["saved_frames"] = processor.saved_frames
 
         await _create_event(
             hass=hass,
@@ -757,6 +861,7 @@ def setup(hass, config):
         """Handle the service call to analyze a stream"""
         start = dt_util.now()
         call = ServiceCallData(data_call).get_service_call_data()
+        _validate_lookback(call)
         call.message = (
             "The attached images are frames from a live camera feed. " + call.message
         )
@@ -771,6 +876,7 @@ def setup(hass, config):
         request = await processor.add_streams(
             image_entities=call.image_entities,
             duration=call.duration,
+            lookback=call.lookback,
             max_frames=call.max_frames,
             target_width=call.target_width,
             include_filename=call.include_filename,
@@ -781,9 +887,11 @@ def setup(hass, config):
         await call.memory._update_memory()
 
         response = await request.call(call)
-        # Add processor.key_frame to response if it exists
+        # Add processor.key_frame and processor.saved_frames to response if they exist
         if processor.key_frame:
             response["key_frame"] = processor.key_frame
+        if processor.saved_frames:
+            response["saved_frames"] = processor.saved_frames
 
         await _create_event(
             hass=hass,
@@ -863,6 +971,8 @@ def setup(hass, config):
         # Add processor.key_frame to response if it exists
         if processor.key_frame:
             response["key_frame"] = processor.key_frame
+        if processor.saved_frames:
+            response["saved_frames"] = processor.saved_frames
 
         await _create_event(
             hass=hass,

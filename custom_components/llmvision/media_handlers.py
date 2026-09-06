@@ -22,7 +22,7 @@ import numpy as np
 from homeassistant.helpers.network import get_url
 from homeassistant.exceptions import ServiceValidationError
 
-from .const import DOMAIN
+from .const import DOMAIN, MAX_KEYFRAME_CANDIDATES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,6 +36,7 @@ class MediaProcessor:
         self.filenames = []
         self.snapshots_path = f"/media/{DOMAIN}/snapshots/"
         self.key_frame = ""
+        self.saved_frames = []
 
     async def _encode_image(self, img):
         """Encode image as base64"""
@@ -80,17 +81,19 @@ class MediaProcessor:
             None,
             partial(os.makedirs, f"/media/{DOMAIN}/snapshots", exist_ok=True),
         )
+        filename = f"/media/{DOMAIN}/snapshots/{uid}-{frame_name}.jpg"
         if self.key_frame == "":
-            filename = f"/media/{DOMAIN}/snapshots/{uid}-{frame_name}.jpg"
             self.key_frame = filename
-            if image_data is None and frame_path is not None:
-                # open image in hass.loop
-                with await self.hass.loop.run_in_executor(
-                    None, Image.open, frame_path
-                ) as image:
-                    await self.hass.loop.run_in_executor(None, image.load)
-                    image_data = await self._encode_image(image)
-            await self._save_clip(image_data=image_data, image_path=filename)
+        if filename not in self.saved_frames:
+            self.saved_frames.append(filename)
+        if image_data is None and frame_path is not None:
+            # open image in hass.loop
+            with await self.hass.loop.run_in_executor(
+                None, Image.open, frame_path
+            ) as image:
+                await self.hass.loop.run_in_executor(None, image.load)
+                image_data = await self._encode_image(image)
+        await self._save_clip(image_data=image_data, image_path=filename)
 
     def _similarity_score(self, previous_frame, current_frame_gray):
         """
@@ -272,6 +275,7 @@ class MediaProcessor:
         target_width,
         include_filename,
         expose_images,
+        lookback=0,
     ):
         """Wrapper for client.add_frame with integrated recorder
 
@@ -279,7 +283,27 @@ class MediaProcessor:
             image_entities (list[string]): List of camera entities to record
             duration (float): Duration in seconds to record
             target_width (int): Target width for the images in pixels
+            lookback (int): Pre-event lookback duration in seconds
         """
+
+        if isinstance(image_entities, str):
+            image_entities = [image_entities]
+
+        if lookback and lookback > 0:
+            try:
+                return await self._record_with_lookback(
+                    image_entities=image_entities,
+                    duration=duration,
+                    lookback=lookback,
+                    max_frames=max_frames,
+                    target_width=target_width,
+                    include_filename=include_filename,
+                    expose_images=expose_images,
+                )
+            except Exception as e:
+                _LOGGER.warning(
+                    f"Lookback recording failed for {image_entities} ({e}). Falling back to live snapshot polling."
+                )
 
         if duration is None or duration < 3:
             interval = 1
@@ -498,13 +522,16 @@ class MediaProcessor:
                 self.client.add_frame(base64_image=resized_image, filename=frame_name)
 
             if expose_images:
-                key_name = selected_frames[key_idx][0]
-                key_b64 = resized_base64[key_idx]
-                await self._expose_image(
-                    frame_name=key_name.split("-")[0],
-                    image_data=key_b64,
-                    uid=str(uuid.uuid4())[:8],
-                )
+                uid = str(uuid.uuid4())[:8]
+                start_saved_len = len(self.saved_frames)
+                for idx, (frame_name, _, _) in enumerate(selected_frames, start=1):
+                    await self._expose_image(
+                        frame_name=f"{frame_name}",
+                        image_data=resized_base64[idx - 1],
+                        uid=uid,
+                    )
+                if start_saved_len + key_idx < len(self.saved_frames):
+                    self.key_frame = self.saved_frames[start_saved_len + key_idx]
 
     async def add_images(
         self, image_entities, image_paths, target_width, include_filename, expose_images
@@ -615,6 +642,8 @@ class MediaProcessor:
         target_width=640,
         include_filename=False,
         expose_images=False,
+        override_filename="",
+        lookback=0,
     ):
         try:
             current_event_id = str(uuid.uuid4())
@@ -813,7 +842,12 @@ class MediaProcessor:
                                 f"Cannot identify image from ffmpeg pipe at frame {frame_counter}"
                             )
                             continue
-                        if frame_counter >= max_frames:
+                        max_candidates = (
+                            max_frames * 10
+                            if max_frames
+                            else MAX_KEYFRAME_CANDIDATES
+                        )
+                        if frame_counter >= max_candidates:
                             break
                 await ffmpeg_process.wait()
 
@@ -887,29 +921,39 @@ class MediaProcessor:
                     target_width=target_width, image_data=frame_data
                 )
                 resized_base64.append(resized_image)
+                if override_filename:
+                    filename = f"{override_filename} (frame {idx})"
+                elif include_filename:
+                    filename = f"{os.path.splitext(os.path.basename(video_path))[0]} (frame {idx})"
+                else:
+                    filename = f"Video frame {idx}"
                 self.client.add_frame(
                     base64_image=resized_image,
-                    filename=(
-                        f"{os.path.splitext(os.path.basename(video_path))[0]} (frame {idx})"
-                        if include_filename
-                        else f"Video frame {idx}"
-                    ),
+                    filename=filename,
                 )
 
             if expose_images and selected_frames:
-                # Expose keyframe if requested
+                uid = str(uuid.uuid4())[:8]
                 reference_bytes = selected_frames[0][0]
                 candidate_bytes = [fd for (fd, _, _) in selected_frames]
                 key_idx = await self._select_keyframe_index(
                     reference_bytes, candidate_bytes
                 )
-                # selected_frames items are (frame_bytes, score, original_index)
-                frame_idx_label = (selected_frames[key_idx][2] or 0) + 1
-                await self._expose_image(
-                    frame_name=str(frame_idx_label),
-                    image_data=resized_base64[key_idx],
-                    uid=str(uuid.uuid4())[:8],
+                start_saved_len = len(self.saved_frames)
+                base_name = (
+                    override_filename.replace(" ", "_")
+                    if override_filename
+                    else os.path.splitext(os.path.basename(video_path))[0]
                 )
+                for idx, (frame_data, _, orig_idx) in enumerate(selected_frames, start=1):
+                    frame_idx_label = (orig_idx if orig_idx is not None else idx - 1) + 1
+                    await self._expose_image(
+                        frame_name=f"{base_name}-frame_{frame_idx_label}",
+                        image_data=resized_base64[idx - 1],
+                        uid=uid,
+                    )
+                if start_saved_len + key_idx < len(self.saved_frames):
+                    self.key_frame = self.saved_frames[start_saved_len + key_idx]
         except Exception as e:
             raise ServiceValidationError(f"Error processing video {video_path}: {e}")
 
@@ -921,6 +965,7 @@ class MediaProcessor:
         target_width,
         include_filename,
         expose_images,
+        lookback=0,
     ):
         """Wrapper for client.add_frame for videos"""
 
@@ -945,10 +990,135 @@ class MediaProcessor:
                 target_width=target_width,
                 include_filename=include_filename,
                 expose_images=expose_images,
+                lookback=lookback,
             )
 
         # Process videos in parallel
         await asyncio.gather(*map(process_video, video_paths))
+
+        return self.client
+
+    async def _record_with_lookback(
+        self,
+        image_entities,
+        duration,
+        lookback,
+        max_frames,
+        target_width,
+        include_filename,
+        expose_images,
+    ):
+        """Record video clip using Home Assistant camera.record with lookback and extract frames."""
+        if isinstance(image_entities, str):
+            image_entities = [image_entities]
+
+        await self.hass.loop.run_in_executor(
+            None, partial(os.makedirs, self.snapshots_path, exist_ok=True)
+        )
+        base_url = get_url(self.hass)
+        successful_cameras = 0
+
+        async def record_single_camera(image_entity):
+            nonlocal successful_cameras
+            entity_state = self.hass.states.get(image_entity)
+            if entity_state is None:
+                _LOGGER.error(f"Camera {image_entity} does not exist")
+                return
+
+            friendly_name = (
+                entity_state.attributes.get("friendly_name")
+                or image_entity.replace("camera.", "")
+            )
+            uid = str(uuid.uuid4())[:8]
+            temp_filename = f"{self.snapshots_path}temp_lookback_{uid}.mp4"
+
+            try:
+                _LOGGER.info(
+                    f"Recording camera {image_entity} with lookback={lookback}s, duration={duration}s to {temp_filename}"
+                )
+                try:
+                    await asyncio.wait_for(
+                        self.hass.services.async_call(
+                            "camera",
+                            "record",
+                            {
+                                "entity_id": image_entity,
+                                "filename": temp_filename,
+                                "duration": duration,
+                                "lookback": lookback,
+                            },
+                            blocking=True,
+                        ),
+                        timeout=duration + lookback + 20,
+                    )
+                except asyncio.TimeoutError:
+                    _LOGGER.error(
+                        f"Recording timed out for camera {image_entity} after {duration + lookback + 20}s. The stream source may be unreachable."
+                    )
+                    raise ServiceValidationError(
+                        f"Recording timed out for {image_entity}. Please check that the camera RTSP stream is online and reachable."
+                    )
+
+                file_exists = await self.hass.loop.run_in_executor(
+                    None, os.path.exists, temp_filename
+                )
+                file_size = (
+                    await self.hass.loop.run_in_executor(
+                        None, os.path.getsize, temp_filename
+                    )
+                    if file_exists
+                    else 0
+                )
+                _LOGGER.info(
+                    f"Camera {image_entity} recorded: exists={file_exists}, size={file_size} bytes"
+                )
+                if not file_exists or file_size == 0:
+                    _LOGGER.error(
+                        f"Failed to record stream for {image_entity} with lookback={lookback}s. The file is empty or does not exist."
+                    )
+                    raise ServiceValidationError(
+                        f"Failed to record stream for {image_entity}. The camera stream may not be active or does not support recording."
+                    )
+
+                override_name = friendly_name if include_filename else ""
+                await self.add_video(
+                    video_path=temp_filename,
+                    base_url=base_url,
+                    max_frames=max_frames,
+                    target_width=target_width,
+                    include_filename=include_filename,
+                    expose_images=expose_images,
+                    override_filename=override_name,
+                )
+                successful_cameras += 1
+            except ServiceValidationError:
+                raise
+            except Exception as e:
+                _LOGGER.error(
+                    f"Error recording camera {image_entity} with lookback: {e}"
+                )
+                raise ServiceValidationError(
+                    f"Error recording camera {image_entity} with lookback: {e}"
+                )
+            finally:
+                def _cleanup():
+                    if os.path.exists(temp_filename):
+                        try:
+                            os.remove(temp_filename)
+                        except Exception as e:
+                            _LOGGER.debug(
+                                f"Failed to remove temp file {temp_filename}: {e}"
+                            )
+                await self.hass.loop.run_in_executor(None, _cleanup)
+
+        await asyncio.gather(
+            *(record_single_camera(entity) for entity in image_entities)
+        )
+
+        if successful_cameras == 0:
+            raise ServiceValidationError(
+                "No camera recordings could be captured with lookback. Ensure cameras have stream support enabled."
+            )
 
         return self.client
 
@@ -960,6 +1130,7 @@ class MediaProcessor:
         target_width,
         include_filename,
         expose_images,
+        lookback=0,
     ):
         if image_entities:
             await self.record(
@@ -969,6 +1140,7 @@ class MediaProcessor:
                 target_width=target_width,
                 include_filename=include_filename,
                 expose_images=expose_images,
+                lookback=lookback,
             )
         return self.client
 
