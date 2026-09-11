@@ -56,9 +56,11 @@ from .const import (
     DEFAULT_OPENWEBUI_MODEL,
     DEFAULT_OPENROUTER_MODEL,
     DEFAULT_MISTRAL_MODEL,
+    DEFAULT_REQUESTY_MODEL,
     ENDPOINT_OPENWEBUI,
     ENDPOINT_AZURE,
     ENDPOINT_OPENROUTER,
+    ENDPOINT_REQUESTY,
     CONF_CONTEXT_WINDOW,
     CONF_THINKING_BUDGET,
     CONF_THINK,
@@ -91,6 +93,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "OpenRouter": self.async_step_openrouter,
             # TODO: Enable in next minor release (1.8.0).
             # "Mistral": self.async_step_mistral,
+            "Requesty": self.async_step_requesty,
         }
 
         step_method = provider_steps.get(provider)
@@ -131,6 +134,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 "OpenRouter",
                                 # TODO: Enable in next minor release (1.8.0).
                                 # "Mistral",
+                                "Requesty",
                                 "Custom OpenAI",
                             ],
                             "mode": "dropdown",
@@ -1760,6 +1764,128 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="mistral",
+            data_schema=data_schema,
+        )
+
+    async def async_step_requesty(self, user_input=None):
+        data_schema = vol.Schema(
+            {
+                vol.Optional("connection_section"): section(
+                    vol.Schema(
+                        {
+                            vol.Required(CONF_API_KEY): selector(
+                                {"text": {"type": "password"}}
+                            ),
+                        }
+                    ),
+                    {"collapsed": False},
+                ),
+                vol.Optional("model_section"): section(
+                    vol.Schema(
+                        {
+                            vol.Required(
+                                CONF_DEFAULT_MODEL, default=DEFAULT_REQUESTY_MODEL
+                            ): str,
+                            vol.Optional(CONF_TEMPERATURE, default=0.5): selector(
+                                {
+                                    "number": {
+                                        "min": 0,
+                                        "max": 1,
+                                        "step": 0.1,
+                                        "mode": "slider",
+                                    }
+                                }
+                            ),
+                            vol.Optional(CONF_TOP_P, default=0.9): selector(
+                                {
+                                    "number": {
+                                        "min": 0,
+                                        "max": 1,
+                                        "step": 0.1,
+                                        "mode": "slider",
+                                    }
+                                }
+                            ),
+                            vol.Optional(
+                                CONF_REASONING_EFFORT, default="none"
+                            ): selector(
+                                {
+                                    "select": {
+                                        "options": [
+                                            {"label": "None", "value": "none"},
+                                            {"label": "Minimal", "value": "minimal"},
+                                            {"label": "Low", "value": "low"},
+                                            {"label": "Medium", "value": "medium"},
+                                            {"label": "High", "value": "high"},
+                                            {"label": "Extra High", "value": "xhigh"},
+                                        ]
+                                    }
+                                }
+                            ),
+                        }
+                    ),
+                    {"collapsed": False},
+                ),
+            }
+        )
+
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            # Re-nest the flat config entry data into sections
+            suggested = {
+                "connection_section": {
+                    CONF_API_KEY: self.init_info.get(CONF_API_KEY),
+                },
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(
+                        CONF_DEFAULT_MODEL, DEFAULT_REQUESTY_MODEL
+                    ),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
+                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                    CONF_REASONING_EFFORT: self.init_info.get(
+                        CONF_REASONING_EFFORT, "none"
+                    ),
+                },
+            }
+            data_schema = self.add_suggested_values_to_schema(data_schema, suggested)
+
+        if user_input is not None:
+            # save provider to user_input
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            # flatten dict to remove nested keys
+            user_input = flatten_dict(user_input)
+            try:
+                requesty = OpenAI(
+                    self.hass,
+                    api_key=user_input[CONF_API_KEY],
+                    model=user_input[CONF_DEFAULT_MODEL],
+                    endpoint={
+                        "base_url": ENDPOINT_REQUESTY,
+                    },
+                )
+                await requesty.validate()
+                # add the mode to user_input
+                user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    # we're reconfiguring an existing config
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    # New config entry
+                    return self.async_create_entry(title="Requesty", data=user_input)
+            except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
+                return self.async_show_form(
+                    step_id="requesty",
+                    data_schema=data_schema,
+                    errors={"base": "handshake_failed"},
+                )
+
+        return self.async_show_form(
+            step_id="requesty",
             data_schema=data_schema,
         )
 
