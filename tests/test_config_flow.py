@@ -346,6 +346,7 @@ class TestProviderSteps:
             ("ollama", "Ollama"),
             ("openwebui", "OpenWebUI"),
             ("openrouter", "OpenRouter"),
+            ("opencode_go", "OpenCode Go"),
         ],
     )
     async def test_provider_steps_show_form_without_input(
@@ -749,6 +750,28 @@ class TestProviderSteps:
                 ),
                 "handshake_failed",
             ),
+            (
+                "opencode_go",
+                "OpenCode Go",
+                "custom_components.llmvision.config_flow.OpenCodeGo",
+                {
+                    "connection_section": {CONF_API_KEY: "secret"},
+                    "model_section": {
+                        CONF_DEFAULT_MODEL: "glm-5.3-flash",
+                        CONF_TEMPERATURE: 0.5,
+                        CONF_TOP_P: 0.9,
+                    },
+                },
+                "OpenCode Go",
+                lambda flow: (
+                    (flow.hass,),
+                    {
+                        "api_key": "secret",
+                        "model": "glm-5.3-flash",
+                    },
+                ),
+                "handshake_failed",
+            ),
         ],
     )
     async def test_provider_steps_create_entries_after_successful_validation(
@@ -889,6 +912,20 @@ class TestProviderSteps:
                         CONF_TEMPERATURE: 0.5,
                         CONF_TOP_P: 0.9,
                         CONF_REASONING_EFFORT: "none",
+                    },
+                },
+                "handshake_failed",
+            ),
+            (
+                "opencode_go",
+                "OpenCode Go",
+                "custom_components.llmvision.config_flow.OpenCodeGo",
+                {
+                    "connection_section": {CONF_API_KEY: "secret"},
+                    "model_section": {
+                        CONF_DEFAULT_MODEL: "glm-5.3-flash",
+                        CONF_TEMPERATURE: 0.5,
+                        CONF_TOP_P: 0.9,
                     },
                 },
                 "handshake_failed",
