@@ -147,6 +147,7 @@ DEFAULT_AWS_MODEL = "us.amazon.nova-pro-v1:0"
 DEFAULT_OPENWEBUI_MODEL = "gemma3:4b"
 DEFAULT_OPENROUTER_MODEL = "google/gemma-3-4b-it:free"
 DEFAULT_MISTRAL_MODEL = "pixtral-12b-2409"
+DEFAULT_OPENCODE_GO_MODEL = "glm-5.3-flash"
 
 DEFAULT_SUMMARY_PROMPT = "Provide a brief summary for the following titles. Focus on the key actions or changes that occurred over time and avoid unnecessary details or subjective interpretations. The summary should be concise, objective, and relevant to the content of the images. Keep the summary under 50 words and ensure it captures the main events or activities described in the descriptions. Here are the descriptions:\n "
 
@@ -161,3 +162,15 @@ ENDPOINT_OPENWEBUI = "{protocol}://{ip_address}:{port}/api/chat/completions"
 ENDPOINT_AZURE = "{base_url}openai/deployments/{deployment}/chat/completions?api-version={api_version}"
 ENDPOINT_OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
 ENDPOINT_MISTRAL = "https://api.mistral.ai/v1/chat/completions"
+
+# OpenCode Go (https://opencode.ai/docs/go)
+# Routes models through three API interfaces depending on the model:
+#   - OpenAI Chat Completions (GLM, Kimi, DeepSeek, MiMo, LongCat, Hy)
+#   - OpenAI Responses (Grok, GPT 5.6 Luna, Muse Spark)
+#   - Anthropic Messages (MiniMax, Qwen)
+ENDPOINT_OPENCODE_GO_COMPLETIONS = "https://opencode.ai/zen/go/v1/chat/completions"
+ENDPOINT_OPENCODE_GO_RESPONSES = "https://opencode.ai/zen/go/v1/responses"
+ENDPOINT_OPENCODE_GO_MESSAGES = "https://opencode.ai/zen/go/v1/messages"
+ENDPOINT_OPENCODE_GO_MODELS = "https://opencode.ai/zen/go/v1/models"
+HEADER_OPENCODE_SESSION = "x-opencode-session"
+USER_AGENT_OPENCODE_GO = "ha-llmvision"

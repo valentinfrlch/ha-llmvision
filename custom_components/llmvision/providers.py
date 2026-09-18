@@ -11,6 +11,7 @@ import inspect
 import re
 import json
 import base64
+import uuid
 from .const import (
     DOMAIN,
     CONF_API_KEY,
@@ -37,6 +38,11 @@ from .const import (
     ENDPOINT_GROQ,
     ENDPOINT_OPENROUTER,
     ENDPOINT_MISTRAL,
+    ENDPOINT_OPENCODE_GO_COMPLETIONS,
+    ENDPOINT_OPENCODE_GO_RESPONSES,
+    ENDPOINT_OPENCODE_GO_MESSAGES,
+    HEADER_OPENCODE_SESSION,
+    USER_AGENT_OPENCODE_GO,
     ERROR_NOT_CONFIGURED,
     ERROR_GROQ_MULTIPLE_IMAGES,
     ERROR_NO_IMAGE_INPUT,
@@ -52,6 +58,7 @@ from .const import (
     DEFAULT_OPENWEBUI_MODEL,
     DEFAULT_OPENROUTER_MODEL,
     DEFAULT_MISTRAL_MODEL,
+    DEFAULT_OPENCODE_GO_MODEL,
     CONF_KEEP_ALIVE,
     CONF_CONTEXT_WINDOW,
     CONF_TEMPERATURE,
@@ -133,6 +140,7 @@ class Request:
             "Open WebUI": DEFAULT_OPENWEBUI_MODEL,
             "OpenRouter": DEFAULT_OPENROUTER_MODEL,
             "Mistral": DEFAULT_MISTRAL_MODEL,
+            "OpenCode Go": DEFAULT_OPENCODE_GO_MODEL,
         }.get(provider_name)
 
     def validate(self, call: Any) -> None | ServiceValidationError:
@@ -827,6 +835,425 @@ class Mistral(OpenAI):
 
     def _prepare_text_data(self, call: Any) -> dict:
         return self._rename_token_field(super()._prepare_text_data(call))
+
+
+class OpenCodeGo(Provider):
+    """OpenCode Go (https://opencode.ai/docs/go).
+
+    Low-cost subscription gateway at https://opencode.ai/zen/go. Each model is
+    routed through one of three API interfaces:
+      - OpenAI Chat Completions (GLM, Kimi, DeepSeek, MiMo, LongCat, Hy)
+      - OpenAI Responses (Grok, GPT 5.6 Luna, Muse Spark)
+      - Anthropic Messages (MiniMax, Qwen)
+
+    All requests must carry a stable `x-opencode-session` header (one ID per
+    conversation) and identify themselves with a custom user agent.
+    """
+
+    # Models served through the OpenAI Responses API
+    RESPONSES_MODELS = (
+        "grok",
+        "gpt",
+        "muse-spark",
+    )
+    # Model prefixes served through the Anthropic Messages API
+    ANTHROPIC_MODELS = ("minimax", "qwen3")
+
+    def __init__(self, hass: HomeAssistant, api_key: str, model: str):
+        super().__init__(hass, api_key, model)
+        # OpenCode Go requires a stable session ID per conversation. A provider
+        # instance serves a single vision call (plus its optional title request),
+        # so one ID is generated per instance.
+        self.session_id = str(uuid.uuid4())
+
+    def supports_structured_output(self) -> bool:
+        """Return True if provider supports structured output."""
+        return True
+
+    def _get_interface(self) -> str:
+        """Resolve which API interface serves the selected model."""
+        model = (self.model or "").lower()
+        for prefix in self.ANTHROPIC_MODELS:
+            if model.startswith(prefix):
+                return "anthropic"
+        for name in self.RESPONSES_MODELS:
+            if model.startswith(name):
+                return "responses"
+        return "completions"
+
+    def _get_endpoint(self) -> str:
+        return {
+            "completions": ENDPOINT_OPENCODE_GO_COMPLETIONS,
+            "responses": ENDPOINT_OPENCODE_GO_RESPONSES,
+            "anthropic": ENDPOINT_OPENCODE_GO_MESSAGES,
+        }[self._get_interface()]
+
+    def _generate_headers(self) -> dict:
+        headers = {
+            "Content-type": "application/json",
+            "Authorization": "Bearer " + self.api_key,
+            HEADER_OPENCODE_SESSION: self.session_id,
+            "User-Agent": USER_AGENT_OPENCODE_GO,
+        }
+        if self._get_interface() == "anthropic":
+            headers["x-api-key"] = self.api_key
+            headers["anthropic-version"] = VERSION_ANTHROPIC
+        return headers
+
+    async def _make_request(self, data: dict) -> str:
+        response = await self._post(
+            url=self._get_endpoint(), headers=self._generate_headers(), data=data
+        )
+        if not isinstance(response, dict):
+            raise ServiceValidationError("invalid_response")
+
+        interface = self._get_interface()
+        if interface == "completions":
+            return self._parse_completions_response(response)
+        if interface == "responses":
+            return self._parse_responses_response(response)
+        return self._parse_anthropic_response(response)
+
+    def _parse_completions_response(self, response: dict) -> str:
+        choices = response.get("choices")
+        if not isinstance(choices, list) or not choices:
+            raise ServiceValidationError("empty_response")
+        first_choice = choices[0] if isinstance(choices[0], dict) else None
+        if not isinstance(first_choice, dict):
+            raise ServiceValidationError("invalid_response")
+        message = first_choice.get("message")
+        if not isinstance(message, dict):
+            raise ServiceValidationError("invalid_response")
+        response_text = message.get("content")
+        if response_text is None:
+            raise ServiceValidationError("invalid_response")
+        return response_text
+
+    def _parse_responses_response(self, response: dict) -> str:
+        output = response.get("output")
+        if not isinstance(output, list):
+            raise ServiceValidationError("invalid_response")
+
+        # Structured output responses arrive as a function call
+        for item in output:
+            if isinstance(item, dict) and item.get("type") == "function_call":
+                arguments = item.get("arguments")
+                if not isinstance(arguments, str):
+                    raise ServiceValidationError("invalid_response")
+                return arguments
+
+        text = ""
+        for item in output:
+            if not isinstance(item, dict) or item.get("type") != "message":
+                continue
+            content = item.get("content")
+            if not isinstance(content, list):
+                continue
+            for part in content:
+                if isinstance(part, dict) and part.get("type") == "output_text":
+                    text += part.get("text", "")
+        if not text:
+            raise ServiceValidationError("empty_response")
+        return text
+
+    def _parse_anthropic_response(self, response: dict) -> str:
+        content = response.get("content")
+        if not isinstance(content, list):
+            raise ServiceValidationError("invalid_response")
+
+        # Structured output responses arrive as a tool call
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "tool_use":
+                return json.dumps(block.get("input", {}))
+
+        text = "".join(
+            block.get("text", "")
+            for block in content
+            if isinstance(block, dict) and block.get("type") == "text"
+        )
+        if not text:
+            raise ServiceValidationError("empty_response")
+        return text
+
+    def _get_schema(self, call: Any):
+        """Parse the structured output schema, raising on invalid JSON."""
+        try:
+            schema = (
+                json.loads(call.structure)
+                if isinstance(call.structure, str)
+                else call.structure
+            )
+        except json.JSONDecodeError as e:
+            raise ServiceValidationError(
+                f"Invalid JSON in structure parameter: {str(e)}"
+            )
+        return schema
+
+    def _prepare_completions_vision_data(self, call: Any) -> dict:
+        default_parameters = self._get_default_parameters(call)
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": []}],
+            "max_tokens": call.max_tokens,
+            "temperature": default_parameters.get("temperature"),
+            "top_p": default_parameters.get("top_p"),
+        }
+        for image, filename in zip(call.base64_images, call.filenames):
+            tag = (
+                ("Image " + str(call.base64_images.index(image) + 1))
+                if filename == ""
+                else filename
+            )
+            payload["messages"][0]["content"].append(
+                {"type": "text", "text": tag + ":"}
+            )
+            payload["messages"][0]["content"].append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image}"},
+                }
+            )
+        # User message
+        payload["messages"][0]["content"].append({"type": "text", "text": call.message})
+        # System prompt
+        payload["messages"].insert(
+            0, {"role": "system", "content": self._get_system_prompt()}
+        )
+
+        # Memory if use_memory is set
+        if getattr(call, "use_memory", False):
+            memory_content = call.memory._get_memory_images(memory_type="OpenAI")
+            if memory_content:
+                payload["messages"].insert(
+                    1, {"role": "user", "content": memory_content}
+                )
+
+        # Add structured output support (OpenAI-compatible)
+        if call.response_format == "json" and call.structure:
+            payload["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "response",
+                    "schema": self._get_schema(call),
+                    "strict": False,
+                },
+            }
+        return payload
+
+    def _prepare_completions_text_data(self, call: Any) -> dict:
+        default_parameters = self._get_default_parameters(call)
+        title_prompt = self._get_title_prompt()
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": title_prompt},
+                {"role": "user", "content": [{"type": "text", "text": call.message}]},
+            ],
+            "max_tokens": call.max_tokens,
+            "temperature": default_parameters.get("temperature"),
+            "top_p": default_parameters.get("top_p"),
+        }
+
+        # Add structured output support (OpenAI-compatible)
+        if call.response_format == "json" and call.structure:
+            payload["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "response",
+                    "schema": self._get_schema(call),
+                    "strict": False,
+                },
+            }
+        return payload
+
+    def _prepare_responses_vision_data(self, call: Any) -> dict:
+        payload = {
+            "model": self.model,
+            "instructions": self._get_system_prompt(),
+            "input": [{"role": "user", "content": []}],
+            "max_output_tokens": call.max_tokens,
+        }
+        for image, filename in zip(call.base64_images, call.filenames):
+            tag = (
+                ("Image " + str(call.base64_images.index(image) + 1))
+                if filename == ""
+                else filename
+            )
+            payload["input"][0]["content"].append(
+                {"type": "input_text", "text": tag + ":"}
+            )
+            payload["input"][0]["content"].append(
+                {"type": "input_image", "image_url": f"data:image/jpeg;base64,{image}"}
+            )
+        # User message
+        payload["input"][0]["content"].append(
+            {"type": "input_text", "text": call.message}
+        )
+
+        # Memory if use_memory is set
+        if getattr(call, "use_memory", False):
+            memory_content = call.memory._get_memory_images(memory_type="Responses")
+            if memory_content:
+                payload["input"].insert(0, {"role": "user", "content": memory_content})
+
+        # Add structured output support via Responses API text format
+        if call.response_format == "json" and call.structure:
+            payload["text"] = {
+                "format": {
+                    "type": "json_schema",
+                    "name": "response",
+                    "schema": self._get_schema(call),
+                    "strict": True,
+                }
+            }
+        return payload
+
+    def _prepare_responses_text_data(self, call: Any) -> dict:
+        title_prompt = self._get_title_prompt()
+        payload = {
+            "model": self.model,
+            "instructions": title_prompt,
+            "input": [{"role": "user", "content": call.message}],
+            "max_output_tokens": call.max_tokens,
+        }
+
+        # Add structured output support via Responses API text format
+        if call.response_format == "json" and call.structure:
+            payload["text"] = {
+                "format": {
+                    "type": "json_schema",
+                    "name": "response",
+                    "schema": self._get_schema(call),
+                    "strict": True,
+                }
+            }
+        return payload
+
+    def _prepare_anthropic_vision_data(self, call: Any) -> dict:
+        default_parameters = self._get_default_parameters(call)
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": []}],
+            "max_tokens": call.max_tokens,
+            "temperature": default_parameters.get("temperature"),
+        }
+        for image, filename in zip(call.base64_images, call.filenames):
+            tag = (
+                ("Image " + str(call.base64_images.index(image) + 1))
+                if filename == ""
+                else filename
+            )
+            payload["messages"][0]["content"].append(
+                {"type": "text", "text": tag + ":"}
+            )
+            payload["messages"][0]["content"].append(
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/jpeg",
+                        "data": f"{image}",
+                    },
+                }
+            )
+        # User message
+        payload["messages"][0]["content"].append({"type": "text", "text": call.message})
+        # System prompt
+        payload["system"] = self._get_system_prompt()
+
+        # Memory if use_memory is set
+        if getattr(call, "use_memory", False):
+            memory_content = call.memory._get_memory_images(memory_type="Anthropic")
+            if memory_content:
+                payload["messages"].insert(
+                    0, {"role": "user", "content": memory_content}
+                )
+
+        # Add structured output support using tools
+        if call.response_format == "json" and call.structure:
+            payload["tools"] = [
+                {
+                    "name": "return_structured_data",
+                    "description": "Return the analysis results in the specified JSON format",
+                    "input_schema": self._get_schema(call),
+                }
+            ]
+            payload["tool_choice"] = {
+                "type": "tool",
+                "name": "return_structured_data",
+            }
+        return payload
+
+    def _prepare_anthropic_text_data(self, call: Any) -> dict:
+        default_parameters = self._get_default_parameters(call)
+        title_prompt = self._get_title_prompt()
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "user", "content": [{"type": "text", "text": title_prompt}]},
+                {"role": "user", "content": [{"type": "text", "text": call.message}]},
+            ],
+            "max_tokens": call.max_tokens,
+            "temperature": default_parameters.get("temperature"),
+        }
+
+        # Add structured output support using tools
+        if call.response_format == "json" and call.structure:
+            payload["tools"] = [
+                {
+                    "name": "return_structured_data",
+                    "description": "Return the analysis results in the specified JSON format",
+                    "input_schema": self._get_schema(call),
+                }
+            ]
+            payload["tool_choice"] = {
+                "type": "tool",
+                "name": "return_structured_data",
+            }
+        return payload
+
+    def _prepare_vision_data(self, call: Any) -> dict:
+        interface = self._get_interface()
+        if interface == "responses":
+            return self._prepare_responses_vision_data(call)
+        if interface == "anthropic":
+            return self._prepare_anthropic_vision_data(call)
+        return self._prepare_completions_vision_data(call)
+
+    def _prepare_text_data(self, call: Any) -> dict:
+        interface = self._get_interface()
+        if interface == "responses":
+            return self._prepare_responses_text_data(call)
+        if interface == "anthropic":
+            return self._prepare_anthropic_text_data(call)
+        return self._prepare_completions_text_data(call)
+
+    async def validate(self) -> None | ServiceValidationError:
+        if not self.api_key:
+            raise ServiceValidationError("empty_api_key")
+
+        interface = self._get_interface()
+        if interface == "responses":
+            data = {
+                "model": self.model,
+                "input": "Hi",
+                "max_output_tokens": 16,
+            }
+        elif interface == "anthropic":
+            data = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": "Hi"}],
+                "max_tokens": 1,
+            }
+        else:
+            data = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": "Hi"}],
+                "max_tokens": 1,
+            }
+        await self._post(
+            url=self._get_endpoint(), headers=self._generate_headers(), data=data
+        )
 
 
 class AzureOpenAI(Provider):
@@ -2290,6 +2717,13 @@ class ProviderFactory:
 
         if provider_name == "Mistral":
             return Mistral(
+                hass,
+                api_key=cast(str, config.get(CONF_API_KEY) or ""),
+                model=model,
+            )
+
+        if provider_name == "OpenCode Go":
+            return OpenCodeGo(
                 hass,
                 api_key=cast(str, config.get(CONF_API_KEY) or ""),
                 model=model,

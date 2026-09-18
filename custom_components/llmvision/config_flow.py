@@ -16,6 +16,7 @@ from .providers import (
     Ollama,
     AWSBedrock,
     Mistral,
+    OpenCodeGo,
 )
 from .const import (
     DOMAIN,
@@ -56,6 +57,7 @@ from .const import (
     DEFAULT_OPENWEBUI_MODEL,
     DEFAULT_OPENROUTER_MODEL,
     DEFAULT_MISTRAL_MODEL,
+    DEFAULT_OPENCODE_GO_MODEL,
     ENDPOINT_OPENWEBUI,
     ENDPOINT_AZURE,
     ENDPOINT_OPENROUTER,
@@ -89,6 +91,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "OpenAI": self.async_step_openai,
             "OpenWebUI": self.async_step_openwebui,
             "OpenRouter": self.async_step_openrouter,
+            "OpenCode Go": self.async_step_opencode_go,
             # TODO: Enable in next minor release (1.8.0).
             # "Mistral": self.async_step_mistral,
         }
@@ -129,6 +132,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 "OpenAI",
                                 "OpenWebUI",
                                 "OpenRouter",
+                                "OpenCode Go",
                                 # TODO: Enable in next minor release (1.8.0).
                                 # "Mistral",
                                 "Custom OpenAI",
@@ -1667,6 +1671,107 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="openrouter",
+            data_schema=data_schema,
+        )
+
+    async def async_step_opencode_go(self, user_input=None):
+        data_schema = vol.Schema(
+            {
+                vol.Optional("connection_section"): section(
+                    vol.Schema(
+                        {
+                            vol.Required(CONF_API_KEY): selector(
+                                {"text": {"type": "password"}}
+                            ),
+                        }
+                    ),
+                    {"collapsed": False},
+                ),
+                vol.Optional("model_section"): section(
+                    vol.Schema(
+                        {
+                            vol.Required(
+                                CONF_DEFAULT_MODEL, default=DEFAULT_OPENCODE_GO_MODEL
+                            ): str,
+                            vol.Optional(CONF_TEMPERATURE, default=0.5): selector(
+                                {
+                                    "number": {
+                                        "min": 0,
+                                        "max": 1,
+                                        "step": 0.1,
+                                        "mode": "slider",
+                                    }
+                                }
+                            ),
+                            vol.Optional(CONF_TOP_P, default=0.9): selector(
+                                {
+                                    "number": {
+                                        "min": 0,
+                                        "max": 1,
+                                        "step": 0.1,
+                                        "mode": "slider",
+                                    }
+                                }
+                            ),
+                        }
+                    ),
+                    {"collapsed": False},
+                ),
+            }
+        )
+
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            # load existing configuration and add it to the dialog
+            self.init_info = self._get_reconfigure_entry().data
+            # Re-nest the flat config entry data into sections
+            suggested = {
+                "connection_section": {
+                    CONF_API_KEY: self.init_info.get(CONF_API_KEY),
+                },
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(
+                        CONF_DEFAULT_MODEL, DEFAULT_OPENCODE_GO_MODEL
+                    ),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
+                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                },
+            }
+            data_schema = self.add_suggested_values_to_schema(data_schema, suggested)
+
+        if user_input is not None:
+            # save provider to user_input
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            # flatten dict to remove nested keys
+            user_input = flatten_dict(user_input)
+            try:
+                opencode_go = OpenCodeGo(
+                    self.hass,
+                    api_key=user_input[CONF_API_KEY],
+                    model=user_input[CONF_DEFAULT_MODEL],
+                )
+                await opencode_go.validate()
+                # add the mode to user_input
+                user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    # New config entry
+                    return self.async_create_entry(
+                        title="OpenCode Go", data=user_input
+                    )
+            except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
+                return self.async_show_form(
+                    step_id="opencode_go",
+                    data_schema=data_schema,
+                    errors={"base": "handshake_failed"},
+                )
+
+        return self.async_show_form(
+            step_id="opencode_go",
             data_schema=data_schema,
         )
 

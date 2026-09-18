@@ -18,6 +18,7 @@ from custom_components.llmvision.providers import (
     Ollama,
     AWSBedrock,
     Mistral,
+    OpenCodeGo,
     ProviderFactory,
 )
 from custom_components.llmvision.const import (
@@ -55,6 +56,13 @@ from custom_components.llmvision.const import (
     DEFAULT_TITLE_PROMPT,
     DEFAULT_MISTRAL_MODEL,
     ENDPOINT_MISTRAL,
+    DEFAULT_OPENCODE_GO_MODEL,
+    ENDPOINT_OPENCODE_GO_COMPLETIONS,
+    ENDPOINT_OPENCODE_GO_RESPONSES,
+    ENDPOINT_OPENCODE_GO_MESSAGES,
+    HEADER_OPENCODE_SESSION,
+    USER_AGENT_OPENCODE_GO,
+    VERSION_ANTHROPIC,
 )
 
 
@@ -212,6 +220,16 @@ class TestRequest:
             result = request.get_default_model("test_provider")
 
             assert result == DEFAULT_ANTHROPIC_MODEL
+
+    def test_get_default_model_fallback_opencode_go(self, mock_hass):
+        """Test get_default_model fallback to OpenCode Go default."""
+        mock_hass.data = {DOMAIN: {"test_provider": {CONF_PROVIDER: "OpenCode Go"}}}
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            request = Request(mock_hass, "test", 1000, 0.5)
+
+            result = request.get_default_model("test_provider")
+
+            assert result == DEFAULT_OPENCODE_GO_MODEL
 
     def test_get_default_model_invalid_provider(self, mock_hass):
         """Test get_default_model with invalid provider."""
@@ -739,6 +757,305 @@ class TestMistral:
             assert "max_completion_tokens" not in result
 
 
+class TestOpenCodeGo:
+    """Test OpenCodeGo provider class."""
+
+    def _make_call(self, **overrides):
+        call = Mock()
+        call.max_tokens = 1000
+        call.base64_images = ["base64_image"]
+        call.filenames = ["test.jpg"]
+        call.message = "Describe this image"
+        call.provider = "test_provider"
+        call.response_format = "text"
+        call.use_memory = False
+        call.structure = None
+        for key, value in overrides.items():
+            setattr(call, key, value)
+        return call
+
+    def test_init_generates_session_id(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "test_api_key", "glm-5.3-flash")
+
+            assert provider.api_key == "test_api_key"
+            assert provider.model == "glm-5.3-flash"
+            assert provider.session_id
+            assert provider.supports_structured_output() is True
+
+    def test_session_id_is_stable_per_instance(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "test_api_key", "glm-5.3-flash")
+
+            assert provider._generate_headers()[HEADER_OPENCODE_SESSION] == (
+                provider.session_id
+            )
+
+    @pytest.mark.parametrize(
+        ("model", "expected_interface", "expected_endpoint"),
+        [
+            ("glm-5.3-flash", "completions", ENDPOINT_OPENCODE_GO_COMPLETIONS),
+            ("glm-5.3-flash", "completions", ENDPOINT_OPENCODE_GO_COMPLETIONS),
+            ("deepseek-v4-flash", "completions", ENDPOINT_OPENCODE_GO_COMPLETIONS),
+            ("hy3", "completions", ENDPOINT_OPENCODE_GO_COMPLETIONS),
+            ("grok-4.6", "responses", ENDPOINT_OPENCODE_GO_RESPONSES),
+            ("gpt-5.6-luna", "responses", ENDPOINT_OPENCODE_GO_RESPONSES),
+            ("muse-spark-1.3-contributor", "responses", ENDPOINT_OPENCODE_GO_RESPONSES),
+            ("minimax-m3", "anthropic", ENDPOINT_OPENCODE_GO_MESSAGES),
+            ("qwen3.7-plus", "anthropic", ENDPOINT_OPENCODE_GO_MESSAGES),
+        ],
+    )
+    def test_interface_routing(
+        self, mock_hass, model, expected_interface, expected_endpoint
+    ):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "test_api_key", model)
+
+            assert provider._get_interface() == expected_interface
+            assert provider._get_endpoint() == expected_endpoint
+
+    def test_generate_headers(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "test_api_key", "glm-5.3-flash")
+
+            headers = provider._generate_headers()
+
+            assert headers["Authorization"] == "Bearer test_api_key"
+            assert headers[HEADER_OPENCODE_SESSION] == provider.session_id
+            assert headers["User-Agent"] == USER_AGENT_OPENCODE_GO
+            assert "x-api-key" not in headers
+
+    def test_generate_headers_anthropic_interface(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "test_api_key", "qwen3.7-plus")
+
+            headers = provider._generate_headers()
+
+            assert headers["x-api-key"] == "test_api_key"
+            assert headers["anthropic-version"] == VERSION_ANTHROPIC
+            assert headers[HEADER_OPENCODE_SESSION] == provider.session_id
+
+    def test_prepare_completions_vision_data(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "test_api_key", "glm-5.3-flash")
+            call = self._make_call()
+            mock_hass.data = {
+                DOMAIN: {
+                    "test_provider": {
+                        "provider": "OpenCode Go",
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                    }
+                }
+            }
+
+            with patch.object(
+                provider, "_get_system_prompt", return_value="System prompt"
+            ):
+                result = provider._prepare_vision_data(call)
+
+            assert result["model"] == "glm-5.3-flash"
+            assert result["max_tokens"] == 1000
+            assert result["messages"][0]["role"] == "system"
+            content = result["messages"][1]["content"]
+            assert content[1]["type"] == "image_url"
+            assert content[1]["image_url"]["url"].startswith(
+                "data:image/jpeg;base64,"
+            )
+
+    def test_prepare_responses_vision_data(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "test_api_key", "grok-4.6")
+            call = self._make_call()
+            mock_hass.data = {
+                DOMAIN: {
+                    "test_provider": {
+                        "provider": "OpenCode Go",
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                    }
+                }
+            }
+
+            with patch.object(
+                provider, "_get_system_prompt", return_value="System prompt"
+            ):
+                result = provider._prepare_vision_data(call)
+
+            assert result["instructions"] == "System prompt"
+            assert result["max_output_tokens"] == 1000
+            # Responses API models (e.g. gpt-5.6-luna) reject temperature/top_p
+            assert "temperature" not in result
+            assert "top_p" not in result
+            content = result["input"][0]["content"]
+            assert content[1]["type"] == "input_image"
+            assert content[1]["image_url"].startswith("data:image/jpeg;base64,")
+
+    def test_prepare_anthropic_vision_data(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "test_api_key", "qwen3.7-plus")
+            call = self._make_call()
+            mock_hass.data = {
+                DOMAIN: {
+                    "test_provider": {
+                        "provider": "OpenCode Go",
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                    }
+                }
+            }
+
+            with patch.object(
+                provider, "_get_system_prompt", return_value="System prompt"
+            ):
+                result = provider._prepare_vision_data(call)
+
+            assert result["system"] == "System prompt"
+            assert result["max_tokens"] == 1000
+            content = result["messages"][0]["content"]
+            assert content[1]["type"] == "image"
+            assert content[1]["source"]["type"] == "base64"
+
+    def test_structured_output_per_interface(self, mock_hass):
+        schema = {"type": "object", "properties": {"title": {"type": "string"}}}
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            # Completions: response_format json_schema
+            provider = OpenCodeGo(mock_hass, "test_api_key", "glm-5.3-flash")
+            call = self._make_call(response_format="json", structure=schema)
+            mock_hass.data = {DOMAIN: {"test_provider": {"provider": "OpenCode Go"}}}
+            payload = provider._prepare_vision_data(call)
+            assert payload["response_format"]["json_schema"]["schema"] == schema
+
+            # Responses: text.format json_schema
+            provider = OpenCodeGo(mock_hass, "test_api_key", "grok-4.6")
+            payload = provider._prepare_vision_data(call)
+            assert payload["text"]["format"]["schema"] == schema
+
+            # Anthropic: tools
+            provider = OpenCodeGo(mock_hass, "test_api_key", "qwen3.7-plus")
+            payload = provider._prepare_vision_data(call)
+            assert payload["tools"][0]["input_schema"] == schema
+            assert payload["tool_choice"]["name"] == "return_structured_data"
+
+    @pytest.mark.asyncio
+    async def test_make_request_completions(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "test_api_key", "glm-5.3-flash")
+            provider._post = AsyncMock(
+                return_value={
+                    "choices": [{"message": {"content": "A person at the door"}}]
+                }
+            )
+
+            result = await provider._make_request({})
+
+            assert result == "A person at the door"
+            provider._post.assert_awaited_once()
+            assert provider._post.await_args.kwargs[
+                "url"
+            ] == ENDPOINT_OPENCODE_GO_COMPLETIONS
+
+    @pytest.mark.asyncio
+    async def test_make_request_responses(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "test_api_key", "grok-4.6")
+            provider._post = AsyncMock(
+                return_value={
+                    "output": [
+                        {
+                            "type": "message",
+                            "content": [
+                                {"type": "output_text", "text": "Hello"},
+                                {"type": "output_text", "text": " world"},
+                            ],
+                        }
+                    ]
+                }
+            )
+
+            result = await provider._make_request({})
+
+            assert result == "Hello world"
+            assert provider._post.await_args.kwargs[
+                "url"
+            ] == ENDPOINT_OPENCODE_GO_RESPONSES
+
+    @pytest.mark.asyncio
+    async def test_make_request_responses_function_call(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "test_api_key", "grok-4.6")
+            provider._post = AsyncMock(
+                return_value={
+                    "output": [
+                        {
+                            "type": "function_call",
+                            "name": "return_structured_data",
+                            "arguments": '{"title": "Package"}',
+                        }
+                    ]
+                }
+            )
+
+            result = await provider._make_request({})
+
+            assert json.loads(result) == {"title": "Package"}
+
+    @pytest.mark.asyncio
+    async def test_make_request_anthropic(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "test_api_key", "qwen3.7-plus")
+            provider._post = AsyncMock(
+                return_value={
+                    "content": [{"type": "text", "text": "A dog in the yard"}]
+                }
+            )
+
+            result = await provider._make_request({})
+
+            assert result == "A dog in the yard"
+            assert provider._post.await_args.kwargs[
+                "url"
+            ] == ENDPOINT_OPENCODE_GO_MESSAGES
+
+    @pytest.mark.asyncio
+    async def test_make_request_anthropic_tool_use(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "test_api_key", "qwen3.7-plus")
+            provider._post = AsyncMock(
+                return_value={
+                    "content": [
+                        {"type": "tool_use", "input": {"title": "Dog spotted"}}
+                    ]
+                }
+            )
+
+            result = await provider._make_request({})
+
+            assert json.loads(result) == {"title": "Dog spotted"}
+
+    @pytest.mark.asyncio
+    async def test_validate_calls_endpoint(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "test_api_key", "glm-5.3-flash")
+            provider._post = AsyncMock()
+
+            await provider.validate()
+
+            provider._post.assert_awaited_once()
+            assert provider._post.await_args.kwargs[
+                "url"
+            ] == ENDPOINT_OPENCODE_GO_COMPLETIONS
+
+    @pytest.mark.asyncio
+    async def test_validate_empty_api_key(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = OpenCodeGo(mock_hass, "", "glm-5.3-flash")
+
+            with pytest.raises(ServiceValidationError):
+                await provider.validate()
+
+
 class TestAzureOpenAI:
     """Test AzureOpenAI provider class."""
 
@@ -1218,6 +1535,18 @@ class TestProviderFactory:
             assert isinstance(provider, Mistral)
             assert isinstance(provider, OpenAI)
             assert provider.endpoint["base_url"] == ENDPOINT_MISTRAL
+
+    def test_create_opencode_go(self, mock_hass):
+        config = {CONF_API_KEY: "test_key"}
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = ProviderFactory.create(
+                mock_hass, "OpenCode Go", config, "glm-5.3-flash"
+            )
+
+            assert isinstance(provider, OpenCodeGo)
+            assert provider.model == "glm-5.3-flash"
+            assert provider.session_id
 
 
 @pytest.fixture

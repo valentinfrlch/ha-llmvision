@@ -359,6 +359,36 @@
                     }
                 }
             },
+            "opencode_go": {
+                "title": "Configure OpenCode Go",
+                "description": "OpenCode Go is a low cost subscription giving access to popular open models (GLM, Kimi, DeepSeek, Qwen, MiniMax, Grok). Requires a subscription at opencode.ai/auth.",
+                "sections": {
+                    "connection_section": {
+                        "name": "Connection",
+                        "description": "OpenCode Go authentication",
+                        "data": {
+                            "api_key": "API key"
+                        },
+                        "data_description": {
+                            "api_key": "Your OpenCode Go API key from the OpenCode console."
+                        }
+                    },
+                    "model_section": {
+                        "name": "Model",
+                        "description": "Set default model parameters",
+                        "data": {
+                            "default_model": "Default model",
+                            "temperature": "Temperature",
+                            "top_p": "Top P"
+                        },
+                        "data_description": {
+                            "default_model": "The default model to use when no other model is specified (e.g. glm-5.3-flash, glm-5.3-flash, qwen3.7-plus, grok-4.6).",
+                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
+                            "top_p": "Controls the diversity of the output. Lower values make the output more focused."
+                        }
+                    }
+                }
+            },
             "mistral": {
                 "title": "Configure Mistral",
                 "description": "Vision-capable models (Pixtral) hosted by Mistral AI in the EU.",

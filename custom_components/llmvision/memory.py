@@ -77,6 +77,20 @@ class Memory:
                     }
                 )
 
+        elif memory_type == "Responses":
+            if self.memory_images:
+                content.append({"type": "input_text", "text": memory_prompt})
+            for image in self.memory_images:
+                tag = self.memory_strings[self.memory_images.index(image)]
+
+                content.append({"type": "input_text", "text": tag + ":"})
+                content.append(
+                    {
+                        "type": "input_image",
+                        "image_url": f"data:image/jpeg;base64,{image}",
+                    }
+                )
+
         elif memory_type == "Ollama":
             if self.memory_images:
                 content.append({"role": "user", "content": memory_prompt})
