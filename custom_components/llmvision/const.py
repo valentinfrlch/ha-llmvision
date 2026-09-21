@@ -147,6 +147,7 @@ DEFAULT_AWS_MODEL = "us.amazon.nova-pro-v1:0"
 DEFAULT_OPENWEBUI_MODEL = "gemma3:4b"
 DEFAULT_OPENROUTER_MODEL = "google/gemma-3-4b-it:free"
 DEFAULT_MISTRAL_MODEL = "pixtral-12b-2409"
+DEFAULT_REQUESTY_MODEL = "openai/gpt-4o-mini"
 
 DEFAULT_SUMMARY_PROMPT = "Provide a brief summary for the following titles. Focus on the key actions or changes that occurred over time and avoid unnecessary details or subjective interpretations. The summary should be concise, objective, and relevant to the content of the images. Keep the summary under 50 words and ensure it captures the main events or activities described in the descriptions. Here are the descriptions:\n "
 
@@ -161,3 +162,4 @@ ENDPOINT_OPENWEBUI = "{protocol}://{ip_address}:{port}/api/chat/completions"
 ENDPOINT_AZURE = "{base_url}openai/deployments/{deployment}/chat/completions?api-version={api_version}"
 ENDPOINT_OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
 ENDPOINT_MISTRAL = "https://api.mistral.ai/v1/chat/completions"
+ENDPOINT_REQUESTY = "https://router.requesty.ai/v1/chat/completions"
