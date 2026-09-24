@@ -5,7 +5,12 @@ import uuid
 import os, re
 import json
 import asyncio
-from .const import DOMAIN, CONF_RETENTION_TIME, CONF_TIMELINE_LANGUAGE
+from .const import (
+    DOMAIN,
+    CONF_RETENTION_TIME,
+    CONF_REQUEST_TIMEOUT,
+    CONF_TIMELINE_LANGUAGE,
+)
 from homeassistant.util import dt as dt_util
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
@@ -976,7 +981,17 @@ class Timeline:
             # Skip cleanup during migration
             return
 
-        GRACE_SECONDS = 30
+        # The key_frame is written before the provider is called, but the event
+        # row only appears once the analysis returns, and _pending_key_frames
+        # covers the insert rather than the analysis. The grace window therefore
+        # has to outlast a request: otherwise a slow analysis (a retried
+        # provider, or a local model) has its snapshot deleted before the event
+        # referencing it is written, leaving an event whose image 404s.
+        # A cleanup runs on every Timeline instantiation, which includes every
+        # timeline API request, so this is hit routinely rather than rarely.
+        GRACE_SECONDS = max(
+            30, int(self._config_entry.data.get(CONF_REQUEST_TIMEOUT) or 0) + 60
+        )
 
         async with self._cleanup_lock:
             linked_frames = {
