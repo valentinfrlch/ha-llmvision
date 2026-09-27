@@ -518,7 +518,7 @@ variables:
     {{ camera_entities_list[0].replace("camera.", "").replace("_", " ") | title }}
   importance_prompt: !input importance_prompt
   camera_entity_snapshot: >
-    {{ camera_entities_list[0] }}
+    {{ camera_entity }}
   camera_file_path: >
     {{ camera_entity_snapshot.replace("camera.", "")}}
   file_path: !input file_path
@@ -585,7 +585,8 @@ action:
                 value_template: '{{ preview_mode==''Snapshot'' }}'
               sequence:
               - service: camera.snapshot
-                entity_id: !input camera_entities
+                target:
+                  entity_id: "{{ camera_entity }}"
                 data:
                   filename: !input file_path
               - alias: Send instant notification snapshot to notify devices
