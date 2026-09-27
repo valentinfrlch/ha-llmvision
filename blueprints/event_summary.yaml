@@ -530,6 +530,9 @@ mode: single
 trigger:
 - platform: state
   entity_id: !input camera_entities
+  not_from:
+  - unavailable
+  - unknown
   to: !input trigger_state
   id: camera_trigger
 - platform: state
