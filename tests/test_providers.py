@@ -1089,6 +1089,69 @@ class TestAWSBedrock:
             assert headers["Authorization"] == "Bearer test_token"
             assert headers["Content-type"] == "application/json"
 
+    @pytest.mark.parametrize(
+        "model, expects_temperature",
+        [
+            ("anthropic.claude-sonnet-4-6", True),
+            ("us.anthropic.claude-sonnet-4-5-20250929-v1:0", True),
+            ("anthropic.claude-3-7-sonnet-20250219-v1:0", True),
+            ("amazon.nova-pro-v1:0", True),
+            ("anthropic.claude-sonnet-5", False),
+            ("us.anthropic.claude-sonnet-5-v1:0", False),
+            ("global.anthropic.claude-sonnet-5-5-v1:0", False),
+            ("anthropic.claude-opus-4-7", False),
+        ],
+    )
+    def test_inference_config_temperature_by_model(
+        self, coverage_hass, model, expects_temperature
+    ):
+        """Test temperature compatibility across Bedrock models."""
+        bedrock = AWSBedrock(coverage_hass, "AK", "SK", "us-east-1", model)
+        call_obj = make_coverage_call()
+
+        for payload in (
+            bedrock._prepare_vision_data(call_obj),
+            bedrock._prepare_text_data(call_obj),
+        ):
+            config = payload["inferenceConfig"]
+            assert config["maxTokens"] == call_obj.max_tokens
+            assert ("temperature" in config) is expects_temperature
+
+    @pytest.mark.anyio
+    async def test_returns_answer_after_reasoning_block(self, coverage_hass):
+        """Test the answer is returned when a reasoning block comes first."""
+        message = {
+            "content": [
+                {"reasoningContent": {"reasoningText": {"text": "thinking"}}},
+                {"text": "answer"},
+            ]
+        }
+
+        bearer = AWSBedrock(coverage_hass, "", "", "us-east-1", "m", api_key="k")
+        bearer._post = AsyncMock(return_value={"output": {"message": message}})
+        assert await bearer._make_request({}) == "answer"
+
+        iam = AWSBedrock(coverage_hass, "AK", "SK", "us-east-1", "m")
+        iam.invoke_bedrock = AsyncMock(return_value={"message": message})
+        assert await iam._make_request({}) == "answer"
+
+    @pytest.mark.anyio
+    async def test_validate_omits_unsupported_temperature(self, coverage_hass):
+        """Test validation omits unsupported temperature."""
+        bedrock = AWSBedrock(
+            coverage_hass,
+            "AK",
+            "SK",
+            "us-east-1",
+            "global.anthropic.claude-sonnet-5-5-v1:0",
+        )
+        bedrock.invoke_bedrock = AsyncMock(return_value={})
+
+        await bedrock.validate()
+
+        data = bedrock.invoke_bedrock.call_args.kwargs["data"]
+        assert data["inferenceConfig"] == {"maxTokens": 10}
+
 
 class TestProviderFactory:
     """Test ProviderFactory class."""
