@@ -1290,6 +1290,9 @@ class Google(Provider):
     def _model_supports_thinking(self) -> bool:
         return any(m in self.model for m in ["gemini-2.5", "gemini-3"])
 
+    def _model_uses_thinking_level(self) -> bool:
+        return bool(re.match(r"^(?:models/)?gemini-3(?:[.-]|$)", self.model))
+
     def _generate_headers(self) -> dict:
         return {"content-type": "application/json"}
 
@@ -1327,8 +1330,12 @@ class Google(Provider):
             },
         }
 
-        # Add thinking budget based on current model and config
-        if (
+        # Gemini 3 uses thinking levels and provider-default sampling.
+        if self._model_uses_thinking_level():
+            payload["generationConfig"].pop("temperature")
+            payload["generationConfig"].pop("topP")
+            payload["generationConfig"]["thinkingConfig"] = {"thinkingLevel": "low"}
+        elif (
             self._model_supports_thinking()
             and default_parameters.get("thinking_budget", 0) > 0
         ):
@@ -1393,8 +1400,12 @@ class Google(Provider):
             },
         }
 
-        # Add thinking budget based on current model and config
-        if (
+        # Gemini 3 uses thinking levels and provider-default sampling.
+        if self._model_uses_thinking_level():
+            payload["generationConfig"].pop("temperature")
+            payload["generationConfig"].pop("topP")
+            payload["generationConfig"]["thinkingConfig"] = {"thinkingLevel": "low"}
+        elif (
             self._model_supports_thinking()
             and default_parameters.get("thinking_budget", 0) > 0
         ):
@@ -1431,6 +1442,9 @@ class Google(Provider):
             "contents": [{"role": "user", "parts": [{"text": "Hi"}]}],
             "generationConfig": {"maxOutputTokens": 1, "temperature": 0.5},
         }
+        if self._model_uses_thinking_level():
+            data["generationConfig"].pop("temperature")
+            data["generationConfig"]["thinkingConfig"] = {"thinkingLevel": "low"}
         await self._post(
             url=self.endpoint.get("base_url").format(
                 model=self.model, api_key=self.api_key
