@@ -195,13 +195,15 @@
                             "default_model": "Default model",
                             "temperature": "Temperature",
                             "top_p": "Top P",
-                            "thinking_budget": "Thinking budget"
+                            "thinking_budget": "Thinking budget",
+                            "thinking_level": "Thinking level"
                         },
                         "data_description": {
                             "default_model": "The default model to use when no other model is specified.",
-                            "temperature": "Controls the randomness of the output. Lower values make the output more deterministic.",
-                            "top_p": "Controls the diversity of the output. Lower values make the output more focused.",
-                            "thinking_budget": "Controls the thinking budget for models that support it. Higher values allow for more complex reasoning but may increase response time and cost."
+                            "temperature": "For older Gemini models. Gemini 3 and later and latest aliases use Google’s default sampling settings.",
+                            "top_p": "For older Gemini models. Gemini 3 and later and latest aliases use Google’s default sampling settings.",
+                            "thinking_budget": "For older Gemini models that support numeric thinking budgets. Gemini 3 and later and latest aliases use the thinking level instead.",
+                            "thinking_level": "For Gemini 3 and later and latest Gemini aliases. Model default lets Google choose. Supported levels vary by model; lower levels may reduce response time and cost."
                         }
                     }
                 }
@@ -454,7 +456,8 @@
             "invalid_provider": "Invalid provider selected",
             "memory_not_supported": "This provider does not support memory",
             "invalid_image_path": "One or more image paths are invalid",
-            "mismatched_lengths": "The number of image paths and descriptions must match"
+            "mismatched_lengths": "The number of image paths and descriptions must match",
+            "google_validation_failed": "Google configuration validation failed. Check your API key, model, and whether the model supports the selected thinking level."
         },
         "abort": {
             "unknown_provider": "Unknown provider",

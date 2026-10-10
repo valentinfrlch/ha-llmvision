@@ -77,6 +77,7 @@ from .const import (
     DESCRIPTION_FIELD,
     SIGNAL_TIMELINE_UPDATED,
     CONF_THINKING_BUDGET,
+    CONF_THINKING_LEVEL,
     CONF_THINK,
     CONF_REASONING_EFFORT,
 )
@@ -123,6 +124,7 @@ async def async_setup_entry(hass, entry):
         CONF_TITLE_PROMPT: entry.data.get(CONF_TITLE_PROMPT),
         # Thinking/reasoning parameters
         CONF_THINKING_BUDGET: entry.data.get(CONF_THINKING_BUDGET),
+        CONF_THINKING_LEVEL: entry.data.get(CONF_THINKING_LEVEL),
         CONF_THINK: entry.data.get(CONF_THINK),
         CONF_REASONING_EFFORT: entry.data.get(CONF_REASONING_EFFORT),
     }

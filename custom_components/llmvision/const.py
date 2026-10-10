@@ -13,6 +13,7 @@ CONF_DEFAULT_MODEL = "default_model"
 CONF_TEMPERATURE = "temperature"
 CONF_TOP_P = "top_p"
 CONF_THINKING_BUDGET = "thinking_budget"
+CONF_THINKING_LEVEL = "thinking_level"
 CONF_THINK = "think"
 CONF_REASONING_EFFORT = "reasoning_effort"
 CONF_CONTEXT_WINDOW = "context_window"  # (ollama: num_ctx)
