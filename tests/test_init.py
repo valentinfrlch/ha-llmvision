@@ -716,3 +716,44 @@ class TestSetupServices:
         hass.http.register_view.assert_any_call(init_module.TimelineEventsView)
         hass.http.register_view.assert_any_call(init_module.TimelineEventView)
         hass.http.register_view.assert_any_call(init_module.TimelineEventCreateView)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("level", [None, "auto", "minimal", "low", "medium", "high"])
+async def test_google_entry_level_reaches_runtime_after_setup(level):
+    from custom_components.llmvision.providers import Google
+    from custom_components.llmvision.const import CONF_THINKING_LEVEL
+
+    hass = _make_hass()
+    data = {
+        CONF_PROVIDER: "Google",
+        CONF_API_KEY: "key",
+        CONF_DEFAULT_MODEL: "gemini-flash-latest",
+    }
+    if level is not None:
+        data[CONF_THINKING_LEVEL] = level
+    entry = SimpleNamespace(entry_id="google", title="Google Gemini", data=data)
+    assert await async_setup_entry(hass, entry)
+    with patch(
+        "custom_components.llmvision.providers.async_get_clientsession",
+        return_value=Mock(),
+    ):
+        provider = Google(hass, "key", "gemini-flash-latest")
+    call = SimpleNamespace(
+        provider="google",
+        max_tokens=100,
+        base64_images=["image"],
+        filenames=["camera.jpg"],
+        message="Describe",
+        response_format="text",
+        structure=None,
+        use_memory=False,
+        model_is_glimpse=lambda: False,
+    )
+    for builder in (provider._prepare_vision_data, provider._prepare_text_data):
+        params = builder(call)["generationConfig"]
+        if level in (None, "auto"):
+            assert "thinkingConfig" not in params
+        else:
+            assert params["thinkingConfig"] == {"thinkingLevel": level}
+        assert "temperature" not in params and "topP" not in params

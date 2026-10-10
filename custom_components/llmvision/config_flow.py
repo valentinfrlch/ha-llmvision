@@ -61,6 +61,7 @@ from .const import (
     ENDPOINT_OPENROUTER,
     CONF_CONTEXT_WINDOW,
     CONF_THINKING_BUDGET,
+    CONF_THINKING_LEVEL,
     CONF_THINK,
     CONF_REASONING_EFFORT,
     CONF_KEEP_ALIVE,
@@ -925,6 +926,19 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                     }
                                 }
                             ),
+                            vol.Optional(CONF_THINKING_LEVEL, default="auto"): selector(
+                                {
+                                    "select": {
+                                        "options": [
+                                            {"label": "Model default", "value": "auto"},
+                                            {"label": "Minimal", "value": "minimal"},
+                                            {"label": "Low", "value": "low"},
+                                            {"label": "Medium", "value": "medium"},
+                                            {"label": "High", "value": "high"},
+                                        ]
+                                    }
+                                }
+                            ),
                             vol.Optional(CONF_THINKING_BUDGET, default=0): selector(
                                 {
                                     "number": {
@@ -955,6 +969,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
                     CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
                     CONF_THINKING_BUDGET: self.init_info.get(CONF_THINKING_BUDGET, 0),
+                    CONF_THINKING_LEVEL: self.init_info.get(
+                        CONF_THINKING_LEVEL, "auto"
+                    ),
                 },
             }
             data_schema = self.add_suggested_values_to_schema(data_schema, suggested)
@@ -970,7 +987,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     api_key=user_input[CONF_API_KEY],
                     model=user_input[CONF_DEFAULT_MODEL],
                 )
-                await google.validate()
+                await google.validate(
+                    thinking_level=user_input.get(CONF_THINKING_LEVEL, "auto")
+                )
                 # add the mode to user_input
                 user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
                 if self.source == config_entries.SOURCE_RECONFIGURE:
@@ -989,7 +1008,13 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return self.async_show_form(
                     step_id="google",
                     data_schema=data_schema,
-                    errors={"base": "empty_api_key"},
+                    errors={
+                        "base": (
+                            "empty_api_key"
+                            if not user_input[CONF_API_KEY]
+                            else "google_validation_failed"
+                        )
+                    },
                 )
 
         return self.async_show_form(

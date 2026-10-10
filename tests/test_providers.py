@@ -43,6 +43,7 @@ from custom_components.llmvision.const import (
     CONF_PORT,
     CONF_THINK,
     CONF_THINKING_BUDGET,
+    CONF_THINKING_LEVEL,
     ENDPOINT_GROQ,
     DEFAULT_OPENAI_MODEL,
     DEFAULT_ANTHROPIC_MODEL,
@@ -2694,3 +2695,123 @@ def test_anthropic_unsupported_model_omits_disabled_thinking_parameter(coverage_
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+@pytest.mark.parametrize(
+    "model",
+    [
+        "gemini-3-flash-preview",
+        "models/gemini-3.8-flash",
+        "gemini-3.1-pro-preview",
+        "gemini-4-flash",
+        "gemini-10-pro",
+        "gemini-flash-latest",
+        "models/gemini-flash-latest",
+        "gemini-flash-lite-latest",
+        "gemini-pro-latest",
+    ],
+)
+@pytest.mark.parametrize("level", ["auto", "minimal", "low", "medium", "high"])
+@pytest.mark.parametrize("builder", ["_prepare_vision_data", "_prepare_text_data"])
+def test_google_configured_thinking_levels_and_aliases(
+    coverage_hass, model, level, builder
+):
+    config = coverage_hass.data[DOMAIN]["provider_openai"]
+    config.update(
+        {
+            CONF_THINKING_LEVEL: level,
+            CONF_THINKING_BUDGET: 1024,
+            CONF_TEMPERATURE: 0.2,
+            CONF_TOP_P: 0.3,
+        }
+    )
+    provider = Google(coverage_hass, "k", model)
+    call = make_coverage_call(
+        response_format="json", structure={"type": "object"}, use_memory=True
+    )
+    payload = getattr(provider, builder)(call)
+    params = payload["generationConfig"]
+    assert "temperature" not in params
+    assert "topP" not in params
+    assert "topK" not in params
+    assert params["maxOutputTokens"] == 64
+    assert params["response_mime_type"] == "application/json"
+    assert params["response_json_schema"] == {"type": "object"}
+    if level == "auto":
+        assert "thinkingConfig" not in params
+    else:
+        assert params["thinkingConfig"] == {"thinkingLevel": level}
+    config[CONF_THINKING_LEVEL] = "high" if level != "high" else "low"
+    next_payload = getattr(provider, builder)(call)
+    assert next_payload["contents"] == payload["contents"]
+    assert (
+        next_payload["generationConfig"]["thinkingConfig"]["thinkingLevel"]
+        == config[CONF_THINKING_LEVEL]
+    )
+
+
+@pytest.mark.parametrize(
+    "model", ["gemini-3.8-flash", "gemini-4-flash", "gemini-flash-latest"]
+)
+def test_google_missing_level_uses_model_default(coverage_hass, model):
+    provider = Google(coverage_hass, "k", model)
+    for builder in (provider._prepare_vision_data, provider._prepare_text_data):
+        assert "thinkingConfig" not in builder(make_coverage_call())["generationConfig"]
+
+
+@pytest.mark.parametrize(
+    "model",
+    [
+        "gemini-2.5-pro",
+        "models/gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "custom-gemini-3-test",
+    ],
+)
+@pytest.mark.parametrize("budget", [0, 1024])
+def test_google_legacy_payload_ignores_thinking_level(coverage_hass, model, budget):
+    config = coverage_hass.data[DOMAIN]["provider_openai"]
+    config[CONF_THINKING_BUDGET] = budget
+    provider = Google(coverage_hass, "k", model)
+    for builder in (provider._prepare_vision_data, provider._prepare_text_data):
+        baseline = builder(make_coverage_call())
+        for level in ("auto", "minimal", "low", "medium", "high"):
+            config[CONF_THINKING_LEVEL] = level
+            assert builder(make_coverage_call()) == baseline
+        assert baseline["generationConfig"]["temperature"] == 0.6
+        assert baseline["generationConfig"]["topP"] == 0.95
+        if budget and ("gemini-2.5" in model or "gemini-3" in model):
+            assert baseline["generationConfig"]["thinkingConfig"] == {
+                "thinkingBudget": budget
+            }
+        else:
+            assert "thinkingConfig" not in baseline["generationConfig"]
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "model",
+    [
+        "gemini-3.8-flash",
+        "gemini-10-pro",
+        "models/gemini-flash-latest",
+        "gemini-flash-lite-latest",
+        "gemini-pro-latest",
+    ],
+)
+@pytest.mark.parametrize("level", ["auto", "minimal", "low", "medium", "high"])
+async def test_google_validation_uses_submitted_level(coverage_hass, model, level):
+    provider = Google(coverage_hass, "k", model)
+    provider._post = AsyncMock(
+        return_value={"candidates": [{"finishReason": "MAX_TOKENS"}]}
+    )
+    await provider.validate(thinking_level=level)
+    config = provider._post.call_args.kwargs["data"]["generationConfig"]
+    assert config == (
+        {"maxOutputTokens": 1}
+        if level == "auto"
+        else {"maxOutputTokens": 1, "thinkingConfig": {"thinkingLevel": level}}
+    )
+    provider._post.side_effect = ServiceValidationError("unsupported level")
+    with pytest.raises(ServiceValidationError, match="unsupported level"):
+        await provider.validate(thinking_level=level)

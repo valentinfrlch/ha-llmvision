@@ -33,6 +33,7 @@ from custom_components.llmvision.const import (
     CONF_TEMPERATURE,
     CONF_THINK,
     CONF_THINKING_BUDGET,
+    CONF_THINKING_LEVEL,
     CONF_TIMELINE_LANGUAGE,
     CONF_TITLE_PROMPT,
     CONF_TOP_P,
@@ -774,7 +775,10 @@ class TestProviderSteps:
         assert result["title"] == expected_title
         assert result["data"][CONF_PROVIDER] == init_provider
         provider_cls.assert_called_once_with(*expected_args, **expected_kwargs)
-        provider_instance.validate.assert_awaited_once_with()
+        if step_name == "google":
+            provider_instance.validate.assert_awaited_once_with(thinking_level="auto")
+        else:
+            provider_instance.validate.assert_awaited_once_with()
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -915,7 +919,11 @@ class TestProviderSteps:
 
         assert result["type"] == "form"
         assert result["step_id"] == step_name
-        assert result["errors"] == {"base": expected_error}
+        assert result["errors"] == {
+            "base": (
+                "google_validation_failed" if step_name == "google" else expected_error
+            )
+        }
 
 
 class TestFlattenDict:
@@ -994,3 +1002,133 @@ class TestKeepAliveValidation:
 
         with pytest.raises(ValueError):
             flow._validate_keep_alive("")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("level", ["auto", "minimal", "low", "medium", "high"])
+@pytest.mark.parametrize(
+    "source", [config_entries.SOURCE_USER, config_entries.SOURCE_RECONFIGURE]
+)
+async def test_google_flow_persists_and_validates_level(build_flow, level, source):
+    flow = build_flow(source=source, init_info={CONF_PROVIDER: "Google"})
+    entry = Mock(
+        data={
+            CONF_PROVIDER: "Google",
+            CONF_API_KEY: "key",
+            CONF_DEFAULT_MODEL: "gemini-flash-latest",
+            CONF_THINKING_LEVEL: level,
+        }
+    )
+    flow._get_reconfigure_entry = Mock(return_value=entry)
+    provider = Mock(validate=AsyncMock())
+    inputs = {
+        "connection_section": {CONF_API_KEY: "key"},
+        "model_section": {
+            CONF_DEFAULT_MODEL: "gemini-flash-latest",
+            CONF_THINKING_LEVEL: level,
+        },
+    }
+    with patch("custom_components.llmvision.config_flow.Google", return_value=provider):
+        result = await flow.async_step_google(inputs)
+    provider.validate.assert_awaited_once_with(thinking_level=level)
+    if source == config_entries.SOURCE_RECONFIGURE:
+        assert result["data_updates"][CONF_THINKING_LEVEL] == level
+        suggestions = flow.add_suggested_values_to_schema.call_args.args[1]
+        assert suggestions["model_section"][CONF_THINKING_LEVEL] == level
+    else:
+        assert result["data"][CONF_THINKING_LEVEL] == level
+
+
+@pytest.mark.asyncio
+async def test_google_selector_default_and_allowed_values(build_flow):
+    import voluptuous as vol
+
+    flow = build_flow(init_info={CONF_PROVIDER: "Google"})
+    form = await flow.async_step_google()
+    schema = form["data_schema"]
+    for level in ("auto", "minimal", "low", "medium", "high"):
+        validated = schema({"model_section": {CONF_THINKING_LEVEL: level}})
+        assert validated["model_section"][CONF_THINKING_LEVEL] == level
+    assert schema({"model_section": {}})["model_section"][CONF_THINKING_LEVEL] == "auto"
+    with pytest.raises(vol.Invalid):
+        schema({"model_section": {CONF_THINKING_LEVEL: "invalid"}})
+
+
+@pytest.mark.asyncio
+async def test_google_reconfigure_missing_level_suggests_default(build_flow):
+    flow = build_flow(source=config_entries.SOURCE_RECONFIGURE)
+    flow._get_reconfigure_entry = Mock(
+        return_value=Mock(data={CONF_PROVIDER: "Google"})
+    )
+    await flow.async_step_google()
+    assert (
+        flow.add_suggested_values_to_schema.call_args.args[1]["model_section"][
+            CONF_THINKING_LEVEL
+        ]
+        == "auto"
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "key,error", [("key", "google_validation_failed"), ("", "empty_api_key")]
+)
+async def test_google_rejected_level_does_not_update_entry(build_flow, key, error):
+    flow = build_flow(source=config_entries.SOURCE_RECONFIGURE)
+    entry = Mock(data={CONF_PROVIDER: "Google", CONF_THINKING_LEVEL: "low"})
+    flow._get_reconfigure_entry = Mock(return_value=entry)
+    provider = Mock(
+        validate=AsyncMock(side_effect=ServiceValidationError("unsupported level"))
+    )
+    with patch("custom_components.llmvision.config_flow.Google", return_value=provider):
+        result = await flow.async_step_google(
+            {
+                "connection_section": {CONF_API_KEY: key},
+                "model_section": {
+                    CONF_DEFAULT_MODEL: "gemini-3.8-flash",
+                    CONF_THINKING_LEVEL: "minimal",
+                },
+            }
+        )
+    assert result["errors"] == {"base": error}
+    flow.async_update_reload_and_abort.assert_not_called()
+    assert entry.data[CONF_THINKING_LEVEL] == "low"
+
+
+@pytest.mark.asyncio
+async def test_google_http_rejection_preserves_entry_and_reports_configuration(
+    build_flow,
+):
+    from custom_components.llmvision.providers import Google
+
+    flow = build_flow(source=config_entries.SOURCE_RECONFIGURE)
+    entry = Mock(data={CONF_PROVIDER: "Google", CONF_THINKING_LEVEL: "low"})
+    flow._get_reconfigure_entry = Mock(return_value=entry)
+    response = Mock(
+        status=400,
+        text=AsyncMock(
+            return_value='{"error":{"message":"Thinking level not supported"}}'
+        ),
+    )
+    session = Mock(post=AsyncMock(return_value=response))
+    with patch(
+        "custom_components.llmvision.providers.async_get_clientsession",
+        return_value=session,
+    ):
+        provider = Google(flow.hass, "key", "gemini-3.8-flash")
+    with patch("custom_components.llmvision.config_flow.Google", return_value=provider):
+        result = await flow.async_step_google(
+            {
+                "connection_section": {CONF_API_KEY: "key"},
+                "model_section": {
+                    CONF_DEFAULT_MODEL: "gemini-3.8-flash",
+                    CONF_THINKING_LEVEL: "minimal",
+                },
+            }
+        )
+    assert result["errors"] == {"base": "google_validation_failed"}
+    assert session.post.call_args.kwargs["json"]["generationConfig"][
+        "thinkingConfig"
+    ] == {"thinkingLevel": "minimal"}
+    flow.async_update_reload_and_abort.assert_not_called()
+    assert entry.data[CONF_THINKING_LEVEL] == "low"
