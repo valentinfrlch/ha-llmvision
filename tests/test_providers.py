@@ -1801,6 +1801,8 @@ async def test_anthropic_make_request_prepare_text_and_validate_paths(coverage_h
 
     provider._post = AsyncMock(return_value={"ok": True})
     await provider.validate()
+    # Newer models reject sampling parameters, so validation doesn't send them.
+    assert "temperature" not in provider._post.call_args.kwargs["data"]
 
     no_key = Anthropic(coverage_hass, "", "claude-3")
     with pytest.raises(ServiceValidationError):
@@ -2645,6 +2647,76 @@ def test_anthropic_new_models_omit_sampling_even_when_thinking_is_disabled(
     assert "temperature" not in result
     assert "top_p" not in result
     assert "top_k" not in result
+
+
+@pytest.mark.parametrize(
+    ("model", "thinking"),
+    [
+        ("claude-sonnet-5-5", {"type": "between_tools"}),
+        ("claude-opus-5-5", None),
+        ("claude-fable-5-1", None),
+        ("claude-mythos-5-1", None),
+        ("claude-opus-5", {"type": "disabled"}),
+        ("claude-sonnet-5", {"type": "disabled"}),
+        ("claude-haiku-5-5", {"type": "disabled"}),
+    ],
+)
+def test_anthropic_zero_budget_uses_off_switch_each_model_accepts(
+    coverage_hass, model, thinking
+):
+    configure_anthropic_parameters(coverage_hass, 0)
+    provider = Anthropic(coverage_hass, "k", model)
+
+    payload = provider._prepare_vision_data(make_coverage_call(max_tokens=4096))
+
+    assert payload.get("thinking") == thinking
+    assert "temperature" not in payload
+
+
+@pytest.mark.parametrize(
+    "model",
+    ["claude-opus-5-5", "claude-sonnet-5-5", "claude-fable-5-1", "claude-mythos-5-1"],
+)
+@pytest.mark.parametrize("builder_name", ["_prepare_vision_data", "_prepare_text_data"])
+def test_anthropic_models_rejecting_forced_tool_choice_ask_for_the_tool(
+    coverage_hass, model, builder_name
+):
+    configure_anthropic_parameters(coverage_hass, 0)
+    provider = Anthropic(coverage_hass, "k", model)
+
+    payload = getattr(provider, builder_name)(
+        make_coverage_call(
+            max_tokens=4096,
+            response_format="json",
+            structure={"type": "object"},
+        )
+    )
+
+    assert payload["tool_choice"] == {"type": "auto"}
+    assert payload["tools"][0]["name"] == "return_structured_data"
+    assert payload["messages"][-1]["content"][-1] == {
+        "type": "text",
+        "text": "Call the return_structured_data tool with your answer.",
+    }
+
+
+@pytest.mark.parametrize("model", ["claude-opus-5", "claude-sonnet-5", "claude-haiku-5-5"])
+def test_anthropic_models_accepting_forced_tool_choice_keep_it(coverage_hass, model):
+    configure_anthropic_parameters(coverage_hass, 0)
+    provider = Anthropic(coverage_hass, "k", model)
+
+    payload = provider._prepare_text_data(
+        make_coverage_call(
+            max_tokens=4096,
+            response_format="json",
+            structure={"type": "object"},
+        )
+    )
+
+    assert payload["tool_choice"] == {
+        "type": "tool",
+        "name": "return_structured_data",
+    }
 
 
 @pytest.mark.parametrize(
