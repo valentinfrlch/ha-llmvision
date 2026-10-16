@@ -1092,12 +1092,42 @@ class Anthropic(Provider):
             or major >= 5
             or (major == 4 and minor >= 7)
         )
+        # These models reject thinking {"type": "disabled"}. Sonnet 5.5 turns
+        # thinking off with "between_tools"; the others can't turn it off.
+        thinking_always_on = (
+            "claude-opus-5-5" in model
+            or "fable" in model
+            or ("mythos" in model and "mythos-preview" not in model)
+        )
         tool_choice = payload.get("tool_choice") or {}
         forced_tool = tool_choice.get("type") in {"any", "tool"}
 
+        # These models reject a forced tool_choice ("any"/"tool"), so ask for
+        # the tool instead and let the model call it.
+        if forced_tool and any(
+            name in model
+            for name in (
+                "claude-opus-5-5",
+                "claude-sonnet-5-5",
+                "claude-fable-5-1",
+                "claude-mythos-5-1",
+            )
+        ):
+            payload["tool_choice"] = {"type": "auto"}
+            tool_name = tool_choice.get("name") or "provided"
+            payload["messages"][-1]["content"].append(
+                {"type": "text", "text": f"Call the {tool_name} tool with your answer."}
+            )
+            forced_tool = False
+
         if budget == 0:
             if adaptive_thinking:
-                payload["thinking"] = {"type": "disabled"}
+                if "claude-sonnet-5-5" in model:
+                    payload["thinking"] = {"type": "between_tools"}
+                elif thinking_always_on:
+                    payload.pop("thinking", None)
+                else:
+                    payload["thinking"] = {"type": "disabled"}
                 for parameter in ("temperature", "top_p", "top_k"):
                     payload.pop(parameter, None)
             elif manual_thinking:
@@ -1266,7 +1296,6 @@ class Anthropic(Provider):
             "model": self.model,
             "messages": [{"role": "user", "content": "Hi"}],
             "max_tokens": 1,
-            "temperature": 0.5,
         }
         await self._post(
             url=f"https://api.anthropic.com/v1/messages", headers=header, data=payload
