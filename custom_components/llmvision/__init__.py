@@ -57,8 +57,11 @@ from .const import (
     EXPOSE_IMAGES,
     GENERATE_TITLE,
     SENSOR_ENTITY,
+    QUESTIONS,
+    THRESHOLD,
     DATA_EXTRACTION_PROMPT,
     DEFAULT_OPENAI_MODEL,
+    DEFAULT_DECISIONS_MODEL,
     DEFAULT_ANTHROPIC_MODEL,
     DEFAULT_AZURE_MODEL,
     DEFAULT_GOOGLE_MODEL,
@@ -479,11 +482,13 @@ class ServiceCallData:
         self.expose_images: bool = data_call.data.get(EXPOSE_IMAGES, False)
         self.generate_title: bool = data_call.data.get(GENERATE_TITLE, False)
         self.sensor_entity: str = data_call.data.get(SENSOR_ENTITY, "")
+        self.questions: list = data_call.data.get(QUESTIONS, []) or []
         self.response_format: str = data_call.data.get(RESPONSE_FORMAT, "text")
         self.structure: dict | None = data_call.data.get(STRUCTURE, None)
         self.title_field: str = data_call.data.get(TITLE_FIELD, "")
         self.description_field: str = data_call.data.get(DESCRIPTION_FIELD, "")
         self.memory: Memory | None = None
+        self.decision_questions: list | None = None
 
         # ------------ Create Event ------------
         self.title: str = data_call.data.get("title")
@@ -606,6 +611,136 @@ async def _create_event(
             label="",
         )
         async_dispatcher_send(hass, SIGNAL_TIMELINE_UPDATED)
+
+
+def _format_decision_answers_for_timeline(answers: list) -> tuple[str, str]:
+    """Build a short title and description from Decisions API answers."""
+    parts: list[str] = []
+    for answer in answers:
+        if not isinstance(answer, dict):
+            continue
+        name = answer.get("name") or "question"
+        answer_type = answer.get("type")
+        if answer_type == "refusal":
+            parts.append(f"{name}: refused")
+        elif answer_type == "predicate":
+            probability = answer.get("probability")
+            parts.append(f"{name}: {probability}")
+        elif answer_type == "choice":
+            parts.append(f"{name}: {answer.get('choice')}")
+        elif answer_type == "score":
+            parts.append(f"{name}: {answer.get('score')}")
+        else:
+            parts.append(f"{name}: {answer_type}")
+    description = "; ".join(parts) if parts else "Decision analysis complete"
+    title = "Decision analysis"
+    if parts:
+        title = parts[0][:80]
+    return title, description
+
+
+async def _apply_decision_entity_updates(
+    hass, questions: list, answers: list
+) -> list[dict]:
+    """Optionally update Home Assistant entities from decision answers."""
+    updates: list[dict] = []
+    for question, answer in zip(questions, answers):
+        if not isinstance(question, dict) or not isinstance(answer, dict):
+            continue
+        entity = question.get("entity") or question.get("sensor_entity")
+        if not entity:
+            continue
+        if answer.get("type") == "refusal":
+            updates.append(
+                {
+                    "entity": entity,
+                    "updated": False,
+                    "reason": "refusal",
+                    "name": answer.get("name") or question.get("id") or question.get("name"),
+                }
+            )
+            continue
+
+        q_type = str(question.get("type", "")).lower()
+        try:
+            if q_type == "predicate" or answer.get("type") == "predicate":
+                threshold = float(question.get(THRESHOLD, 0.5))
+                probability = float(answer.get("probability", 0))
+                value = "on" if probability >= threshold else "off"
+                await _update_sensor(hass, entity, value, "boolean")
+                updates.append(
+                    {
+                        "entity": entity,
+                        "updated": True,
+                        "value": value,
+                        "probability": probability,
+                        "threshold": threshold,
+                    }
+                )
+            elif q_type == "choice" or answer.get("type") == "choice":
+                choice_value = answer.get("choice")
+                domain = str(entity).split(".", 1)[0]
+                sensor_type = (
+                    "option"
+                    if domain in ("input_select", "select")
+                    else "text"
+                )
+                await _update_sensor(hass, entity, choice_value, sensor_type)
+                updates.append(
+                    {
+                        "entity": entity,
+                        "updated": True,
+                        "value": choice_value,
+                        "confidence": answer.get("confidence"),
+                    }
+                )
+            elif q_type == "score" or answer.get("type") == "score":
+                domain = str(entity).split(".", 1)[0]
+                if domain in ("input_number", "number", "sensor"):
+                    await _update_sensor(
+                        hass, entity, answer.get("score"), "number"
+                    )
+                    updates.append(
+                        {
+                            "entity": entity,
+                            "updated": True,
+                            "value": answer.get("score"),
+                            "confidence": answer.get("confidence"),
+                        }
+                    )
+                else:
+                    probabilities = answer.get("probabilities") or []
+                    best_label = ""
+                    if probabilities:
+                        best = max(
+                            probabilities,
+                            key=lambda item: item.get("probability", 0),
+                        )
+                        best_label = best.get("label", "")
+                    sensor_type = (
+                        "option"
+                        if domain in ("input_select", "select")
+                        else "text"
+                    )
+                    await _update_sensor(hass, entity, best_label, sensor_type)
+                    updates.append(
+                        {
+                            "entity": entity,
+                            "updated": True,
+                            "value": best_label,
+                            "score": answer.get("score"),
+                            "confidence": answer.get("confidence"),
+                        }
+                    )
+        except ServiceValidationError as err:
+            updates.append(
+                {
+                    "entity": entity,
+                    "updated": False,
+                    "reason": str(err),
+                }
+            )
+    return updates
 
 
 async def _update_sensor(hass, sensor_entity: str, value: str | int, type: str) -> None:
@@ -877,6 +1012,58 @@ def setup(hass, config):
         await _update_sensor(hass, sensor_entity, response["response_text"], type)
         return response
 
+    async def decision_analyzer(data_call):
+        """Ask bounded Decisions API questions about image/camera snapshots."""
+        start = dt_util.now()
+        call = ServiceCallData(data_call).get_service_call_data()
+        if not call.model:
+            call.model = DEFAULT_DECISIONS_MODEL
+
+        request = Request(
+            hass=hass,
+            message=call.message,
+            max_tokens=call.max_tokens,
+            temperature=call.temperature,
+        )
+        processor = MediaProcessor(hass, request)
+        request = await processor.add_images(
+            image_entities=call.image_entities,
+            image_paths=call.image_paths,
+            target_width=call.target_width,
+            include_filename=call.include_filename,
+            expose_images=call.expose_images,
+        )
+
+        decision = await request.decision_call(call)
+        answers = decision.get("answers") or []
+        entity_updates = await _apply_decision_entity_updates(
+            hass, call.questions, answers
+        )
+
+        title, description = _format_decision_answers_for_timeline(answers)
+        response = {
+            "answers": answers,
+            "model": decision.get("model", call.model),
+            "usage": decision.get("usage"),
+            "entity_updates": entity_updates,
+            "response_time_ms": int(
+                (dt_util.now() - start).total_seconds() * 1000
+            ),
+            "title": title,
+            "response_text": description,
+        }
+        if processor.key_frame:
+            response["key_frame"] = processor.key_frame
+
+        await _create_event(
+            hass=hass,
+            call=call,  # type: ignore
+            start=start,
+            response=response,
+            key_frame=processor.key_frame,
+        )
+        return response
+
     async def create_event(data_call) -> None:
         """Handle the service call to create an event"""
         start = dt_util.now()
@@ -956,6 +1143,12 @@ def setup(hass, config):
     )
     hass.services.register(
         DOMAIN, "data_analyzer", data_analyzer, supports_response=SupportsResponse.ONLY
+    )
+    hass.services.register(
+        DOMAIN,
+        "decision_analyzer",
+        decision_analyzer,
+        supports_response=SupportsResponse.ONLY,
     )
     hass.services.register(
         DOMAIN,

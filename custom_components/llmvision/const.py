@@ -79,12 +79,19 @@ INCLUDE_FILENAME = "include_filename"
 EXPOSE_IMAGES = "expose_images"
 GENERATE_TITLE = "generate_title"
 SENSOR_ENTITY = "sensor_entity"
+QUESTIONS = "questions"
+THRESHOLD = "threshold"
 
 # Error messages
 ERROR_NOT_CONFIGURED = "{provider} is not configured"
 ERROR_GROQ_MULTIPLE_IMAGES = "Groq does not support videos or streams"
 ERROR_NO_IMAGE_INPUT = "No image input provided"
 ERROR_HANDSHAKE_FAILED = "Connection could not be established"
+ERROR_DECISIONS_NOT_SUPPORTED = (
+    "The Decisions API is only supported for OpenAI, Custom OpenAI, and Azure providers"
+)
+ERROR_DECISIONS_NO_QUESTIONS = "At least one decision question is required"
+ERROR_DECISIONS_INVALID_QUESTION = "Invalid decision question: {detail}"
 
 # Versions
 VERSION_ANTHROPIC = "2023-06-01"  # https://docs.anthropic.com/en/api/versioning
@@ -136,6 +143,8 @@ Do not mention camera angle, lighting quality, or image clarity.
 """
 # Models
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
+DEFAULT_DECISIONS_MODEL = "gpt-6-luna"
+DECISIONS_SUPPORTED_PROVIDERS = frozenset({"OpenAI", "Custom OpenAI", "Azure"})
 DEFAULT_ANTHROPIC_MODEL = "claude-haiku-4-5"
 DEFAULT_AZURE_MODEL = "gpt-4o-mini"
 DEFAULT_GOOGLE_MODEL = "gemini-3.1-flash-lite"
@@ -152,6 +161,8 @@ DEFAULT_SUMMARY_PROMPT = "Provide a brief summary for the following titles. Focu
 
 # API Endpoints
 ENDPOINT_OPENAI = "https://api.openai.com/v1/chat/completions"
+ENDPOINT_OPENAI_DECISIONS = "https://api.openai.com/v1/decisions"
+ENDPOINT_AZURE_DECISIONS = "{base_url}openai/v1/decisions"
 ENDPOINT_ANTHROPIC = "https://api.anthropic.com/v1/messages"
 ENDPOINT_GOOGLE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 ENDPOINT_GROQ = "https://api.groq.com/openai/v1/chat/completions"
