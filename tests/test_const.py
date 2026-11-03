@@ -47,6 +47,22 @@ class TestConstants:
         assert ENDPOINT_OPENAI.startswith("https://")
         assert "openai.com" in ENDPOINT_OPENAI
 
+    def test_decisions_constants(self):
+        """Test Decisions API constants."""
+        from custom_components.llmvision.const import (
+            DEFAULT_DECISIONS_MODEL,
+            DECISIONS_SUPPORTED_PROVIDERS,
+            ENDPOINT_OPENAI_DECISIONS,
+            ENDPOINT_AZURE_DECISIONS,
+            QUESTIONS,
+        )
+
+        assert DEFAULT_DECISIONS_MODEL == "gpt-6-luna"
+        assert ENDPOINT_OPENAI_DECISIONS.endswith("/v1/decisions")
+        assert "{base_url}" in ENDPOINT_AZURE_DECISIONS
+        assert QUESTIONS == "questions"
+        assert "OpenAI" in DECISIONS_SUPPORTED_PROVIDERS
+
     def test_versions(self):
         """Test version constants."""
         assert isinstance(VERSION_ANTHROPIC, str)

@@ -454,7 +454,8 @@
             "invalid_provider": "Invalid provider selected",
             "memory_not_supported": "This provider does not support memory",
             "invalid_image_path": "One or more image paths are invalid",
-            "mismatched_lengths": "The number of image paths and descriptions must match"
+            "mismatched_lengths": "The number of image paths and descriptions must match",
+            "decisions_not_supported": "The Decisions API is only supported for OpenAI, Custom OpenAI, and Azure providers"
         },
         "abort": {
             "unknown_provider": "Unknown provider",

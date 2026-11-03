@@ -712,7 +712,7 @@ class TestSetupServices:
         ok = setup(hass, {})
 
         assert ok is True
-        assert hass.services.register.call_count == 6
+        assert hass.services.register.call_count == 7
         hass.http.register_view.assert_any_call(init_module.TimelineEventsView)
         hass.http.register_view.assert_any_call(init_module.TimelineEventView)
         hass.http.register_view.assert_any_call(init_module.TimelineEventCreateView)

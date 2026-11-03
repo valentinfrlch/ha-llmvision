@@ -432,6 +432,109 @@ stream_analyzer:
       selector:
         text:
 
+decision_analyzer:
+  name: Decision Analyzer
+  description: Ask bounded OpenAI Decisions API questions about images (predicate, choice, or score). Requires OpenAI, Custom OpenAI, or Azure.
+  fields:
+    provider:
+      name: Provider
+      description: 'OpenAI, Custom OpenAI, or Azure configuration to use'
+      required: true
+      selector:
+        config_entry:
+          integration: llmvision
+    model:
+      name: Model
+      required: false
+      description: 'Decisions model or Azure deployment name. Defaults to gpt-6-luna.'
+      example: "gpt-6-luna"
+      default: "gpt-6-luna"
+      selector:
+        text:
+          multiline: false
+    message:
+      name: Context
+      required: false
+      description: 'Optional shared text context sent with the image(s)'
+      example: "Driveway camera snapshot"
+      selector:
+        text:
+          multiline: true
+    questions:
+      name: Questions
+      required: true
+      description: 'List of decision questions. Each item needs type (predicate/choice/score), instruction(s), and optional id/name. Choice questions need options or choices; score questions need levels. Optional entity + threshold map answers onto Home Assistant helpers.'
+      example:
+        - id: silver_car
+          type: predicate
+          instruction: "Is a silver car present in the driveway?"
+          threshold: 0.7
+          entity: input_boolean.silver_car_present
+        - id: visitor
+          type: choice
+          instruction: "Who is at the front door?"
+          options:
+            - Mailman
+            - Amazon
+            - UPS
+            - FedEx
+            - Person
+            - No person
+          entity: input_select.front_door_visitor
+      selector:
+        object:
+    store_in_timeline:
+      name: Store in Timeline
+      required: false
+      description: 'Create a new event in the timeline for this decision.'
+      example: true
+      default: false
+      selector:
+        boolean:
+    image_file:
+      name: Image File
+      required: false
+      description: 'Local path to image'
+      example: "/config/www/tmp/front_door.jpg"
+      selector:
+        text:
+          multiline: true
+    image_entity:
+      name: Image Entity
+      required: false
+      description: 'Image or camera entity to analyze'
+      example: 'camera.front_door'
+      selector:
+        entity:
+          domain: ["image", "camera"]
+          multiple: true
+    include_filename:
+      name: Include Filename
+      required: false
+      description: 'Include filename in the request'
+      example: false
+      default: false
+      selector:
+        boolean:
+    target_width:
+      name: Target Width
+      required: false
+      description: 'Width in pixels to downscale'
+      example: 1280
+      default: 1280
+      selector:
+        number:
+          min: 512
+          max: 1920
+    expose_images:
+      name: Expose Images
+      description: Save the key frame. This will save analyzed frames in /media/llmvision/snapshots so they can be used for notifications. The file path will be included in the response.
+      required: false
+      example: false
+      default: false
+      selector:
+        boolean:
+
 data_analyzer:
   name: Data Analyzer
   description: Update sensors with data extracted from images (Beta)

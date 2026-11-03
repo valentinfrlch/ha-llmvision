@@ -28,7 +28,9 @@ from .const import (
     CONF_AWS_REGION_NAME,
     VERSION_ANTHROPIC,
     ENDPOINT_OPENAI,
+    ENDPOINT_OPENAI_DECISIONS,
     ENDPOINT_AZURE,
+    ENDPOINT_AZURE_DECISIONS,
     ENDPOINT_ANTHROPIC,
     ENDPOINT_GOOGLE,
     ENDPOINT_LOCALAI,
@@ -40,6 +42,11 @@ from .const import (
     ERROR_NOT_CONFIGURED,
     ERROR_GROQ_MULTIPLE_IMAGES,
     ERROR_NO_IMAGE_INPUT,
+    ERROR_DECISIONS_NOT_SUPPORTED,
+    ERROR_DECISIONS_NO_QUESTIONS,
+    ERROR_DECISIONS_INVALID_QUESTION,
+    DECISIONS_SUPPORTED_PROVIDERS,
+    DEFAULT_DECISIONS_MODEL,
     DEFAULT_OPENAI_MODEL,
     DEFAULT_ANTHROPIC_MODEL,
     DEFAULT_AZURE_MODEL,
@@ -68,6 +75,105 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def normalize_decision_questions(questions: list) -> list[dict]:
+    """Normalize service question objects into Decisions API question payloads.
+
+    Accepts friendly aliases used by the Home Assistant service:
+    - id -> name
+    - instruction -> instructions
+    - options (list of strings or {value, description}) -> choices
+    """
+    if not isinstance(questions, list) or not questions:
+        raise ValueError("questions must be a non-empty list")
+    if len(questions) > 400:
+        raise ValueError("at most 400 questions are allowed")
+
+    normalized: list[dict] = []
+    for index, raw in enumerate(questions):
+        if not isinstance(raw, dict):
+            raise ValueError(f"question {index} must be an object")
+
+        q_type = str(raw.get("type", "")).strip().lower()
+        if q_type not in {"predicate", "choice", "score"}:
+            raise ValueError(
+                f"question {index} type must be predicate, choice, or score"
+            )
+
+        name = raw.get("name", raw.get("id"))
+        instructions = raw.get("instructions", raw.get("instruction"))
+        if instructions is None or (
+            isinstance(instructions, str) and not instructions.strip()
+        ):
+            raise ValueError(f"question {index} requires instructions")
+
+        question: dict[str, Any] = {
+            "type": q_type,
+            "instructions": instructions,
+        }
+        if name is not None and str(name).strip() != "":
+            question["name"] = str(name)
+
+        if q_type == "choice":
+            choices_raw = raw.get("choices", raw.get("options"))
+            if not isinstance(choices_raw, list) or len(choices_raw) < 2:
+                raise ValueError(
+                    f"choice question {index} requires at least 2 choices/options"
+                )
+            if len(choices_raw) > 255:
+                raise ValueError(
+                    f"choice question {index} allows at most 255 choices"
+                )
+            choices: list[dict] = []
+            for choice in choices_raw:
+                if isinstance(choice, dict):
+                    if "value" not in choice:
+                        raise ValueError(
+                            f"choice question {index} has an option missing value"
+                        )
+                    item: dict[str, Any] = {"value": choice["value"]}
+                    if choice.get("description") is not None:
+                        item["description"] = str(choice["description"])
+                    choices.append(item)
+                elif isinstance(choice, (str, bool)):
+                    choices.append({"value": choice})
+                else:
+                    raise ValueError(
+                        f"choice question {index} has an invalid option"
+                    )
+            question["choices"] = choices
+
+        elif q_type == "score":
+            levels_raw = raw.get("levels")
+            if not isinstance(levels_raw, list) or not (
+                2 <= len(levels_raw) <= 10
+            ):
+                raise ValueError(
+                    f"score question {index} requires 2-10 levels"
+                )
+            levels: list[dict] = []
+            for level in levels_raw:
+                if isinstance(level, dict):
+                    if "label" not in level:
+                        raise ValueError(
+                            f"score question {index} has a level missing label"
+                        )
+                    item = {"label": str(level["label"])}
+                    if level.get("description") is not None:
+                        item["description"] = str(level["description"])
+                    levels.append(item)
+                elif isinstance(level, str):
+                    levels.append({"label": level})
+                else:
+                    raise ValueError(
+                        f"score question {index} has an invalid level"
+                    )
+            question["levels"] = levels
+
+        normalized.append(question)
+
+    return normalized
 
 
 class Request:
@@ -305,6 +411,66 @@ class Request:
 
         return result
 
+    async def decision_call(self, call: Any) -> dict:
+        """Forward a Decisions API request to an OpenAI-compatible provider."""
+        entry_id = call.provider
+        domain_data = self.hass.data.get(DOMAIN) or {}
+        config = domain_data.get(entry_id)
+        if config is None:
+            raise ServiceValidationError(
+                f"Provider config not found for entry_id: {entry_id}"
+            )
+
+        provider_name = Request.get_provider(self.hass, entry_id)
+        if provider_name is None:
+            raise ServiceValidationError("invalid_provider")
+        if provider_name not in DECISIONS_SUPPORTED_PROVIDERS:
+            raise ServiceValidationError(ERROR_DECISIONS_NOT_SUPPORTED)
+
+        call.model = getattr(call, "model", None) or DEFAULT_DECISIONS_MODEL
+        call.base64_images = self.base64_images
+        call.filenames = self.filenames
+
+        if not call.base64_images:
+            raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
+
+        questions = getattr(call, "questions", None) or []
+        if not questions:
+            raise ServiceValidationError(ERROR_DECISIONS_NO_QUESTIONS)
+
+        try:
+            call.decision_questions = normalize_decision_questions(questions)
+        except ValueError as err:
+            raise ServiceValidationError(
+                ERROR_DECISIONS_INVALID_QUESTION.format(detail=str(err))
+            ) from err
+
+        if not isinstance(call.model, str):
+            raise ServiceValidationError("invalid_model")
+
+        try:
+            provider_instance = ProviderFactory.create(
+                hass=self.hass,
+                provider_name=provider_name,
+                config=config,
+                model=call.model,
+            )
+        except Exception as e:
+            _LOGGER.error(f"Provider factory failed for {provider_name}: {e}")
+            raise ServiceValidationError("invalid_provider") from e
+
+        if not provider_instance.supports_decisions():
+            raise ServiceValidationError(ERROR_DECISIONS_NOT_SUPPORTED)
+
+        try:
+            decision = await provider_instance.decision_request(call)
+        except Exception as e:
+            _LOGGER.error(f"Decisions API call failed for {provider_name}: {e}")
+            error_message = str(e).strip() or e.__class__.__name__
+            raise ServiceValidationError(error_message) from e
+
+        return decision
+
     def add_frame(self, base64_image, filename):
         self.base64_images.append(base64_image)
         self.filenames.append(filename)
@@ -463,6 +629,10 @@ class Provider(ABC):
         """Return True if provider supports structured output."""
         return False
 
+    def supports_decisions(self) -> bool:
+        """Return True if provider supports the OpenAI Decisions API."""
+        return False
+
     def _get_default_parameters(self, call: Any) -> dict:
         """Get default parameters from config entry"""
         entry_id = call.provider
@@ -523,6 +693,10 @@ class Provider(ABC):
             call.max_tokens = 4096
         data = self._prepare_text_data(call)
         return await self._make_request(data)
+
+    async def decision_request(self, call: Any) -> dict:
+        """Call the Decisions API. Providers without support must override supports_decisions()."""
+        raise ServiceValidationError(ERROR_DECISIONS_NOT_SUPPORTED)
 
     async def _post(self, url: str, headers: dict, data: dict) -> dict:
         """Post data to url and return response data"""
@@ -605,6 +779,10 @@ class OpenAI(Provider):
         """OpenAI supports structured output via JSON Schema."""
         return True
 
+    def supports_decisions(self) -> bool:
+        """OpenAI and Custom OpenAI endpoints expose /v1/decisions."""
+        return True
+
     def _normalize_reasoning_effort(self, value: Any) -> str:
         """Normalize reasoning effort to a known value."""
         effort = str(value).strip().lower() if value is not None else "none"
@@ -659,6 +837,30 @@ class OpenAI(Provider):
             return f"{normalized_url}/chat/completions"
 
         return url
+
+    def _get_decisions_url(self) -> str:
+        """Resolve the Decisions API URL from the configured chat endpoint."""
+        if isinstance(self.endpoint, dict):
+            url = self.endpoint.get("base_url")
+        else:
+            url = self.endpoint
+
+        if not isinstance(url, str):
+            raise ServiceValidationError("invalid_endpoint")
+
+        normalized_url = url.rstrip("/")
+        if (
+            normalized_url == ENDPOINT_OPENAI.rstrip("/")
+            or "api.openai.com" in normalized_url
+        ):
+            return ENDPOINT_OPENAI_DECISIONS
+        if normalized_url.endswith("/chat/completions"):
+            return f"{normalized_url[: -len('/chat/completions')]}/decisions"
+        if normalized_url.endswith("/v1"):
+            return f"{normalized_url}/decisions"
+        if normalized_url.endswith("/decisions"):
+            return normalized_url
+        return f"{normalized_url}/decisions"
 
     async def _make_request(self, data: dict) -> str:
         headers = self._generate_headers()
@@ -808,6 +1010,44 @@ class OpenAI(Provider):
         else:
             raise ServiceValidationError("empty_api_key")
 
+    def _prepare_decision_data(self, call: Any) -> dict:
+        """Build a Decisions API request body from images and questions."""
+        content: list[dict] = []
+        context = getattr(call, "message", "") or ""
+        if context:
+            content.append({"type": "input_text", "text": context})
+
+        include_filename = getattr(call, "include_filename", False)
+        for image, filename in zip(call.base64_images, call.filenames):
+            if include_filename and filename:
+                content.append({"type": "input_text", "text": f"{filename}:"})
+            content.append(
+                {
+                    "type": "input_image",
+                    "image_url": f"data:image/jpeg;base64,{image}",
+                }
+            )
+
+        if not content:
+            raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
+
+        return {
+            "model": self.model,
+            "input": [{"role": "user", "content": content}],
+            "questions": getattr(call, "decision_questions", None) or [],
+        }
+
+    async def decision_request(self, call: Any) -> dict:
+        """POST to /v1/decisions and return the raw Decision object."""
+        headers = self._generate_headers()
+        data = self._prepare_decision_data(call)
+        response = await self._post(
+            url=self._get_decisions_url(), headers=headers, data=data
+        )
+        if not isinstance(response, dict) or "answers" not in response:
+            raise ServiceValidationError("invalid_response")
+        return response
+
 
 class Mistral(OpenAI):
     """Mistral (https://docs.mistral.ai/api/). OpenAI-compatible but rejects
@@ -815,6 +1055,10 @@ class Mistral(OpenAI):
 
     def __init__(self, hass: HomeAssistant, api_key: str, model: str):
         super().__init__(hass, api_key, model, endpoint={"base_url": ENDPOINT_MISTRAL})
+
+    def supports_decisions(self) -> bool:
+        """Mistral does not expose the OpenAI Decisions API."""
+        return False
 
     @staticmethod
     def _rename_token_field(payload: dict) -> dict:
@@ -1014,6 +1258,56 @@ class AzureOpenAI(Provider):
     def supports_structured_output(self) -> bool:
         """AzureOpenAI supports structured output via JSON Schema (OpenAI-compatible)."""
         return True
+
+    def supports_decisions(self) -> bool:
+        """Azure OpenAI hosts the Decisions API at /openai/v1/decisions."""
+        return True
+
+    def _get_decisions_url(self) -> str:
+        base_url = self.endpoint.get("endpoint") or ""
+        if not isinstance(base_url, str) or not base_url:
+            raise ServiceValidationError("invalid_endpoint")
+        if not base_url.endswith("/"):
+            base_url = f"{base_url}/"
+        return ENDPOINT_AZURE_DECISIONS.format(base_url=base_url)
+
+    def _prepare_decision_data(self, call: Any) -> dict:
+        """Build a Decisions API request body from images and questions."""
+        content: list[dict] = []
+        context = getattr(call, "message", "") or ""
+        if context:
+            content.append({"type": "input_text", "text": context})
+
+        include_filename = getattr(call, "include_filename", False)
+        for image, filename in zip(call.base64_images, call.filenames):
+            if include_filename and filename:
+                content.append({"type": "input_text", "text": f"{filename}:"})
+            content.append(
+                {
+                    "type": "input_image",
+                    "image_url": f"data:image/jpeg;base64,{image}",
+                }
+            )
+
+        if not content:
+            raise ServiceValidationError(ERROR_NO_IMAGE_INPUT)
+
+        return {
+            "model": self.model,
+            "input": [{"role": "user", "content": content}],
+            "questions": getattr(call, "decision_questions", None) or [],
+        }
+
+    async def decision_request(self, call: Any) -> dict:
+        """POST to Azure /openai/v1/decisions and return the raw Decision object."""
+        headers = self._generate_headers()
+        data = self._prepare_decision_data(call)
+        response = await self._post(
+            url=self._get_decisions_url(), headers=headers, data=data
+        )
+        if not isinstance(response, dict) or "answers" not in response:
+            raise ServiceValidationError("invalid_response")
+        return response
 
 
 class Anthropic(Provider):

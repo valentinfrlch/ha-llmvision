@@ -4,6 +4,7 @@
         "video_analyzer": "mdi:movie-search",
         "stream_analyzer": "mdi:video-wireless",
         "data_analyzer": "mdi:database-search",
+        "decision_analyzer": "mdi:scale-balance",
         "create_event": "mdi:timeline-plus-outline",
         "get_events": "mdi:timeline-text-outline"
     },
