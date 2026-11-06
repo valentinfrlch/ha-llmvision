@@ -219,6 +219,55 @@ class TestCalendar:
 
         mock_timeline.delete_event.assert_called_once_with(uid)
 
+    @pytest.mark.asyncio
+    async def test_timeline_updates_are_debounced(self, calendar_instance):
+        """Timeline-updated signals refresh via a debouncer, not a direct reload.
+
+        A burst of camera events (one signal each) must coalesce into a single
+        reload instead of one full DB reload per event, which would otherwise
+        saturate the event loop.
+        """
+        calendar_instance.async_on_remove = Mock()
+        with patch(
+            "custom_components.llmvision.calendar.Debouncer"
+        ) as mock_debouncer, patch(
+            "custom_components.llmvision.calendar.async_dispatcher_connect"
+        ) as mock_connect:
+            await calendar_instance.async_added_to_hass()
+
+        # A debouncer was created with the refresh coroutine and a non-zero cooldown.
+        mock_debouncer.assert_called_once()
+        _, kwargs = mock_debouncer.call_args
+        assert kwargs["function"] == calendar_instance._async_refresh_state
+        assert kwargs["cooldown"] > 0
+
+        # The signal handler routes through the debouncer instead of refreshing inline.
+        mock_connect.assert_called_once()
+        signal_handler = mock_connect.call_args[0][2]
+        signal_handler()
+        calendar_instance.hass.async_create_task.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_async_refresh_state_forces_full_reload(self, calendar_instance):
+        """The debounced refresh performs a force_refresh state update."""
+        calendar_instance.async_update_ha_state = AsyncMock()
+
+        await calendar_instance._async_refresh_state()
+
+        calendar_instance.async_update_ha_state.assert_awaited_once_with(
+            force_refresh=True
+        )
+
+    @pytest.mark.asyncio
+    async def test_pending_refresh_cancelled_on_removal(self, calendar_instance):
+        """Removing the entity shuts the debouncer down to cancel a pending refresh."""
+        debouncer = AsyncMock()
+        calendar_instance._refresh_debouncer = debouncer
+
+        await calendar_instance.async_will_remove_from_hass()
+
+        debouncer.async_shutdown.assert_awaited_once()
+
 
 class TestCalendarAdvanced:
     """Advanced tests for Calendar class."""

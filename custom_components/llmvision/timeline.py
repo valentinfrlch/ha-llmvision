@@ -30,8 +30,12 @@ async def _get_category_and_label(
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    # Determine language (fallback to 'en')
-    language = config_entry.options.get(CONF_TIMELINE_LANGUAGE) or "English"
+    # Settings are stored in config_entry.data by the reconfigure flow. Keep
+    # the options fallback for entries created by older releases.
+    language = config_entry.data.get(CONF_TIMELINE_LANGUAGE)
+    if language is None:
+        language = config_entry.options.get(CONF_TIMELINE_LANGUAGE)
+    language = language or "English"
 
     lang_map = {
         "Bulgarian": "bg",
@@ -518,7 +522,9 @@ class Timeline:
 
     def _get_retention_days(self) -> int | None:
         """Return the configured retention window in days (None disables cleanup)."""
-        raw_value = self._config_entry.options.get(CONF_RETENTION_TIME)
+        raw_value = self._config_entry.data.get(CONF_RETENTION_TIME)
+        if raw_value is None:
+            raw_value = self._config_entry.options.get(CONF_RETENTION_TIME)
         if raw_value is None:
             raw_value = self.retention_time
 
@@ -807,7 +813,9 @@ class Timeline:
             if pending_name:
                 self._pending_key_frames.add(pending_name)
             try:
-                await self.load_events()
+                # No pre-load needed: the in-memory list is not read before the
+                # insert below, and _insert_event() reloads it afterwards. Skipping
+                # this redundant full-DB reload keeps event creation off the hot path.
 
                 # Resolve category and label if not provided
                 if not label:
@@ -974,7 +982,7 @@ class Timeline:
             # Skip cleanup during migration
             return
 
-        GRACE_SECONDS = 10
+        GRACE_SECONDS = 30
 
         async with self._cleanup_lock:
             linked_frames = {

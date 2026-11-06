@@ -17,6 +17,7 @@ from custom_components.llmvision.providers import (
     LocalAI,
     Ollama,
     AWSBedrock,
+    Mistral,
     ProviderFactory,
 )
 from custom_components.llmvision.const import (
@@ -54,6 +55,8 @@ from custom_components.llmvision.const import (
     DEFAULT_OLLAMA_MODEL,
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_TITLE_PROMPT,
+    DEFAULT_MISTRAL_MODEL,
+    ENDPOINT_MISTRAL,
 )
 
 
@@ -432,7 +435,7 @@ class TestProviderBase:
 
     def test_get_request_url_appends_chat_completions_for_base_url(self, mock_hass):
         """Test Custom OpenAI base URLs are converted to chat completions endpoints."""
-        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
             openai = OpenAI(
                 mock_hass,
                 "test_api_key",
@@ -440,11 +443,13 @@ class TestProviderBase:
                 endpoint={"base_url": "https://example.test/v1/"},
             )
 
-            assert openai._get_request_url() == "https://example.test/v1/chat/completions"
+            assert (
+                openai._get_request_url() == "https://example.test/v1/chat/completions"
+            )
 
     def test_get_request_url_keeps_full_chat_completions_endpoint(self, mock_hass):
         """Test full Custom OpenAI endpoint URLs remain unchanged."""
-        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
             openai = OpenAI(
                 mock_hass,
                 "test_api_key",
@@ -452,11 +457,13 @@ class TestProviderBase:
                 endpoint={"base_url": "https://example.test/v1/chat/completions"},
             )
 
-            assert openai._get_request_url() == "https://example.test/v1/chat/completions"
+            assert (
+                openai._get_request_url() == "https://example.test/v1/chat/completions"
+            )
 
     def test_prepare_vision_data_basic(self, mock_hass):
         """Test _prepare_vision_data with basic call."""
-        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
             openai = OpenAI(mock_hass, "test_api_key", "gpt-4")
             call = Mock()
             call.max_tokens = 1000
@@ -477,7 +484,9 @@ class TestProviderBase:
                 }
             }
 
-            with patch.object(openai, '_get_system_prompt', return_value="System prompt"):
+            with patch.object(
+                openai, "_get_system_prompt", return_value="System prompt"
+            ):
                 result = openai._prepare_vision_data(call)
 
             assert result["model"] == "gpt-4"
@@ -488,7 +497,7 @@ class TestProviderBase:
 
     def test_prepare_text_data(self, mock_hass):
         """Test _prepare_text_data method."""
-        with patch('custom_components.llmvision.providers.async_get_clientsession'):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
             openai = OpenAI(mock_hass, "test_api_key", "gpt-4")
             call = Mock()
             call.max_tokens = 1000
@@ -661,6 +670,75 @@ class TestOpenAI:
             result = openai._model_supports_thinking("high")
 
             assert result is False
+
+
+class TestMistral:
+    """Test Mistral provider class."""
+
+    def test_init_uses_mistral_endpoint(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            mistral = Mistral(mock_hass, "test_api_key", "pixtral-12b-2409")
+
+            assert mistral.api_key == "test_api_key"
+            assert mistral.model == "pixtral-12b-2409"
+            assert mistral.endpoint["base_url"] == ENDPOINT_MISTRAL
+
+    def test_prepare_vision_data_uses_max_tokens(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            mistral = Mistral(mock_hass, "test_api_key", "pixtral-12b-2409")
+            call = Mock()
+            call.max_tokens = 1000
+            call.base64_images = ["base64_image"]
+            call.filenames = ["test.jpg"]
+            call.message = "Describe this image"
+            call.provider = "test_provider"
+            call.response_format = "text"
+            call.use_memory = False
+            call.structure = None
+
+            mock_hass.data = {
+                DOMAIN: {
+                    "test_provider": {
+                        "provider": "Mistral",
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                    }
+                }
+            }
+
+            with patch.object(
+                mistral, "_get_system_prompt", return_value="System prompt"
+            ):
+                result = mistral._prepare_vision_data(call)
+
+            assert result["max_tokens"] == 1000
+            assert "max_completion_tokens" not in result
+
+    def test_prepare_text_data_uses_max_tokens(self, mock_hass):
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            mistral = Mistral(mock_hass, "test_api_key", "pixtral-12b-2409")
+            call = Mock()
+            call.max_tokens = 1000
+            call.message = "Generate a title"
+            call.provider = "test_provider"
+
+            mock_hass.data = {
+                DOMAIN: {
+                    "test_provider": {
+                        "provider": "Mistral",
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                    }
+                }
+            }
+
+            with patch.object(
+                mistral, "_get_title_prompt", return_value="Title prompt"
+            ):
+                result = mistral._prepare_text_data(call)
+
+            assert result["max_tokens"] == 1000
+            assert "max_completion_tokens" not in result
 
 
 class TestAzureOpenAI:
@@ -1210,6 +1288,18 @@ class TestProviderFactory:
             )
 
             assert isinstance(provider, OpenAI)
+
+    def test_create_mistral(self, mock_hass):
+        config = {CONF_API_KEY: "test_key"}
+
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            provider = ProviderFactory.create(
+                mock_hass, "Mistral", config, "pixtral-12b-2409"
+            )
+
+            assert isinstance(provider, Mistral)
+            assert isinstance(provider, OpenAI)
+            assert provider.endpoint["base_url"] == ENDPOINT_MISTRAL
 
 
 @pytest.fixture
@@ -1783,7 +1873,8 @@ async def test_anthropic_make_request_prepare_text_and_validate_paths(coverage_h
     assert await provider._make_request({"x": 1}) == '{"a": 1}'
 
     provider._post = AsyncMock(return_value={"content": []})
-    assert await provider._make_request({"x": 1}) == ""
+    with pytest.raises(ServiceValidationError, match="empty_response"):
+        await provider._make_request({"x": 1})
 
     payload = provider._prepare_text_data(
         make_coverage_call(response_format="json", structure={"type": "object"})
@@ -2015,7 +2106,6 @@ async def test_request_call_error_and_title_fallback_branches(
     req.base64_images = ["aW1n"]
     req.filenames = ["f.jpg"]
 
-    # Vision failure without fallback configured hits default error text.
     coverage_hass.config_entries.async_entries.return_value = [
         SimpleNamespace(
             data={"provider": "Settings", "fallback_provider": "no_fallback"}
@@ -2026,8 +2116,8 @@ async def test_request_call_error_and_title_fallback_branches(
         "create",
         lambda **kwargs: DummyProvider(fail_vision=True),
     )
-    result = await req.call(make_coverage_call())
-    assert result["response_text"].startswith("Couldn't generate content")
+    with pytest.raises(ServiceValidationError, match="vision failed"):
+        await req.call(make_coverage_call())
 
     # Glimpse parse failure exercises nested exception handling.
     monkeypatch.setattr(
@@ -2521,6 +2611,167 @@ async def test_provider_remaining_error_branches(coverage_hass, monkeypatch):
         return_value={"message": {"content": [{"toolUse": {"input": {"x": 1}}}]}}
     )
     assert await iam._make_request({}) == '{"x": 1}'
+
+
+def configure_anthropic_parameters(hass, budget, temperature=0.5, top_p=0.9):
+    hass.data[DOMAIN]["provider_openai"].update(
+        {
+            CONF_PROVIDER: "Anthropic",
+            CONF_THINKING_BUDGET: budget,
+            CONF_TEMPERATURE: temperature,
+            CONF_TOP_P: top_p,
+        }
+    )
+
+
+@pytest.mark.parametrize("builder_name", ["_prepare_vision_data", "_prepare_text_data"])
+def test_anthropic_manual_thinking_serializes_integer_budget_and_omits_sampling(
+    coverage_hass, builder_name
+):
+    configure_anthropic_parameters(coverage_hass, 2048.0)
+    provider = Anthropic(coverage_hass, "k", "claude-haiku-4-5")
+    call_obj = make_coverage_call(max_tokens=4096)
+
+    payload = getattr(provider, builder_name)(call_obj)
+
+    assert payload["thinking"] == {"type": "enabled", "budget_tokens": 2048}
+    assert isinstance(payload["thinking"]["budget_tokens"], int)
+    assert "temperature" not in payload
+    assert "top_p" not in payload
+    assert "top_k" not in payload
+
+
+def test_anthropic_zero_budget_disables_manual_thinking_and_keeps_temperature(
+    coverage_hass,
+):
+    configure_anthropic_parameters(coverage_hass, 0, temperature=0.3)
+    provider = Anthropic(coverage_hass, "k", "claude-haiku-4-5")
+
+    payload = provider._prepare_vision_data(make_coverage_call(max_tokens=4096))
+
+    assert payload["thinking"] == {"type": "disabled"}
+    assert payload["temperature"] == 0.3
+
+
+def test_anthropic_forced_tool_choice_disables_manual_thinking(coverage_hass):
+    configure_anthropic_parameters(coverage_hass, 2048, temperature=0.4)
+    provider = Anthropic(coverage_hass, "k", "claude-haiku-4-5")
+
+    payload = provider._prepare_vision_data(
+        make_coverage_call(
+            max_tokens=4096,
+            response_format="json",
+            structure={"type": "object"},
+        )
+    )
+
+    assert payload["tool_choice"] == {
+        "type": "tool",
+        "name": "return_structured_data",
+    }
+    assert payload["thinking"] == {"type": "disabled"}
+    assert payload["temperature"] == 0.4
+
+
+@pytest.mark.parametrize("model", ["claude-sonnet-4-6", "claude-opus-4-6"])
+def test_anthropic_46_models_keep_fixed_budget_mode(coverage_hass, model):
+    configure_anthropic_parameters(coverage_hass, 2048)
+    provider = Anthropic(coverage_hass, "k", model)
+
+    payload = provider._prepare_text_data(make_coverage_call(max_tokens=4096))
+
+    assert payload["thinking"] == {"type": "enabled", "budget_tokens": 2048}
+    assert "temperature" not in payload
+
+
+@pytest.mark.parametrize(
+    "model",
+    ["claude-opus-4-7", "claude-opus-4-8", "claude-sonnet-5"],
+)
+def test_anthropic_new_models_use_adaptive_thinking_and_omit_sampling(
+    coverage_hass, model
+):
+    configure_anthropic_parameters(coverage_hass, 2048)
+    provider = Anthropic(coverage_hass, "k", model)
+    payload = {
+        "max_tokens": 4096,
+        "temperature": 0.5,
+        "top_p": 0.9,
+        "top_k": 10,
+    }
+
+    result = provider._apply_parameters(payload, make_coverage_call(max_tokens=4096))
+
+    assert result["thinking"] == {"type": "adaptive"}
+    assert "budget_tokens" not in result["thinking"]
+    assert "temperature" not in result
+    assert "top_p" not in result
+    assert "top_k" not in result
+
+
+def test_anthropic_new_models_omit_sampling_even_when_thinking_is_disabled(
+    coverage_hass,
+):
+    configure_anthropic_parameters(coverage_hass, 0)
+    provider = Anthropic(coverage_hass, "k", "claude-opus-4-7")
+    payload = {
+        "max_tokens": 4096,
+        "temperature": 0.5,
+        "top_p": 0.9,
+        "top_k": 10,
+    }
+
+    result = provider._apply_parameters(payload, make_coverage_call(max_tokens=4096))
+
+    assert result["thinking"] == {"type": "disabled"}
+    assert "temperature" not in result
+    assert "top_p" not in result
+    assert "top_k" not in result
+
+
+@pytest.mark.parametrize(
+    ("budget", "max_tokens", "message"),
+    [
+        (-1, 4096, "non-negative integer"),
+        (2048.5, 4096, "non-negative integer"),
+        (512, 4096, "0 or at least 1024"),
+        (2048, 2048, "less than max_tokens"),
+        (4096, 2048, "less than max_tokens"),
+    ],
+)
+def test_anthropic_rejects_invalid_manual_thinking_budgets(
+    coverage_hass, budget, max_tokens, message
+):
+    configure_anthropic_parameters(coverage_hass, budget)
+    provider = Anthropic(coverage_hass, "k", "claude-haiku-4-5")
+
+    with pytest.raises(ServiceValidationError, match=message):
+        provider._prepare_text_data(make_coverage_call(max_tokens=max_tokens))
+
+
+def test_anthropic_rejects_non_numeric_thinking_budget(coverage_hass):
+    configure_anthropic_parameters(coverage_hass, "not-a-number")
+    provider = Anthropic(coverage_hass, "k", "claude-haiku-4-5")
+
+    with pytest.raises(ServiceValidationError, match="must be an integer"):
+        provider._prepare_text_data(make_coverage_call(max_tokens=4096))
+
+
+def test_anthropic_rejects_thinking_for_unsupported_older_model(coverage_hass):
+    configure_anthropic_parameters(coverage_hass, 2048)
+    provider = Anthropic(coverage_hass, "k", "claude-3-5-sonnet")
+
+    with pytest.raises(ServiceValidationError, match="not supported"):
+        provider._prepare_text_data(make_coverage_call(max_tokens=4096))
+
+
+def test_anthropic_unsupported_model_omits_disabled_thinking_parameter(coverage_hass):
+    configure_anthropic_parameters(coverage_hass, 0)
+    provider = Anthropic(coverage_hass, "k", "claude-3-5-sonnet")
+
+    payload = provider._prepare_text_data(make_coverage_call(max_tokens=4096))
+
+    assert "thinking" not in payload
 
 
 if __name__ == "__main__":

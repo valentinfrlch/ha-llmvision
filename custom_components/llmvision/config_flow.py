@@ -15,6 +15,7 @@ from .providers import (
     LocalAI,
     Ollama,
     AWSBedrock,
+    Mistral,
 )
 from .const import (
     DOMAIN,
@@ -55,6 +56,7 @@ from .const import (
     DEFAULT_AWS_MODEL,
     DEFAULT_OPENWEBUI_MODEL,
     DEFAULT_OPENROUTER_MODEL,
+    DEFAULT_MISTRAL_MODEL,
     ENDPOINT_OPENWEBUI,
     ENDPOINT_AZURE,
     ENDPOINT_ANTHROPIC,
@@ -89,6 +91,8 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "OpenAI": self.async_step_openai,
             "OpenWebUI": self.async_step_openwebui,
             "OpenRouter": self.async_step_openrouter,
+            # TODO: Enable in next minor release (1.8.0).
+            # "Mistral": self.async_step_mistral,
         }
 
         step_method = provider_steps.get(provider)
@@ -127,6 +131,8 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 "OpenAI",
                                 "OpenWebUI",
                                 "OpenRouter",
+                                # TODO: Enable in next minor release (1.8.0).
+                                # "Mistral",
                                 "Custom OpenAI",
                             ],
                             "mode": "dropdown",
@@ -253,6 +259,25 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(step_id="localai", data_schema=data_schema)
 
+    def _validate_keep_alive(self, value):
+        """Validate Ollama keep_alive value."""
+        if value is None or (isinstance(value, (int, float))):
+            return value
+
+        val = str(value).strip()
+
+        # Numeric (integer or fractional), including negative
+        if re.fullmatch(r"[+-]?\d+(?:\.\d+)?", val):
+            # Return int when no fractional part
+            return int(val) if re.fullmatch(r"[+-]?\d+", val) else float(val)
+
+        # Go duration parts
+        dur_unit = r"(?:ns|us|µs|ms|s|m|h)"
+        if re.fullmatch(rf"[+-]?(?:\d+(?:\.\d+)?{dur_unit})+", val):
+            return val
+
+        raise ValueError("invalid keep_alive")
+
     async def async_step_ollama(self, user_input=None):
         data_schema = vol.Schema(
             {
@@ -342,6 +367,19 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
             # flatten dict to remove nested keys
             user_input = flatten_dict(user_input)
+            # Validate keep_alive early so we can show a useful form error
+            try:
+                if CONF_KEEP_ALIVE in user_input:
+                    user_input[CONF_KEEP_ALIVE] = self._validate_keep_alive(
+                        user_input.get(CONF_KEEP_ALIVE)
+                    )
+            except ValueError:
+                return self.async_show_form(
+                    step_id="ollama",
+                    data_schema=data_schema,
+                    errors={CONF_KEEP_ALIVE: "invalid_keep_alive"},
+                )
+
             try:
                 ollama = Ollama(
                     self.hass,
@@ -353,7 +391,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         ),
                         "port": user_input[CONF_PORT],
                         "https": user_input[CONF_HTTPS],
-                        "keep_alive": user_input[CONF_KEEP_ALIVE],
+                        "keep_alive": user_input.get(CONF_KEEP_ALIVE),
                         "context_window": user_input[CONF_CONTEXT_WINDOW],
                     },
                 )
@@ -1644,6 +1682,99 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="openrouter",
+            data_schema=data_schema,
+        )
+
+    async def async_step_mistral(self, user_input=None):
+        data_schema = vol.Schema(
+            {
+                vol.Optional("connection_section"): section(
+                    vol.Schema(
+                        {
+                            vol.Required(CONF_API_KEY): selector(
+                                {"text": {"type": "password"}}
+                            ),
+                        }
+                    ),
+                    {"collapsed": False},
+                ),
+                vol.Optional("model_section"): section(
+                    vol.Schema(
+                        {
+                            vol.Required(
+                                CONF_DEFAULT_MODEL, default=DEFAULT_MISTRAL_MODEL
+                            ): str,
+                            vol.Optional(CONF_TEMPERATURE, default=0.5): selector(
+                                {
+                                    "number": {
+                                        "min": 0,
+                                        "max": 1,
+                                        "step": 0.1,
+                                        "mode": "slider",
+                                    }
+                                }
+                            ),
+                            vol.Optional(CONF_TOP_P, default=0.9): selector(
+                                {
+                                    "number": {
+                                        "min": 0,
+                                        "max": 1,
+                                        "step": 0.1,
+                                        "mode": "slider",
+                                    }
+                                }
+                            ),
+                        }
+                    ),
+                    {"collapsed": False},
+                ),
+            }
+        )
+
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            self.init_info = self._get_reconfigure_entry().data
+            suggested = {
+                "connection_section": {
+                    CONF_API_KEY: self.init_info.get(CONF_API_KEY),
+                },
+                "model_section": {
+                    CONF_DEFAULT_MODEL: self.init_info.get(
+                        CONF_DEFAULT_MODEL, DEFAULT_MISTRAL_MODEL
+                    ),
+                    CONF_TEMPERATURE: self.init_info.get(CONF_TEMPERATURE, 0.5),
+                    CONF_TOP_P: self.init_info.get(CONF_TOP_P, 0.9),
+                },
+            }
+            data_schema = self.add_suggested_values_to_schema(data_schema, suggested)
+
+        if user_input is not None:
+            user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+            user_input = flatten_dict(user_input)
+            try:
+                mistral = Mistral(
+                    self.hass,
+                    api_key=user_input[CONF_API_KEY],
+                    model=user_input[CONF_DEFAULT_MODEL],
+                )
+                await mistral.validate()
+                user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates=user_input,
+                    )
+                else:
+                    return self.async_create_entry(title="Mistral", data=user_input)
+            except ServiceValidationError as e:
+                _LOGGER.error(f"Validation failed: {e}")
+                return self.async_show_form(
+                    step_id="mistral",
+                    data_schema=data_schema,
+                    errors={"base": "handshake_failed"},
+                )
+
+        return self.async_show_form(
+            step_id="mistral",
             data_schema=data_schema,
         )
 
