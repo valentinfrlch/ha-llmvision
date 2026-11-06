@@ -158,7 +158,7 @@
                         },
                         "data_description": {
                             "api_key": "Make sure to add credit to your Anthropic account.",
-                            "anthropic_base_url": "Base URL of the Anthropic-compatible API. Leave as the default to use Anthropic directly, or point it at a proxy/gateway (e.g. https://your-proxy.example.com)."
+                            "anthropic_base_url": "Base URL of the Anthropic-compatible API. Leave empty to use Anthropic, or point it at a proxy/gateway."
                         }
                     },
                     "model_section": {
