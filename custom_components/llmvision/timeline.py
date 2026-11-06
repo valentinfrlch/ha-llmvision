@@ -30,8 +30,12 @@ async def _get_category_and_label(
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    # Determine language (fallback to 'en')
-    language = config_entry.options.get(CONF_TIMELINE_LANGUAGE) or "English"
+    # Settings are stored in config_entry.data by the reconfigure flow. Keep
+    # the options fallback for entries created by older releases.
+    language = config_entry.data.get(CONF_TIMELINE_LANGUAGE)
+    if language is None:
+        language = config_entry.options.get(CONF_TIMELINE_LANGUAGE)
+    language = language or "English"
 
     lang_map = {
         "Bulgarian": "bg",
@@ -518,7 +522,9 @@ class Timeline:
 
     def _get_retention_days(self) -> int | None:
         """Return the configured retention window in days (None disables cleanup)."""
-        raw_value = self._config_entry.options.get(CONF_RETENTION_TIME)
+        raw_value = self._config_entry.data.get(CONF_RETENTION_TIME)
+        if raw_value is None:
+            raw_value = self._config_entry.options.get(CONF_RETENTION_TIME)
         if raw_value is None:
             raw_value = self.retention_time
 

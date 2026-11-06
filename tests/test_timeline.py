@@ -146,6 +146,7 @@ def hass_with_executor():
 def entry_english():
     """Config entry that defaults to English (no language override)."""
     entry = Mock()
+    entry.data = {}
     entry.options = {}
     return entry
 
@@ -215,6 +216,7 @@ class TestGetCategoryAndLabel:
     async def test_unknown_language_falls_back_to_english(self, hass_with_executor):
         """An unrecognised language name falls back to the English JSON file."""
         entry = Mock()
+        entry.data = {}
         entry.options = {CONF_TIMELINE_LANGUAGE: "Klingon"}
         category, label = await _get_category_and_label(
             hass_with_executor, entry, "a dog is in the yard"
@@ -233,6 +235,7 @@ class TestGetCategoryAndLabel:
     async def test_supported_language_loaded(self, hass_with_executor):
         """German language file is loaded without errors when configured."""
         entry = Mock()
+        entry.data = {}
         entry.options = {CONF_TIMELINE_LANGUAGE: "German"}
         category, label = await _get_category_and_label(
             hass_with_executor, entry, "irrelevant query xyz"
@@ -240,6 +243,19 @@ class TestGetCategoryAndLabel:
         # Must return strings – no exception
         assert isinstance(category, str)
         assert isinstance(label, str)
+
+    async def test_data_language_precedes_legacy_options(self, hass_with_executor):
+        """The reconfigure setting in data wins over an old options value."""
+        entry = Mock()
+        entry.data = {CONF_TIMELINE_LANGUAGE: "German"}
+        entry.options = {CONF_TIMELINE_LANGUAGE: "English"}
+
+        category, label = await _get_category_and_label(
+            hass_with_executor, entry, "ein hund im garten"
+        )
+
+        assert category == "animal"
+        assert label == "dog"
 
     async def test_respects_category_priority(self, hass_with_executor, entry_english):
         """Priority is:
@@ -409,7 +425,7 @@ class TestGetRetentionDays:
 
     @pytest.fixture
     def tl(self, build_timeline):
-        tl = build_timeline()
+        tl = build_timeline(retention=None)
         tl.retention_time = None
         return tl
 
@@ -442,15 +458,20 @@ class TestGetRetentionDays:
         tl._config_entry.options = {CONF_RETENTION_TIME: "not-a-number"}
         assert tl._get_retention_days() is None
 
-    def test_options_overrides_data_level(self, tl):
+    def test_data_level_precedes_legacy_options(self, tl):
+        tl._config_entry.data = {CONF_RETENTION_TIME: 99}
         tl._config_entry.options = {CONF_RETENTION_TIME: 5}
-        tl.retention_time = 99
-        assert tl._get_retention_days() == 5
+        assert tl._get_retention_days() == 99
 
     def test_fallback_to_data_level_when_options_empty(self, tl):
         tl._config_entry.options = {}
         tl.retention_time = 21
         assert tl._get_retention_days() == 21
+
+    def test_legacy_options_are_used_when_data_is_unset(self, tl):
+        tl._config_entry.data = {}
+        tl._config_entry.options = {CONF_RETENTION_TIME: 5}
+        assert tl._get_retention_days() == 5
 
 
 # ===========================================================================
