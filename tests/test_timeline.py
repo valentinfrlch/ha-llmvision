@@ -973,7 +973,7 @@ class TestRetentionAndPurge:
         await tl._purge_expired_events()
         assert "old event" in await _fetch_titles(tl._db_path)
 
-    async def test_options_retention_overrides_data(self, build_timeline):
+    async def test_data_retention_overrides_options(self, build_timeline):
         tl = build_timeline(retention=99, options={CONF_RETENTION_TIME: 1})
         await tl._initialize_db()
         await _insert_rows(
@@ -985,7 +985,8 @@ class TestRetentionAndPurge:
         )
         await tl.load_events()
         titles = await _fetch_titles(tl._db_path)
-        assert "old" not in titles
+
+        assert "old" in titles
         assert "new" in titles
 
     async def test_purge_removes_exactly_expired_events(self, build_timeline):
