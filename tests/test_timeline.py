@@ -130,6 +130,16 @@ def build_timeline(tmp_path, monkeypatch):
 
 
 @pytest.fixture
+def local_time_zone():
+    """Run in a non-UTC HA time zone, restoring the default afterwards."""
+    previous = dt_util.DEFAULT_TIME_ZONE
+    zone = dt_util.get_time_zone("America/New_York")
+    dt_util.set_default_time_zone(zone)
+    yield zone
+    dt_util.set_default_time_zone(previous)
+
+
+@pytest.fixture
 def hass_with_executor():
     """Minimal mock hass where async_add_executor_job actually executes the callable."""
     hass = Mock()
@@ -405,10 +415,13 @@ class TestEnsureDatetime:
         assert isinstance(result, datetime.datetime)
         assert result.tzinfo is not None
 
-    def test_naive_datetime_becomes_utc(self, tl):
+    def test_naive_datetime_is_local_time(self, tl, local_time_zone):
         naive = datetime.datetime(2024, 6, 1, 12, 0, 0)
         result = tl._ensure_datetime(naive)
-        assert result.tzinfo == datetime.timezone.utc
+        assert result.tzinfo == local_time_zone
+        assert result == datetime.datetime(
+            2024, 6, 1, 16, 0, 0, tzinfo=datetime.timezone.utc
+        )
 
     def test_aware_datetime_returned_unchanged(self, tl):
         aware = datetime.datetime(2024, 6, 1, 12, 0, 0, tzinfo=datetime.timezone.utc)
@@ -771,6 +784,22 @@ class TestGetEventsJson:
         past = dt_util.utcnow() - datetime.timedelta(days=200)
         events = await tl.get_events_json(limit=None, end=past.isoformat())
         assert events == []
+
+    async def test_naive_end_is_local_time(self, build_timeline, local_time_zone):
+        # A naive "now" from a datetime selector must not cut off the last
+        # hours of events (it was read as UTC, 4-5 h early in New York)
+        tl = build_timeline(retention=0)
+        await self._setup(tl)
+        now_naive = dt_util.now().replace(tzinfo=None)
+        events = await tl.get_events_json(
+            limit=None,
+            start=(now_naive - datetime.timedelta(days=7)).isoformat(sep=" "),
+            end=now_naive.isoformat(sep=" "),
+            include_no_activity=True,
+        )
+        titles = [e["title"] for e in events]
+        assert "no activity observed" in titles  # started 2.4 h ago
+        assert "very old event" not in titles
 
     async def test_camera_filter_case_insensitive(self, build_timeline):
         tl = build_timeline(retention=0)
