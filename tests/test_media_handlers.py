@@ -259,6 +259,39 @@ class TestMediaProcessor:
         assert result == b"ok"
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize("outcome", ["success", "status", "exception"])
+    async def test_fetch_never_logs_url_credentials(self, processor, caplog, outcome):
+        import logging
+
+        url = "http://user:password@camera/api/camera_proxy/camera.front?token=camera-secret#fragment-secret"
+        if outcome == "success":
+            response = SimpleNamespace(
+                ok=True, status=200, read=AsyncMock(return_value=b"ok")
+            )
+            processor.session.get.return_value = _AsyncResponseContext(response)
+        elif outcome == "status":
+            processor.session.get.return_value = _AsyncResponseContext(
+                SimpleNamespace(ok=False, status=403)
+            )
+        else:
+            processor.session.get.side_effect = RuntimeError(f"failed for {url}")
+        with caplog.at_level(
+            logging.DEBUG, logger="custom_components.llmvision"
+        ), patch(
+            "custom_components.llmvision.media_handlers.asyncio.sleep", AsyncMock()
+        ):
+            result = await processor._fetch(
+                url, max_retries=2, retry_delay=0, entity_name="camera.front"
+            )
+        assert result == (b"ok" if outcome == "success" else None)
+        assert all(
+            record.args[0] == url for record in processor.session.get.call_args_list
+        )
+        for secret in ("password", "camera-secret", "fragment-secret"):
+            assert secret not in caplog.text
+        assert "camera.front" in caplog.text
+
+    @pytest.mark.asyncio
     async def test_fetch_streams_to_target_file(self, processor, tmp_path):
         """_fetch should stream large responses to disk when target_file is provided."""
         target = tmp_path / "clip.mp4"
@@ -608,10 +641,39 @@ class TestMediaProcessor:
             )
 
         assert (
-            processor.client.add_frame.call_args.kwargs["filename"]
-            == "path?authSig=1 (frame 1)"
+            processor.client.add_frame.call_args.kwargs["filename"] == "clip (frame 1)"
         )
         processor._expose_image.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_signed_video_failure_does_not_expose_signature(
+        self, processor, caplog
+    ):
+        import logging
+
+        signed = "/api/frigate/clip.mp4?authSig=video-secret"
+        processor._fetch = AsyncMock(return_value=None)
+        with caplog.at_level(
+            logging.DEBUG, logger="custom_components.llmvision"
+        ), patch(
+            "custom_components.llmvision.media_handlers.get_url",
+            return_value="http://ha.local",
+        ), pytest.raises(
+            ServiceValidationError
+        ) as exc:
+            await processor.add_videos(
+                video_paths=[signed],
+                event_ids=[],
+                max_frames=1,
+                target_width=128,
+                include_filename=True,
+                expose_images=False,
+            )
+        assert "video-secret" not in caplog.text
+        assert "video-secret" not in str(exc.value)
+        assert exc.value.__suppress_context__
+        fetched = processor._fetch.await_args.args[0]
+        assert "authSig=video-secret" in fetched
 
     @pytest.mark.asyncio
     async def test_add_video_raises_when_http_download_is_empty(
@@ -636,7 +698,7 @@ class TestMediaProcessor:
         with patch(
             "custom_components.llmvision.media_handlers.tempfile.NamedTemporaryFile",
             return_value=FakeTempFile(temp_video),
-        ), pytest.raises(ServiceValidationError, match="Failed to fetch video"):
+        ), pytest.raises(ServiceValidationError, match="Error processing video"):
             await processor.add_video(
                 video_path="http://example.com/clip.mp4",
                 base_url="http://ha.local",
@@ -667,7 +729,7 @@ class TestMediaProcessor:
         with patch(
             "custom_components.llmvision.media_handlers.asyncio.create_subprocess_exec",
             AsyncMock(return_value=FakeProcess()),
-        ), pytest.raises(ServiceValidationError, match="No frames extracted"):
+        ), pytest.raises(ServiceValidationError, match="Error processing video"):
             await processor.add_video(
                 video_path="/tmp/empty.mp4",
                 base_url="http://ha.local",
@@ -694,7 +756,7 @@ class TestMediaProcessor:
         with patch(
             "custom_components.llmvision.media_handlers.asyncio.create_subprocess_exec",
             AsyncMock(return_value=FakeProcess()),
-        ), pytest.raises(ServiceValidationError, match="stdout not available"):
+        ), pytest.raises(ServiceValidationError, match="Error processing video"):
             await processor.add_video(
                 video_path="/tmp/no-stdout.mp4",
                 base_url="http://ha.local",

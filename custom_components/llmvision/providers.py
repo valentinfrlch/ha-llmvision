@@ -7,7 +7,6 @@ from homeassistant.core import HomeAssistant
 from functools import partial
 from typing import Any, cast
 import logging
-import inspect
 import re
 import json
 import base64
@@ -201,14 +200,16 @@ class Request:
                 model=call.model,
             )
         except Exception as e:
-            _LOGGER.error(f"Provider factory failed for {provider_name}: {e}")
-            raise ServiceValidationError("invalid_provider")
+            _LOGGER.error(
+                "Provider factory failed for %s (%s)", provider_name, type(e).__name__
+            )
+            raise ServiceValidationError("invalid_provider") from None
 
         try:
             # Make call to provider
             response_text = await provider_instance.vision_request(call)
         except Exception as e:
-            _LOGGER.error(f"Provider {provider_name} failed: {e}")
+            _LOGGER.error("Provider %s failed (%s)", provider_name, type(e).__name__)
             # Try fallback if configured and not already tried
             if (
                 fallback_provider
@@ -221,13 +222,10 @@ class Request:
                 call.model = None
                 return await self.call(call, _is_fallback_retry=True)
             else:
-                error_message = str(e).strip() or e.__class__.__name__
-                raise ServiceValidationError(error_message) from e
+                raise ServiceValidationError("Provider request failed") from None
         # Handle Glimpse-v1 responses
         try:
-            _LOGGER.debug(
-                f"Provider: {provider_name}, Model: {call.model}, Response: {response_text}"
-            )
+            _LOGGER.debug("Provider %s returned a response", provider_name)
             _LOGGER.debug(f"Is Glimpse Model: {call.model_is_glimpse()}")
             if hasattr(call, "model_is_glimpse") and call.model_is_glimpse():
                 try:
@@ -244,7 +242,9 @@ class Request:
                             result["response_text"] = str(desc_val)
                         return result
                 except Exception as e:
-                    _LOGGER.debug(f"Ollama Glimpse JSON parse failed: {e}")
+                    _LOGGER.debug(
+                        "Ollama Glimpse JSON parse failed (%s)", type(e).__name__
+                    )
         except Exception:
             pass
 
@@ -267,7 +267,11 @@ class Request:
                 )
                 gen_title = await provider_instance.title_request(call)
         except Exception as e:
-            _LOGGER.error(f"Provider {provider_name} failed to generate title: {e}")
+            _LOGGER.error(
+                "Provider %s failed to generate title (%s)",
+                provider_name,
+                type(e).__name__,
+            )
             # Try fallback if configured and not already tried
             if (
                 fallback_provider
@@ -440,9 +444,7 @@ class Provider(ABC):
         self.model = model
         self.endpoint = endpoint
         self.request_timeout = self._resolve_request_timeout()
-        _LOGGER.debug(
-            f"Provider initialized: {self.__class__.__name__.title()}(model={self.model}, endpoint={self.endpoint})"
-        )
+        _LOGGER.debug("Provider initialized: %s", self.__class__.__name__)
 
     @abstractmethod
     async def _make_request(self, data: dict) -> str:
@@ -527,11 +529,9 @@ class Provider(ABC):
 
     async def _post(self, url: str, headers: dict, data: dict) -> dict:
         """Post data to url and return response data"""
-        _LOGGER.debug(f"Request data: {Request.sanitize_data(data)}")
-        # Sanitize url
-        san_url = re.sub(r"\?key=[^&]*", "", url)
+        # URLs, headers, payloads, responses and exceptions may contain secrets.
+        _LOGGER.debug("Sending provider request")
         try:
-            _LOGGER.debug(f"Posting to {san_url}")
             response = await self.session.post(
                 url,
                 headers=headers,
@@ -539,17 +539,21 @@ class Provider(ABC):
                 timeout=ClientTimeout(total=self.request_timeout),
             )
         except Exception as e:
-            raise ServiceValidationError(f"Request failed: {e}")
+            _LOGGER.error("Provider request failed (%s)", type(e).__name__)
+            raise ServiceValidationError("Provider request failed") from None
 
         if response.status != 200:
-            frame = inspect.stack()[1]
-            provider = frame.frame.f_locals["self"].__class__.__name__.lower()
-            parsed_response = await self._resolve_error(response, provider)
-            raise ServiceValidationError(parsed_response)
-        else:
-            response_data = await response.json()
-            _LOGGER.debug(f"Response data: {response_data}")
-            return response_data
+            _LOGGER.warning("Provider request failed (HTTP %s)", response.status)
+            raise ServiceValidationError(
+                f"Provider request failed (HTTP {response.status})"
+            )
+        try:
+            return await response.json()
+        except Exception as e:
+            _LOGGER.error("Provider response could not be read (%s)", type(e).__name__)
+            raise ServiceValidationError(
+                "Provider response could not be read"
+            ) from None
 
     async def _resolve_error(self, response, provider: str) -> str:
         """Translate response status to error message for both HTTP and SDK responses"""
@@ -562,8 +566,6 @@ class Provider(ABC):
                 full_response_text = json.dumps(response)
         except Exception:
             full_response_text = str(response)
-
-        _LOGGER.debug(f"[INFO] Full Response: {full_response_text}")
 
         # Try to parse JSON
         try:
@@ -664,12 +666,6 @@ class OpenAI(Provider):
     async def _make_request(self, data: dict) -> str:
         headers = self._generate_headers()
         url = self._get_request_url()
-
-        # Debug logging for OpenRouter
-        if "openrouter.ai" in url:
-            print(f"[OpenRouter DEBUG] URL: {url}")
-            print(f"[OpenRouter DEBUG] Headers: {headers}")
-            print(f"[OpenRouter DEBUG] Data: {Request.sanitize_data(data)}")
 
         response = await self._post(url=url, headers=headers, data=data)
         choices = response.get("choices") if isinstance(response, dict) else None
@@ -1301,9 +1297,7 @@ class Anthropic(Provider):
             "max_tokens": 1,
             "temperature": 0.5,
         }
-        await self._post(
-            url=self._get_request_url(), headers=header, data=payload
-        )
+        await self._post(url=self._get_request_url(), headers=header, data=payload)
 
 
 class Google(Provider):
@@ -1345,8 +1339,8 @@ class Google(Provider):
                 )
             response_text = content.get("parts")[0].get("text")
         except Exception as e:
-            _LOGGER.error(f"Error: {e}")
-            raise e
+            _LOGGER.error("Google request failed (%s)", type(e).__name__)
+            raise ServiceValidationError("Google request failed") from None
         return response_text
 
     def _prepare_vision_data(self, call: Any) -> dict:
@@ -1769,7 +1763,7 @@ class LocalAI(Provider):
             if response.status != 200:
                 raise ServiceValidationError("handshake_failed")
         except Exception:
-            raise ServiceValidationError("handshake_failed")
+            raise ServiceValidationError("handshake_failed") from None
 
     def supports_structured_output(self) -> bool:
         """LocalAI supports structured output via OpenAI-compatible JSON schema format."""
@@ -1916,16 +1910,16 @@ class Ollama(Provider):
         protocol = "https" if self.endpoint.get("https") else "http"
 
         try:
-            _LOGGER.info(f"Checking connection to {protocol}://{ip_address}:{port}")
+            _LOGGER.info("Checking Ollama connection")
             response = await session.get(
                 f"{protocol}://{ip_address}:{port}/api/tags", headers={}
             )
-            _LOGGER.debug(f"Response: {response}")
+            _LOGGER.debug("Ollama connection response received")
             if response.status != 200:
                 raise ServiceValidationError("handshake_failed")
         except Exception as e:
-            _LOGGER.error(f"Error: {e}")
-            raise ServiceValidationError("handshake_failed")
+            _LOGGER.error("Ollama connection failed (%s)", type(e).__name__)
+            raise ServiceValidationError("handshake_failed") from None
 
 
 class AWSBedrock(Provider):
@@ -2021,7 +2015,7 @@ class AWSBedrock(Provider):
 
     async def invoke_bedrock(self, model: str, data: dict) -> dict:
         """Post data to url and return response data"""
-        _LOGGER.debug(f"AWS Bedrock request data: {Request.sanitize_data(data)}")
+        _LOGGER.debug("Sending AWS Bedrock request")
 
         try:
             _LOGGER.info(f"Invoking Bedrock model {model} in {self.aws_region}")
@@ -2053,16 +2047,16 @@ class AWSBedrock(Provider):
             response = await self.hass.async_add_executor_job(
                 partial(client.converse, **converse_kwargs)
             )
-            _LOGGER.debug(f"AWS Bedrock call Response: {response}")
+            _LOGGER.debug("AWS Bedrock call completed")
 
         except Exception as e:
-            raise ServiceValidationError(f"Request failed: {e}")
+            _LOGGER.error("AWS Bedrock request failed (%s)", type(e).__name__)
+            raise ServiceValidationError("AWS Bedrock request failed") from None
 
         if response["ResponseMetadata"]["HTTPStatusCode"] != 200:
-            frame = inspect.stack()[1]
-            provider = frame.frame.f_locals["self"].__class__.__name__.lower()
-            parsed_response = await self._resolve_error(response, provider)
-            raise ServiceValidationError(parsed_response)
+            status = response["ResponseMetadata"]["HTTPStatusCode"]
+            _LOGGER.warning("AWS Bedrock request failed (HTTP %s)", status)
+            raise ServiceValidationError(f"AWS Bedrock request failed (HTTP {status})")
         else:
             # get observability data
             metrics = response.get("metrics")
@@ -2075,7 +2069,7 @@ class AWSBedrock(Provider):
                 f"AWS Bedrock call latency: {latency}ms inputTokens: {tokens_in} outputTokens: {tokens_out} totalTokens: {tokens_total}"
             )
             response_data = response.get("output")
-            _LOGGER.debug(f"AWS Bedrock call response data: {response_data}")
+            _LOGGER.debug("AWS Bedrock response received")
         return response_data
 
     def _prepare_vision_data(self, call: Any) -> dict:

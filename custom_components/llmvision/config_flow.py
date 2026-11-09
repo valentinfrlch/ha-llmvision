@@ -92,7 +92,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "OpenWebUI": self.async_step_openwebui,
             "OpenRouter": self.async_step_openrouter,
             # TODO: Enable in next minor release (1.8.0).
-            # "Mistral": self.async_step_mistral,
+            # "Mistral": self.async_step_mistral,
         }
 
         step_method = provider_steps.get(provider)
@@ -250,7 +250,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         data=user_input,
                     )
             except ServiceValidationError as e:
-                _LOGGER.error(f"Validation failed: {e}")
+                _LOGGER.error("Provider validation failed (%s)", type(e).__name__)
                 return self.async_show_form(
                     step_id="localai",
                     data_schema=data_schema,
@@ -409,7 +409,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         title=f"Ollama ({user_input[CONF_IP_ADDRESS]})", data=user_input
                     )
             except ServiceValidationError as e:
-                _LOGGER.error(f"Validation failed: {e}")
+                _LOGGER.error("Provider validation failed (%s)", type(e).__name__)
                 return self.async_show_form(
                     step_id="ollama",
                     data_schema=data_schema,
@@ -523,7 +523,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         data=user_input,
                     )
             except ServiceValidationError as e:
-                _LOGGER.error(f"Validation failed: {e}")
+                _LOGGER.error("Provider validation failed (%s)", type(e).__name__)
                 return self.async_show_form(
                     step_id="openwebui",
                     data_schema=data_schema,
@@ -640,7 +640,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     # New config entry
                     return self.async_create_entry(title="OpenAI", data=user_input)
             except ServiceValidationError as e:
-                _LOGGER.error(f"Validation failed: {e}")
+                _LOGGER.error("Provider validation failed (%s)", type(e).__name__)
                 return self.async_show_form(
                     step_id="openai",
                     data_schema=data_schema,
@@ -765,7 +765,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     # New config entry
                     return self.async_create_entry(title="Azure", data=user_input)
             except ServiceValidationError as e:
-                _LOGGER.error(f"Validation failed: {e}")
+                _LOGGER.error("Provider validation failed (%s)", type(e).__name__)
                 return self.async_show_form(
                     step_id="azure",
                     data_schema=data_schema,
@@ -889,7 +889,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         title="Anthropic Claude", data=user_input
                     )
             except ServiceValidationError as e:
-                _LOGGER.error(f"Validation failed: {e}")
+                _LOGGER.error("Provider validation failed (%s)", type(e).__name__)
                 return self.async_show_form(
                     step_id="anthropic",
                     data_schema=data_schema,
@@ -1000,7 +1000,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         title="Google Gemini", data=user_input
                     )
             except ServiceValidationError as e:
-                _LOGGER.error(f"Validation failed: {e}")
+                _LOGGER.error("Provider validation failed (%s)", type(e).__name__)
                 return self.async_show_form(
                     step_id="google",
                     data_schema=data_schema,
@@ -1098,7 +1098,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     # New config entry
                     return self.async_create_entry(title="Groq", data=user_input)
             except ServiceValidationError as e:
-                _LOGGER.error(f"Validation failed: {e}")
+                _LOGGER.error("Provider validation failed (%s)", type(e).__name__)
                 return self.async_show_form(
                     step_id="groq",
                     data_schema=data_schema,
@@ -1209,7 +1209,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         title="Custom OpenAI compatible Provider", data=user_input
                     )
             except ServiceValidationError as e:
-                _LOGGER.error(f"Validation failed: {e}")
+                _LOGGER.error("Provider validation failed (%s)", type(e).__name__)
                 return self.async_show_form(
                     step_id="custom_openai",
                     data_schema=data_schema,
@@ -1325,7 +1325,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         title="AWS Bedrock Provider", data=user_input
                     )
             except ServiceValidationError as e:
-                _LOGGER.error(f"Validation failed: {e}")
+                _LOGGER.error("Provider validation failed (%s)", type(e).__name__)
                 return self.async_show_form(
                     step_id="aws_bedrock",
                     data_schema=data_schema,
@@ -1340,7 +1340,6 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_settings(self, user_input=None):
         _LOGGER.debug("Settings step")
         domain_data = self.hass.data.get(DOMAIN) or {}
-        _LOGGER.debug(f"Domain data: {domain_data}")
         fallback_options = [{"label": "No Fallback", "value": "no_fallback"}]
         for entry_id, entry_data in domain_data.items():
             provider_label = entry_data.get(CONF_PROVIDER, entry_id)
@@ -1519,9 +1518,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_MEMORY_STRINGS: self.init_info.get(CONF_MEMORY_STRINGS),
             },
         }
-        _LOGGER.debug(f"Suggested values: {suggested}, adding to schema...")
         data_schema = self.add_suggested_values_to_schema(data_schema, suggested)
-        _LOGGER.debug(f"Data schema after suggestions: {data_schema}")
 
         if user_input is not None:
             user_input[CONF_PROVIDER] = self.init_info[CONF_PROVIDER]
@@ -1673,7 +1670,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     # New config entry
                     return self.async_create_entry(title="OpenRouter", data=user_input)
             except ServiceValidationError as e:
-                _LOGGER.error(f"Validation failed: {e}")
+                _LOGGER.error("Provider validation failed (%s)", type(e).__name__)
                 return self.async_show_form(
                     step_id="openrouter",
                     data_schema=data_schema,
@@ -1766,7 +1763,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 else:
                     return self.async_create_entry(title="Mistral", data=user_input)
             except ServiceValidationError as e:
-                _LOGGER.error(f"Validation failed: {e}")
+                _LOGGER.error("Provider validation failed (%s)", type(e).__name__)
                 return self.async_show_form(
                     step_id="mistral",
                     data_schema=data_schema,

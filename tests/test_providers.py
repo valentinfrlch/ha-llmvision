@@ -38,14 +38,12 @@ from custom_components.llmvision.const import (
     CONF_AZURE_DEPLOYMENT,
     CONF_AZURE_VERSION,
     CONF_CUSTOM_OPENAI_ENDPOINT,
-    CONF_ANTHROPIC_BASE_URL,
     CONF_IP_ADDRESS,
     CONF_HTTPS,
     CONF_PORT,
     CONF_THINK,
     CONF_THINKING_BUDGET,
     ENDPOINT_GROQ,
-    ENDPOINT_ANTHROPIC,
     DEFAULT_OPENAI_MODEL,
     DEFAULT_ANTHROPIC_MODEL,
     DEFAULT_AZURE_MODEL,
@@ -860,67 +858,6 @@ class TestAnthropic:
             assert headers["content-type"] == "application/json"
             assert "anthropic-version" in headers
 
-    def test_default_endpoint(self, mock_hass):
-        """Test Anthropic defaults to the official endpoint."""
-        with patch("custom_components.llmvision.providers.async_get_clientsession"):
-            anthropic = Anthropic(mock_hass, "test_api_key", "claude-3")
-
-            assert anthropic._get_request_url() == ENDPOINT_ANTHROPIC
-
-    @pytest.mark.parametrize(
-        ("base_url", "expected"),
-        [
-            # Full messages endpoint is used as-is
-            (
-                "https://proxy.example.com/v1/messages",
-                "https://proxy.example.com/v1/messages",
-            ),
-            # Trailing slash is normalized away
-            (
-                "https://proxy.example.com/v1/messages/",
-                "https://proxy.example.com/v1/messages",
-            ),
-            # Versioned base gets /messages appended
-            (
-                "https://proxy.example.com/v1",
-                "https://proxy.example.com/v1/messages",
-            ),
-            # Bare host gets the full /v1/messages path appended
-            (
-                "https://proxy.example.com",
-                "https://proxy.example.com/v1/messages",
-            ),
-            (
-                "https://proxy.example.com/anthropic",
-                "https://proxy.example.com/anthropic/v1/messages",
-            ),
-        ],
-    )
-    def test_get_request_url_custom_base(self, mock_hass, base_url, expected):
-        """Custom API bases are normalized to a messages endpoint."""
-        with patch("custom_components.llmvision.providers.async_get_clientsession"):
-            anthropic = Anthropic(
-                mock_hass,
-                "test_api_key",
-                "claude-3",
-                endpoint={"base_url": base_url},
-            )
-
-            assert anthropic._get_request_url() == expected
-
-    @pytest.mark.parametrize("base_url", ["", "   ", None])
-    def test_get_request_url_falls_back_to_default(self, mock_hass, base_url):
-        """Empty/blank custom bases fall back to the official endpoint."""
-        with patch("custom_components.llmvision.providers.async_get_clientsession"):
-            anthropic = Anthropic(
-                mock_hass,
-                "test_api_key",
-                "claude-3",
-                endpoint={"base_url": base_url},
-            )
-
-            assert anthropic._get_request_url() == ENDPOINT_ANTHROPIC
-
 
 class TestGoogle:
     """Test Google provider class."""
@@ -1152,69 +1089,6 @@ class TestAWSBedrock:
             assert headers["Authorization"] == "Bearer test_token"
             assert headers["Content-type"] == "application/json"
 
-    @pytest.mark.parametrize(
-        "model, expects_temperature",
-        [
-            ("anthropic.claude-sonnet-4-6", True),
-            ("us.anthropic.claude-sonnet-4-5-20250929-v1:0", True),
-            ("anthropic.claude-3-7-sonnet-20250219-v1:0", True),
-            ("amazon.nova-pro-v1:0", True),
-            ("anthropic.claude-sonnet-5", False),
-            ("us.anthropic.claude-sonnet-5-v1:0", False),
-            ("global.anthropic.claude-sonnet-5-5-v1:0", False),
-            ("anthropic.claude-opus-4-7", False),
-        ],
-    )
-    def test_inference_config_temperature_by_model(
-        self, coverage_hass, model, expects_temperature
-    ):
-        """Test temperature compatibility across Bedrock models."""
-        bedrock = AWSBedrock(coverage_hass, "AK", "SK", "us-east-1", model)
-        call_obj = make_coverage_call()
-
-        for payload in (
-            bedrock._prepare_vision_data(call_obj),
-            bedrock._prepare_text_data(call_obj),
-        ):
-            config = payload["inferenceConfig"]
-            assert config["maxTokens"] == call_obj.max_tokens
-            assert ("temperature" in config) is expects_temperature
-
-    @pytest.mark.anyio
-    async def test_returns_answer_after_reasoning_block(self, coverage_hass):
-        """Test the answer is returned when a reasoning block comes first."""
-        message = {
-            "content": [
-                {"reasoningContent": {"reasoningText": {"text": "thinking"}}},
-                {"text": "answer"},
-            ]
-        }
-
-        bearer = AWSBedrock(coverage_hass, "", "", "us-east-1", "m", api_key="k")
-        bearer._post = AsyncMock(return_value={"output": {"message": message}})
-        assert await bearer._make_request({}) == "answer"
-
-        iam = AWSBedrock(coverage_hass, "AK", "SK", "us-east-1", "m")
-        iam.invoke_bedrock = AsyncMock(return_value={"message": message})
-        assert await iam._make_request({}) == "answer"
-
-    @pytest.mark.anyio
-    async def test_validate_omits_unsupported_temperature(self, coverage_hass):
-        """Test validation omits unsupported temperature."""
-        bedrock = AWSBedrock(
-            coverage_hass,
-            "AK",
-            "SK",
-            "us-east-1",
-            "global.anthropic.claude-sonnet-5-5-v1:0",
-        )
-        bedrock.invoke_bedrock = AsyncMock(return_value={})
-
-        await bedrock.validate()
-
-        data = bedrock.invoke_bedrock.call_args.kwargs["data"]
-        assert data["inferenceConfig"] == {"maxTokens": 10}
-
 
 class TestProviderFactory:
     """Test ProviderFactory class."""
@@ -1244,7 +1118,7 @@ class TestProviderFactory:
             assert isinstance(provider, AzureOpenAI)
 
     def test_create_anthropic(self, mock_hass):
-        """Test ProviderFactory creates Anthropic provider with default endpoint."""
+        """Test ProviderFactory creates Anthropic provider."""
         config = {CONF_API_KEY: "test_key"}
 
         with patch("custom_components.llmvision.providers.async_get_clientsession"):
@@ -1253,25 +1127,6 @@ class TestProviderFactory:
             )
 
             assert isinstance(provider, Anthropic)
-            assert provider._get_request_url() == ENDPOINT_ANTHROPIC
-
-    def test_create_anthropic_custom_base_url(self, mock_hass):
-        """Test ProviderFactory passes a custom Anthropic base URL."""
-        config = {
-            CONF_API_KEY: "test_key",
-            CONF_ANTHROPIC_BASE_URL: "https://proxy.example.com",
-        }
-
-        with patch("custom_components.llmvision.providers.async_get_clientsession"):
-            provider = ProviderFactory.create(
-                mock_hass, "Anthropic", config, "claude-3"
-            )
-
-            assert isinstance(provider, Anthropic)
-            assert (
-                provider._get_request_url()
-                == "https://proxy.example.com/v1/messages"
-            )
 
     def test_create_google(self, mock_hass):
         """Test ProviderFactory creates Google provider."""
@@ -1573,6 +1428,128 @@ async def test_request_call_generate_title_and_fallback_coverage(
 
 
 @pytest.mark.anyio
+async def test_provider_post_never_exposes_endpoint_credentials(coverage_hass, caplog):
+    import logging
+
+    url = "https://user:password@example.test/path?key=google-secret&authSig=signed-secret"
+    with caplog.at_level(logging.DEBUG, logger="custom_components.llmvision"):
+        provider = OpenAI(
+            coverage_hass, "api-secret", "gpt-4", endpoint={"base_url": url}
+        )
+        provider.session.post = AsyncMock(
+            side_effect=RuntimeError(f"request failed: {url}")
+        )
+        with pytest.raises(ServiceValidationError) as exc:
+            await provider._post(url, {}, {})
+    provider.session.post.assert_awaited_once()
+    assert provider.session.post.await_args.args[0] == url
+    for secret in ("password", "google-secret", "signed-secret"):
+        assert secret not in caplog.text
+        assert secret not in str(exc.value)
+    assert exc.value.__suppress_context__
+
+
+@pytest.mark.anyio
+async def test_provider_post_does_not_log_request_or_response_data(
+    coverage_hass, caplog
+):
+    import logging
+
+    url = "https://user:password@example.test/path-secret?other=1&key=query-secret#fragment-secret"
+    headers = {"Authorization": "Bearer header-secret"}
+    payload = {"prompt": "payload-secret"}
+    response = Mock(
+        status=200, json=AsyncMock(return_value={"text": "response-secret"})
+    )
+    with caplog.at_level(logging.DEBUG, logger="custom_components.llmvision"):
+        provider = OpenAI(
+            coverage_hass, "api-secret", "model", endpoint={"base_url": url}
+        )
+        provider.session.post = AsyncMock(return_value=response)
+        assert await provider._post(url, headers, payload) == {
+            "text": "response-secret"
+        }
+        provider.session.post.assert_awaited_once()
+        assert provider.session.post.await_args.args[0] == url
+        error_response = Mock(
+            status=401,
+            text=AsyncMock(return_value='{"error":{"message":"body-secret"}}'),
+        )
+        provider.session.post = AsyncMock(return_value=error_response)
+        with pytest.raises(ServiceValidationError, match="HTTP 401") as exc:
+            await provider._post(url, headers, payload)
+        error_response.text.assert_not_awaited()
+    for secret in (
+        "password",
+        "path-secret",
+        "query-secret",
+        "fragment-secret",
+        "header-secret",
+        "payload-secret",
+        "response-secret",
+        "body-secret",
+        "api-secret",
+    ):
+        assert secret not in caplog.text
+        assert secret not in str(exc.value)
+
+
+@pytest.mark.anyio
+async def test_provider_and_bedrock_exception_tracebacks_are_safe(
+    monkeypatch, coverage_hass, caplog
+):
+    import logging
+    import traceback
+
+    coverage_hass.config_entries.async_entries.return_value = []
+    request = Request(coverage_hass, "message", 10, 0.2)
+    request.base64_images = ["aW1n"]
+    request.filenames = ["frame"]
+    failing_provider = Mock(
+        vision_request=AsyncMock(side_effect=RuntimeError("provider-secret"))
+    )
+    monkeypatch.setattr(ProviderFactory, "create", lambda **kwargs: failing_provider)
+    bedrock = AWSBedrock(coverage_hass, "aws-id", "aws-secret", "us-east-1", "model")
+    coverage_hass.async_add_executor_job = AsyncMock(
+        side_effect=RuntimeError("aws-error-secret")
+    )
+    bedrock_payload = {"messages": [{"text": "payload-secret"}]}
+    with caplog.at_level(logging.DEBUG, logger="custom_components.llmvision"):
+        with pytest.raises(ServiceValidationError) as provider_exc:
+            await request.call(make_coverage_call())
+        with pytest.raises(ServiceValidationError) as bedrock_exc:
+            await bedrock.invoke_bedrock("model", bedrock_payload)
+    rendered = "".join(traceback.format_exception(provider_exc.value)) + "".join(
+        traceback.format_exception(bedrock_exc.value)
+    )
+    for secret in (
+        "provider-secret",
+        "aws-secret",
+        "aws-error-secret",
+        "payload-secret",
+    ):
+        assert secret not in caplog.text
+        assert secret not in rendered
+
+
+@pytest.mark.anyio
+async def test_openrouter_does_not_print_authorization(coverage_hass, capsys):
+    provider = OpenAI(
+        coverage_hass,
+        "openrouter-secret",
+        "model",
+        endpoint={"base_url": "https://openrouter.ai/api/v1/chat/completions"},
+    )
+    provider._post = AsyncMock(
+        return_value={"choices": [{"message": {"content": "ok"}}]}
+    )
+    assert await provider._make_request({}) == "ok"
+    captured = capsys.readouterr()
+    assert "openrouter-secret" not in captured.out + captured.err
+    assert "Authorization" not in captured.out + captured.err
+
+
+@pytest.mark.anyio
 async def test_provider_post_success_and_errors_coverage(coverage_hass):
     provider = OpenAI(coverage_hass, "k", "gpt-4")
 
@@ -1586,18 +1563,21 @@ async def test_provider_post_success_and_errors_coverage(coverage_hass):
     fail_response.text = AsyncMock(return_value='{"error":{"message":"bad"}}')
     provider.session.post = AsyncMock(return_value=fail_response)
 
-    frame = SimpleNamespace(frame=SimpleNamespace(f_locals={"self": provider}))
-    with pytest.MonkeyPatch.context() as monkeypatch_ctx:
-        monkeypatch_ctx.setattr(
-            "custom_components.llmvision.providers.inspect.stack",
-            lambda: [None, frame],
-        )
-        with pytest.raises(ServiceValidationError):
-            await provider._post("https://x", {}, {})
+    with pytest.raises(ServiceValidationError, match="HTTP 400"):
+        await provider._post("https://x", {}, {})
 
     provider.session.post = AsyncMock(side_effect=RuntimeError("down"))
     with pytest.raises(ServiceValidationError):
         await provider._post("https://x", {}, {})
+
+    ok_response.json = AsyncMock(side_effect=RuntimeError("url?key=json-secret"))
+    provider.session.post = AsyncMock(return_value=ok_response)
+    with pytest.raises(
+        ServiceValidationError, match="Provider response could not be read"
+    ) as exc:
+        await provider._post("https://x", {}, {})
+    assert "json-secret" not in str(exc.value)
+    assert exc.value.__suppress_context__
 
 
 @pytest.mark.anyio
@@ -1625,14 +1605,8 @@ async def test_aws_invoke_bedrock_success_and_error_coverage(coverage_hass):
         "error": {"message": "bad"},
     }
     coverage_hass.async_add_executor_job = AsyncMock(side_effect=[client, bad])
-    frame = SimpleNamespace(frame=SimpleNamespace(f_locals={"self": provider}))
-    with pytest.MonkeyPatch.context() as monkeypatch_ctx:
-        monkeypatch_ctx.setattr(
-            "custom_components.llmvision.providers.inspect.stack",
-            lambda: [None, frame],
-        )
-        with pytest.raises(ServiceValidationError):
-            await provider.invoke_bedrock("m", {"messages": [], "inferenceConfig": {}})
+    with pytest.raises(ServiceValidationError):
+        await provider.invoke_bedrock("m", {"messages": [], "inferenceConfig": {}})
 
 
 @pytest.mark.anyio
@@ -2179,7 +2153,7 @@ async def test_request_call_error_and_title_fallback_branches(
         "create",
         lambda **kwargs: DummyProvider(fail_vision=True),
     )
-    with pytest.raises(ServiceValidationError, match="vision failed"):
+    with pytest.raises(ServiceValidationError, match="Provider request failed"):
         await req.call(make_coverage_call())
 
     # Glimpse parse failure exercises nested exception handling.

@@ -1,4 +1,5 @@
 from datetime import datetime
+from urllib.parse import urlparse
 from .timeline import Timeline
 from .providers import Request
 from .memory import Memory
@@ -148,15 +149,12 @@ async def async_setup_entry(hass, entry):
         timeline = Timeline(hass, entry)
         await timeline._cleanup()
 
-    # Sanitize provider config (remove api_key and value)
-    sanitized_provider_config = {
-        key: value
-        for key, value in filtered_provider_config.items()
-        if key != CONF_API_KEY
-    }
-
-    # Print the config entry data for debugging
-    _LOGGER.debug(f"Config entry {entry.title} data: {sanitized_provider_config}")
+    # Don't log the full config (can contain tokens)
+    _LOGGER.debug(
+        "Set up provider %s (entry %s)",
+        filtered_provider_config.get(CONF_PROVIDER),
+        entry_uid,
+    )
     return True
 
 
@@ -227,8 +225,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
                 new_data = dict(target_entry.data)
                 new_data[CONF_RETENTION_TIME] = retention_time
                 hass.config_entries.async_update_entry(target_entry, data=new_data)
-            # Log hass.data[DOMAIN] for debugging
-            _LOGGER.debug(f"hass.data[DOMAIN]: {hass.data.get(DOMAIN, {})}")
+            _LOGGER.debug("Migrating Timeline entry %s", config_entry.entry_id)
             # Remove the Timeline entry
             _LOGGER.info(
                 f"Scheduling removal of old Timeline config entry {config_entry.title}"
@@ -579,7 +576,9 @@ async def _create_event(
         if len(image_entities) > 0:
             camera_name = image_entities[0]
         elif len(video_paths) > 0:
-            camera_name = video_paths[0].split("/")[-1].replace(".mp4", "")
+            camera_name = os.path.basename(urlparse(video_paths[0]).path).replace(
+                ".mp4", ""
+            )
         else:
             camera_name = ""
 
@@ -673,8 +672,6 @@ def setup(hass, config):
         """Handle the service call to analyze an image with LLM Vision"""
         start = dt_util.now()
 
-        # Log the service call data
-        _LOGGER.debug(f"Service call data: {data_call.data}")
         # Log the provider
         _LOGGER.debug(f"Provider: {data_call.data.get(PROVIDER)}")
 
@@ -931,7 +928,9 @@ def setup(hass, config):
             start=data_call.data.get("start"),
             end=data_call.data.get("end"),
             cameras=[camera.lower() for camera in data_call.data.get("cameras", [])],
-            categories=[category.lower() for category in data_call.data.get("categories", [])],
+            categories=[
+                category.lower() for category in data_call.data.get("categories", [])
+            ],
             labels=[label.lower() for label in data_call.data.get("labels", [])],
             limit=data_call.data.get("limit"),
             include_no_activity=data_call.data.get("include_no_activity", True),
