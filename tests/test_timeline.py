@@ -1480,3 +1480,80 @@ class TestCreateEventKeyFrameValidation:
         legacy = "/config/www/llmvision/abc.jpg"
         ev = await self._create(tl, legacy, validate_key_frame=False)
         assert ev.key_frame == legacy
+
+
+# ===========================================================================
+# Database read failures must not look like "no events" (#735)
+# ===========================================================================
+
+
+def _locked_connect(*args, **kwargs):
+    raise aiosqlite.OperationalError("database is locked")
+
+
+async def _seed_linked_snapshot(tl, media_path: Path) -> Path:
+    """Write an old snapshot file plus an event row that links to it."""
+    snapshot = media_path / "linked.jpg"
+    snapshot.write_bytes(b"fake")
+    old_ts = datetime.datetime.now().timestamp() - 100_000
+    os.utime(str(snapshot), (old_ts, old_ts))
+    now = dt_util.utcnow()
+    await _insert_rows(
+        tl._db_path,
+        [
+            (
+                str(uuid.uuid4()),
+                "ev",
+                now.isoformat(),
+                (now + datetime.timedelta(minutes=1)).isoformat(),
+                "",
+                str(snapshot),
+                "",
+                "",
+                "",
+            )
+        ],
+    )
+    return snapshot
+
+
+class TestDatabaseReadFailure:
+    async def test_cleanup_keeps_snapshots_when_db_read_fails(
+        self, build_timeline, tmp_path, monkeypatch
+    ):
+        tl = build_timeline()
+        await tl._initialize_db()
+        media_path = tmp_path / "snapshots"
+        media_path.mkdir()
+        tl._media_path = str(media_path)
+        snapshot = await _seed_linked_snapshot(tl, media_path)
+        orphan = media_path / "orphan.jpg"
+        orphan.write_bytes(b"fake")
+        old_ts = datetime.datetime.now().timestamp() - 100_000
+        os.utime(str(orphan), (old_ts, old_ts))
+
+        monkeypatch.setattr(
+            "custom_components.llmvision.timeline.aiosqlite.connect", _locked_connect
+        )
+        await tl._cleanup()
+
+        assert snapshot.exists()
+        assert orphan.exists()
+
+    async def test_load_events_failure_keeps_previous_events(
+        self, build_timeline, tmp_path, monkeypatch
+    ):
+        tl = build_timeline()
+        await tl._initialize_db()
+        media_path = tmp_path / "snapshots"
+        media_path.mkdir()
+        await _seed_linked_snapshot(tl, media_path)
+        await tl.load_events()
+        assert len(tl.events) == 1
+
+        monkeypatch.setattr(
+            "custom_components.llmvision.timeline.aiosqlite.connect", _locked_connect
+        )
+        await tl.load_events()
+
+        assert len(tl.events) == 1

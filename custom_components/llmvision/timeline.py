@@ -24,6 +24,10 @@ _LOGGER = logging.getLogger(__name__)
 DB_VERSION = 4
 
 
+class TimelineReadError(Exception):
+    """Raised when timeline events could not be read from the database."""
+
+
 async def _get_category_and_label(
     hass: HomeAssistant, config_entry: ConfigEntry, query: str
 ) -> tuple[str, str]:
@@ -598,8 +602,14 @@ class Timeline:
         return (await _get_category_and_label(self.hass, self._config_entry, label))[0]
 
     async def get_linked_images(self):
-        """Returns the filenames of key_frames associated with events"""
-        await self.load_events()
+        """Returns the filenames of key_frames associated with events.
+
+        Raises TimelineReadError when the database cannot be read, so callers
+        never mistake a failed read (e.g. "database is locked") for an empty
+        timeline and delete every snapshot.
+        """
+        if not await self.load_events():
+            raise TimelineReadError("Could not read events from the database")
         return [
             os.path.basename(e.key_frame)
             for e in self.events
@@ -625,10 +635,14 @@ class Timeline:
             return None
         return str(real)
 
-    async def load_events(self):
-        """Loads events from the database into memory"""
+    async def load_events(self) -> bool:
+        """Loads events from the database into memory.
+
+        Returns True on success. On a database error the previously loaded
+        events are kept and False is returned.
+        """
         await self._purge_expired_events()
-        self.events = []
+        loaded: list[Event] = []
         try:
             async with aiosqlite.connect(self._db_path) as db:
                 async with db.execute("""
@@ -665,9 +679,12 @@ class Timeline:
                             camera_name=row[7],
                             label=row[8],
                         )
-                        self.events.append(event)
+                        loaded.append(event)
         except aiosqlite.Error as e:
             _LOGGER.error(f"Error loading events from database: {e}")
+            return False
+        self.events = loaded
+        return True
 
     async def get_all_events(self) -> list[Event]:
         """Returns calendar events"""
@@ -1041,9 +1058,16 @@ class Timeline:
         )
 
         async with self._cleanup_lock:
+            try:
+                linked_images = await self.get_linked_images()
+            except TimelineReadError:
+                # Without the event list every snapshot would look unlinked.
+                _LOGGER.warning(
+                    "[CLEANUP] Skipped: the event database could not be read"
+                )
+                return
             linked_frames = {
-                (os.path.basename(n) or "").lower()
-                for n in await self.get_linked_images()
+                (os.path.basename(n) or "").lower() for n in linked_images
             }
 
             # List files in snapshots dir (in executor, non-blocking)
