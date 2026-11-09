@@ -22,7 +22,7 @@ import numpy as np
 from homeassistant.helpers.network import get_url
 from homeassistant.exceptions import ServiceValidationError
 
-from .const import KEY_FRAME_PATH
+from .const import DOMAIN, KEY_FRAME_PATH
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -228,7 +228,12 @@ class MediaProcessor:
         retries = 0
         entity_prefix = f"Camera {entity_name}: " if entity_name else ""
         while retries < max_retries:
-            _LOGGER.info(f"Fetching {url} (attempt {retries + 1}/{max_retries})")
+            _LOGGER.info(
+                "%sFetching media (attempt %s/%s)",
+                entity_prefix,
+                retries + 1,
+                max_retries,
+            )
             try:
                 async with self.session.get(url) as response:
                     if not response.ok:
@@ -257,11 +262,11 @@ class MediaProcessor:
 
                         return None
             except Exception as e:
-                _LOGGER.error(f"{entity_prefix}Fetch failed: {e}")
+                _LOGGER.error("%sFetch failed (%s)", entity_prefix, type(e).__name__)
                 retries += 1
                 await asyncio.sleep(retry_delay)
         _LOGGER.warning(
-            f"{entity_prefix}Failed to fetch {url} after {max_retries} retries"
+            f"{entity_prefix}Failed to fetch media after {max_retries} retries"
         )
 
     async def record(
@@ -616,27 +621,28 @@ class MediaProcessor:
         include_filename=False,
         expose_images=False,
     ):
-        video_label = (video_path or "").strip()  # label for logging without authSig
         temp_file_path = None
         try:
-            video_path = video_label
-
+            video_path = (video_path or "").strip()
+            video_filename = os.path.splitext(
+                os.path.basename(urlparse(video_path).path)
+            )[0]
             # Resolve media source (media-source://...)
             if is_media_source_id(video_path):
-                _LOGGER.debug(f"Resolving media source id: {video_label}")
+                _LOGGER.debug("Resolving media source")
                 video_path = async_process_play_media_url(self.hass, video_path)
 
             # Sign local API URLs unless already signed
             if video_path.startswith("/api"):
                 if "authSig" not in video_path:
                     # Add authorization signature with 5 minute expiration
-                    _LOGGER.debug(f"Signing {video_path}")
+                    _LOGGER.debug("Signing local media path")
                     video_path = async_sign_path(
                         self.hass, video_path, timedelta(minutes=5)
                     )
                 else:
                     # Already signed, just use it
-                    _LOGGER.debug(f"Already signed {video_label}")
+                    _LOGGER.debug("Local media path is already signed")
 
                 video_path = base_url + video_path
 
@@ -667,9 +673,7 @@ class MediaProcessor:
                     not os.path.exists(temp_file_path)
                     or os.path.getsize(temp_file_path) == 0
                 ):
-                    raise ServiceValidationError(
-                        f"Failed to fetch video from {video_label}"
-                    )
+                    raise ServiceValidationError("Failed to fetch video")
 
                 ffmpeg_cmd = [
                     "ffmpeg",
@@ -694,9 +698,7 @@ class MediaProcessor:
                 ffmpeg_start = time.monotonic_ns()
                 ffmpeg_timeout = 300  # seconds
 
-                _LOGGER.debug(
-                    f"Running FFMPEG to create keyframes: {' '.join(ffmpeg_cmd)}"
-                )
+                _LOGGER.debug("Running FFmpeg to create keyframes")
                 ffmpeg_process = await asyncio.create_subprocess_exec(
                     *ffmpeg_cmd,
                     stdout=output,
@@ -728,9 +730,7 @@ class MediaProcessor:
                 ffmpeg_start = time.monotonic_ns()
                 ffmpeg_timeout = 300  # seconds
 
-                _LOGGER.debug(
-                    f"Running FFMPEG to create keyframes: {' '.join(ffmpeg_cmd)}"
-                )
+                _LOGGER.debug("Running FFmpeg to create keyframes")
                 ffmpeg_process = await asyncio.create_subprocess_exec(
                     *ffmpeg_cmd, stdout=output, stderr=error_output
                 )
@@ -888,7 +888,7 @@ class MediaProcessor:
                 self.client.add_frame(
                     base64_image=resized_image,
                     filename=(
-                        f"{os.path.splitext(os.path.basename(video_path))[0]} (frame {idx})"
+                        f"{video_filename} (frame {idx})"
                         if include_filename
                         else f"Video frame {idx}"
                     ),
@@ -909,9 +909,10 @@ class MediaProcessor:
                     uid=str(uuid.uuid4())[:8],
                 )
         except Exception as e:
+            # Exception messages and FFmpeg output may contain signed URLs.
             raise ServiceValidationError(
-                f"Error processing video {video_label}: {e}"
-            ) from e
+                f"Error processing video ({type(e).__name__})"
+            ) from None
         finally:
             if temp_file_path:
                 try:
@@ -919,7 +920,9 @@ class MediaProcessor:
                 except FileNotFoundError:
                     pass
                 except OSError as e:
-                    _LOGGER.warning("Could not remove temp file %s: %s", temp_file_path, e)
+                    _LOGGER.warning(
+                        "Could not remove temp file %s: %s", temp_file_path, e
+                    )
 
     async def add_videos(
         self,
@@ -939,7 +942,7 @@ class MediaProcessor:
         for event_id in event_ids or []:
             video_paths.append(f"/api/frigate/notifications/{event_id}/clip.mp4")
 
-        _LOGGER.debug(f"Processing videos: {video_paths}")
+        _LOGGER.debug("Processing %s videos", len(video_paths))
 
         def process_video(video_path):
             return self.add_video(
