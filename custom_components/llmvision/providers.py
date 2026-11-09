@@ -1295,7 +1295,8 @@ class Anthropic(Provider):
             "model": self.model,
             "messages": [{"role": "user", "content": "Hi"}],
             "max_tokens": 1,
-            "temperature": 0.5,
+            # No sampling parameters: newer Claude models reject temperature,
+            # and a 1-token handshake does not need one.
         }
         await self._post(url=self._get_request_url(), headers=header, data=payload)
 

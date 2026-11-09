@@ -2811,5 +2811,23 @@ def test_anthropic_unsupported_model_omits_disabled_thinking_parameter(coverage_
     assert "thinking" not in payload
 
 
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "model", ["claude-haiku-4-5", "claude-sonnet-5", "claude-sonnet-5-5"]
+)
+async def test_anthropic_validate_omits_sampling_parameters(coverage_hass, model):
+    """Validation must not send temperature: newer Claude models reject it (#718)."""
+    provider = Anthropic(coverage_hass, "k", model)
+    provider._post = AsyncMock(return_value={"ok": True})
+
+    await provider.validate()
+
+    sent = provider._post.call_args.kwargs["data"]
+    assert sent["model"] == model
+    assert "temperature" not in sent
+    assert "top_p" not in sent
+    assert "top_k" not in sent
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
