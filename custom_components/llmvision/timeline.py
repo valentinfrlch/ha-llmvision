@@ -10,10 +10,12 @@ from .const import (
     CONF_RETENTION_TIME,
     CONF_REQUEST_TIMEOUT,
     CONF_TIMELINE_LANGUAGE,
+    KEY_FRAME_PATH,
 )
 from homeassistant.util import dt as dt_util
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from pathlib import Path
 from functools import partial
 import logging
 
@@ -223,7 +225,7 @@ class Timeline:
 
         # Path to the JSON file where events are stored
         self._db_path = os.path.join(self.hass.config.path("llmvision"), "events.db")
-        self._media_path = f"/media/llmvision/snapshots"
+        self._media_path = KEY_FRAME_PATH
         os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
         os.makedirs(self._media_path, exist_ok=True)
 
@@ -346,6 +348,7 @@ class Timeline:
                                     else ""
                                 ),
                                 label=event.get("label", ""),
+                                validate_key_frame=False
                             )
                         )
                         event_counter += 1
@@ -603,6 +606,25 @@ class Timeline:
             if getattr(e, "key_frame", None)
         ]
 
+    def _resolve_snapshot_path(self, key_frame: str) -> str | None:
+        """Return the real path of a snapshot, or None if it lies outside the snapshots dir."""
+        if not key_frame:
+            return None
+        base = Path(self._media_path).resolve()
+        candidate = key_frame
+        # Since v4.1, we store the media-source prefix (not the mount path)
+        for prefix in (
+            "/media/local/llmvision/snapshots",
+            "/config/media/llmvision/snapshots",
+        ):
+            if candidate.startswith(prefix):
+                candidate = candidate.replace(prefix, self._media_path, 1)
+                break
+        real = Path(candidate).resolve()
+        if not real.is_relative_to(base) or real == base:
+            return None
+        return str(real)
+
     async def load_events(self):
         """Loads events from the database into memory"""
         await self._purge_expired_events()
@@ -796,6 +818,8 @@ class Timeline:
         key_frame: str,
         camera_name: str,
         label: str = "",
+        *,
+        validate_key_frame: bool = True,
     ) -> None:
         """Adds a new event to calendar"""
         category = ""
@@ -808,6 +832,12 @@ class Timeline:
 
         start = dt_util.as_local(start)
         end = dt_util.as_local(end)
+
+        if validate_key_frame and key_frame and not self.is_valid_key_frame(key_frame):
+            _LOGGER.warning(
+                "key_frame is outside snapshots dir (dropped): %s", key_frame
+            )
+            key_frame = ""
 
         # Mark key_frame as pending so cleanup won't remove it before DB insert
         pending_name = (
@@ -954,27 +984,38 @@ class Timeline:
                 return False
             return True
 
-        async def _delete_image(uid: str) -> bool:
-            """Deletes the image associated with the event"""
-            try:
-                async with aiosqlite.connect(self._db_path) as db:
-                    async with db.execute(
-                        "SELECT key_frame FROM events WHERE uid = ?", (uid,)
-                    ) as cursor:
-                        key_frame = await cursor.fetchone()
-                        if key_frame:
-                            key_frame = key_frame[0]
-                            if os.path.exists(key_frame) and f"/{DOMAIN}/" in key_frame:
-                                os.remove(key_frame)
-                                _LOGGER.info(f"Deleted image: {key_frame}")
-            except aiosqlite.Error as e:
-                _LOGGER.error(f"Error deleting image: {e}")
-                return False
-            return True
+        await self._delete_image(uid)
+        return await _delete_event_from_db(uid)
 
-        success_image = await _delete_image(uid)
-        success_event = await _delete_event_from_db(uid)
-        return success_image and success_event
+    async def _delete_image(self, uid: str) -> None:
+        """Best-effort deletion of event snapshot"""
+        try:
+            async with aiosqlite.connect(self._db_path) as db:
+                async with db.execute(
+                            "SELECT key_frame FROM events WHERE uid = ?", (uid,)
+                        ) as cursor:
+                    row = await cursor.fetchone()
+        except aiosqlite.Error as e:
+            _LOGGER.error("Error reading key_frame for %s: %s", uid, e)
+            return
+
+        if not row or not row[0]:
+            return
+
+        path = self._resolve_snapshot_path(row[0])
+        if path is None:
+            _LOGGER.warning(
+                        "key_frame is outside snapshots dir (not deleted): %s", row[0]
+                    )
+            return
+
+        try:
+            await self.hass.async_add_executor_job(os.remove, path)
+            _LOGGER.info("Deleted image: %s", path)
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            _LOGGER.warning("Failed to remove %s: %s", path, e)
 
     async def _cleanup(self):
         """Deletes images not associated with any events.
@@ -1049,3 +1090,11 @@ class Timeline:
 
             if removed:
                 _LOGGER.debug(f"[CLEANUP] Removed {removed} orphaned snapshot(s)")
+
+    def normalize_key_frame(self, key_frame: str) -> str:
+        """Returns snapshot path, or "" if the value is not inside the snapshots dir. Helper for api."""
+        return self._resolve_snapshot_path(key_frame) or ""
+
+    def is_valid_key_frame(self, key_frame: str) -> bool:
+        """True if the value resolves inside the snapshots directory."""
+        return self._resolve_snapshot_path(key_frame) is not None

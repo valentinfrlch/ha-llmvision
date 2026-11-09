@@ -37,6 +37,7 @@ CONF_CUSTOM_OPENAI_ENDPOINT = "custom_openai_endpoint"
 
 # Timeline
 CONF_RETENTION_TIME = "retention_time"
+KEY_FRAME_PATH = f"/media/{DOMAIN}/snapshots"
 
 # Settings
 CONF_TIMELINE_LANGUAGE = "timeline_language"
@@ -54,7 +55,6 @@ CONF_MEMORY_STRINGS = "memory_strings"
 
 # Dispatcher signals
 SIGNAL_TIMELINE_UPDATED = f"{DOMAIN}_timeline_updated"
-
 
 # SERVICE CALL CONSTANTS
 MESSAGE = "message"

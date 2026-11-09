@@ -134,7 +134,6 @@ class TimelineEventCreateView(HomeAssistantView):
         # Parse and validate inputs
         title = data.get("title") or ""
         description = data.get("description") or ""
-        key_frame = data.get("key_frame") or ""
         camera_name = data.get("camera_name") or data.get("camera_entity") or ""
         label = data.get("label") or ""
 
@@ -161,6 +160,14 @@ class TimelineEventCreateView(HomeAssistantView):
         end = _parse_time(data.get("end")) or (start + timedelta(minutes=1))
 
         timeline = Timeline(hass, settings_entry)
+
+        # If a key_frame is provided, make sure it is inside the snapshots directory
+        raw_key_frame = data.get("key_frame") or ""
+        if raw_key_frame and not timeline.is_valid_key_frame(raw_key_frame):
+            return self.json_message(
+                "key_frame must point inside the snapshots directory", status_code=400
+            )
+        key_frame = raw_key_frame
         try:
             await timeline.create_event(
                 start=start,
@@ -280,6 +287,16 @@ class TimelineEventView(HomeAssistantView):
 
         if start_dt is None or end_dt is None:
             return self.json_message("Invalid start/end time", status_code=400)
+
+        # If a key_frame is provided, make sure it is inside the snapshots directory
+        if "key_frame" in data:
+            raw_key_frame = data.get("key_frame") or ""
+            if raw_key_frame and not timeline.is_valid_key_frame(raw_key_frame):
+                return self.json_message(
+                    "key_frame must point inside the snapshots directory",
+                    status_code=400,
+                )
+            fields["key_frame"] = raw_key_frame
 
         try:
             await timeline.update_event(

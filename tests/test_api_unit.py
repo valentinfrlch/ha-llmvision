@@ -603,3 +603,180 @@ class TestTimelineEventView:
 
         assert response.status == 200
         assert _response_payload(response) == {"event_id": "event-1", "status": "updated"}
+
+
+class TestCreateViewKeyFrameValidation:
+    """The create view rejects key_frame values outside the snapshots dir."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "key_frame",
+        [
+            "/config/llmvision/events.db",
+            "/config/secrets.yaml",
+            "/media/llmvision/snapshots/../../config/secrets.yaml",
+            "frame_001.jpg",
+        ],
+    )
+    async def test_rejects_key_frame_outside_snapshots(
+        self, mock_hass, mock_config_entry, key_frame
+    ):
+        request = _make_request(mock_hass, json_body={"key_frame": key_frame})
+        timeline = Mock()
+        timeline.is_valid_key_frame = Mock(return_value=False)
+        timeline.create_event = AsyncMock()
+
+        with patch(
+            "custom_components.llmvision.api.async_get_settings_entry",
+            new=AsyncMock(return_value=mock_config_entry),
+        ), patch("custom_components.llmvision.api.Timeline", return_value=timeline):
+            response = await TimelineEventCreateView().post(request)
+
+        assert response.status == 400
+        assert (
+            _response_payload(response)["message"]
+            == "key_frame must point inside the snapshots directory"
+        )
+        timeline.create_event.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_passes_valid_key_frame_through(self, mock_hass, mock_config_entry):
+        key_frame = "/media/llmvision/snapshots/abc.jpg"
+        request = _make_request(mock_hass, json_body={"key_frame": key_frame})
+        timeline = Mock()
+        timeline.is_valid_key_frame = Mock(return_value=True)
+        timeline.create_event = AsyncMock()
+
+        with patch(
+            "custom_components.llmvision.api.async_get_settings_entry",
+            new=AsyncMock(return_value=mock_config_entry),
+        ), patch("custom_components.llmvision.api.Timeline", return_value=timeline):
+            response = await TimelineEventCreateView().post(request)
+
+        assert response.status == 200
+        timeline.is_valid_key_frame.assert_called_once_with(key_frame)
+        assert timeline.create_event.await_args.kwargs["key_frame"] == key_frame
+
+    @pytest.mark.asyncio
+    async def test_empty_key_frame_skips_validation(self, mock_hass, mock_config_entry):
+        request = _make_request(mock_hass, json_body={})
+        timeline = Mock()
+        timeline.is_valid_key_frame = Mock(return_value=False)
+        timeline.create_event = AsyncMock()
+
+        with patch(
+            "custom_components.llmvision.api.async_get_settings_entry",
+            new=AsyncMock(return_value=mock_config_entry),
+        ), patch("custom_components.llmvision.api.Timeline", return_value=timeline):
+            response = await TimelineEventCreateView().post(request)
+
+        assert response.status == 200
+        timeline.is_valid_key_frame.assert_not_called()
+        assert timeline.create_event.await_args.kwargs["key_frame"] == ""
+
+
+class TestUpdateViewKeyFrameValidation:
+    """The update view validates supplied key_frame values only."""
+
+    @staticmethod
+    def _existing(key_frame="frame.jpg"):
+        return {
+            "title": "Original",
+            "description": "Desc",
+            "key_frame": key_frame,
+            "camera_name": "camera.front_door",
+            "label": "person",
+            "start": "2024-01-15T12:00:00+00:00",
+            "end": "2024-01-15T12:05:00+00:00",
+        }
+
+    @pytest.mark.asyncio
+    async def test_rejects_key_frame_outside_snapshots(
+        self, mock_hass, mock_config_entry
+    ):
+        request = _make_request(
+            mock_hass, json_body={"key_frame": "/config/secrets.yaml"}
+        )
+        timeline = Mock()
+        timeline.get_event = AsyncMock(return_value=self._existing())
+        timeline.is_valid_key_frame = Mock(return_value=False)
+        timeline.update_event = AsyncMock()
+
+        with patch(
+            "custom_components.llmvision.api.async_get_settings_entry",
+            new=AsyncMock(return_value=mock_config_entry),
+        ), patch("custom_components.llmvision.api.Timeline", return_value=timeline):
+            response = await TimelineEventView().post(request, "event-1")
+
+        assert response.status == 400
+        assert (
+            _response_payload(response)["message"]
+            == "key_frame must point inside the snapshots directory"
+        )
+        timeline.update_event.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_accepts_key_frame_inside_snapshots(
+        self, mock_hass, mock_config_entry
+    ):
+        key_frame = "/media/llmvision/snapshots/abc.jpg"
+        request = _make_request(mock_hass, json_body={"key_frame": key_frame})
+        timeline = Mock()
+        timeline.get_event = AsyncMock(
+            side_effect=[self._existing(), {"uid": "event-1"}]
+        )
+        timeline.is_valid_key_frame = Mock(return_value=True)
+        timeline.update_event = AsyncMock()
+
+        with patch(
+            "custom_components.llmvision.api.async_get_settings_entry",
+            new=AsyncMock(return_value=mock_config_entry),
+        ), patch("custom_components.llmvision.api.Timeline", return_value=timeline):
+            response = await TimelineEventView().post(request, "event-1")
+
+        assert response.status == 200
+        assert timeline.update_event.await_args.kwargs["key_frame"] == key_frame
+
+    @pytest.mark.asyncio
+    async def test_omitted_key_frame_carries_existing_value_unvalidated(
+        self, mock_hass, mock_config_entry
+    ):
+        """A client that omits key_frame must not blank a legacy value."""
+        legacy = "/config/www/llmvision/legacy.jpg"
+        request = _make_request(mock_hass, json_body={"label": "Vehicle"})
+        timeline = Mock()
+        timeline.get_event = AsyncMock(
+            side_effect=[self._existing(key_frame=legacy), {"uid": "event-1"}]
+        )
+        timeline.is_valid_key_frame = Mock(return_value=False)
+        timeline.update_event = AsyncMock()
+
+        with patch(
+            "custom_components.llmvision.api.async_get_settings_entry",
+            new=AsyncMock(return_value=mock_config_entry),
+        ), patch("custom_components.llmvision.api.Timeline", return_value=timeline):
+            response = await TimelineEventView().post(request, "event-1")
+
+        assert response.status == 200
+        timeline.is_valid_key_frame.assert_not_called()
+        assert timeline.update_event.await_args.kwargs["key_frame"] == legacy
+
+    @pytest.mark.asyncio
+    async def test_explicit_null_clears_key_frame(self, mock_hass, mock_config_entry):
+        request = _make_request(mock_hass, json_body={"key_frame": None})
+        timeline = Mock()
+        timeline.get_event = AsyncMock(
+            side_effect=[self._existing(), {"uid": "event-1"}]
+        )
+        timeline.is_valid_key_frame = Mock(return_value=False)
+        timeline.update_event = AsyncMock()
+
+        with patch(
+            "custom_components.llmvision.api.async_get_settings_entry",
+            new=AsyncMock(return_value=mock_config_entry),
+        ), patch("custom_components.llmvision.api.Timeline", return_value=timeline):
+            response = await TimelineEventView().post(request, "event-1")
+
+        assert response.status == 200
+        timeline.is_valid_key_frame.assert_not_called()
+        assert timeline.update_event.await_args.kwargs["key_frame"] == ""

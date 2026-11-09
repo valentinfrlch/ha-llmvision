@@ -59,7 +59,7 @@ def _create_event(session, label="car", camera_name="camera.demo_camera"):
         json={
             "title": "Test Event from API",
             "description": "This is a test event created during API testing.",
-            "key_frame": "frame_001.jpg",
+            "key_frame": "/media/llmvision/snapshots/test-keyframe.jpg",
             "label": label,
             "camera_name": camera_name,
         },
@@ -219,3 +219,63 @@ def test_update_nonexistent_event():
         404,
         501,
     ), f"Unexpected status for updating nonexistent event: {r.status_code} {r.text}"
+
+OUTSIDE_KEY_FRAMES = [
+    "/config/llmvision/events.db",
+    "/config/secrets.yaml",
+    "/media/llmvision/snapshots/../../config/secrets.yaml",
+]
+
+
+@pytest.mark.skipif(
+    not BASE_URL or not TOKEN,
+    reason="Integration test requires .instance and .token files",
+)
+@pytest.mark.parametrize("key_frame", OUTSIDE_KEY_FRAMES)
+def test_create_rejects_key_frame_outside_snapshots(key_frame):
+    s = requests.Session()
+    s.headers.update(_auth_headers())
+
+    resp = s.post(
+        CREATE_URL,
+        json={"title": "Rejected", "key_frame": key_frame},
+        timeout=10,
+    )
+
+    assert resp.status_code == 400, f"{resp.status_code} {resp.text}"
+    assert "snapshots" in resp.json().get("message", "")
+
+
+@pytest.mark.skipif(
+    not BASE_URL or not TOKEN,
+    reason="Integration test requires .instance and .token files",
+)
+@pytest.mark.parametrize("key_frame", OUTSIDE_KEY_FRAMES)
+def test_update_rejects_key_frame_outside_snapshots(key_frame):
+    s = requests.Session()
+    s.headers.update(_auth_headers())
+
+    event_id, _ = _create_event(s)
+    try:
+        resp = _update_event(s, event_id, {"key_frame": key_frame})
+        assert resp.status_code == 400, f"{resp.status_code} {resp.text}"
+    finally:
+        _delete_event(s, event_id)
+
+
+@pytest.mark.skipif(
+    not BASE_URL or not TOKEN,
+    reason="Integration test requires .instance and .token files",
+)
+def test_delete_event_with_snapshot_key_frame_succeeds():
+    """Deleting an event whose key_frame is a real snapshot must return 200."""
+    s = requests.Session()
+    s.headers.update(_auth_headers())
+
+    event_id, event = _create_event(s)
+
+    resp = _delete_event(s, event_id)
+    assert resp.status_code == 200, f"{resp.status_code} {resp.text}"
+    assert resp.json().get("status") == "deleted"
+
+    assert _get_event(s, event_id).status_code == 404

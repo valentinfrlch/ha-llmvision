@@ -2,6 +2,7 @@
 
 import datetime
 import os
+from pathlib import Path
 import uuid
 from functools import partial
 from unittest.mock import AsyncMock, Mock
@@ -1245,3 +1246,237 @@ class TestMigration:
         cleanup_mock.assert_awaited_once()
         assert await tl._get_db_version() == DB_VERSION
         assert not tl._migrating
+
+# ===========================================================================
+# Key-frame containment
+# ===========================================================================
+
+
+class TestKeyFrameContainment:
+    """_resolve_snapshot_path / is_valid_key_frame guard snapshot deletion."""
+
+    @pytest.fixture
+    def tl(self, build_timeline, tmp_path):
+        tl = build_timeline()
+        media = tmp_path / "snapshots"
+        media.mkdir()
+        tl._media_path = str(media)
+        return tl
+
+    def test_accepts_path_inside_directory(self, tl):
+        assert tl.is_valid_key_frame(f"{tl._media_path}/abc-camera0.jpg") is True
+
+    def test_accepts_traversal_that_stays_inside(self, tl):
+        assert tl.is_valid_key_frame(f"{tl._media_path}/./nested/../abc.jpg") is True
+
+    def test_rejects_parent_traversal(self, tl):
+        assert tl.is_valid_key_frame(f"{tl._media_path}/../secrets.yaml") is False
+
+    def test_rejects_unrelated_absolute_path(self, tl):
+        assert tl.is_valid_key_frame("/config/llmvision/events.db") is False
+
+    def test_rejects_relative_path(self, tl):
+        assert tl.is_valid_key_frame("frame_001.jpg") is False
+
+    def test_rejects_the_directory_itself(self, tl):
+        assert tl.is_valid_key_frame(tl._media_path) is False
+
+    def test_rejects_empty_and_none(self, tl):
+        assert tl.is_valid_key_frame("") is False
+        assert tl.is_valid_key_frame(None) is False
+
+    def test_rejects_symlink_escaping_the_directory(self, tl, tmp_path):
+        outside = tmp_path / "outside.jpg"
+        outside.write_bytes(b"secret")
+        link = tmp_path / "snapshots" / "link.jpg"
+        os.symlink(outside, link)
+
+        assert tl.is_valid_key_frame(str(link)) is False
+
+    def test_accepts_legacy_media_source_prefix(self, tl):
+        assert tl.is_valid_key_frame("/media/local/llmvision/snapshots/a.jpg") is True
+
+    def test_accepts_legacy_config_media_prefix(self, tl):
+        assert tl.is_valid_key_frame("/config/media/llmvision/snapshots/a.jpg") is True
+
+    def test_legacy_prefix_does_not_bypass_containment(self, tl):
+        assert (
+            tl.is_valid_key_frame(
+                "/media/local/llmvision/snapshots/../../config/secrets.yaml"
+            )
+            is False
+        )
+
+
+# ===========================================================================
+# _delete_image / delete_event containment
+# ===========================================================================
+
+
+class TestDeleteImageContainment:
+    """Deletion must never touch a file outside the snapshots directory."""
+
+    @pytest.fixture
+    def tl(self, build_timeline, tmp_path):
+        tl = build_timeline()
+        media = tmp_path / "snapshots"
+        media.mkdir()
+        tl._media_path = str(media)
+        return tl
+
+    async def _insert_with_key_frame(self, tl, key_frame):
+        await tl._initialize_db()
+        row = _make_row("event", 0.1, key_frame=key_frame)
+        await _insert_rows(tl._db_path, [row])
+        return row[0]
+
+    async def test_removes_snapshot_inside_directory(self, tl):
+        target = Path(tl._media_path) / "abc.jpg"
+        target.write_bytes(b"fake")
+        uid = await self._insert_with_key_frame(tl, str(target))
+
+        await tl._delete_image(uid)
+
+        assert not target.exists()
+
+    async def test_refuses_absolute_path_outside_directory(self, tl, tmp_path):
+        outside = tmp_path / "secrets.yaml"
+        outside.write_bytes(b"keep me")
+        uid = await self._insert_with_key_frame(tl, str(outside))
+
+        await tl._delete_image(uid)
+
+        assert outside.exists()
+
+    async def test_refuses_parent_traversal(self, tl, tmp_path):
+        target = tmp_path / "secrets.yaml"
+        target.write_bytes(b"keep me")
+        uid = await self._insert_with_key_frame(tl, f"{tl._media_path}/../secrets.yaml")
+
+        await tl._delete_image(uid)
+
+        assert target.exists()
+
+    async def test_refuses_symlink_target(self, tl, tmp_path):
+        outside = tmp_path / "outside.jpg"
+        outside.write_bytes(b"keep me")
+        link = Path(tl._media_path) / "link.jpg"
+        os.symlink(outside, link)
+        uid = await self._insert_with_key_frame(tl, str(link))
+
+        await tl._delete_image(uid)
+
+        assert outside.exists()
+        assert link.exists()
+
+    async def test_missing_snapshot_does_not_raise(self, tl):
+        uid = await self._insert_with_key_frame(
+            tl, os.path.join(tl._media_path, "gone.jpg")
+        )
+
+        await tl._delete_image(uid)
+
+    async def test_empty_key_frame_is_a_noop(self, tl):
+        uid = await self._insert_with_key_frame(tl, "")
+        await tl._delete_image(uid)
+
+    async def test_removes_legacy_media_source_path(self, tl):
+        target = Path(tl._media_path) / "legacy.jpg"
+        target.write_bytes(b"fake")
+        uid = await self._insert_with_key_frame(
+            tl, "/media/local/llmvision/snapshots/legacy.jpg"
+        )
+
+        await tl._delete_image(uid)
+
+        assert not target.exists()
+
+    async def test_delete_event_removes_snapshot_and_row(self, tl):
+        target = Path(tl._media_path) / "abc.jpg"
+        target.write_bytes(b"fake")
+        uid = await self._insert_with_key_frame(tl, str(target))
+
+        result = await tl.delete_event(uid)
+
+        assert result is True
+        assert not target.exists()
+        assert await tl.get_event(uid) is None
+
+    async def test_delete_event_keeps_row_delete_when_image_is_outside(
+        self, tl, tmp_path
+    ):
+        outside = tmp_path / "secrets.yaml"
+        outside.write_bytes(b"keep me")
+        uid = await self._insert_with_key_frame(tl, str(outside))
+
+        result = await tl.delete_event(uid)
+
+        assert result is True
+        assert outside.exists()
+        assert await tl.get_event(uid) is None
+
+    async def test_directory_key_frame_does_not_block_row_delete(self, tl):
+        subdir = Path(tl._media_path) / "subdir"
+        subdir.mkdir()
+        uid = await self._insert_with_key_frame(tl, str(subdir))
+
+        result = await tl.delete_event(uid)
+
+        assert result is True
+        assert subdir.exists()
+        assert await tl.get_event(uid) is None
+
+
+# ===========================================================================
+# create_event key_frame validation
+# ===========================================================================
+
+
+class TestCreateEventKeyFrameValidation:
+    """create_event drops key_frame values outside the snapshots directory."""
+
+    @pytest.fixture
+    def tl(self, build_timeline, tmp_path):
+        tl = build_timeline()
+        media = tmp_path / "snapshots"
+        media.mkdir()
+        tl._media_path = str(media)
+        return tl
+
+    async def _create(self, tl, key_frame, **kwargs):
+        await tl._initialize_db()
+        now = dt_util.utcnow()
+        await tl.create_event(
+            start=now,
+            end=now + datetime.timedelta(minutes=1),
+            title="an event",
+            description="",
+            key_frame=key_frame,
+            camera_name="",
+            **kwargs,
+        )
+        await tl.load_events()
+        return tl.events[0]
+
+    async def test_outside_path_is_dropped(self, tl):
+        ev = await self._create(tl, "/config/secrets.yaml")
+        assert ev.key_frame == ""
+
+    async def test_traversal_path_is_dropped(self, tl):
+        ev = await self._create(tl, f"{tl._media_path}/../secrets.yaml")
+        assert ev.key_frame == ""
+
+    async def test_inside_path_is_preserved_verbatim(self, tl):
+        key_frame = f"{tl._media_path}/abc-camera0.jpg"
+        ev = await self._create(tl, key_frame)
+        assert ev.key_frame == key_frame
+
+    async def test_legacy_media_source_path_is_preserved_verbatim(self, tl):
+        key_frame = "/media/local/llmvision/snapshots/abc-camera0.jpg"
+        ev = await self._create(tl, key_frame)
+        assert ev.key_frame == key_frame
+
+    async def test_validation_can_be_disabled_for_migration(self, tl):
+        legacy = "/config/www/llmvision/abc.jpg"
+        ev = await self._create(tl, legacy, validate_key_frame=False)
+        assert ev.key_frame == legacy
