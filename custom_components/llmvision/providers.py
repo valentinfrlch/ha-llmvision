@@ -1013,15 +1013,52 @@ class AzureOpenAI(Provider):
         return True
 
 
+# Matches "claude-<family>-<major>[-<minor>]". The minor version is at most two
+# digits so date-stamped IDs such as "claude-sonnet-4-20250514" read as 4.0,
+# not 4.20250514. Works for Bedrock IDs ("us.anthropic.claude-...-v1:0") too.
+_CLAUDE_VERSION_RE = re.compile(
+    r"claude-(opus|sonnet|haiku|fable|mythos)-(\d+)(?:-(\d{1,2}))?(?!\d)"
+)
+STRUCTURED_OUTPUT_TOOL = "return_structured_data"
+STRUCTURED_OUTPUT_INSTRUCTION = (
+    f"Respond by calling the {STRUCTURED_OUTPUT_TOOL} tool with your answer."
+)
+
+
+def _claude_version(model: str) -> tuple[str, int, int]:
+    """Return (family, major, minor) for a Claude model ID, or ("", 0, 0)."""
+    match = _CLAUDE_VERSION_RE.search((model or "").lower())
+    if not match:
+        return "", 0, 0
+    return match.group(1), int(match.group(2)), int(match.group(3) or 0)
+
+
+def _claude_thinking_cannot_be_disabled(model: str) -> bool:
+    """Fable/Mythos and Opus 5.5+ reject thinking {"type": "disabled"}; omit it."""
+    family, major, minor = _claude_version(model)
+    if family in ("fable", "mythos"):
+        return True
+    return family == "opus" and (major, minor) >= (5, 5)
+
+
+def _claude_uses_between_tools_to_disable_thinking(model: str) -> bool:
+    """Sonnet 5.5+ turns thinking off with {"type": "between_tools"}."""
+    family, major, minor = _claude_version(model)
+    return family == "sonnet" and (major, minor) >= (5, 5)
+
+
+def _claude_rejects_forced_tool_choice(model: str) -> bool:
+    """Opus/Sonnet 5.5+ and Fable/Mythos 5.1+ reject tool_choice any/tool."""
+    family, major, minor = _claude_version(model)
+    if family in ("fable", "mythos"):
+        return (major, minor) >= (5, 1)
+    return family in ("opus", "sonnet") and (major, minor) >= (5, 5)
+
+
 def _claude_thinking_support(model: str) -> tuple[bool, bool]:
     """Return whether a Claude model supports manual or adaptive thinking."""
     model = model.lower()
-    version_match = re.search(
-        r"claude-(?:opus|sonnet|haiku)-(\d+)(?:-(\d+))?",
-        model,
-    )
-    major = int(version_match.group(1)) if version_match else 0
-    minor = int(version_match.group(2) or 0) if version_match else 0
+    _, major, minor = _claude_version(model)
     manual_thinking = (
         "claude-3-7-sonnet" in model
         or (major == 4 and minor <= 6)
@@ -1105,6 +1142,35 @@ class Anthropic(Provider):
 
         return text
 
+    def _turn_off_adaptive_thinking(self, payload: dict) -> dict:
+        """Return a copy of payload with thinking off in the form the model accepts."""
+        updated = {k: v for k, v in payload.items() if k != "thinking"}
+        if _claude_thinking_cannot_be_disabled(self.model):
+            # No off switch: omitting the parameter runs default adaptive thinking.
+            return updated
+        if _claude_uses_between_tools_to_disable_thinking(self.model):
+            updated["thinking"] = {"type": "between_tools"}
+        else:
+            updated["thinking"] = {"type": "disabled"}
+        return updated
+
+    @staticmethod
+    def _use_auto_tool_choice(payload: dict) -> dict:
+        """Return a copy of payload that asks for the structured-output tool
+        instead of forcing it (forced tool_choice is a 400 on newer models)."""
+        updated = dict(payload)
+        updated["tool_choice"] = {"type": "auto"}
+        messages = list(updated.get("messages") or [])
+        if messages and isinstance(messages[-1].get("content"), list):
+            last = dict(messages[-1])
+            last["content"] = [
+                *last["content"],
+                {"type": "text", "text": STRUCTURED_OUTPUT_INSTRUCTION},
+            ]
+            messages[-1] = last
+            updated["messages"] = messages
+        return updated
+
     def _apply_parameters(self, payload: dict, call: Any) -> dict:
         parameters = self._get_default_parameters(call)
         raw_budget = parameters.get("thinking_budget", 0)
@@ -1124,9 +1190,13 @@ class Anthropic(Provider):
         tool_choice = payload.get("tool_choice") or {}
         forced_tool = tool_choice.get("type") in {"any", "tool"}
 
+        if forced_tool and _claude_rejects_forced_tool_choice(self.model):
+            payload = self._use_auto_tool_choice(payload)
+            forced_tool = False
+
         if budget == 0:
             if adaptive_thinking:
-                payload["thinking"] = {"type": "disabled"}
+                payload = self._turn_off_adaptive_thinking(payload)
                 for parameter in ("temperature", "top_p", "top_k"):
                     payload.pop(parameter, None)
             elif manual_thinking:
@@ -1952,6 +2022,12 @@ class AWSBedrock(Provider):
             "Authorization": "Bearer " + self.api_key,
         }
 
+    def _structured_tool_choice(self) -> dict:
+        """Force the structured-output tool unless the model rejects forced choice."""
+        if _claude_rejects_forced_tool_choice(self.model):
+            return {"auto": {}}
+        return {"tool": {"name": STRUCTURED_OUTPUT_TOOL}}
+
     def _build_inference_config(self, max_tokens: int, temperature: Any) -> dict:
         """Build the inference config supported by the configured model."""
         inference_config: dict = {"maxTokens": max_tokens}
@@ -2136,7 +2212,7 @@ class AWSBedrock(Provider):
                             }
                         }
                     ],
-                    "toolChoice": {"tool": {"name": "return_structured_data"}},
+                    "toolChoice": self._structured_tool_choice(),
                 }
             except json.JSONDecodeError as e:
                 raise ServiceValidationError(
@@ -2179,7 +2255,7 @@ class AWSBedrock(Provider):
                             }
                         }
                     ],
-                    "toolChoice": {"tool": {"name": "return_structured_data"}},
+                    "toolChoice": self._structured_tool_choice(),
                 }
             except json.JSONDecodeError as e:
                 raise ServiceValidationError(

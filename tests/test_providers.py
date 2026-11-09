@@ -2811,5 +2811,128 @@ def test_anthropic_unsupported_model_omits_disabled_thinking_parameter(coverage_
     assert "thinking" not in payload
 
 
+
+# --- Claude 5.5-generation request shapes (#742) ---------------------------
+
+
+@pytest.mark.parametrize(
+    ("model", "expected"),
+    [
+        ("claude-sonnet-5-5", {"type": "between_tools"}),
+        ("claude-sonnet-5", {"type": "disabled"}),
+        ("claude-opus-5", {"type": "disabled"}),
+        ("claude-haiku-5-5", {"type": "disabled"}),
+    ],
+)
+def test_anthropic_zero_budget_turns_thinking_off_per_model(
+    coverage_hass, model, expected
+):
+    configure_anthropic_parameters(coverage_hass, 0)
+    provider = Anthropic(coverage_hass, "k", model)
+
+    payload = provider._prepare_vision_data(make_coverage_call(max_tokens=4096))
+
+    assert payload["thinking"] == expected
+    assert "temperature" not in payload
+    assert "top_p" not in payload
+
+
+@pytest.mark.parametrize(
+    "model",
+    ["claude-opus-5-5", "claude-fable-5-1", "claude-fable-5", "claude-mythos-5-1"],
+)
+def test_anthropic_zero_budget_omits_thinking_where_it_cannot_be_disabled(
+    coverage_hass, model
+):
+    configure_anthropic_parameters(coverage_hass, 0)
+    provider = Anthropic(coverage_hass, "k", model)
+
+    payload = provider._prepare_text_data(make_coverage_call(max_tokens=4096))
+
+    assert "thinking" not in payload
+    assert "temperature" not in payload
+
+
+@pytest.mark.parametrize("builder_name", ["_prepare_vision_data", "_prepare_text_data"])
+@pytest.mark.parametrize(
+    "model", ["claude-sonnet-5-5", "claude-opus-5-5", "claude-fable-5-1"]
+)
+def test_anthropic_structured_output_uses_auto_tool_choice_on_new_models(
+    coverage_hass, model, builder_name
+):
+    configure_anthropic_parameters(coverage_hass, 0)
+    provider = Anthropic(coverage_hass, "k", model)
+
+    payload = getattr(provider, builder_name)(
+        make_coverage_call(
+            max_tokens=4096, response_format="json", structure={"type": "object"}
+        )
+    )
+
+    assert payload["tool_choice"] == {"type": "auto"}
+    assert payload["tools"][0]["name"] == "return_structured_data"
+    last_content = payload["messages"][-1]["content"]
+    assert "return_structured_data" in last_content[-1]["text"]
+
+
+@pytest.mark.parametrize("model", ["claude-sonnet-5", "claude-opus-5", "claude-haiku-4-5"])
+def test_anthropic_structured_output_keeps_forced_tool_on_older_models(
+    coverage_hass, model
+):
+    configure_anthropic_parameters(coverage_hass, 0)
+    provider = Anthropic(coverage_hass, "k", model)
+
+    payload = provider._prepare_vision_data(
+        make_coverage_call(
+            max_tokens=4096, response_format="json", structure={"type": "object"}
+        )
+    )
+
+    assert payload["tool_choice"] == {"type": "tool", "name": "return_structured_data"}
+
+
+@pytest.mark.parametrize(
+    "model",
+    [
+        "claude-sonnet-4-20250514",
+        "claude-opus-4-20250514",
+        "claude-opus-4-1-20250805",
+    ],
+)
+def test_anthropic_dated_claude_4_ids_use_manual_thinking(coverage_hass, model):
+    """A date suffix must not be read as the minor version (4.20250514 >= 4.7)."""
+    configure_anthropic_parameters(coverage_hass, 2048)
+    provider = Anthropic(coverage_hass, "k", model)
+
+    payload = provider._prepare_text_data(make_coverage_call(max_tokens=4096))
+
+    assert payload["thinking"] == {"type": "enabled", "budget_tokens": 2048}
+
+
+@pytest.mark.parametrize(
+    ("model", "expected"),
+    [
+        ("anthropic.claude-sonnet-5-5-v1:0", {"auto": {}}),
+        ("us.anthropic.claude-opus-5-5-v1:0", {"auto": {}}),
+        (
+            "anthropic.claude-sonnet-4-6-v1:0",
+            {"tool": {"name": "return_structured_data"}},
+        ),
+    ],
+)
+def test_bedrock_structured_output_tool_choice_per_model(
+    coverage_hass, model, expected
+):
+    provider = AWSBedrock(coverage_hass, "AK", "SK", "us-east-1", model)
+    call_obj = make_coverage_call(
+        max_tokens=256, response_format="json", structure={"type": "object"}
+    )
+
+    for payload in (
+        provider._prepare_vision_data(call_obj),
+        provider._prepare_text_data(call_obj),
+    ):
+        assert payload["toolConfig"]["toolChoice"] == expected
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
