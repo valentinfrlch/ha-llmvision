@@ -207,6 +207,17 @@ class Event:
         return self.__repr__()
 
 
+SHARED_CLEANUP_KEY = f"{DOMAIN}_timeline_cleanup"
+
+
+def _shared_cleanup_state(hass: HomeAssistant) -> dict:
+    """Return the cleanup lock and pending key_frame set shared per hass."""
+    return hass.data.setdefault(
+        SHARED_CLEANUP_KEY,
+        {"cleanup_lock": asyncio.Lock(), "pending_key_frames": set()},
+    )
+
+
 class Timeline:
     """Representation of a Calendar."""
 
@@ -217,9 +228,13 @@ class Timeline:
         self.today_summary = ""
         self.retention_time = config_entry.data.get(CONF_RETENTION_TIME)
 
-        # Track key_frame paths whose DB rows are not yet committed
-        self._pending_key_frames: set[str] = set()
-        self._cleanup_lock = asyncio.Lock()
+        # Timeline is instantiated per service call / API request, and every
+        # instance runs a cleanup. The lock and the set of key_frames whose DB
+        # rows are not yet committed must be shared, or concurrent instances
+        # race over the same files and ignore each other's pending snapshots.
+        shared = _shared_cleanup_state(hass)
+        self._pending_key_frames: set[str] = shared["pending_key_frames"]
+        self._cleanup_lock: asyncio.Lock = shared["cleanup_lock"]
         self._config_entry = config_entry
         self._migrating = True
 
@@ -1085,6 +1100,9 @@ class Timeline:
                 try:
                     await self.hass.async_add_executor_job(os.remove, file_path)
                     removed += 1
+                except FileNotFoundError:
+                    # Already gone (removed elsewhere): the goal is met.
+                    _LOGGER.debug(f"[CLEANUP] Already removed: {file}")
                 except OSError as e:
                     _LOGGER.warning(f"[CLEANUP] Failed to remove {file_path}: {e}")
 

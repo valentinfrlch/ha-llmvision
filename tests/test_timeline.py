@@ -1480,3 +1480,59 @@ class TestCreateEventKeyFrameValidation:
         legacy = "/config/www/llmvision/abc.jpg"
         ev = await self._create(tl, legacy, validate_key_frame=False)
         assert ev.key_frame == legacy
+
+
+# ===========================================================================
+# Cleanup coordination across Timeline instances (#676)
+# ===========================================================================
+
+
+class TestCleanupAcrossInstances:
+    def test_instances_on_same_hass_share_lock_and_pending_set(self, build_timeline):
+        first = build_timeline()
+        second = Timeline(first.hass, first._config_entry)
+
+        assert second._cleanup_lock is first._cleanup_lock
+        assert second._pending_key_frames is first._pending_key_frames
+
+    async def test_pending_frame_of_one_instance_is_protected_from_another(
+        self, build_timeline, tmp_path
+    ):
+        first = build_timeline()
+        await first._initialize_db()
+        second = Timeline(first.hass, first._config_entry)
+        second._migrating = False
+        media_path = tmp_path / "snapshots"
+        media_path.mkdir()
+        second._media_path = str(media_path)
+        pending = media_path / "pending.jpg"
+        pending.write_bytes(b"fake")
+        old_ts = datetime.datetime.now().timestamp() - 100_000
+        os.utime(str(pending), (old_ts, old_ts))
+
+        first._pending_key_frames.add("pending.jpg")
+        await second._cleanup()
+
+        assert pending.exists()
+
+    async def test_already_removed_file_is_not_a_warning(
+        self, build_timeline, tmp_path, monkeypatch, caplog
+    ):
+        tl = build_timeline()
+        await tl._initialize_db()
+        media_path = tmp_path / "snapshots"
+        media_path.mkdir()
+        tl._media_path = str(media_path)
+        orphan = media_path / "orphan.jpg"
+        orphan.write_bytes(b"fake")
+        old_ts = datetime.datetime.now().timestamp() - 100_000
+        os.utime(str(orphan), (old_ts, old_ts))
+
+        def gone(path):
+            raise FileNotFoundError(2, "No such file or directory", path)
+
+        monkeypatch.setattr("custom_components.llmvision.timeline.os.remove", gone)
+        with caplog.at_level("WARNING", logger="custom_components.llmvision.timeline"):
+            await tl._cleanup()
+
+        assert "Failed to remove" not in caplog.text
