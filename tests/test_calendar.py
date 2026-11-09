@@ -158,6 +158,27 @@ class TestCalendar:
         assert calendar_instance._events[0].uid == "2"
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize("title", [None, ""])
+    async def test_untitled_events_do_not_break_update_or_query(
+        self, calendar_instance, mock_timeline, title
+    ):
+        """An event without a title must not fail CalendarEvent validation (#597)."""
+        start = datetime.datetime(2024, 1, 15, tzinfo=datetime.timezone.utc)
+        mock_timeline.get_all_events = AsyncMock(
+            return_value=[
+                MockTimelineEvent("1", title, start, start + datetime.timedelta(hours=1), "d")
+            ]
+        )
+
+        await calendar_instance.async_update()
+        result = await calendar_instance.async_get_events(
+            calendar_instance.hass, start - datetime.timedelta(days=1), start + datetime.timedelta(days=1)
+        )
+
+        assert calendar_instance._events[0].summary
+        assert result[0].summary == calendar_instance._events[0].summary
+
+    @pytest.mark.asyncio
     async def test_async_get_events_in_range(self, calendar_instance, mock_timeline):
         """Test async_get_events returns events within date range."""
         mock_events = [

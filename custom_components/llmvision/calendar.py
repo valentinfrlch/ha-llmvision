@@ -20,6 +20,10 @@ _LOGGER = logging.getLogger(__name__)
 # after this quiet period instead of forcing one full reload per event.
 REFRESH_COOLDOWN_SECONDS = 1.5
 
+# CalendarEvent requires a non-empty summary; events stored without a title
+# would otherwise fail validation and break every calendar update.
+UNTITLED_EVENT_SUMMARY = "Untitled event"
+
 
 class Calendar(CalendarEntity):
     """Representation of a Calendar."""
@@ -133,7 +137,7 @@ class Calendar(CalendarEntity):
             calendar_events.append(
                 CalendarEvent(
                     uid=event.uid,
-                    summary=event.title,
+                    summary=event.title or UNTITLED_EVENT_SUMMARY,
                     start=event_start,
                     end=event_end,
                     description=event.description,
@@ -170,7 +174,7 @@ class Calendar(CalendarEntity):
             if event_end > start_date and event_start < end_date:
                 calendar_event = CalendarEvent(
                     uid=event.uid,
-                    summary=event.title,
+                    summary=event.title or UNTITLED_EVENT_SUMMARY,
                     start=event_start,
                     end=event_end,
                     description=event.description,
