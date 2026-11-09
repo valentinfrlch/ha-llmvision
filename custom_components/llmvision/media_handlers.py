@@ -22,7 +22,7 @@ import numpy as np
 from homeassistant.helpers.network import get_url
 from homeassistant.exceptions import ServiceValidationError
 
-from .const import DOMAIN
+from .const import KEY_FRAME_PATH
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class MediaProcessor:
         self.client = client
         self.base64_images = []
         self.filenames = []
-        self.snapshots_path = f"/media/{DOMAIN}/snapshots/"
+        self.snapshots_path = KEY_FRAME_PATH
         self.key_frame = ""
 
     async def _encode_image(self, img):
@@ -78,10 +78,10 @@ class MediaProcessor:
         # ensure /media/llmvision/snapshots dir exists
         await self.hass.loop.run_in_executor(
             None,
-            partial(os.makedirs, f"/media/{DOMAIN}/snapshots", exist_ok=True),
+            partial(os.makedirs, KEY_FRAME_PATH, exist_ok=True),
         )
         if self.key_frame == "":
-            filename = f"/media/{DOMAIN}/snapshots/{uid}-{frame_name}.jpg"
+            filename = os.path.join(KEY_FRAME_PATH, f"{uid}-{frame_name}.jpg")
             self.key_frame = filename
             if image_data is None and frame_path is not None:
                 # open image in hass.loop
@@ -589,7 +589,7 @@ class MediaProcessor:
                     filename = ""
 
                     if include_filename:
-                        filename = image_path.split("/")[-1].split(".")[-2]
+                        filename = os.path.splitext(os.path.basename(image_path))[0]
 
                     image_data = await self.resize_image(
                         target_width=target_width, image_path=image_path
@@ -616,15 +616,15 @@ class MediaProcessor:
         include_filename=False,
         expose_images=False,
     ):
+        video_label = (video_path or "").strip()  # label for logging without authSig
+        temp_file_path = None
         try:
-            current_event_id = str(uuid.uuid4())
-            video_path = video_path.strip()
+            video_path = video_label
 
             # Resolve media source (media-source://...)
             if is_media_source_id(video_path):
-                _LOGGER.debug(f"Resolving media source id: {video_path}")
+                _LOGGER.debug(f"Resolving media source id: {video_label}")
                 video_path = async_process_play_media_url(self.hass, video_path)
-                _LOGGER.debug(f"media url = {video_path}")
 
             # Sign local API URLs unless already signed
             if video_path.startswith("/api"):
@@ -634,10 +634,9 @@ class MediaProcessor:
                     video_path = async_sign_path(
                         self.hass, video_path, timedelta(minutes=5)
                     )
-                    _LOGGER.debug(f"signed_path = {video_path}")
                 else:
                     # Already signed, just use it
-                    _LOGGER.debug(f"Already signed {video_path}")
+                    _LOGGER.debug(f"Already signed {video_label}")
 
                 video_path = base_url + video_path
 
@@ -669,7 +668,7 @@ class MediaProcessor:
                     or os.path.getsize(temp_file_path) == 0
                 ):
                     raise ServiceValidationError(
-                        f"Failed to fetch video from {video_path}"
+                        f"Failed to fetch video from {video_label}"
                     )
 
                 ffmpeg_cmd = [
@@ -745,38 +744,35 @@ class MediaProcessor:
             frame_counter = 0
             jpeg_buffer = b""
             first_frame = None
+            stopped_early = False
 
             def find_jpeg_frames(data):
-                frames = []
+                out = []
                 start = 0
                 while True:
                     soi = data.find(b"\xff\xd8", start)
                     eoi = data.find(b"\xff\xd9", soi)
                     if soi == -1 or eoi == -1:
                         break
-                    frames.append(data[soi : eoi + 2])
+                    out.append(data[soi : eoi + 2])
                     start = eoi + 2
-                return frames, data[start:]
+                return out, data[start:]
 
             try:
                 per_read_timeout = 30  # seconds
-                # Ensure stdout is readable
                 if ffmpeg_process.stdout is None:
                     _LOGGER.error("ffmpeg stdout is not a PIPE; cannot read frames")
-                    await ffmpeg_process.wait()
                     raise ServiceValidationError("ffmpeg stdout not available")
-                # Read until ffmpeg closes stdout
-                while True:
-                    try:
-                        chunk = await asyncio.wait_for(
-                            ffmpeg_process.stdout.read(4096), timeout=per_read_timeout
-                        )
-                    except asyncio.TimeoutError:
-                        _LOGGER.warning(
-                            "Timeout while waiting for ffmpeg stdout read; terminating read loop"
-                        )
-                        break
 
+                deadline = time.monotonic() + ffmpeg_timeout
+                while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise asyncio.TimeoutError
+                    chunk = await asyncio.wait_for(
+                        ffmpeg_process.stdout.read(4096),
+                        timeout=min(per_read_timeout, remaining),
+                    )
                     if not chunk:
                         _LOGGER.debug("ffmpeg stdout closed or returned no data")
                         break
@@ -797,15 +793,15 @@ class MediaProcessor:
                                 )
                                 frames.append((jpeg_data, score, frame_counter))
                                 _LOGGER.debug(
-                                    f"Appended frame {frame_counter} (score={score:.6f}, bytes={len(jpeg_data)})"
+                                    f"Appended frame {frame_counter} "
+                                    f"(score={score:.6f}, bytes={len(jpeg_data)})"
                                 )
                             else:
-                                # First frame, always include
                                 first_frame = (jpeg_data, frame_counter)
                                 _LOGGER.debug(
-                                    f"Captured first frame {frame_counter} (bytes={len(jpeg_data)})"
+                                    f"Captured first frame {frame_counter} "
+                                    f"(bytes={len(jpeg_data)})"
                                 )
-
                             previous_frame = current_frame_gray
                             frame_counter += 1
                         except UnidentifiedImageError:
@@ -814,37 +810,39 @@ class MediaProcessor:
                             )
                             continue
                         if frame_counter >= max_frames:
+                            stopped_early = True
                             break
-                await ffmpeg_process.wait()
-
-                if (
-                    error_output == asyncio.subprocess.PIPE
-                    and ffmpeg_process.stderr is not None
-                ):
-                    try:
-                        ffmpeg_stderr = await ffmpeg_process.stderr.read()
-                    except Exception:
-                        ffmpeg_stderr = None
-
+                    if stopped_early:
+                        break
             except asyncio.TimeoutError:
-                _LOGGER.info(
-                    f"FFmpeg failed to process video within {ffmpeg_timeout} seconds"
+                stopped_early = True
+                _LOGGER.warning(
+                    "FFmpeg produced no frames within %s s; terminating", ffmpeg_timeout
                 )
-                if ffmpeg_process.returncode is not None:
-                    ffmpeg_process.terminate()
+            finally:
+                # An unread pipe blocks ffmpeg forever, so it must never outlive this block.
+                try:
+                    await asyncio.wait_for(ffmpeg_process.wait(), timeout=10)
+                except asyncio.TimeoutError:
+                    stopped_early = True
+                if ffmpeg_process.returncode is None:
+                    ffmpeg_process.kill()
+                    await ffmpeg_process.wait()
+
+            if (
+                error_output == asyncio.subprocess.PIPE
+                and ffmpeg_process.stderr is not None
+            ):
+                try:
+                    ffmpeg_stderr = await ffmpeg_process.stderr.read()
+                except Exception:
+                    ffmpeg_stderr = None
 
             _LOGGER.debug(
                 f"FFmpeg process finished with return code {ffmpeg_process.returncode}"
             )
 
-            # Cleanup temp file (if any)
-            if temp_file_path and os.path.exists(temp_file_path):
-                try:
-                    os.remove(temp_file_path)
-                except Exception:
-                    pass
-
-            if ffmpeg_process.returncode != 0:
+            if ffmpeg_process.returncode != 0 and not stopped_early:
                 msg = f"FFmpeg failed with return code {ffmpeg_process.returncode}"
                 if ffmpeg_stderr:
                     try:
@@ -911,7 +909,17 @@ class MediaProcessor:
                     uid=str(uuid.uuid4())[:8],
                 )
         except Exception as e:
-            raise ServiceValidationError(f"Error processing video {video_path}: {e}")
+            raise ServiceValidationError(
+                f"Error processing video {video_label}: {e}"
+            ) from e
+        finally:
+            if temp_file_path:
+                try:
+                    await self.hass.async_add_executor_job(os.remove, temp_file_path)
+                except FileNotFoundError:
+                    pass
+                except OSError as e:
+                    _LOGGER.warning("Could not remove temp file %s: %s", temp_file_path, e)
 
     async def add_videos(
         self,
@@ -924,16 +932,12 @@ class MediaProcessor:
     ):
         """Wrapper for client.add_frame for videos"""
 
-        if not video_paths:
-            video_paths = []
+        video_paths = list(video_paths or [])
 
         base_url = get_url(self.hass)
 
-        if event_ids:
-            for event_id in event_ids:
-                url = "/api/frigate/notifications/" + event_id + "/clip.mp4"
-                # append to video_paths
-                video_paths.append(url)
+        for event_id in event_ids or []:
+            video_paths.append(f"/api/frigate/notifications/{event_id}/clip.mp4")
 
         _LOGGER.debug(f"Processing videos: {video_paths}")
 

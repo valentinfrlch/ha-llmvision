@@ -1,4 +1,5 @@
 """Unit tests for media_handlers.py module."""
+
 import pytest
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from PIL import Image
@@ -71,6 +72,9 @@ class TestMediaProcessor:
         hass = Mock()
         hass.loop = Mock()
         hass.loop.run_in_executor = AsyncMock()
+        hass.async_add_executor_job = AsyncMock(
+            side_effect=lambda func, *args: func(*args)
+        )
         hass.states = Mock()
         hass.states.get = Mock()
         hass.config = Mock()
@@ -87,7 +91,9 @@ class TestMediaProcessor:
     @pytest.fixture
     def processor(self, mock_hass, mock_client):
         """Create a MediaProcessor instance."""
-        with patch('custom_components.llmvision.media_handlers.async_get_clientsession'):
+        with patch(
+            "custom_components.llmvision.media_handlers.async_get_clientsession"
+        ):
             return MediaProcessor(mock_hass, mock_client)
 
     def test_init(self, processor, mock_hass, mock_client):
@@ -102,7 +108,7 @@ class TestMediaProcessor:
     async def test_encode_image(self, processor):
         """Test _encode_image method."""
         # Create a simple test image
-        img = Image.new('RGB', (100, 100), color='red')
+        img = Image.new("RGB", (100, 100), color="red")
 
         result = await processor._encode_image(img)
 
@@ -174,30 +180,27 @@ class TestMediaProcessor:
 
     def test_convert_to_rgb_rgba(self, processor):
         """Test _convert_to_rgb with RGBA image."""
-        img = Image.new('RGBA', (100, 100), color=(255, 0, 0, 128))
+        img = Image.new("RGBA", (100, 100), color=(255, 0, 0, 128))
 
         result = processor._convert_to_rgb(img)
 
-        assert result.mode == 'RGB'
+        assert result.mode == "RGB"
 
     def test_convert_to_rgb_already_rgb(self, processor):
         """Test _convert_to_rgb with RGB image."""
-        img = Image.new('RGB', (100, 100), color='red')
+        img = Image.new("RGB", (100, 100), color="red")
 
         result = processor._convert_to_rgb(img)
 
-        assert result.mode == 'RGB'
+        assert result.mode == "RGB"
 
     @pytest.mark.asyncio
     async def test_resize_image_with_img(self, processor):
         """Test resize_image with PIL Image object."""
         # Create a test image
-        img = Image.new('RGB', (200, 100), color='blue')
+        img = Image.new("RGB", (200, 100), color="blue")
 
-        result = await processor.resize_image(
-            target_width=100,
-            img=img
-        )
+        result = await processor.resize_image(target_width=100, img=img)
 
         assert isinstance(result, str)
         assert len(result) > 0
@@ -227,8 +230,8 @@ class TestMediaProcessor:
     def test_similarity_score(self, processor):
         """Test _similarity_score method."""
         # Create two similar images
-        img1 = Image.new('L', (100, 100), color=128)
-        img2 = Image.new('L', (100, 100), color=130)
+        img1 = Image.new("L", (100, 100), color=128)
+        img2 = Image.new("L", (100, 100), color=130)
 
         score = processor._similarity_score(img1, img2)
 
