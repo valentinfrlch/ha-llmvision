@@ -71,5 +71,6 @@
             }
         }
     },
-    "regex": "`\\b${key}(?:i|e|s)?\\b`, 'iu'"
+    "regex": "`\\b${key}(?:i|e|s)?\\b`, 'iu'",
+    "no_activity": ["nessuna attività", "nessun movimento"]
 }

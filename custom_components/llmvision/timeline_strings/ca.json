@@ -78,5 +78,6 @@
             }
         }
     },
-    "regex": "`\\b${key}(?:es|s)?\\b`, 'iu'"
+    "regex": "`\\b${key}(?:es|s)?\\b`, 'iu'",
+    "no_activity": ["cap activitat", "sense activitat"]
 }

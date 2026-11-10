@@ -258,6 +258,36 @@ class TestGetCategoryAndLabel:
         assert category == "animal"
         assert label == "dog"
 
+    @pytest.mark.parametrize(
+        ("timeline_language", "query", "expected"),
+        [
+            (
+                "German",
+                "Ein Zeitungsausträger (person) legt ein Paket (delivery) in den Briefkasten.",
+                ("delivery", "delivery"),
+            ),
+            (
+                "English",
+                "Der Paketbote stellt ein Paket vor der Haustür ab.",
+                ("delivery", "delivery"),
+            ),
+            ("German", "Ein Lieferwagen fährt vorbei.", ("vehicle", "van")),
+        ],
+    )
+    async def test_labels_resolve_across_languages(
+        self, hass_with_executor, timeline_language, query, expected
+    ):
+        """Descriptions in one language resolve while another one is configured."""
+        entry = Mock()
+        entry.data = {CONF_TIMELINE_LANGUAGE: timeline_language}
+        entry.options = {}
+
+        category, label = await _get_category_and_label(
+            hass_with_executor, entry, query
+        )
+
+        assert (category, label) == expected
+
     async def test_respects_category_priority(self, hass_with_executor, entry_english):
         """Priority is:
         0. delivery
@@ -721,6 +751,34 @@ class TestGetEventsJson:
         events = await tl.get_events_json(limit=None, include_no_activity=True)
         titles = [e["title"] for e in events]
         assert "no activity observed" in titles
+
+    async def test_translated_no_activity_excluded_by_default(self, build_timeline):
+        """A translated no activity title is filtered like the English one."""
+        tl = build_timeline(retention=0)
+        await tl._initialize_db()
+        await _insert_rows(
+            tl._db_path,
+            [
+                _make_row("Keine Aktivität erkannt", 0.1, camera="front"),
+                _make_row("Keine Bewegung", 0.15, camera="front"),
+                _make_row(
+                    "person at front door",
+                    0.2,
+                    camera="front",
+                    category="person",
+                    label="person",
+                ),
+            ],
+        )
+
+        events = await tl.get_events_json(limit=None)
+        titles = [e["title"] for e in events]
+        assert titles == ["person at front door"]
+
+        events = await tl.get_events_json(limit=None, include_no_activity=True)
+        titles = [e["title"] for e in events]
+        assert "Keine Aktivität erkannt" in titles
+        assert "Keine Bewegung" in titles
 
     async def test_filter_by_camera(self, build_timeline):
         tl = build_timeline(retention=0)

@@ -74,5 +74,6 @@
             }
         }
     },
-    "regex": "`\\b${key}s?\\b`, 'i'"
+    "regex": "`\\b${key}s?\\b`, 'i'",
+    "no_activity": ["ingen aktivitet", "ingen bevægelse"]
 }

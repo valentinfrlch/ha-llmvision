@@ -12,8 +12,6 @@
         },
         "vehicle": {
             "labels": {
-                "briefträger": "truck",
-                "postbote": "truck",
                 "fahrrad": "bicycle",
                 "motorrad": "motorcycle",
                 "bus": "bus",
@@ -21,7 +19,12 @@
                 "van": "car",
                 "suv": "car",
                 "fahrzeug": "car",
-                "lastwagen": "truck"
+                "lastwagen": "truck",
+                "lkw": "truck",
+                "lieferwagen": "van",
+                "lieferfahrzeug": "van",
+                "transporter": "van",
+                "anhänger": "truck"
             }
         },
         "animal": {
@@ -48,7 +51,20 @@
         "delivery": {
             "labels": {
                 "box": "delivery",
-                "packet": "delivery"
+                "packet": "delivery",
+                "paket": "delivery",
+                "pakete": "delivery",
+                "päckchen": "delivery",
+                "lieferung": "delivery",
+                "sendung": "delivery",
+                "paketbote": "delivery",
+                "postbote": "delivery",
+                "briefträger": "delivery",
+                "zusteller": "delivery",
+                "zeitungsausträger": "delivery",
+                "bote": "delivery",
+                "kurier": "delivery",
+                "lieferant": "delivery"
             }
         },
         "entity": {
@@ -70,5 +86,11 @@
             }
         }
     },
-    "regex": "`\\b${key}(?:en|s)?\\b`, 'i'"
+    "regex": "`\\b${key}(?:en|s)?\\b`, 'i'",
+    "no_activity": [
+        "keine aktivität",
+        "keine aktivitaet",
+        "keine bewegung",
+        "nichts erkannt"
+    ]
 }

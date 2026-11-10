@@ -83,5 +83,6 @@
             }
         }
     },
-    "regex": "`\\b${key}(?:ar(?:na)?|er(?:na)?|or(?:na)?|r|s|na|en)?\\b`, 'iu'"
+    "regex": "`\\b${key}(?:ar(?:na)?|er(?:na)?|or(?:na)?|r|s|na|en)?\\b`, 'iu'",
+    "no_activity": ["ingen aktivitet", "ingen rörelse"]
 }

@@ -75,5 +75,6 @@
             }
         }
     },
-    "regex": "`\\b${key}(?:y|i|ovia|ov|e|a|á|é|ia)?\\b`, 'iu'"
+    "regex": "`\\b${key}(?:y|i|ovia|ov|e|a|á|é|ia)?\\b`, 'iu'",
+    "no_activity": ["žiadna aktivita", "žiadny pohyb"]
 }

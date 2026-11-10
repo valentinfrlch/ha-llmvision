@@ -74,5 +74,6 @@
             }
         }
     },
-    "regex": "`\\b${key}(?:en|s|'s|s'|jes|eren)?\\b`, 'iu'"
+    "regex": "`\\b${key}(?:en|s|'s|s'|jes|eren)?\\b`, 'iu'",
+    "no_activity": ["geen activiteit", "geen beweging"]
 }

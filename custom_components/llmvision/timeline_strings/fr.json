@@ -69,5 +69,6 @@
             }
         }
     },
-    "regex": "`\\b${key}(?:s|x|aux|eaux|eux)?\\b`, 'iu'"
+    "regex": "`\\b${key}(?:s|x|aux|eaux|eux)?\\b`, 'iu'",
+    "no_activity": ["aucune activité", "aucun mouvement"]
 }
