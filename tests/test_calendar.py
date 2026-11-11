@@ -3,8 +3,9 @@ import pytest
 import datetime
 import os
 import asyncio
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import Mock, patch, AsyncMock, MagicMock, create_autospec
 from homeassistant.components.calendar import CalendarEvent
+from homeassistant.helpers.debounce import Debouncer
 
 
 class MockTimelineEvent:
@@ -261,12 +262,51 @@ class TestCalendar:
     @pytest.mark.asyncio
     async def test_pending_refresh_cancelled_on_removal(self, calendar_instance):
         """Removing the entity shuts the debouncer down to cancel a pending refresh."""
-        debouncer = AsyncMock()
+        # async_shutdown is a synchronous callback despite its async_ prefix.
+        debouncer = create_autospec(Debouncer, instance=True)
         calendar_instance._refresh_debouncer = debouncer
 
         await calendar_instance.async_will_remove_from_hass()
 
-        debouncer.async_shutdown.assert_awaited_once()
+        debouncer.async_shutdown.assert_called_once_with()
+
+    @pytest.mark.asyncio
+    async def test_removal_without_debouncer(self, calendar_instance):
+        """Removal is safe before the entity has been added to Home Assistant."""
+        await calendar_instance.async_will_remove_from_hass()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("pending_refresh", [False, True])
+    async def test_removal_with_real_debouncer(
+        self, calendar_instance, pending_refresh
+    ):
+        """Use HA's real shutdown API and prevent refreshes after removal."""
+        refresh = AsyncMock()
+        debouncer = Debouncer(
+            calendar_instance.hass,
+            Mock(),
+            cooldown=1.5,
+            immediate=False,
+            function=refresh,
+        )
+        calendar_instance._refresh_debouncer = debouncer
+        schedule_timer = calendar_instance.hass.loop.call_later
+        if pending_refresh:
+            await debouncer.async_call()
+            schedule_timer.assert_called_once()
+
+        await calendar_instance.async_will_remove_from_hass()
+        # Repeated shutdown must also be harmless.
+        await calendar_instance.async_will_remove_from_hass()
+        await debouncer.async_call()
+
+        assert debouncer.function is None
+        refresh.assert_not_awaited()
+        if pending_refresh:
+            schedule_timer.return_value.cancel.assert_called_once_with()
+            schedule_timer.assert_called_once()
+        else:
+            schedule_timer.assert_not_called()
 
 
 class TestCalendarAdvanced:
