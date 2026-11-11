@@ -40,6 +40,7 @@ from .const import (
     CONF_SYSTEM_PROMPT,
     CONF_TITLE_PROMPT,
     CONF_REQUEST_TIMEOUT,
+    CONF_TRACK_USAGE,
     CONF_AWS_ACCESS_KEY_ID,
     CONF_AWS_SECRET_ACCESS_KEY,
     CONF_AWS_REGION_NAME,
@@ -1389,6 +1390,9 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                     }
                                 }
                             ),
+                            vol.Optional(CONF_TRACK_USAGE, default=False): selector(
+                                {"boolean": {}}
+                            ),
                             vol.Optional(CONF_REQUEST_TIMEOUT, default=60): selector(
                                 {
                                     "number": {
@@ -1495,6 +1499,7 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_FALLBACK_PROVIDER, "no_fallback"
                 ),
                 CONF_REQUEST_TIMEOUT: self.init_info.get(CONF_REQUEST_TIMEOUT, 60),
+                CONF_TRACK_USAGE: self.init_info.get(CONF_TRACK_USAGE, False),
             },
             "prompt_section": {
                 CONF_SYSTEM_PROMPT: self.init_info.get(
@@ -1525,10 +1530,16 @@ class llmvisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # flatten dict to remove nested keys
             user_input = flatten_dict(user_input)
 
-            # Ensure both memory fields are always present, even if empty
+            # Older clients may omit the new setting on reconfiguration.
+            user_input.setdefault(
+                CONF_TRACK_USAGE, self.init_info.get(CONF_TRACK_USAGE, False)
+            )
+
+            # Preserve existing memory when its section is omitted. An explicit
+            # empty list still clears it. New entries default to empty lists.
             for _key in (CONF_MEMORY_PATHS, CONF_MEMORY_STRINGS):
                 if _key not in user_input:
-                    user_input[_key] = []
+                    user_input[_key] = self.init_info.get(_key, [])
 
             errors = {}
             if len(user_input.get(CONF_MEMORY_PATHS, [])) != len(

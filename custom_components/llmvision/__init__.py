@@ -2,6 +2,7 @@ from datetime import datetime
 from urllib.parse import urlparse
 from .timeline import Timeline
 from .providers import Request
+from .usage import USAGE_DATA, async_get_manager, is_provider_entry
 from .memory import Memory
 from .media_handlers import MediaProcessor
 import os, re
@@ -20,6 +21,7 @@ import logging
 from .const import (
     DOMAIN,
     CONF_PROVIDER,
+    CONF_TRACK_USAGE,
     CONF_API_KEY,
     CONF_IP_ADDRESS,
     CONF_PORT,
@@ -119,6 +121,7 @@ async def async_setup_entry(hass, entry):
         CONF_AWS_SECRET_ACCESS_KEY: entry.data.get(CONF_AWS_SECRET_ACCESS_KEY),
         CONF_AWS_REGION_NAME: entry.data.get(CONF_AWS_REGION_NAME),
         # Settings
+        CONF_TRACK_USAGE: entry.data.get(CONF_TRACK_USAGE, False),
         CONF_RETENTION_TIME: entry.data.get(CONF_RETENTION_TIME),
         CONF_MEMORY_PATHS: entry.data.get(CONF_MEMORY_PATHS),
         CONF_MEMORY_IMAGES_ENCODED: entry.data.get(CONF_MEMORY_IMAGES_ENCODED),
@@ -143,6 +146,12 @@ async def async_setup_entry(hass, entry):
     # Store the filtered config under the entry_uid (subdict per entry)
     hass.data[DOMAIN][entry_uid] = filtered_provider_config
 
+    manager = await async_get_manager(hass)
+    if is_provider_entry(entry):
+        await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
+    elif filtered_provider_config.get(CONF_PROVIDER) == "Settings":
+        manager.set_enabled(entry.data.get(CONF_TRACK_USAGE, False))
+
     # If this is the Settings entry, set up the calendar and run cleanup
     if filtered_provider_config.get(CONF_PROVIDER) == "Settings":
         await hass.config_entries.async_forward_entry_setups(entry, ["calendar"])
@@ -161,6 +170,10 @@ async def async_setup_entry(hass, entry):
 async def async_remove_entry(hass, entry):
     """Remove config entry from hass.data"""
     entry_uid = entry.entry_id
+    if (manager := hass.data.get(USAGE_DATA)) is not None:
+        if entry.data.get(CONF_PROVIDER) == "Settings":
+            manager.set_enabled(False)
+        await manager.async_remove(entry_uid)
     if DOMAIN in hass.data and entry_uid in hass.data[DOMAIN]:
         _LOGGER.info(f"Removing {entry.title} from hass.data")
         await async_unload_entry(hass, entry)
@@ -178,14 +191,22 @@ async def async_remove_entry(hass, entry):
 
 async def async_unload_entry(hass, entry) -> bool:
     _LOGGER.debug(f"Unloading {entry.title} from hass.data")
-    # check if the entry is the calendar entry (has entry rentention_time)
-    if entry.data.get(CONF_RETENTION_TIME) is not None:
+    # Settings owns the calendar; keep the retention-key check for legacy entries.
+    if (
+        entry.data.get(CONF_PROVIDER) == "Settings"
+        or entry.data.get(CONF_RETENTION_TIME) is not None
+    ):
         # unload the calendar
         unload_ok = await hass.config_entries.async_unload_platforms(
             entry, ["calendar"]
         )
+    elif is_provider_entry(entry):
+        unload_ok = await hass.config_entries.async_unload_platforms(entry, ["sensor"])
     else:
         unload_ok = True
+    if unload_ok and entry.data.get(CONF_PROVIDER) == "Settings":
+        if (manager := hass.data.get(USAGE_DATA)) is not None:
+            manager.set_enabled(False)
     return unload_ok
 
 
@@ -446,6 +467,9 @@ class ServiceCallData:
     """Store service call data and set default values"""
 
     def __init__(self, data_call):
+        # Preserve only HA service attribution; never copy service payloads.
+        self.context = getattr(data_call, "context", None)
+        self.service = getattr(data_call, "service", "unknown")
         # This is the config entry id
         self.provider = str(data_call.data.get(PROVIDER))
         # If not set, the conf_default_model will be set in providers.py

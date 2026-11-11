@@ -40,6 +40,7 @@ CONF_RETENTION_TIME = "retention_time"
 KEY_FRAME_PATH = f"/media/{DOMAIN}/snapshots"
 
 # Settings
+CONF_TRACK_USAGE = "track_usage"
 CONF_TIMELINE_LANGUAGE = "timeline_language"
 CONF_FALLBACK_PROVIDER = "fallback_provider"
 CONF_TIMELINE_TODAY_SUMMARY = "timeline_today_summary"

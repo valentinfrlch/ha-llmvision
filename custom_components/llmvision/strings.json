@@ -400,11 +400,13 @@
                         "description": "Set preferred provider to use when the selected provider is unavailable.",
                         "data": {
                             "fallback_provider": "Fallback provider",
-                            "request_timeout": "Request timeout (seconds)"
+                            "request_timeout": "Request timeout (seconds)",
+                            "track_usage": "Track token usage"
                         },
                         "data_description": {
                             "fallback_provider": "LLM Vision will retry the request with the selected provider if the current provider fails.",
-                            "request_timeout": "Total time to wait for a provider response before failing the request."
+                            "request_timeout": "Total time to wait for a provider response before failing the request.",
+                            "track_usage": "Store provider-reported token counts locally. Tracking makes no additional model calls and retains no prompts or images."
                         }
                     },
                     "prompt_section": {
