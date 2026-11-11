@@ -5,6 +5,7 @@ import uuid
 import os, re
 import json
 import asyncio
+import unicodedata
 from .const import (
     DOMAIN,
     CONF_RETENTION_TIME,
@@ -24,6 +25,219 @@ _LOGGER = logging.getLogger(__name__)
 DB_VERSION = 4
 
 
+def _load_lang_json(path: str) -> dict:
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _normalize_text(value: str) -> str:
+    """Lowercase, strip diacritics and collapse whitespace (locale proof compare)."""
+    text = unicodedata.normalize("NFKD", (value or "").lower())
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    return " ".join(text.split())
+
+
+def _timeline_language(config_entry: ConfigEntry) -> str:
+    """Timeline language of a config entry. Settings live in data, options is a fallback."""
+    language = config_entry.data.get(CONF_TIMELINE_LANGUAGE)
+    if language is None:
+        language = config_entry.options.get(CONF_TIMELINE_LANGUAGE)
+    return language or "English"
+
+
+LANG_MAP = {
+    "Bulgarian": "bg",
+    "Catalan": "ca",
+    "Czech": "cs",
+    "Danish": "da",
+    "German": "de",
+    "English": "en",
+    "Spanish": "es",
+    "French": "fr",
+    "Greek": "el",
+    "Hungarian": "hu",
+    "Italian": "it",
+    "Dutch": "nl",
+    "Polish": "pl",
+    "Portuguese": "pt",
+    "Slovak": "sk",
+    "Swedish": "sv",
+}
+
+# Priority order (lower is higher priority) when several categories match
+CATEGORY_PRIORITY = {
+    "delivery": 0,
+    "vehicle": 1,
+    "person": 2,
+    "animal": 3,
+    "entity": 4,
+    "nature": 5,
+}
+
+TIMELINE_STRINGS_DIR = os.path.join(os.path.dirname(__file__), "timeline_strings")
+
+# Caches. They are built from the bundled language files, which only change on
+# update, so they live for the lifetime of the process.
+_NO_ACTIVITY_PHRASES: tuple[str, ...] | None = None
+_BUNDLED_LANGUAGES: tuple[str, ...] | None = None
+_CATEGORY_PATTERNS: dict[str, list[tuple]] = {}
+
+
+def _bundled_languages() -> tuple[str, ...]:
+    """Return the language codes of every bundled timeline_strings file."""
+    global _BUNDLED_LANGUAGES
+    if _BUNDLED_LANGUAGES is None:
+        try:
+            _BUNDLED_LANGUAGES = tuple(
+                sorted(
+                    os.path.splitext(name)[0]
+                    for name in os.listdir(TIMELINE_STRINGS_DIR)
+                    if name.endswith(".json")
+                )
+            )
+        except OSError:
+            _BUNDLED_LANGUAGES = ()
+    return _BUNDLED_LANGUAGES
+
+
+async def _load_language_file(hass: HomeAssistant, lang_code: str) -> dict:
+    """Load timeline_strings/<lang_code>.json. Returns {} when it cannot be read."""
+    lang_file_path = os.path.join(TIMELINE_STRINGS_DIR, f"{lang_code}.json")
+    if not os.path.exists(lang_file_path):
+        _LOGGER.warning(
+            f"Language file {lang_file_path} does not exist. Falling back to English."
+        )
+        lang_file_path = os.path.join(TIMELINE_STRINGS_DIR, "en.json")
+    try:
+        return await hass.async_add_executor_job(_load_lang_json, lang_file_path)
+    except Exception as e:
+        _LOGGER.error(f"Error loading language file {lang_file_path}: {e}")
+        return {}
+
+
+def _compile_pattern(key: str, regex_template) -> re.Pattern | None:
+    """Compile a regex pattern for a given key using the optional template in the JSON.
+    Supports:
+      - string like: "`\\b${key}s?\\b`, 'i'"
+      - object like: {"pattern": "\\b${key}s?\\b", "flags": "i"}
+    Falls back to: r"\b{key}s?\b" with IGNORECASE.
+    """
+    # Defaults: ensure whole-word matching (word boundaries)
+    pattern = rf"\b{re.escape(key)}s?\b"
+    flags = re.IGNORECASE
+
+    def flags_from_str(f: str) -> int:
+        f = (f or "").lower()
+        fl = 0
+        if "i" in f:
+            fl |= re.IGNORECASE
+        if "m" in f:
+            fl |= re.MULTILINE
+        if "s" in f:
+            fl |= re.DOTALL
+        return fl
+
+    try:
+        if isinstance(regex_template, str):
+            # Expect format: "`\\b${key}s?\\b`, 'i'" or similar
+            m = re.search(
+                r"`([^`]*)`(?:\s*,\s*'([a-zA-Z]+)')?", regex_template
+            )
+            if m:
+                tpl = m.group(1)
+                tpl_f = m.group(2) or ""
+                # Substitute ${key} placeholder safely (escape key)
+                pattern = tpl.replace("${key}", re.escape(key))
+                flags = flags_from_str(tpl_f) | re.IGNORECASE
+                # Ensure whole-word boundaries around the key if not present
+                if not re.search(r"\\b", pattern):
+                    pattern = rf"\b{re.escape(key)}s?\b"
+        elif isinstance(regex_template, dict):
+            tpl_pat = regex_template.get("pattern")
+            tpl_flags = regex_template.get("flags", "")
+            if isinstance(tpl_pat, str):
+                pattern = tpl_pat.replace("${key}", re.escape(key))
+                flags = flags_from_str(tpl_flags) | re.IGNORECASE
+                if not re.search(r"\\b", pattern):
+                    pattern = rf"\b{re.escape(key)}s?\b"
+    except Exception as e:
+        _LOGGER.debug(f"Failed to apply regex template for key '{key}': {e}")
+
+    try:
+        return re.compile(pattern, flags)
+    except re.error as e:
+        _LOGGER.warning(f"Invalid regex for key '{key}': {pattern} ({e})")
+        return None
+
+
+async def _get_no_activity_phrases(hass: HomeAssistant) -> tuple[str, ...]:
+    """Return every known 'no activity' title phrase from the bundled language files.
+
+    Titles are generated by the LLM, so they arrive in the language of the prompt
+    and not necessarily in the timeline language. Matching all bundled phrases
+    keeps the false positive filter working for translated titles as well.
+    """
+    global _NO_ACTIVITY_PHRASES
+    if _NO_ACTIVITY_PHRASES is not None:
+        return _NO_ACTIVITY_PHRASES
+
+    phrases: list[str] = ["no activity"]
+    for code in _bundled_languages():
+        data = await _load_language_file(hass, code)
+        for phrase in data.get("no_activity") or []:
+            if isinstance(phrase, str) and phrase.strip():
+                phrases.append(phrase)
+    _NO_ACTIVITY_PHRASES = tuple(
+        dict.fromkeys(_normalize_text(p) for p in phrases if p.strip())
+    )
+    return _NO_ACTIVITY_PHRASES
+
+
+async def _get_category_patterns(hass: HomeAssistant, preferred: str) -> list[tuple]:
+    """Compile the category keywords of every bundled language.
+
+    The configured timeline language comes first, so it wins on ties, but the
+    keywords of the other languages stay available. Descriptions are written in
+    the language of the prompt, which does not have to match the timeline
+    language.
+    """
+    cached = _CATEGORY_PATTERNS.get(preferred)
+    if cached is not None:
+        return cached
+
+    codes = [preferred] + [c for c in _bundled_languages() if c != preferred]
+    patterns: list[tuple] = []
+    order = 0
+    for code in codes:
+        data = await _load_language_file(hass, code)
+        regex_template = data.get("regex")
+        for cat_name, cat_def in (data.get("categories") or {}).items():
+            labels = (cat_def or {}).get("labels", {})
+            if not isinstance(labels, dict):
+                continue
+            for key, canonical in labels.items():
+                pat = _compile_pattern(str(key), regex_template)
+                if pat is None:
+                    continue
+                patterns.append(
+                    (
+                        CATEGORY_PRIORITY.get(str(cat_name).lower(), 99),
+                        -len(str(key)),
+                        order,
+                        str(cat_name),
+                        str(canonical) if canonical else str(key),
+                        pat,
+                    )
+                )
+                order += 1
+
+    # Sort by category priority, then longest keyword, then file order so the
+    # configured language wins when two keywords are equally specific.
+    patterns.sort(key=lambda entry: (entry[0], entry[1], entry[2]))
+    _CATEGORY_PATTERNS[preferred] = patterns
+    return patterns
+
+
 async def _get_category_and_label(
     hass: HomeAssistant, config_entry: ConfigEntry, query: str
 ) -> tuple[str, str]:
@@ -32,148 +246,19 @@ async def _get_category_and_label(
     - label: canonical label mapped from the matched synonym (e.g., 'person', 'car', ...)
     Returns ("", "") when no match is found.
     """
+    lang_code = LANG_MAP.get(_timeline_language(config_entry), "en")
 
-    def load_lang_json(path: str) -> dict:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-
-    # Settings are stored in config_entry.data by the reconfigure flow. Keep
-    # the options fallback for entries created by older releases.
-    language = config_entry.data.get(CONF_TIMELINE_LANGUAGE)
-    if language is None:
-        language = config_entry.options.get(CONF_TIMELINE_LANGUAGE)
-    language = language or "English"
-
-    lang_map = {
-        "Bulgarian": "bg",
-        "Catalan": "ca",
-        "Czech": "cs",
-        "Danish": "da",
-        "German": "de",
-        "English": "en",
-        "Spanish": "es",
-        "French": "fr",
-        "Greek": "el",
-        "Hungarian": "hu",
-        "Italian": "it",
-        "Dutch": "nl",
-        "Polish": "pl",
-        "Portuguese": "pt",
-        "Slovak": "sk",
-        "Swedish": "sv",
-    }
-    lang_code = lang_map.get(language, "en")
-
-    # Load language json from /timeline_strings/{language}.json
-    lang_file_path = os.path.join(
-        os.path.dirname(__file__), "timeline_strings", f"{lang_code}.json"
-    )
-    if not os.path.exists(lang_file_path):
-        _LOGGER.warning(
-            f"Language file {lang_file_path} does not exist. Defaulting to English."
-        )
-        lang_file_path = os.path.join(
-            os.path.dirname(__file__), "timeline_strings", "en.json"
-        )
-
-    try:
-        lang_data = await hass.async_add_executor_job(load_lang_json, lang_file_path)
-    except Exception as e:
-        _LOGGER.error(f"Error loading language file {lang_file_path}: {e}")
-        return ("", "")
-
-    categories_data = lang_data.get("categories", {})
-    regex_template = lang_data.get("regex")
-
-    def compile_pattern(key: str):
-        """Compile a regex pattern for a given key using the optional template in the JSON.
-        Supports:
-          - string like: "`\\b${key}s?\\b`, 'i'"
-          - object like: {"pattern": "\\b${key}s?\\b", "flags": "i"}
-        Falls back to: r"\b{key}s?\b" with IGNORECASE.
-        """
-        # Defaults: ensure whole-word matching (word boundaries)
-        pattern = rf"\b{re.escape(key)}s?\b"
-        flags = re.IGNORECASE
-
-        def flags_from_str(f: str) -> int:
-            f = (f or "").lower()
-            fl = 0
-            if "i" in f:
-                fl |= re.IGNORECASE
-            if "m" in f:
-                fl |= re.MULTILINE
-            if "s" in f:
-                fl |= re.DOTALL
-            return fl
-
-        try:
-            if isinstance(regex_template, str):
-                # Expect format: "`\\b${key}s?\\b`, 'i'" or similar
-                m = re.search(r"`([^`]*)`(?:\s*,\s*'([a-zA-Z]+)')?", regex_template)
-                if m:
-                    tpl = m.group(1)
-                    tpl_f = m.group(2) or ""
-                    # Substitute ${key} placeholder safely (escape key)
-                    pattern = tpl.replace("${key}", re.escape(key))
-                    flags = flags_from_str(tpl_f)
-                    # Ensure whole-word boundaries around the key if not present
-                    if not re.search(r"\\b", pattern):
-                        pattern = rf"\\b{re.escape(key)}s?\\b"
-            elif isinstance(regex_template, dict):
-                tpl_pat = regex_template.get("pattern")
-                tpl_flags = regex_template.get("flags", "")
-                if isinstance(tpl_pat, str):
-                    pattern = tpl_pat.replace("${key}", re.escape(key))
-                    flags = flags_from_str(tpl_flags)
-                    if not re.search(r"\\b", pattern):
-                        pattern = rf"\\b{re.escape(key)}s?\\b"
-        except Exception as e:
-            _LOGGER.debug(f"Failed to apply regex template for key '{key}': {e}")
-
-        try:
-            return re.compile(pattern, flags)
-        except re.error as e:
-            _LOGGER.warning(f"Invalid regex for key '{key}': {pattern} ({e})")
-            return None
-
-    # Collect all matches so we can pick the best according to category priority
-    # Priority order (lower is higher priority)
-    category_priority = {
-        "delivery": 0,
-        "vehicle": 1,
-        "person": 2,
-        "animal": 3,
-        "entity": 4,
-        "nature": 5,
-    }
-
-    matches: list[tuple[int, int, int, str, str]] = (
-        []
-    )  # (priority, -key_len, order_index, category, label)
     q = query or ""
-
-    for cat_name, cat_def in categories_data.items():
-        objects = (cat_def or {}).get("labels", {})
-        if not isinstance(objects, dict):
-            continue
-
-        for key_index, (key, canonical) in enumerate(objects.items()):
-            pat = compile_pattern(str(key))
-            if pat and pat.search(q):
-                canonical_label = str(canonical) if canonical else str(key)
-                prio = category_priority.get(str(cat_name).lower(), 99)
-                matches.append(
-                    (prio, -len(str(key)), key_index, str(cat_name), canonical_label)
-                )
-
-    if not matches:
+    if not q:
         return ("", "")
 
-    # Sort by category priority (asc), then longest key (desc via negative length), then original order
-    matches.sort(key=lambda x: (x[0], x[1], x[2]))
-    _, _, _, category, label = matches[0]
-    return (category, label)
+    for _prio, _key_len, _order, category, label, pat in await _get_category_patterns(
+        hass, lang_code
+    ):
+        if pat.search(q):
+            return (category, label)
+
+    return ("", "")
 
 
 class Event:
@@ -729,6 +814,12 @@ class Timeline:
         start_dt = normalize_input_dt(start)
         end_dt = normalize_input_dt(end)
 
+        # Titles are written by the LLM and can be translated, so the filter has
+        # to look for every bundled no activity phrase instead of the English one
+        no_activity_phrases = (
+            () if include_no_activity else await _get_no_activity_phrases(self.hass)
+        )
+
         async with aiosqlite.connect(self._db_path) as db:
             async with db.execute("""
                 SELECT
@@ -752,8 +843,9 @@ class Timeline:
                         row_end = self._ensure_datetime(row_end)
 
                     # No-activity filter (always applied unless opted in)
-                    if not include_no_activity:
-                        if "no activity" in (row[1] or "").strip().lower():
+                    if no_activity_phrases:
+                        title_norm = _normalize_text(row[1] or "")
+                        if any(phrase in title_norm for phrase in no_activity_phrases):
                             continue
 
                     # Camera filter — events with no camera pass through unconditionally

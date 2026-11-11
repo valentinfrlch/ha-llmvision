@@ -76,5 +76,6 @@
             }
         }
     },
-    "regex": "`\\b${key}(?:y|i|ové|ovi|a|e|ů|í|é|á)?\\b`, 'iu'"
+    "regex": "`\\b${key}(?:y|i|ové|ovi|a|e|ů|í|é|á)?\\b`, 'iu'",
+    "no_activity": ["žádná aktivita", "žádný pohyb"]
 }

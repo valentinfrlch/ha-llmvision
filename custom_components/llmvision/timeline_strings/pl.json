@@ -76,5 +76,6 @@
             }
         }
     },
-    "regex": "`\\b${key}(?:y|i|ów|ow|owie|a|e)?\\b`, 'iu'"
+    "regex": "`\\b${key}(?:y|i|ów|ow|owie|a|e)?\\b`, 'iu'",
+    "no_activity": ["brak aktywności", "brak ruchu"]
 }

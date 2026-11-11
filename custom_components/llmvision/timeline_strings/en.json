@@ -76,5 +76,6 @@
             }
         }
     },
-    "regex": "`\\b${key}s?\\b`, 'i'"
+    "regex": "`\\b${key}s?\\b`, 'i'",
+    "no_activity": ["no activity", "no motion", "nothing detected"]
 }

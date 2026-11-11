@@ -72,5 +72,6 @@
             }
         }
     },
-    "regex": "`\\b${key}(?:k|ek|ok|ök|ak|uk|ák|ők)?\\b`, 'iu'"
+    "regex": "`\\b${key}(?:k|ek|ok|ök|ak|uk|ák|ők)?\\b`, 'iu'",
+    "no_activity": ["nincs aktivitás", "nincs mozgás"]
 }
