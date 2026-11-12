@@ -610,7 +610,8 @@ class Timeline:
         if isinstance(dt, datetime.date) and not isinstance(dt, datetime.datetime):
             dt = datetime.datetime.combine(dt, datetime.datetime.min.time())
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=datetime.timezone.utc)
+            # HA passes naive datetimes (e.g. datetime selectors) in local time
+            dt = dt.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
         return dt
 
     def _get_retention_days(self) -> int | None:
