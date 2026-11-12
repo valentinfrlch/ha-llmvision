@@ -70,6 +70,20 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
+class _CompletionResponseError(ServiceValidationError):
+    """A locally generated error safe to show without exposing provider content."""
+
+    def __init__(self, *, token_limit: bool = False):
+        message = (
+            "The completion reached the token limit. Increase max_tokens "
+            "or reduce reasoning effort if enabled; the limit may include "
+            "reasoning and non-visible formatting tokens."
+            if token_limit
+            else "The provider returned no text (empty_response)."
+        )
+        super().__init__(message)
+
+
 class Request:
 
     def __init__(self, hass: HomeAssistant, message, max_tokens, temperature):
@@ -222,6 +236,8 @@ class Request:
                 call.model = None
                 return await self.call(call, _is_fallback_retry=True)
             else:
+                if isinstance(e, _CompletionResponseError):
+                    raise
                 raise ServiceValidationError("Provider request failed") from None
         # Handle Glimpse-v1 responses
         try:
@@ -611,36 +627,75 @@ class OpenAI(Provider):
     def _normalize_reasoning_effort(self, value: Any) -> str:
         """Normalize reasoning effort to a known value."""
         effort = str(value).strip().lower() if value is not None else "none"
-        allowed = {"none", "minimal", "low", "medium", "high", "xhigh"}
+        allowed = {"none", "minimal", "low", "medium", "high", "xhigh", "max"}
         return effort if effort in allowed else "none"
 
-    def _model_supports_thinking(self, max_effort: str) -> str | bool:
-        """Returns the highest supported reasoning effort for the model that is <= the reasoning effort from config"""
+    def _supported_reasoning_efforts(self) -> tuple[str, ...] | None:
+        """Return known model capabilities, including dated model snapshots."""
+        # Keep capabilities explicit: newer models do not all support `none`.
+        # https://developers.openai.com/api/docs/guides/latest-model
+        modern_efforts = ("none", "low", "medium", "high", "xhigh", "max")
         models = {
-            "gpt-5.5": ["none", "low", "medium", "high", "xhigh"],
-            "gpt-5.4-pro": ["medium", "high", "xhigh"],
-            "gpt-5.4-mini": ["none", "low", "medium", "high", "xhigh"],
-            "gpt-5.4-nano": ["none", "low", "medium", "high", "xhigh"],
-            "gpt-5.4": ["none", "low", "medium", "high", "xhigh"],
-            "gpt-5.2": ["none", "low", "medium", "high", "xhigh"],
-            "gpt-5.1": ["none", "low", "medium", "high"],
-            "gpt-5-pro": ["high"],
-            "gpt-5-mini": ["medium"],
-            "gpt-5-nano": ["medium"],
+            "gpt-6.1-terra": modern_efforts,
+            "gpt-6.1-sol": modern_efforts[1:],
+            "gpt-6-astra": modern_efforts[1:],
+            "gpt-6-sol": modern_efforts,
+            "gpt-6-luna": modern_efforts,
+            "gpt-5.6": modern_efforts,
+            "gpt-5.6-sol": modern_efforts,
+            "gpt-5.6-terra": modern_efforts,
+            "gpt-5.6-luna": modern_efforts,
+            "gpt-5.5": ("none", "low", "medium", "high", "xhigh"),
+            "gpt-5.4-pro": ("medium", "high", "xhigh"),
+            "gpt-5.4-mini": ("none", "low", "medium", "high", "xhigh"),
+            "gpt-5.4-nano": ("none", "low", "medium", "high", "xhigh"),
+            "gpt-5.4": ("none", "low", "medium", "high", "xhigh"),
+            "gpt-5.2": ("none", "low", "medium", "high", "xhigh"),
+            "gpt-5.1": ("none", "low", "medium", "high"),
+            "gpt-5-pro": ("high",),
+            "gpt-5": ("minimal", "low", "medium", "high"),
+            "gpt-5-mini": ("minimal", "low", "medium", "high"),
+            "gpt-5-nano": ("minimal", "low", "medium", "high"),
         }
-        effort_order = ["none", "minimal", "low", "medium", "high", "xhigh"]
+        for model, efforts in models.items():
+            if re.fullmatch(
+                rf"{re.escape(model)}(?:-\d{{4}}-\d{{2}}-\d{{2}})?", self.model
+            ):
+                return efforts
+        return None
+
+    def _model_supports_thinking(self, max_effort: str) -> str | bool:
+        """Return the highest supported effort at or below the configured maximum."""
+        efforts = self._supported_reasoning_efforts()
+        if efforts is None:
+            return False
+        effort_order = ["none", "minimal", "low", "medium", "high", "xhigh", "max"]
         normalized_effort = self._normalize_reasoning_effort(max_effort)
-        # Match the most specific model prefix first to avoid broad prefix collisions
-        for model_prefix in sorted(models, key=len, reverse=True):
-            efforts = models[model_prefix]
-            if self.model.startswith(model_prefix):
-                # return the highest reasoning effort supported by the model that is less than or equal to the requested max_effort
-                for effort in reversed(effort_order):
-                    if effort in efforts and effort_order.index(
-                        effort
-                    ) <= effort_order.index(normalized_effort):
-                        return effort
+        for effort in reversed(effort_order[: effort_order.index(normalized_effort) + 1]):
+            if effort in efforts:
+                return effort
         return False
+
+    def _apply_model_parameters(self, payload: dict, parameters: dict) -> dict:
+        """Apply the same reasoning and sampling rules to vision and title calls."""
+        if self._supported_reasoning_efforts() is None:
+            # OpenAI-compatible servers may use unrelated model names/capabilities.
+            return payload
+
+        effort = self._model_supports_thinking(
+            parameters.get("reasoning_effort", "none")
+        )
+        if effort is not False:
+            # Omitting `none` would enable the API's default reasoning effort.
+            payload["reasoning_effort"] = effort
+
+        # If no effort is supported below the configured maximum, retain the
+        # existing API-default behavior for models that cannot disable reasoning.
+        # Sampling controls are incompatible with reasoning, including that default.
+        if effort != "none":
+            payload.pop("temperature", None)
+            payload.pop("top_p", None)
+        return payload
 
     def _generate_headers(self) -> dict:
         return {
@@ -678,8 +733,12 @@ class OpenAI(Provider):
         if not isinstance(message, dict):
             raise ServiceValidationError("invalid_response")
         response_text = message.get("content")
-        if response_text is None:
+        if first_choice.get("finish_reason") == "length":
+            raise _CompletionResponseError(token_limit=True)
+        if not isinstance(response_text, str):
             raise ServiceValidationError("invalid_response")
+        if not response_text.strip():
+            raise _CompletionResponseError()
         return response_text
 
     def _prepare_vision_data(self, call: Any) -> dict:
@@ -692,19 +751,7 @@ class OpenAI(Provider):
             "top_p": default_parameters.get("top_p"),
         }
 
-        # Add reasoning effort if enabled and supported by model
-        max_effort = self._normalize_reasoning_effort(
-            default_parameters.get("reasoning_effort", "none")
-        )
-        supported_effort = self._model_supports_thinking(max_effort)
-        if max_effort != "none" and supported_effort != False:
-            payload["reasoning_effort"] = supported_effort
-
-        # Remove temperature and top_p if model is gpt-5
-        if self.model in ["gpt-5", "gpt-5-mini", "gpt-5-nano"]:
-            payload = {
-                k: v for k, v in payload.items() if k not in ("temperature", "top_p")
-            }
+        payload = self._apply_model_parameters(payload, default_parameters)
 
         # Add structured output format if requested
         if call.response_format == "json" and call.structure:
@@ -777,20 +824,7 @@ class OpenAI(Provider):
             "top_p": default_parameters.get("top_p"),
         }
 
-        # Add reasoning effort if enabled and supported by model
-        max_effort = self._normalize_reasoning_effort(
-            default_parameters.get("reasoning_effort", "none")
-        )
-        supported_effort = self._model_supports_thinking(max_effort)
-        if max_effort != "none" and supported_effort != False:
-            payload["reasoning_effort"] = supported_effort
-
-        # Remove temperature and top_p if model is gpt-5
-        if self.model in ["gpt-5", "gpt-5-mini", "gpt-5-nano"]:
-            payload = {
-                k: v for k, v in payload.items() if k not in ("temperature", "top_p")
-            }
-        return payload
+        return self._apply_model_parameters(payload, default_parameters)
 
     async def validate(self) -> None | ServiceValidationError:
         if self.api_key:
