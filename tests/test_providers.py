@@ -55,6 +55,7 @@ from custom_components.llmvision.const import (
     DEFAULT_TITLE_PROMPT,
     DEFAULT_MISTRAL_MODEL,
     ENDPOINT_MISTRAL,
+    GLIMPSE_V1_INSTRUCTIONS
 )
 
 
@@ -1022,6 +1023,51 @@ class TestOllama:
             )
 
             assert ollama._model_supports_thinking() is False
+
+    def test_prepare_vision_data_includes_system_message(self, coverage_hass):
+        """Test system prompt is included as the first chat message."""
+        ollama = Ollama(
+            coverage_hass,
+            "",
+            "qwen3-vl:8b-instruct",
+            endpoint={
+                "ip_address": "localhost",
+                "port": "11434",
+                "https": False,
+            },
+        )
+
+        payload = ollama._prepare_vision_data(make_coverage_call())
+
+        assert "system" not in payload
+        assert payload["messages"][0] == {
+            "role": "system",
+            "content": "system",
+        }
+        assert payload["messages"][1]["role"] == "user"
+
+    def test_prepare_vision_data_skips_system_message_for_glimpse(
+        self, coverage_hass
+    ):
+        """Test Glimpse models do not receive a system message."""
+        ollama = Ollama(
+            coverage_hass,
+            "",
+            "llava",
+            endpoint={
+                "ip_address": "localhost",
+                "port": "11434",
+                "https": False,
+            },
+        )
+
+        call = make_coverage_call(model_is_glimpse=lambda: True)
+        payload = ollama._prepare_vision_data(call)
+
+        assert "system" not in payload
+        assert payload["messages"][0]["role"] == "user"
+        assert payload["messages"][0]["content"] == GLIMPSE_V1_INSTRUCTIONS
+
 
 
 class TestAWSBedrock:
