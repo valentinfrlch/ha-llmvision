@@ -90,7 +90,7 @@ ERROR_NO_IMAGE_INPUT = "No image input provided"
 ERROR_HANDSHAKE_FAILED = "Connection could not be established"
 
 # Versions
-VERSION_ANTHROPIC = "2023-06-01"  # https://docs.anthropic.com/en/api/versioning
+VERSION_ANTHROPIC = "2026-10-21"  # https://docs.anthropic.com/en/api/versioning
 VERSION_AZURE = "2025-04-01-preview"  # https://learn.microsoft.com/en-us/azure/ai-foundry/openai/api-version-lifecycle?tabs=key
 
 # Defaults

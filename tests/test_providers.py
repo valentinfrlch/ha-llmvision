@@ -651,23 +651,31 @@ class TestOpenAI:
             assert headers["Authorization"] == "Bearer test_api_key"
             assert headers["Content-type"] == "application/json"
 
-    def test_model_supports_thinking_gpt5(self, mock_hass):
-        """Test _model_supports_thinking for gpt-5."""
+    def test_apply_model_parameters_caps_effort_from_registry(self, mock_hass):
+        """Test registry capabilities cap reasoning effort and drop sampling."""
         with patch("custom_components.llmvision.providers.async_get_clientsession"):
             openai = OpenAI(mock_hass, "test_api_key", "gpt-5.4")
+            payload = {"temperature": 0.7, "top_p": 0.9}
 
-            result = openai._model_supports_thinking("high")
+            result = openai._apply_model_parameters(
+                payload, {"reasoning_effort": "max"}
+            )
 
-            assert result == "high"
+            assert result["reasoning_effort"] == "xhigh"
+            assert "temperature" not in result
+            assert "top_p" not in result
 
-    def test_model_supports_thinking_gpt4(self, mock_hass):
-        """Test _model_supports_thinking returns False for gpt-4."""
+    def test_apply_model_parameters_keeps_unknown_model_payload(self, mock_hass):
+        """Test models outside the registry keep the caller's payload."""
         with patch("custom_components.llmvision.providers.async_get_clientsession"):
             openai = OpenAI(mock_hass, "test_api_key", "gpt-4")
+            payload = {"temperature": 0.7, "top_p": 0.9}
 
-            result = openai._model_supports_thinking("high")
+            result = openai._apply_model_parameters(
+                payload, {"reasoning_effort": "high"}
+            )
 
-            assert result is False
+            assert result == {"temperature": 0.7, "top_p": 0.9}
 
 
 class TestMistral:
@@ -886,19 +894,57 @@ class TestGoogle:
 
             assert headers["content-type"] == "application/json"
 
-    def test_model_supports_thinking(self, mock_hass):
-        """Test _model_supports_thinking for gemini-2.5."""
+    def test_apply_thinking_config_uses_budget_for_25_models(self, mock_hass):
+        """Test Gemini 2.5 models receive the legacy token budget."""
         with patch("custom_components.llmvision.providers.async_get_clientsession"):
             google = Google(mock_hass, "test_api_key", "gemini-2.5-pro")
+            generation_config = {}
 
-            assert google._model_supports_thinking() is True
+            google._apply_thinking_config(
+                generation_config,
+                {"thinking_budget": 1024, "reasoning_effort": "none"},
+            )
 
-    def test_model_does_not_support_thinking(self, mock_hass):
-        """Test _model_supports_thinking for older models."""
+            assert generation_config["thinkingConfig"] == {"thinkingBudget": 1024}
+
+    def test_apply_thinking_config_prefers_level_for_gemini3(self, mock_hass):
+        """Test Gemini 3 models receive thinkingLevel when an effort is set."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            google = Google(mock_hass, "test_api_key", "gemini-3.8-flash")
+            generation_config = {}
+
+            google._apply_thinking_config(
+                generation_config,
+                {"thinking_budget": 1024, "reasoning_effort": "high"},
+            )
+
+            assert generation_config["thinkingConfig"] == {"thinkingLevel": "high"}
+
+    def test_apply_thinking_config_skips_unknown_models(self, mock_hass):
+        """Test models outside the registry receive no thinking configuration."""
         with patch("custom_components.llmvision.providers.async_get_clientsession"):
             google = Google(mock_hass, "test_api_key", "gemini-pro")
+            generation_config = {}
 
-            assert google._model_supports_thinking() is False
+            google._apply_thinking_config(
+                generation_config,
+                {"thinking_budget": 1024, "reasoning_effort": "high"},
+            )
+
+            assert "thinkingConfig" not in generation_config
+
+    def test_apply_thinking_config_skips_deprecated_budget_field(self, mock_hass):
+        """Test Gemini 4 models never receive the deprecated budget field."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            google = Google(mock_hass, "test_api_key", "gemini-4-argon")
+            generation_config = {}
+
+            google._apply_thinking_config(
+                generation_config,
+                {"thinking_budget": 1024, "reasoning_effort": "none"},
+            )
+
+            assert "thinkingConfig" not in generation_config
 
 
 class TestGroq:
@@ -1698,6 +1744,36 @@ async def test_provider_and_bedrock_exception_tracebacks_are_safe(
     ):
         assert secret not in caplog.text
         assert secret not in rendered
+
+
+@pytest.mark.anyio
+async def test_request_call_reports_validation_message(
+    monkeypatch, coverage_hass, caplog
+):
+    """Locally raised validation errors keep their reason in log and caller."""
+    import logging
+
+    req = Request(coverage_hass, "m", 10, 0.2)
+    req.base64_images = ["aW1n"]
+    req.filenames = ["f.jpg"]
+    failing = Mock(
+        vision_request=AsyncMock(
+            side_effect=ServiceValidationError(
+                "Anthropic thinking budget must be less than max_tokens"
+            )
+        )
+    )
+    monkeypatch.setattr(ProviderFactory, "create", lambda **kwargs: failing)
+
+    with caplog.at_level(logging.ERROR, logger="custom_components.llmvision"):
+        with pytest.raises(
+            ServiceValidationError,
+            match="thinking budget must be less than max_tokens",
+        ):
+            await req.call(make_coverage_call())
+
+    assert "thinking budget must be less than max_tokens" in caplog.text
+    assert "Provider request failed" not in caplog.text
 
 
 @pytest.mark.anyio
@@ -2846,7 +2922,7 @@ def test_anthropic_manual_thinking_serializes_integer_budget_and_omits_sampling(
     assert "top_k" not in payload
 
 
-def test_anthropic_zero_budget_disables_manual_thinking_and_keeps_temperature(
+def test_anthropic_zero_budget_disables_manual_thinking_and_omits_sampling(
     coverage_hass,
 ):
     configure_anthropic_parameters(coverage_hass, 0, temperature=0.3)
@@ -2855,7 +2931,8 @@ def test_anthropic_zero_budget_disables_manual_thinking_and_keeps_temperature(
     payload = provider._prepare_vision_data(make_coverage_call(max_tokens=4096))
 
     assert payload["thinking"] == {"type": "disabled"}
-    assert payload["temperature"] == 0.3
+    assert "temperature" not in payload
+    assert "top_p" not in payload
 
 
 def test_anthropic_forced_tool_choice_disables_manual_thinking(coverage_hass):
@@ -2875,7 +2952,46 @@ def test_anthropic_forced_tool_choice_disables_manual_thinking(coverage_hass):
         "name": "return_structured_data",
     }
     assert payload["thinking"] == {"type": "disabled"}
-    assert payload["temperature"] == 0.4
+    assert "temperature" not in payload
+
+
+def test_anthropic_always_on_models_fall_back_to_auto_tool_choice(coverage_hass):
+    configure_anthropic_parameters(coverage_hass, 0)
+    provider = Anthropic(coverage_hass, "k", "claude-fable-5-2")
+
+    payload = provider._prepare_vision_data(
+        make_coverage_call(
+            max_tokens=4096,
+            response_format="json",
+            structure={"type": "object"},
+        )
+    )
+
+    assert payload["tool_choice"] == {"type": "auto"}
+    assert "thinking" not in payload
+    assert "temperature" not in payload
+
+
+@pytest.mark.anyio
+async def test_anthropic_budget_above_max_tokens_is_reported(coverage_hass, caplog):
+    """The real budget conflict reaches the log instead of a generic failure."""
+    import logging
+
+    configure_anthropic_parameters(coverage_hass, 5120)
+    req = Request(coverage_hass, "m", 10, 0.2)
+    req.base64_images = ["aW1n"]
+    req.filenames = ["f.jpg"]
+
+    with caplog.at_level(logging.ERROR, logger="custom_components.llmvision"):
+        with pytest.raises(
+            ServiceValidationError,
+            match="thinking budget must be less than max_tokens",
+        ):
+            await req.call(
+                make_coverage_call(model="claude-haiku-4-5", max_tokens=3000)
+            )
+
+    assert "thinking budget must be less than max_tokens" in caplog.text
 
 
 @pytest.mark.parametrize("model", ["claude-sonnet-4-6", "claude-opus-4-6"])
@@ -2887,6 +3003,22 @@ def test_anthropic_46_models_keep_fixed_budget_mode(coverage_hass, model):
 
     assert payload["thinking"] == {"type": "enabled", "budget_tokens": 2048}
     assert "temperature" not in payload
+
+
+def test_anthropic_46_models_prefer_adaptive_thinking_for_forced_tools(coverage_hass):
+    configure_anthropic_parameters(coverage_hass, 2048)
+    provider = Anthropic(coverage_hass, "k", "claude-opus-4-6")
+
+    payload = provider._prepare_vision_data(
+        make_coverage_call(
+            max_tokens=4096,
+            response_format="json",
+            structure={"type": "object"},
+        )
+    )
+
+    assert payload["thinking"] == {"type": "adaptive"}
+    assert payload["tool_choice"]["type"] == "tool"
 
 
 @pytest.mark.parametrize(
