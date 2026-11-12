@@ -159,6 +159,13 @@ class TestServiceCallData:
 
 
 class TestEntryLifecycle:
+    @pytest.fixture(autouse=True)
+    def mock_usage_manager(self):
+        # The legacy unit tests isolate lifecycle wiring; real HA Store and
+        # sensor setup are exercised by test_usage.py.
+        with patch("custom_components.llmvision.async_get_manager", new=AsyncMock(return_value=Mock())):
+            yield
+
     @pytest.mark.anyio
     async def test_async_setup_entry_filters_and_stores(self):
         hass = _make_hass()
@@ -264,8 +271,11 @@ class TestEntryLifecycle:
 
         assert await async_unload_entry(hass, with_calendar) is True
         assert await async_unload_entry(hass, without_calendar) is True
-        hass.config_entries.async_unload_platforms.assert_awaited_once_with(
+        hass.config_entries.async_unload_platforms.assert_any_await(
             with_calendar, ["calendar"]
+        )
+        hass.config_entries.async_unload_platforms.assert_any_await(
+            without_calendar, ["sensor"]
         )
 
 

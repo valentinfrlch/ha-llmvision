@@ -41,6 +41,7 @@
 - Remembers people, pets and objects
 - Keeps a timeline of camera events, so you can display them on your dashboard or ask Assist about them.
 - Seamlessly updates sensors based on data extracted from camera streams, images or videos
+- Optionally tracks provider-reported token usage locally, with persistent analysis/title counters. [Usage tracking and privacy](docs/token-usage.md)
 
 <br>
 

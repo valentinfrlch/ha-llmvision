@@ -3,13 +3,15 @@ from aiohttp import ClientTimeout
 import boto3
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Context, HomeAssistant
 from functools import partial
 from typing import Any, cast
 import logging
 import re
 import json
 import base64
+import time
+from .usage import USAGE_DATA, normalize_usage
 from .const import (
     DOMAIN,
     CONF_API_KEY,
@@ -444,6 +446,10 @@ class Provider(ABC):
         self.model = model
         self.endpoint = endpoint
         self.request_timeout = self._resolve_request_timeout()
+        # This is normalized integer metadata, never a raw response envelope.
+        self._usage_response: dict[str, int] | None = None
+        self._usage_attempted = False
+        self._usage_active = False
         _LOGGER.debug("Provider initialized: %s", self.__class__.__name__)
 
     @abstractmethod
@@ -517,7 +523,7 @@ class Provider(ABC):
 
     async def vision_request(self, call: dict) -> str:
         data = self._prepare_vision_data(call)
-        return await self._make_request(data)
+        return await self._request_with_usage(call, data, "analysis")
 
     async def title_request(self, call: Any) -> str:
         if isinstance(call, dict):
@@ -525,12 +531,63 @@ class Provider(ABC):
         else:
             call.max_tokens = 4096
         data = self._prepare_text_data(call)
-        return await self._make_request(data)
+        return await self._request_with_usage(call, data, "title")
+
+    async def _request_with_usage(self, call: Any, data: dict, phase: str) -> str:
+        """Observe existing calls without changing payloads or service responses."""
+        manager = self.hass.data.get(USAGE_DATA)
+        if manager is None or not manager.enabled:
+            return await self._make_request(data)
+        # Provider instances belong to one Request.call and are not shared.
+        # Reset for each phase so an absent title usage block cannot reuse the
+        # preceding analysis counts. Preparation has already succeeded here.
+        self._usage_active = True
+        self._usage_response = None
+        self._usage_attempted = False
+        started = time.monotonic()
+        failed = True
+        try:
+            result = await self._make_request(data)
+            failed = False
+            return result
+        finally:
+            # Publish after the adapter's existing response validation, so a
+            # locally rejected response retains reported counts and its error.
+            # Cancellation still propagates; unreturned usage stays unknown.
+            self._usage_active = False
+            if self._usage_attempted:
+                try:
+                    entry_id = call.provider
+                    context = getattr(call, "context", None)
+                    await manager.async_record(
+                        entry_id=entry_id,
+                        provider=Request.get_provider(self.hass, entry_id),
+                        model=self.model,
+                        service=getattr(call, "service", "unknown"),
+                        phase=phase,
+                        usage=self._usage_response,
+                        failed=failed,
+                        duration_ms=round((time.monotonic() - started) * 1000),
+                        context=context if isinstance(context, Context) else None,
+                    )
+                except Exception:
+                    # Accounting must never turn a successful analysis into an error.
+                    _LOGGER.warning("Unable to record token usage")
+            self._usage_response = None
+
+    def _capture_usage(self, response: Any) -> None:
+        """Read only normalized counts before provider adapters discard envelopes."""
+        if self._usage_active:
+            try:
+                self._usage_response = normalize_usage(response)
+            except Exception:
+                _LOGGER.warning("Unable to normalize token usage")
 
     async def _post(self, url: str, headers: dict, data: dict) -> dict:
         """Post data to url and return response data"""
         # URLs, headers, payloads, responses and exceptions may contain secrets.
         _LOGGER.debug("Sending provider request")
+        self._usage_attempted = self._usage_active
         try:
             response = await self.session.post(
                 url,
@@ -548,7 +605,9 @@ class Provider(ABC):
                 f"Provider request failed (HTTP {response.status})"
             )
         try:
-            return await response.json()
+            response_data = await response.json()
+            self._capture_usage(response_data)
+            return response_data
         except Exception as e:
             _LOGGER.error("Provider response could not be read (%s)", type(e).__name__)
             raise ServiceValidationError(
@@ -2053,9 +2112,11 @@ class AWSBedrock(Provider):
             if "system" in data:
                 converse_kwargs["system"] = data.get("system")
 
+            self._usage_attempted = self._usage_active
             response = await self.hass.async_add_executor_job(
                 partial(client.converse, **converse_kwargs)
             )
+            self._capture_usage(response)
             _LOGGER.debug("AWS Bedrock call completed")
 
         except Exception as e:
@@ -2067,16 +2128,8 @@ class AWSBedrock(Provider):
             _LOGGER.warning("AWS Bedrock request failed (HTTP %s)", status)
             raise ServiceValidationError(f"AWS Bedrock request failed (HTTP {status})")
         else:
-            # get observability data
-            metrics = response.get("metrics")
-            latency = metrics.get("latencyMs")
-            token_usage = response.get("usage")
-            tokens_in = token_usage.get("inputTokens")
-            tokens_out = token_usage.get("outputTokens")
-            tokens_total = token_usage.get("totalTokens")
-            _LOGGER.debug(
-                f"AWS Bedrock call latency: {latency}ms inputTokens: {tokens_in} outputTokens: {tokens_out} totalTokens: {tokens_total}"
-            )
+            # Usage was captured before dropping the envelope. Optional metrics
+            # and usage must not be dereferenced here: some gateways omit them.
             response_data = response.get("output")
             _LOGGER.debug("AWS Bedrock response received")
         return response_data
