@@ -651,23 +651,31 @@ class TestOpenAI:
             assert headers["Authorization"] == "Bearer test_api_key"
             assert headers["Content-type"] == "application/json"
 
-    def test_model_supports_thinking_gpt5(self, mock_hass):
-        """Test _model_supports_thinking for gpt-5."""
+    def test_apply_model_parameters_caps_effort_from_registry(self, mock_hass):
+        """Test registry capabilities cap reasoning effort and drop sampling."""
         with patch("custom_components.llmvision.providers.async_get_clientsession"):
             openai = OpenAI(mock_hass, "test_api_key", "gpt-5.4")
+            payload = {"temperature": 0.7, "top_p": 0.9}
 
-            result = openai._model_supports_thinking("high")
+            result = openai._apply_model_parameters(
+                payload, {"reasoning_effort": "max"}
+            )
 
-            assert result == "high"
+            assert result["reasoning_effort"] == "xhigh"
+            assert "temperature" not in result
+            assert "top_p" not in result
 
-    def test_model_supports_thinking_gpt4(self, mock_hass):
-        """Test _model_supports_thinking returns False for gpt-4."""
+    def test_apply_model_parameters_keeps_unknown_model_payload(self, mock_hass):
+        """Test models outside the registry keep the caller's payload."""
         with patch("custom_components.llmvision.providers.async_get_clientsession"):
             openai = OpenAI(mock_hass, "test_api_key", "gpt-4")
+            payload = {"temperature": 0.7, "top_p": 0.9}
 
-            result = openai._model_supports_thinking("high")
+            result = openai._apply_model_parameters(
+                payload, {"reasoning_effort": "high"}
+            )
 
-            assert result is False
+            assert result == {"temperature": 0.7, "top_p": 0.9}
 
 
 class TestMistral:
@@ -886,19 +894,57 @@ class TestGoogle:
 
             assert headers["content-type"] == "application/json"
 
-    def test_model_supports_thinking(self, mock_hass):
-        """Test _model_supports_thinking for gemini-2.5."""
+    def test_apply_thinking_config_uses_budget_for_25_models(self, mock_hass):
+        """Test Gemini 2.5 models receive the legacy token budget."""
         with patch("custom_components.llmvision.providers.async_get_clientsession"):
             google = Google(mock_hass, "test_api_key", "gemini-2.5-pro")
+            generation_config = {}
 
-            assert google._model_supports_thinking() is True
+            google._apply_thinking_config(
+                generation_config,
+                {"thinking_budget": 1024, "reasoning_effort": "none"},
+            )
 
-    def test_model_does_not_support_thinking(self, mock_hass):
-        """Test _model_supports_thinking for older models."""
+            assert generation_config["thinkingConfig"] == {"thinkingBudget": 1024}
+
+    def test_apply_thinking_config_prefers_level_for_gemini3(self, mock_hass):
+        """Test Gemini 3 models receive thinkingLevel when an effort is set."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            google = Google(mock_hass, "test_api_key", "gemini-3.8-flash")
+            generation_config = {}
+
+            google._apply_thinking_config(
+                generation_config,
+                {"thinking_budget": 1024, "reasoning_effort": "high"},
+            )
+
+            assert generation_config["thinkingConfig"] == {"thinkingLevel": "high"}
+
+    def test_apply_thinking_config_skips_unknown_models(self, mock_hass):
+        """Test models outside the registry receive no thinking configuration."""
         with patch("custom_components.llmvision.providers.async_get_clientsession"):
             google = Google(mock_hass, "test_api_key", "gemini-pro")
+            generation_config = {}
 
-            assert google._model_supports_thinking() is False
+            google._apply_thinking_config(
+                generation_config,
+                {"thinking_budget": 1024, "reasoning_effort": "high"},
+            )
+
+            assert "thinkingConfig" not in generation_config
+
+    def test_apply_thinking_config_skips_deprecated_budget_field(self, mock_hass):
+        """Test Gemini 4 models never receive the deprecated budget field."""
+        with patch("custom_components.llmvision.providers.async_get_clientsession"):
+            google = Google(mock_hass, "test_api_key", "gemini-4-argon")
+            generation_config = {}
+
+            google._apply_thinking_config(
+                generation_config,
+                {"thinking_budget": 1024, "reasoning_effort": "none"},
+            )
+
+            assert "thinkingConfig" not in generation_config
 
 
 class TestGroq:
@@ -1303,6 +1349,174 @@ def make_openai_chat_completion_response(text="ok"):
     }
 
 
+@pytest.mark.parametrize("prepare", ["_prepare_vision_data", "_prepare_text_data"])
+@pytest.mark.parametrize(
+    ("model", "requested", "expected", "sampling"),
+    [
+        ("gpt-4o-mini", "none", None, True),
+        ("gpt-4o-mini", "high", None, True),
+        ("gpt-5", "high", "high", False),
+        ("gpt-5-mini", "none", None, False),
+        ("gpt-5-mini-2025-08-07", "minimal", "minimal", False),
+        ("gpt-5-nano-2025-08-07", "low", "low", False),
+        ("gpt-5.1", "xhigh", "high", False),
+        ("gpt-5.2", "none", "none", True),
+        ("gpt-5.4", "none", "none", True),
+        ("gpt-5.4-2026-03-05", "high", "high", False),
+        ("gpt-5.4-mini", "minimal", "none", True),
+        ("gpt-5.4-pro", "none", None, False),
+        ("gpt-5.5", "none", "none", True),
+        ("gpt-5.6", "none", "none", True),
+        ("gpt-5.6-sol", "none", "none", True),
+        ("gpt-5.6-terra", "none", "none", True),
+        ("gpt-5.6-luna", "low", "low", False),
+        ("gpt-6-sol", "none", "none", True),
+        ("gpt-6-luna", "none", "none", True),
+        ("gpt-6-luna", "medium", "medium", False),
+        ("gpt-6.1-terra", "none", "none", True),
+        ("gpt-6.1-terra", "max", "max", False),
+        ("gpt-6-astra", "none", None, False),
+        ("gpt-6.1-sol", "low", "low", False),
+        ("gpt-6-luna", " HIGH ", "high", False),
+        ("gpt-6-luna", None, "none", True),
+        ("gpt-6-luna", "invalid", "none", True),
+        # Similar names and third-party models must not inherit OpenAI capabilities.
+        ("gpt-5.40", "high", None, True),
+        ("gpt-6-luna-custom", "high", None, True),
+        ("llama3.2-vision", "none", None, True),
+        ("pixtral-12b-2409", "none", None, True),
+    ],
+)
+def test_openai_model_parameters(
+    coverage_hass, prepare, model, requested, expected, sampling
+):
+    """Both request paths honor model capabilities without changing token budgets."""
+    coverage_hass.data[DOMAIN]["provider_openai"].update(
+        {"reasoning_effort": requested, CONF_TEMPERATURE: 0.2, CONF_TOP_P: 0.9}
+    )
+    provider = OpenAI(coverage_hass, "test_key", model)
+    call_obj = make_coverage_call(model=model, max_tokens=2000)
+
+    payload = getattr(provider, prepare)(call_obj)
+
+    assert payload["model"] == model
+    assert payload["max_completion_tokens"] == 2000
+    assert call_obj.max_tokens == 2000
+    assert "max_tokens" not in payload
+    if expected is None:
+        assert "reasoning_effort" not in payload
+    else:
+        assert payload["reasoning_effort"] == expected
+    if sampling:
+        assert payload["temperature"] == 0.2
+        assert payload["top_p"] == 0.9
+    else:
+        assert "temperature" not in payload
+        assert "top_p" not in payload
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("content", [None, "", "partial summary"])
+async def test_openai_token_exhaustion_is_not_a_success(coverage_hass, content):
+    """Reject truncated content without retrying or increasing the request's cap."""
+    provider = OpenAI(coverage_hass, "test_key", "gpt-6-luna")
+    response = make_openai_chat_completion_response(content)
+    response["choices"][0]["finish_reason"] = "length"
+    provider._post = AsyncMock(return_value=response)
+
+    with pytest.raises(ServiceValidationError, match="Increase max_tokens"):
+        await provider._make_request({"max_completion_tokens": 3})
+
+    provider._post.assert_awaited_once()
+    assert provider._post.call_args.kwargs["data"]["max_completion_tokens"] == 3
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("content", ["", "  \n\t"])
+async def test_openai_empty_content_is_not_a_success(coverage_hass, content):
+    provider = OpenAI(coverage_hass, "test_key", "gpt-6-luna")
+    provider._post = AsyncMock(
+        return_value=make_openai_chat_completion_response(content)
+    )
+    with pytest.raises(ServiceValidationError, match="empty_response"):
+        await provider._make_request({})
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("content", [None, [], {}, 42])
+async def test_openai_non_text_content_is_invalid(coverage_hass, content):
+    provider = OpenAI(coverage_hass, "test_key", "gpt-6-luna")
+    provider._post = AsyncMock(
+        return_value=make_openai_chat_completion_response(content)
+    )
+    with pytest.raises(ServiceValidationError, match="invalid_response"):
+        await provider._make_request({})
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("content", "finish_reason", "error"),
+    [("", "stop", "empty_response"), ("partial", "length", "Increase max_tokens")],
+)
+async def test_openai_invalid_summary_does_not_generate_title(
+    coverage_hass, monkeypatch, content, finish_reason, error
+):
+    """Surface safe errors through Request.call without generating a bogus title."""
+    provider = OpenAI(coverage_hass, "test_key", "gpt-6-luna")
+    response = make_openai_chat_completion_response(content)
+    response["choices"][0]["finish_reason"] = finish_reason
+    provider._post = AsyncMock(return_value=response)
+    provider.title_request = AsyncMock()
+    monkeypatch.setattr(ProviderFactory, "create", lambda **kwargs: provider)
+    request = Request(coverage_hass, "Describe the event", 2000, 0.2)
+    request.base64_images = ["aW1n"]
+    request.filenames = ["test.jpg"]
+
+    with pytest.raises(ServiceValidationError, match=error):
+        await request.call(make_coverage_call(generate_title=True, max_tokens=2000))
+
+    provider.title_request.assert_not_awaited()
+    provider._post.assert_awaited_once()
+
+
+@pytest.mark.anyio
+async def test_openai_incomplete_response_respects_configured_fallback(
+    coverage_hass, monkeypatch
+):
+    """An existing fallback may make one additional call, with the same token cap."""
+    coverage_hass.data[DOMAIN]["provider_fallback"] = {
+        CONF_PROVIDER: "OpenAI",
+        CONF_API_KEY: "fallback_key",
+        CONF_DEFAULT_MODEL: "gpt-4o-mini",
+    }
+    coverage_hass.config_entries.async_entries.return_value = [
+        SimpleNamespace(
+            data={CONF_PROVIDER: "Settings", "fallback_provider": "provider_fallback"}
+        )
+    ]
+    primary = OpenAI(coverage_hass, "test_key", "gpt-6-luna")
+    response = make_openai_chat_completion_response("")
+    response["choices"][0]["finish_reason"] = "length"
+    primary._post = AsyncMock(return_value=response)
+    fallback = OpenAI(coverage_hass, "fallback_key", "gpt-4o-mini")
+    fallback._post = AsyncMock(return_value=make_openai_chat_completion_response("ok"))
+    monkeypatch.setattr(
+        ProviderFactory,
+        "create",
+        lambda **kwargs: primary if kwargs["model"] == "gpt-6-luna" else fallback,
+    )
+    request = Request(coverage_hass, "Describe the event", 2000, 0.2)
+    request.base64_images = ["aW1n"]
+    request.filenames = ["test.jpg"]
+
+    result = await request.call(make_coverage_call(model="gpt-6-luna", max_tokens=2000))
+
+    assert result["response_text"] == "ok"
+    for provider in (primary, fallback):
+        provider._post.assert_awaited_once()
+        assert provider._post.call_args.kwargs["data"]["max_completion_tokens"] == 2000
+
+
 def make_anthropic_text_response(text="ok"):
     return {
         "id": "msg_test",
@@ -1530,6 +1744,36 @@ async def test_provider_and_bedrock_exception_tracebacks_are_safe(
     ):
         assert secret not in caplog.text
         assert secret not in rendered
+
+
+@pytest.mark.anyio
+async def test_request_call_reports_validation_message(
+    monkeypatch, coverage_hass, caplog
+):
+    """Locally raised validation errors keep their reason in log and caller."""
+    import logging
+
+    req = Request(coverage_hass, "m", 10, 0.2)
+    req.base64_images = ["aW1n"]
+    req.filenames = ["f.jpg"]
+    failing = Mock(
+        vision_request=AsyncMock(
+            side_effect=ServiceValidationError(
+                "Anthropic thinking budget must be less than max_tokens"
+            )
+        )
+    )
+    monkeypatch.setattr(ProviderFactory, "create", lambda **kwargs: failing)
+
+    with caplog.at_level(logging.ERROR, logger="custom_components.llmvision"):
+        with pytest.raises(
+            ServiceValidationError,
+            match="thinking budget must be less than max_tokens",
+        ):
+            await req.call(make_coverage_call())
+
+    assert "thinking budget must be less than max_tokens" in caplog.text
+    assert "Provider request failed" not in caplog.text
 
 
 @pytest.mark.anyio
@@ -2678,7 +2922,7 @@ def test_anthropic_manual_thinking_serializes_integer_budget_and_omits_sampling(
     assert "top_k" not in payload
 
 
-def test_anthropic_zero_budget_disables_manual_thinking_and_keeps_temperature(
+def test_anthropic_zero_budget_disables_manual_thinking_and_omits_sampling(
     coverage_hass,
 ):
     configure_anthropic_parameters(coverage_hass, 0, temperature=0.3)
@@ -2687,7 +2931,8 @@ def test_anthropic_zero_budget_disables_manual_thinking_and_keeps_temperature(
     payload = provider._prepare_vision_data(make_coverage_call(max_tokens=4096))
 
     assert payload["thinking"] == {"type": "disabled"}
-    assert payload["temperature"] == 0.3
+    assert "temperature" not in payload
+    assert "top_p" not in payload
 
 
 def test_anthropic_forced_tool_choice_disables_manual_thinking(coverage_hass):
@@ -2707,7 +2952,46 @@ def test_anthropic_forced_tool_choice_disables_manual_thinking(coverage_hass):
         "name": "return_structured_data",
     }
     assert payload["thinking"] == {"type": "disabled"}
-    assert payload["temperature"] == 0.4
+    assert "temperature" not in payload
+
+
+def test_anthropic_always_on_models_fall_back_to_auto_tool_choice(coverage_hass):
+    configure_anthropic_parameters(coverage_hass, 0)
+    provider = Anthropic(coverage_hass, "k", "claude-fable-5-2")
+
+    payload = provider._prepare_vision_data(
+        make_coverage_call(
+            max_tokens=4096,
+            response_format="json",
+            structure={"type": "object"},
+        )
+    )
+
+    assert payload["tool_choice"] == {"type": "auto"}
+    assert "thinking" not in payload
+    assert "temperature" not in payload
+
+
+@pytest.mark.anyio
+async def test_anthropic_budget_above_max_tokens_is_reported(coverage_hass, caplog):
+    """The real budget conflict reaches the log instead of a generic failure."""
+    import logging
+
+    configure_anthropic_parameters(coverage_hass, 5120)
+    req = Request(coverage_hass, "m", 10, 0.2)
+    req.base64_images = ["aW1n"]
+    req.filenames = ["f.jpg"]
+
+    with caplog.at_level(logging.ERROR, logger="custom_components.llmvision"):
+        with pytest.raises(
+            ServiceValidationError,
+            match="thinking budget must be less than max_tokens",
+        ):
+            await req.call(
+                make_coverage_call(model="claude-haiku-4-5", max_tokens=3000)
+            )
+
+    assert "thinking budget must be less than max_tokens" in caplog.text
 
 
 @pytest.mark.parametrize("model", ["claude-sonnet-4-6", "claude-opus-4-6"])
@@ -2719,6 +3003,22 @@ def test_anthropic_46_models_keep_fixed_budget_mode(coverage_hass, model):
 
     assert payload["thinking"] == {"type": "enabled", "budget_tokens": 2048}
     assert "temperature" not in payload
+
+
+def test_anthropic_46_models_prefer_adaptive_thinking_for_forced_tools(coverage_hass):
+    configure_anthropic_parameters(coverage_hass, 2048)
+    provider = Anthropic(coverage_hass, "k", "claude-opus-4-6")
+
+    payload = provider._prepare_vision_data(
+        make_coverage_call(
+            max_tokens=4096,
+            response_format="json",
+            structure={"type": "object"},
+        )
+    )
+
+    assert payload["thinking"] == {"type": "adaptive"}
+    assert payload["tool_choice"]["type"] == "tool"
 
 
 @pytest.mark.parametrize(
