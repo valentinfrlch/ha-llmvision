@@ -1810,20 +1810,29 @@ class Ollama(Provider):
 
     def _prepare_vision_data(self, call: Any) -> dict:
         default_parameters = self._get_default_parameters(call)
+        is_glimpse = call.model_is_glimpse()
+
+        messages = []
+
+        if not is_glimpse:
+            messages.append(
+                {
+                    "role": "system",
+                    "content": self._get_system_prompt(),
+                }
+            )
+
+        messages.append(
+            {
+                "role": "user",
+                "content": call.message if not is_glimpse else GLIMPSE_V1_INSTRUCTIONS,
+                "images": call.base64_images,
+            }
+        )
+
         payload = {
             "model": self.model,
-            "system": self._get_system_prompt() if not call.model_is_glimpse() else "",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": (
-                        call.message
-                        if not call.model_is_glimpse()
-                        else GLIMPSE_V1_INSTRUCTIONS
-                    ),
-                    "images": call.base64_images,
-                },
-            ],
+            "messages": messages,
             "prompt": (),
             "images": call.base64_images,
             "stream": False,
