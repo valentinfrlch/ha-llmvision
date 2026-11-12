@@ -55,6 +55,7 @@ from custom_components.llmvision.const import (
     DEFAULT_TITLE_PROMPT,
     DEFAULT_MISTRAL_MODEL,
     ENDPOINT_MISTRAL,
+    GLIMPSE_V1_INSTRUCTIONS
 )
 
 
